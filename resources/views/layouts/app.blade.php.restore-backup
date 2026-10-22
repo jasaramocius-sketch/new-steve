@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', config('app.name', 'Steve Auto Parts'))</title>
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Essential css files -->
+    <link rel="stylesheet" href="{{ asset('assets/front/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/all.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/slick.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/nice-select.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/jquery-ui.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/animate.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/toastr.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/style.css') }}?v={{ filemtime(public_path('assets/front/css/style.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/custom.css') }}?v={{ filemtime(public_path('assets/front/css/custom.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/dynamic-font.css') }}">
+    <link rel="icon" href="{{ asset('assets/images/' . (\App\Models\Setting::get('header_favicon') ?? '1730880696Fabpng.png')) }}">
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs5.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unirateapi.com/lander/static/css/unirate-widgets.css">
+
+    <link href="https://fonts.googleapis.com/css?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- header area -->
+    <header class="sticky-top z-1020 bg-white">
+        <!-- Logo Bar -->
+        <div class="stap-header">
+        <div class="position-relative logo-bar-area border-md-nonea z-1025">
+                <div class="container d-flex align-items-center stap-header-topbar">
+                    <!-- Mobile menu toggle -->
+                    <button type="button" class="btn d-lg-none mr-3 mr-sm-4 p-0 mobile-menu-btn">
+                        <svg id="Component_43_1" data-name="Component 43 – 1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                            <rect id="Rectangle_19062" data-name="Rectangle 19062" width="16" height="2" transform="translate(0 7)" fill="#919199"/>
+                            <rect id="Rectangle_19063" data-name="Rectangle 19063" width="16" height="2" fill="#919199"/>
+                            <rect id="Rectangle_19064" data-name="Rectangle 19064" width="16" height="2" transform="translate(0 14)" fill="#919199"/>
+                        </svg>
+                    </button>
+
+                    <!-- Logo -->
+                    <div class="stap-header-logo">
+                    <div class="col-auto pl-0 pr-3 d-flex align-items-center">
+                        <a class="d-block py-15px mr-3 ml-0" href="{{ route('home') }}">
+                            {!! imgTag('assets/images/' . (\App\Models\Setting::get('header_logo') ?? 'BwSkuSZ7ZYGWPc4Zk3CfeFzcn49dHpx3143n4WKS.png'), 'SteveAutoPartsInc.', 'mobile-view-logo mw-100 h-80px h-md-50px', 'height="40"') !!}
+                        </a>
+                    </div>
+                    </div>
+
+                    <!-- Search Icon (mobile) -->
+                    <div class="d-lg-none ml-auto mr-0">
+                        <a class="p-2 d-block text-reset" href="javascript:void(0);" data-toggle="class-toggle" data-target=".front-header-search">
+                            <i class="las la-search la-flip-horizontal la-2x"></i>
+                        </a>
+                    </div>
+                    
+
+                    <!-- Search Bar -->
+                    <div class="stap-header-search">
+                    <div class="flex-grow-1 front-header-search d-flex align-items-center bg-white mx-xl-5">
+                        <div class="position-relative flex-grow-1 px-3 px-lg-0">
+                            <form action="{{ route('shop') }}" method="GET" class="stop-propagation">
+                                <div class="d-flex position-relative align-items-center">
+                                    <div class="d-lg-none" data-toggle="class-toggle" data-target=".front-header-search">
+                                        <button class="btn px-2" type="button"><i class="las la-2x la-long-arrow-left"></i></button>
+                                    </div>
+                                    <div class="search-input-box flex-grow-1">
+                                        <input type="text" class="border border-soft-light form-control fs-14 hov-animate-outline" id="search" name="search" placeholder="I am shopping for..." autocomplete="off">
+                                        <svg id="Group_723" data-name="Group 723" xmlns="http://www.w3.org/2000/svg" width="20.001" height="20" viewBox="0 0 20.001 20">
+                                            <path id="Path_3090" data-name="Path 3090" d="M9.847,17.839a7.993,7.993,0,1,1,7.993-7.993A8,8,0,0,1,9.847,17.839Zm0-14.387a6.394,6.394,0,1,0,6.394,6.394A6.4,6.4,0,0,0,9.847,3.453Z" transform="translate(-1.854 -1.854)" fill="#b5b5bf"/>
+                                            <path id="Path_3091" data-name="Path 3091" d="M24.4,25.2a.8.8,0,0,1-.565-.234l-6.15-6.15a.8.8,0,0,1,1.13-1.13l6.15,6.15A.8.8,0,0,1,24.4,25.2Z" transform="translate(-5.2 -5.2)" fill="#b5b5bf"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="stap-header-actions">
+                    <!-- Compare -->
+                    <div class="stap-action stap-action-compare">
+                    <div class="d-none d-lg-block ml-3 mr-0">
+                        <div id="compare">
+                            <a href="{{ route('compare.index') }}" class="d-flex align-items-center text-dark" data-toggle="tooltip" data-title="Compare" data-placement="top">
+                                <span class="position-relative d-inline-block">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                                        <path id="_9f8e765afedd47ec9e49cea83c37dfea" data-name="9f8e765afedd47ec9e49cea83c37dfea" d="M18.037,5.547v.8a.8.8,0,0,1-.8.8H7.221a.4.4,0,0,0-.4.4V9.216a.642.642,0,0,1-1.1.454L2.456,6.4a.643.643,0,0,1,0-.909L5.723,2.227a.642.642,0,0,1,1.1.454V4.342a.4.4,0,0,0,.4.4H17.234a.8.8,0,0,1,.8.8Zm-3.685,4.86a.642.642,0,0,0-1.1.454v1.661a.4.4,0,0,1-.4.4H2.84a.8.8,0,0,0-.8.8v.8a.8.8,0,0,0,.8.8H12.854a.4.4,0,0,1,.4.4V17.4a.642.642,0,0,0,1.1.454l3.267-3.268a.643.643,0,0,0,0-.909Z" transform="translate(-2.037 -2.038)" fill="#919199"/>
+                                    </svg>
+                                    <span class="badge badge-primary badge-inline badge-pill position-absolute absolute-top-right--10px compare-badge" style="display: {{ ($compareCount ?? 0) > 0 ? 'inline-block' : 'none' }};">
+                                        <span class="compare-count">{{ $compareCount ?? 0 }}</span>
+                                    </span>
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Wishlist -->
+                    <div class="stap-action stap-action-wishlist">
+                    <div class="d-none d-lg-block mr-3" style="width: auto; padding: 0 10px;">
+                        <div id="wishlist">
+                            <a href="{{ route('user.wishlist') }}" class="d-flex align-items-center text-dark" data-toggle="tooltip" data-title="Wishlist" data-placement="top">
+                                <span class="position-relative d-inline-block">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.4" viewBox="0 0 16 14.4">
+                                        <g id="_51a3dbe0e593ba390ac13cba118295e4" data-name="51a3dbe0e593ba390ac13cba118295e4" transform="translate(-3.05 -4.178)">
+                                          <path id="Path_32649" data-name="Path 32649" d="M11.3,5.507l-.247.246L10.8,5.506A4.538,4.538,0,1,0,4.38,11.919l.247.247,6.422,6.412,6.422-6.412.247-.247A4.538,4.538,0,1,0,11.3,5.507Z" transform="translate(0 0)" fill="#919199"/>
+                                          <path id="Path_32650" data-name="Path 32650" d="M11.3,5.507l-.247.246L10.8,5.506A4.538,4.538,0,1,0,4.38,11.919l.247.247,6.422,6.412,6.422-6.412.247-.247A4.538,4.538,0,1,0,11.3,5.507Z" transform="translate(0 0)" fill="#919199"/>
+                                        </g>
+                                    </svg>
+                                    <span class="badge badge-primary badge-inline badge-pill position-absolute absolute-top-right--10px wishlist-badge" style="display: {{ ($wishlistCount ?? 0) > 0 ? 'inline-block' : 'none' }};">
+                                        <span class="wishlist-count">{{ $wishlistCount ?? 0 }}</span>
+                                    </span>
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Language -->
+                    @php
+                        $languages = config('languages', []);
+                        $currentLocale = session('locale', config('app.locale', 'en'));
+                    @endphp
+                    <div class="stap-action stap-action-language">
+                    <div class="d-none d-lg-flex align-items-center">
+                        <div class="dropdown" id="language-change">
+                            <a href="javascript:void(0)" class="dropdown-toggle text-secondary fs-12 px-2 py-1 d-inline-flex align-items-center" data-bs-toggle="dropdown" data-bs-display="static" title="Language">
+                                <img src="https://flagcdn.com/16x12/{{ $languages[$currentLocale]['flag'] ?? 'us' }}.png" class="mr-1" alt="{{ $currentLocale }}" style="width: 16px; height: 12px; object-fit: cover;">
+                                <span class="fw-700 text-uppercase">{{ $currentLocale }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-right">
+                                @foreach($languages as $code => $info)
+                                <li>
+                                    <a class="dropdown-item {{ $currentLocale === $code ? 'active' : '' }} d-flex align-items-center" href="{{ route('language.change', $code) }}">
+                                        <img src="https://flagcdn.com/16x12/{{ $info['flag'] }}.png" class="mr-2" alt="{{ $info['name'] }}" style="width: 16px; height: 12px; object-fit: cover;">
+                                        {{ $info['name'] }}
+                                    </a>
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Currency -->
+                    @php
+                        $currencies = config('currencies');
+                        $currentCurrency = session('currency', 'USD');
+                    @endphp
+                    <div class="stap-action stap-action-currency">
+                    <div class="d-none d-lg-flex align-items-center">
+                        <div class="dropdown" id="currency-change">
+                            <a href="javascript:void(0)" class="dropdown-toggle text-secondary fs-12 px-2 py-1 d-inline-flex align-items-center" data-bs-toggle="dropdown" data-bs-display="static" title="Currency">
+                                <span class="fw-700 mr-1">{{ $currencies[$currentCurrency]['symbol'] ?? '$' }}</span>
+                                <span class="fw-700 text-uppercase">{{ $currentCurrency }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-right">
+                                @foreach($currencies as $code => $info)
+                                <li><a class="dropdown-item {{ $currentCurrency === $code ? 'active' : '' }}" href="{{ route('currency.change', $code) }}">{{ $info['name'] }} ({{ $info['symbol'] }})</a></li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="stap-action stap-action-notification">
+                    <ul class="list-inline mb-0 h-100 d-none d-xl-flex justify-content-end align-items-center">
+                        <li class="list-inline-item ml-3 mr-3 pr-3 pl-0">
+                            <a class="text-secondary fs-12" href="javascript:void(0);">
+                                <span class="position-relative d-inline-block">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14.668" height="16" viewBox="0 0 14.668 16">
+                                        <path id="_26._Notification" data-name="26. Notification" d="M8.333,16A3.34,3.34,0,0,0,11,14.667H5.666A3.34,3.34,0,0,0,8.333,16ZM15.06,9.78a2.457,2.457,0,0,1-.727-1.747V6a6,6,0,1,0-12,0V8.033A2.457,2.457,0,0,1,1.606,9.78,2.083,2.083,0,0,0,3.08,13.333H13.586A2.083,2.083,0,0,0,15.06,9.78Z" transform="translate(-0.999)" fill="#91919b"/>
+                                    </svg>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    </div>
+
+                    <!-- Login / Registration -->
+                    <div class="stap-action stap-action-account">
+                    <!-- Mobile: simple icon link -->
+                    <div class="d-xl-none d-flex align-items-center">
+                        @if(Auth::check())
+                            <a href="{{ route('user.dashboard') }}" class="p-2 d-block text-reset" title="{{ Auth::user()->name }}">
+                                <i class="fas fa-user fw-700" style="font-size: 16px; color: #919199;"></i>
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}" class="p-2 d-block text-reset" title="Login">
+                                <i class="fas fa-user fw-700" style="font-size: 16px; color: #919199;"></i>
+                            </a>
+                        @endif
+                    </div>
+                    <!-- Desktop: full dropdown -->
+                    <div class="d-none d-xl-flex align-items-center">
+                        @if(Auth::check())
+                            <div class="dropdown" id="account-menu"> 
+                                <a href="javascript:void(0)" class="dropdown-toggle text-secondary fs-12 px-2 py-1 d-inline-flex align-items-center" data-bs-toggle="dropdown" data-bs-display="static">
+                                    <i class="fas fa-user fw-700 mr-1"></i>
+                                    <span class="fw-700">{{ Auth::user()->name }}</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-right">
+                                    <li><a class="dropdown-item" href="{{ route('user.dashboard') }}">Dashboard</a></li>
+                                    @if(!in_array(Auth::user()->role, ['admin', 'master_admin', 'staff']))
+                                    <li><a class="dropdown-item" href="{{ route('user.orders') }}">Orders</a></li>
+                                    <li><a class="dropdown-item" href="{{ route('user.wishlist') }}">Wishlist</a></li>
+                                    <li><a class="dropdown-item" href="{{ route('user.profile') }}">My Profile</a></li>
+                                    @endif
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item">Logout</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        @else
+                            <div class="dropdown" id="account-menu">
+                                <a href="javascript:void(0)" class="dropdown-toggle text-secondary fs-12 px-2 py-1 d-inline-flex align-items-center" data-bs-toggle="dropdown" data-bs-display="static">
+                                    <i class="fas fa-user fw-700 mr-1"></i>
+                                    <span class="fw-700">Account</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-right">
+                                    <li><a class="dropdown-item" href="{{ route('login') }}">Login</a></li>
+                                    <li><a class="dropdown-item" href="{{ route('register') }}">Registration</a></li>
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
+                    </div>
+                </div>
+        
+        </div>
+
+        <!-- Menu Bar -->
+        <div class="d-none d-lg-block position-relative bg-primary h-50px stap-header-menubar">
+            <div class="container h-100">
+                <div class="d-flex h-100">
+                    <!-- Categories Button -->
+                    <div class="d-none d-xl-block all-category has-transition bg-black-10" id="category-menu-bar">
+                        <div class="px-3 h-100" id="category-menu-toggle" style="padding-top: 12px;padding-bottom: 12px; width:270px; cursor: pointer;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="fw-700 fs-16 text-white mr-3">All Categories</span>
+                                    <a href="{{ route('categories.index') }}" class="text-reset">
+                                        <span class="d-none d-lg-inline-block text-white hov-opacity-80">See All</span>
+                                    </a>
+                                </div>
+                                <i class="las la-angle-down text-white has-transition" id="category-menu-bar-icon" style="font-size: 1.2rem !important"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Header Menus -->
+                    <div class="ml-xl-4 w-100 overflow-hidden">
+                        <div class="d-flex align-items-center justify-content-center justify-content-xl-start h-100">
+                            <ul class="list-inline mb-0 pl-0 hor-swipe c-scrollbar-light">
+                                @php $navMenu = json_decode(\App\Models\Setting::get('nav_menu', '[]'), true); @endphp
+                                @foreach($navMenu as $item)
+                                    @php
+                                        $isActive = request()->is(ltrim($item['url'] ?? '', '/')) || request()->is(ltrim($item['url'] ?? '', '/') . '/*');
+                                    @endphp
+                                    <li class="list-inline-item mr-0 animate-underline-white">
+                                        <a href="{{ url($item['url'] ?? '#') }}" class="fs-13 px-3 py-3 d-inline-block fw-700 text-white header_menu_links hov-bg-black-10 {{ $isActive ? 'active' : '' }}">
+                                            {{ $item['label'] ?? '' }}
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Cart -->
+                    <div class="d-none d-xl-block align-self-stretch ml-5 mr-0 has-transition bg-black-10">
+                        <a href="{{ route('cart') }}" class="d-flex align-items-center text-white px-3 h-100" title="Cart">
+                            <span class="mr-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="20.562" viewBox="0 0 24 20.562">
+                                    <g id="_5e67fc94b53aaec8ca181b806dd815ee" data-name="5e67fc94b53aaec8ca181b806dd815ee" transform="translate(-33.276 -101)">
+                                      <path id="Path_32659" data-name="Path 32659" d="M34.034,102.519H38.2l-.732-.557c.122.37.243.739.365,1.112q.441,1.333.879,2.666.528,1.6,1.058,3.211.46,1.394.917,2.788c.149.451.291.9.446,1.352l.008.02a.76.76,0,0,0,1.466-.4c-.122-.37-.243-.739-.365-1.112q-.441-1.333-.879-2.666-.528-1.607-1.058-3.213-.46-1.394-.917-2.788c-.149-.451-.289-.9-.446-1.352l-.008-.02a.783.783,0,0,0-.732-.557H34.037a.76.76,0,0,0,0,1.519Z" fill="#fff"/>
+                                      <path id="Path_32660" data-name="Path 32660" d="M288.931,541.934q-.615,1.1-1.233,2.193c-.058.106-.119.21-.177.317a.767.767,0,0,0,.656,1.142h11.6c.534,0,1.071.01,1.608,0h.023a.76.76,0,0,0,0-1.519h-11.6c-.534,0-1.074-.015-1.608,0h-.023l.656,1.142q.615-1.1,1.233-2.193c.058-.106.119-.21.177-.316a.759.759,0,0,0-1.312-.765Z" transform="translate(-247.711 -429.41)" fill="#fff"/>
+                                    </g>
+                                </svg>
+                            </span>
+                            <span class="d-none d-xl-block ml-2 fs-14 fw-700 text-white cart-total-price">{{ currency_format($cartTotal ?? 0) }}</span>
+                            <span class="d-none d-xl-block ml-2 text-white fs-12">
+                                (<span class="cart-count">{{ $cartCount ?? 0 }}</span>)
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Sidebar -->
+            <div class="hover-category-menu position-absolute w-100 top-100 left-0 right-0 z-3 d-none" id="click-category-menu">
+                <div class="container">
+                    <div class="d-flex position-relative">
+                        <div class="position-static">
+                            <div class="aiz-category-menu bg-white rounded-0 border-top" id="category-sidebar" style="width:270px;">
+                                <ul class="list-unstyled categories mb-0 text-left">
+                                    @php
+                                        $parents = \App\Models\Category::has('children')
+                                            ->with(['children' => function ($q) {
+                                                $q->withCount('products')->orderBy('name');
+                                            }])
+                                            ->withCount('products')
+                                            ->orderBy('name')
+                                            ->get();
+
+                                        $leafWithProducts = \App\Models\Category::doesntHave('children')
+                                            ->whereHas('products')
+                                            ->withCount('products')
+                                            ->orderBy('name')
+                                            ->get();
+
+                                        $topCategories = $parents->concat($leafWithProducts);
+                                        $catColors = ['#e62e04','#2196F3','#4CAF50','#FF9800','#9C27B0','#00BCD4','#E91E63','#607D8B','#795548','#3F51B5','#009688','#FF5722','#673AB7','#03A9F4','#8BC34A','#FFC107','#F44336','#00ACC1','#5C6BC0','#26A69A'];
+                                    @endphp
+                                    @foreach($topCategories as $index => $category)
+                                        @php
+                                            $catColor = $catColors[$index % count($catColors)];
+                                            $hasChildren = $category->children->count() > 0;
+                                            $totalProducts = $category->total_products_count;
+                                        @endphp
+                                         <li class="category-nav-element border border-top-0 {{ $hasChildren ? 'has-children' : '' }}" data-id="{{ $category->id }}">
+                                            <a href="{{ route('category', $category->slug) }}" class="text-truncate text-dark px-4 fs-14 d-block category-nav-link">
+                                                @if($category->image)
+                                                    {!! imgTag('assets/images/categories/' . $category->image, $category->name, 'mr-2 opacity-60', 'width="16"') !!}
+                                                    <span class="mr-2 rounded-circle d-none align-items-center justify-content-center text-white fw-700 cat-color-badge" style="--cat-color: {{ $catColor }};">{{ strtoupper(substr($category->name, 0, 1)) }}</span>
+                                                @else
+                                                    <span class="mr-2 rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-700 cat-color-badge" style="--cat-color: {{ $catColor }};">{{ strtoupper(substr($category->name, 0, 1)) }}</span>
+                                                @endif
+                                                <span class="cat-name has-transition">{{ $category->name }}</span>
+                                                <span class="ml-1 text-secondary fs-12">({{ $totalProducts }})</span>
+                                                @if($hasChildren)
+                                                    <span class="ml-auto"><i class="las la-angle-right text-secondary"></i></span>
+                                                @endif
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+
+                                {{-- Sub-category flyout panels (outside the scrollable ul) --}}
+                                @foreach($parents as $category)
+                                    <div class="sub-cat-panel sub-cat-menu c-scrollbar-light border p-4 shadow-none bg-white d-none" data-subcat-of="{{ $category->id }}">
+                                        <h6 class="fw-700 fs-14 mb-3 text-primary border-bottom pb-2">{{ $category->name }}</h6>
+                                        <ul class="list-unstyled mb-0">
+                                            @foreach($category->children as $child)
+                                                <li class="mb-2">
+                                                    <a href="{{ route('category', $child->slug) }}" class="text-dark fs-13 d-block py-1 sub-cat-link">
+                                                        {{ $child->name }}
+                                                        <span class="ml-1 text-secondary fs-12">({{ $child->products_count ?? 0 }})</span>
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                        <a href="{{ route('category', $category->slug) }}" class="d-block mt-3 fs-13 fw-700 text-primary">
+                                            View All {{ $category->name }} <i class="las la-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="overlay"></div>
+    <div class="mobile-menu">
+        <div class="mobile-menu-top">
+            <a href="{{ route('home') }}">
+                {!! imgTag('assets/images/' . (\App\Models\Setting::get('mobile_logo') ?? 'BwSkuSZ7ZYGWPc4Zk3CfeFzcn49dHpx3143n4WKS.png'), 'logo') !!}
+            </a>
+            <svg class="close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6L18 18" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </div>
+        <div class="mobile-menu-widget">
+            <div class="mobile-menu-account px-3 py-2 border-bottom mb-2">
+                @if(Auth::check())
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-user fw-700"></i>
+                        <span class="fw-700 fs-14">{{ Auth::user()->name }}</span>
+                    </div>
+                    <div class="mt-2 d-flex flex-wrap gap-2">
+                        <a href="{{ route('user.dashboard') }}" class="fs-13 text-primary">Dashboard</a>
+                        @if(!in_array(Auth::user()->role, ['admin', 'master_admin', 'staff']))
+                            <a href="{{ route('user.orders') }}" class="fs-13 text-primary ms-2">Orders</a>
+                        @endif
+                    </div>
+                    <form method="POST" action="{{ route('logout') }}" class="mt-2">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                    </form>
+                @else
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('login') }}" class="btn btn-sm btn-primary flex-grow-1">Login</a>
+                        <a href="{{ route('register') }}" class="btn btn-sm btn-outline-primary flex-grow-1">Registration</a>
+                    </div>
+                @endif
+            </div>
+            <ul class="mobile-nav-menu">
+                @php $mobileMenu = json_decode(\App\Models\Setting::get('nav_menu', '[]'), true); @endphp
+                @foreach($mobileMenu as $item)
+                    <li><a href="{{ url($item['url'] ?? '#') }}">{{ $item['label'] ?? '' }}</a></li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+
+    <!-- search bar -->
+    <div class="search-bar" id="searchBar">
+        <div class="container">
+            <div class="row">
+                <div class="col">
+                    <form class="search-form" action="{{ route('shop') }}" method="GET">
+                        <div class="input-group input__group">
+                            <input type="text" class="form-control form__control" name="search" placeholder="I am shopping for..." value="{{ request('search') }}">
+                            <div class="input-group-append">
+                                <span class="search-separator"></span>
+                                <button class="dropdown-toggle btn btn-secondary search-category-dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    All Categories
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item dropdown__item" href="{{ route('shop') }}">All Categories</a></li>
+                                    <li><a class="dropdown-item dropdown__item" href="{{ url('/category/Engine-Parts') }}">Engine Parts</a></li>
+                                    <li><a class="dropdown-item dropdown__item" href="{{ url('/category/Body-Exterior') }}">Body & Exterior</a></li>
+                                    <li><a class="dropdown-item dropdown__item" href="{{ url('/category/Interior-Parts') }}">Interior Parts</a></li>
+                                </ul>
+                            </div>
+                            <div class="input-group-append">
+                                <button class="btn btn-primary search-icn" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    @yield('content')
+
+    <!-- footer section -->
+    <footer class="gs-footer-section">
+        <div class="newslatter newslatter2">
+            <div class="container">
+                <div class="row newslatter-row">
+                    <div class="col-lg-7 col-md-6 col-12 newslatter-area">
+                        <div class="newslatter-content">
+                            <h2>Subscribe to our newsletter</h2>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 col-md-6 col-12 newslatter-area">
+                        <div class="newslatter-form">
+                            <form action="javascript:void(0);">
+                                @csrf
+                                <input class="news-latter-input" type="email" placeholder="Your Email" name="email" required>
+                                <button class="newsletter-btn" type="submit">Subscribe</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row footer-row gy-3">
+                <div class="col-lg-3 col-md-6 col-12 left-info">
+                    {!! imgTag('assets/images/' . (\App\Models\Setting::get('footer_logo') ?? '1730281141Whitepng.png'), 'logo', 'logo mb-3') !!}
+                    <a class="wow-replaced d-block mb-2 text-white" data-wow-delay=".1s" href="tel:{{ \App\Models\Setting::get('header_phone', '+1 (234) 567-8901') }}">
+                        <i class="fas fa-phone-alt me-2"></i> {{ \App\Models\Setting::get('header_phone', '00 000 000 000') }}
+                    </a>
+                    <a class="wow-replaced d-block mb-2 text-white" data-wow-delay=".2s" href="mailto:{{ \App\Models\Setting::get('header_email', 'admin@geniusocean.com') }}">
+                        <i class="fas fa-envelope me-2"></i> {{ \App\Models\Setting::get('header_email', 'admin@geniusocean.com') }}
+                    </a>
+                    <a class="wow-replaced d-block text-white" data-wow-delay=".3s" href="#">
+                        <i class="fas fa-map-marker-alt me-2"></i> {{ \App\Models\Setting::get('header_address', '3584 Hickory Heights Drive , USA') }}
+                    </a>
+                    <div class="social-links mt-3">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6 col-12">
+                    <h5 class="text-white mb-3">Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="{{ route('home') }}" class="text-secondary">Home</a></li>
+                        <li class="mb-2"><a href="{{ route('shop') }}" class="text-secondary">Shop</a></li>
+                        <li class="mb-2"><a href="{{ route('about') }}" class="text-secondary">About Us</a></li>
+                        <li class="mb-2"><a href="{{ route('contact') }}" class="text-secondary">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 col-12">
+                    <h5 class="text-white mb-3">Popular Categories</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="{{ url('/category/Engine-Parts') }}" class="text-secondary">Engine Parts</a></li>
+                        <li class="mb-2"><a href="{{ url('/category/Body-Exterior') }}" class="text-secondary">Body & Exterior</a></li>
+                        <li class="mb-2"><a href="{{ url('/category/Interior-Parts') }}" class="text-secondary">Interior Parts</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 col-md-6 col-12">
+                    <h5 class="text-white mb-3">Recent Posts</h5>
+                    <div class="recent-posts">
+                        <a href="#" class="recent-post d-flex text-white gap-2 mb-2">
+                            {!! imgTag('assets/images/blogs/1730868152organized-automotive-workshop-interior-minjpg.jpg', 'post', '', 'style="width: 50px; height: 50px; object-fit: cover;"') !!}
+                            <div>
+                                <h6 class="mb-0" style="font-size: 13px;">Top 10 Essential Auto Parts...</h6>
+                                <small class="text-secondary">Jan 02 - 2019</small>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="gs-footer-bottom mt-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center py-3">
+                        <p class="mb-0 text-secondary">{!! str_replace(':year', current_year(), \App\Models\Setting::get('footer_copyright', 'COPYRIGHT &copy; :year. All Rights Reserved By STautoparts')) !!}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Essential Js Files -->
+    <script src="https://unirateapi.com/lander/static/js/unirate-widgets.js" async></script>
+    <script src="{{ asset('assets/front/js/jquery.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs5.min.js"></script>
+    <script src="{{ asset('assets/front/js/slick.js') }}"></script>
+    <script src="{{ asset('assets/front/js/jquery-ui.js') }}"></script>
+    <script src="{{ asset('assets/front/js/nice-select.js') }}"></script>
+    <script src="{{ asset('assets/front/js/wow.js') }}"></script>
+    <script src="{{ asset('assets/front/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('assets/front/js/toastr.min.js') }}"></script>
+    <script src="{{ asset('assets/front/js/script.js') }}?v={{ filemtime(public_path('assets/front/js/script.js')) }}"></script>
+
+    <script src="{{ asset('assets/front/js/myscript.js') }}?v={{ filemtime(public_path('assets/front/js/myscript.js')) }}"></script>
+
+<script>
+    $(document).ready(function() {
+        $('textarea.texteditor, textarea#editor').summernote({
+            placeholder: 'WYSIWYG rich text editor',
+            tabsize: 2,
+            height: 250
+        });
+    });
+</script>
+
+    <!-- Session Flash Notifications (must remain inline for Blade PHP) -->
+    <script>
+    var PLACEHOLDER_IMG = '{{ asset("assets/images/placeholder.png") }}';
+    </script>
+<script>
+    @if(session('success'))
+        toastr.success("{{ session('success') }}");
+    @endif
+    @if(session('error'))
+        toastr.error("{{ session('error') }}");
+    @endif
+
+    // Mobile menu toggle
+    document.querySelector('.mobile-menu-btn')?.addEventListener('click', function() {
+        document.querySelector('.mobile-menu')?.classList.toggle('active');
+        document.querySelector('.overlay')?.classList.toggle('active');
+    });
+    // Mobile search toggle
+    document.querySelectorAll('[data-target=".front-header-search"]').forEach(function(el) {
+        if (!el.closest('.front-header-search')) {
+            el.addEventListener('click', function() {
+                document.querySelector('.front-header-search')?.classList.toggle('show');
+            });
+        }
+    });
+    // Close button
+    document.querySelector('.mobile-menu .close')?.addEventListener('click', function() {
+        document.querySelector('.mobile-menu')?.classList.remove('active');
+        document.querySelector('.overlay')?.classList.remove('active');
+    });
+    // Overlay click to close
+    document.querySelector('.overlay')?.addEventListener('click', function() {
+        document.querySelector('.mobile-menu')?.classList.remove('active');
+        this.classList.remove('active');
+    });
+</script>
+
+    @yield('scripts')
+</body>
+</html>

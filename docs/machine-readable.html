@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Steve Auto Parts — Machine-readable Documentation</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#f7fafc;color:#0f172a;margin:0;padding:24px}
+    pre{background:#0b1220;color:#e6eef8;padding:16px;border-radius:8px;overflow:auto}
+    code{background:#eef2ff;padding:2px 6px;border-radius:6px}
+    h1,h2{color:#0f766e}
+    .section{background:#fff;border:1px solid #e6eef8;padding:20px;border-radius:12px;margin-bottom:18px}
+    table{width:100%;border-collapse:collapse}
+    td,th{padding:8px;border:1px solid #e6eef8;text-align:left}
+  </style>
+</head>
+<body>
+  <h1>Steve Auto Parts — Machine-readable Documentation</h1>
+  <p>Purpose: This file contains precise, machine-friendly information (dependencies, environment variables, file manifest, DB schema, routes summary, and examples) that an AI or automation tool can use to reproduce the website implementation as closely as possible.</p>
+
+  <div class="section">
+    <h2>Repository snapshot — key manifests</h2>
+    <h3>composer.json</h3>
+    <pre><code>{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The skeleton application for the Laravel framework.",
+    "require": {
+        "php": "^8.3",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "laravel/framework": "^13.8",
+        "laravel/tinker": "^3.0",
+        "stevestore/laravel-page-builder": "^1.0"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel/pail": "^1.2.5",
+        "laravel/pao": "^1.0.6",
+        "laravel/pint": "^1.27",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^12.5.12"
+    }
+}
+</code></pre>
+
+    <h3>package.json (dev tooling)</h3>
+    <pre><code>{
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "chokidar": "^5.0.0",
+    "concurrently": "^9.0.1",
+    "laravel-vite-plugin": "^3.1",
+    "tailwindcss": "^4.0.0",
+    "vite": "^8.0.0"
+  }
+}
+</code></pre>
+
+    <h3>.env.example (environment variables)</h3>
+    <pre><code>APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost
+
+DB_CONNECTION=sqlite
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=laravel
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+SESSION_DRIVER=database
+QUEUE_CONNECTION=database
+FILESYSTEM_DISK=local
+
+MAIL_MAILER=log
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>File manifest</h2>
+    <p>These are the important models, controllers, and view files an AI will need to recreate behavior and UI. Recreate the same file names and paths (content matters):</p>
+
+    <h3>Models (app/Models)</h3>
+    <pre><code>
+<?php
+// List (file names):
+FileRevision, HomePageSection, Category, Vehicle, FollowedSeller, Product, Image, Blog,
+Staff, Faq, Brand, Page, Coupon, BlogCategory, Admin, OrderItem, Compare, Address,
+Revision, User, Contact, Notification, Setting, Order, Wishlist
+
+(Exact files: app/Models/*.php)
+</code></pre>
+
+    <h3>Controllers (app/Http/Controllers)</h3>
+    <pre><code>
+AdminAuthController, CartController, Controller, DashboardController, CurrencyController,
+StaffController, ShopController, UserController, BlogController, ProfileController,
+ContactController, Admin/PageController, Admin/StaffController, NewsletterController,
+Admin/BlogController, ReviewController, Admin/FaqController, Admin/HomePageController,
+CompareController, Admin/BrandController, AuthController, Admin/OrderController,
+HomeController, Admin/AdminDashboardController, ProductController, Admin/ContactController,
+WishlistController, AddressController, Admin/BlogCategoryController, Admin/ImageController,
+Admin/CouponController, Admin/AdminController, UserManagementController, TestController,
+BrandController, OrderController, CheckoutController, CategoryController
+
+(Exact files: app/Http/Controllers/**/*.php)
+</code></pre>
+
+    <h3>Views (resources/views — examples)</h3>
+    <pre><code>
+home.blade.php, shop.blade.php, product.blade.php, cart.blade.php,
+checkout.blade.php, payment.blade.php, order-confirmed.blade.php,
+resources/views/admin/* (products, brands, pages, home-page, images, users, settings),
+resources/views/partials/* (product-card, mini-cart, nav-menu, footer-columns)
+</code></pre>
+
+  </div>
+
+  <div class="section">
+    <h2>Database schema & seeders</h2>
+    <p>Important table: <code>home_page_sections</code> (Home Page admin manager). Use this schema exactly:</p>
+    <pre><code>CREATE TABLE home_page_sections (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    section_name VARCHAR(255) UNIQUE NOT NULL,
+    title TEXT,
+    subtitle TEXT,
+    description TEXT,
+    image VARCHAR(255),
+    button_text VARCHAR(100),
+    button_url VARCHAR(255),
+    `order` INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    extra_data JSON,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+</code></pre>
+    <p>Seeders: database/seeders/HomePageSectionSeeder.php — creates hero, banner_1..banner_3, offers. Preserve order and defaults.</p>
+    <p>Other tables include standard ecommerce: products, categories, orders, order_items, users, addresses, coupons, pages, faqs, images, revisions, settings, etc. Use migrations in <code>database/migrations</code> for exact definitions.</p>
+  </div>
+
+  <div class="section">
+    <h2>Routes & HTTP contract</h2>
+    <p>Routes are defined in <code>routes/web.php</code>. Key routes (AI should implement same paths + expected behavior):</p>
+    <table>
+      <thead><tr><th>Path</th><th>Method</th><th>Controller@Method / Notes</th></tr></thead>
+      <tbody>
+        <tr><td>/</td><td>GET</td><td>HomeController@index — renders homepage with hero and banners from DB</td></tr>
+        <tr><td>/shop</td><td>GET</td><td>ShopController@index — product listing, filters, search suggestions</td></tr>
+        <tr><td>/product/{slug}</td><td>GET</td><td>ProductController@show — product detail and reviews</td></tr>
+        <tr><td>/cart</td><td>GET</td><td>CartController@index</td></tr>
+        <tr><td>/checkout</td><td>GET/POST</td><td>CartController@checkout / checkoutSubmit</td></tr>
+        <tr><td>/admin/*</td><td>GET/POST/PUT/DELETE</td><td>Admin panel routes grouped with auth + role middleware</td></tr>
+        <tr><td>/admin/home-page</td><td>GET</td><td>Admin\HomePageController@index — manage home sections</td></tr>
+      </tbody>
+    </table>
+
+    <p>Contract notes for forms and APIs:</p>
+    <ul>
+      <li>Image upload endpoints expect multipart/form-data, validate image types (jpg/png/gif/webp), max 5MB, store under public/assets/images/</li>
+      <li>Admin forms protected with CSRF and role middleware `role:master_admin,admin,staff`</li>
+      <li>Checkout requires authenticated user and uses `nocache` middleware on sensitive routes</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Assets, frontend, and build</h2>
+    <p>Frontend uses Vite + Tailwind. Important commands (reproduce exactly):</p>
+    <pre><code>npm install
+npm run dev         # development with HMR
+npm run build       # production build (vite)</code></pre>
+    <p>Built assets output into <code>public/build</code> (Vite default). Use <code>resources/js</code> and <code>resources/css</code> as sources and replicate Tailwind config and vite.config.js settings.</p>
+  </div>
+
+  <div class="section">
+    <h2>Background jobs, queues, and supervisor</h2>
+    <p>Queue connection: <code>database</code> (see .env.example). Typical production supervision:</p>
+    <pre><code>php artisan queue:work --sleep=3 --tries=3
+# Run under Supervisor with process auto-restart and logging
+</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>Testing & CI</h2>
+    <p>PHPUnit and Laravel test suite used. Commands:</p>
+    <pre><code>composer test
+vendor/bin/phpunit
+vendor/bin/pint  # style checks</code></pre>
+    <p>Ensure CI runs composer install, php artisan migrate --env=testing, and composer test.</p>
+  </div>
+
+  <div class="section">
+    <h2>Operational details & security</h2>
+    <ul>
+      <li>Set <code>APP_ENV=production</code> and <code>APP_DEBUG=false</code> in production.</li>
+      <li>Set correct permissions for <code>storage/</code> and <code>bootstrap/cache/</code>.</li>
+      <li>Use HTTPS and secure cookies.</li>
+      <li>Don't commit <code>.env</code> with secrets.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Repro steps for an AI or automation tool</h2>
+    <ol>
+      <li>Create PHP 8.3 project skeleton and install composer.json dependencies exactly.</li>
+      <li>Create Node environment and install devDependencies from package.json.</li>
+      <li>Create models with the same names and migrations matching the DB schema referenced above and migrations folder copy.</li>
+      <li>Implement controllers with the same public methods and routes as in <code>routes/web.php</code>. Respect middleware and guards.</li>
+      <li>Implement Blade views with the same file paths; use data contracts (controller -> view variables) similar to original controllers (e.g., <code>$heroSection</code>, <code>$bannerSections</code>, <code>$products</code>).</li>
+      <li>Implement admin panel with role-based access and image upload handling (5MB limit, stored at <code>public/assets/images/</code>). Ensure old images are removed on replace.</li>
+      <li>Seed default home page sections using HomePageSectionSeeder and run migrations/seeders to produce baseline demo content.</li>
+      <li>Build frontend assets with Vite; ensure Blade templates include the built assets (Vite manifest usage or @vite helper).
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>Attachments & sample data</h2>
+    <p>Important sample files present in repo:</p>
+    <ul>
+      <li><code>stautoparts.sql</code> — repo snapshot of DB (large file)</li>
+      <li><code>sample-products-import.csv</code> — header + example rows for CSV import (use same columns when re-creating product import feature)</li>
+      <li><code>HOME_PAGE_ADMIN_GUIDE.md</code> — detailed home page admin spec and schema (already included in repo)</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Notes for AI implementers</h2>
+    <ul>
+      <li>Preserve file and route names exactly to make verification straightforward (tests can then compare outputs/URLs).</li>
+      <li>Implement authentication, roles, and middleware before enabling admin routes so access matches expected behavior.</li>
+      <li>Replicate validation rules exactly (title length limits, image validation, etc.) — they are documented in HOME_PAGE_ADMIN_GUIDE.md.</li>
+      <li>For exact visual parity, reuse assets (images, CSS) from the repository. If unavailable, use placeholders but keep markup and CSS classes identical.</li>
+    </ul>
+  </div>
+
+  <footer style="margin-top:18px;color:#475569">Generated machine-readable documentation — use as a precise spec for reproducing the Steve Auto Parts website.</footer>
+</body>
+</html>

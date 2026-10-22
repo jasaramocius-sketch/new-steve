@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genius-Shop</title>
+    <!--Essential css files-->
+    <link rel="stylesheet" href="/assets/front/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/front/css/all.css">
+    <link rel="stylesheet" href="/assets/front/css/slick.css">
+    <link rel="stylesheet" href="/assets/front/css/nice-select.css">
+    <link rel="stylesheet" href="/assets/front/css/jquery-ui.css">
+    <link rel="stylesheet" href="/assets/front/css/animate.css">
+    <link rel="stylesheet" href="/assets/front/css/all.css">
+    <link rel="stylesheet" href="/assets/front/css/toastr.min.css">
+    <link rel="stylesheet" href="/assets/front/css/datatables.min.css">
+    <link rel="stylesheet" href="/assets/front/css/style.css">
+    <link rel="stylesheet" href="/assets/front/css/custom.css">
+    <link rel="icon" href="/assets/images/1730880696Fabpng.png">
+    <meta property="og:title" content="Genius-Shop" />
+    <meta property="og:image" content="/assets/images/1730281140Blackpng.png" />
+    <meta name="keywords" content="Genius,Ocean,Sea,Etc,SeaGenius">
+    <meta name="author" content="GeniusOcean">
+    <title>Genius-Shop</title>
+
+    <link
+        href="https://fonts.googleapis.com/css?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+        rel="stylesheet">
+
+<link rel="stylesheet"
+    href="/assets/front/css/styles.php?color=424a4d&amp;header_color=light">
+    <link rel="stylesheet" id="colorr"
+        href="/assets/front/css/font.php?font_familly=Roboto">
+
+    <script>
+        "use strict";
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+        gtag('config', 'UA-137437974-1');
+    </script>
+    <script>
+        "use strict";
+
+        ! function(f, b, e, v, n, t, s) {
+            if (f.fbq) return;
+            n = f.fbq = function() {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n;
+            n.push = n;
+            n.loaded = !0;
+            n.version = '2.0';
+            n.queue = [];
+            t = b.createElement(e);
+            t.async = !0;
+            t.src = v;
+            s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', 'UA-137437974-1');
+        fbq('track', 'PageView');
+    </script>
+    <noscript>
+        <img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=UA-137437974-1&ev=PageView&noscript=1" />
+    </noscript>
+    
+</head>
+
+<body>
+
+        <!-- header area -->
+    <header class="header-section position-relative z-2 header-stikcy">
+    <div class="info-bar d-nonee d-md-blockk">
+        <div class="container custom-containerr">
+            <div class="info-row d-flex">
+                <div class="info-left">
+                    <ul class="wows align-items-center">
+                        <li><a href="tel:+1(234)567-8901">
+                                Contact & Support: 00 000 000 000</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="info-right">
+                    <ul class="d-flex wows align-items-center">
+
+                                                    <li class="d-none d-lg-block">
+                                <a href="/user/vendor-login" class="info-bar-btn">
+                                    Vendor Login
+                                </a>
+                            </li>
+                        
+                                                    <li class="d-none d-lg-block"><a href="/rider/login" class="info-bar-btn">
+                                    Rider Login                                </a>
+                            </li>
+                        
+
+
+                        <li class="d-none d-md-inline-block">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="2" height="21" viewBox="0 0 2 21"
+                                fill="none">
+                                <path d="M1 0.5V20.5" stroke="white" stroke-opacity="0.8" />
+                            </svg>
+                        </li>
+
+                        <li class="d-flex gap-2 align-items-center">
+                            <svg  xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21"
+                                fill="none">
+                                <path
+                                    d="M9.99935 2.16669C12.4993 3.83335 13.2683 7.41005 13.3327 10.5C13.2683 13.59 12.4994 17.1667 9.99935 18.8334M9.99935 2.16669C7.49935 3.83335 6.73039 7.41005 6.66602 10.5C6.73039 13.59 7.49935 17.1667 9.99935 18.8334M9.99935 2.16669C5.39698 2.16669 1.66602 5.89765 1.66602 10.5M9.99935 2.16669C14.6017 2.16669 18.3327 5.89765 18.3327 10.5M9.99935 18.8334C14.6017 18.8334 18.3327 15.1024 18.3327 10.5M9.99935 18.8334C5.39698 18.8334 1.66602 15.1024 1.66602 10.5M18.3327 10.5C16.666 13 13.0893 13.769 9.99935 13.8334C6.90938 13.769 3.33268 13 1.66602 10.5M18.3327 10.5C16.666 8.00002 13.0893 7.23106 9.99935 7.16669C6.90938 7.23106 3.33268 8.00002 1.66602 10.5"
+                                    stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+
+
+
+
+                            <div class="dropdown">
+                                <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    English                                </button>
+                                <ul class="dropdown-menu">
+                                                                            <li>
+                                            <a class="dropdown-item dropdown__item active"
+                                                href="/language/1">English</a>
+                                        </li>
+                                                                            <li>
+                                            <a class="dropdown-item dropdown__item "
+                                                href="/language/4">Hindi</a>
+                                        </li>
+                                                                    </ul>
+                            </div>
+                        </li>
+
+
+                        <li >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="2" height="21" viewBox="0 0 2 21"
+                                fill="none">
+                                <path d="M1 0.5V20.5" stroke="white" stroke-opacity="0.8" />
+                            </svg>
+                        </li>
+
+                        
+
+                            <li class="d-flex gap-2 align-items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="21"
+                                    viewBox="0 0 20 21" fill="none">
+                                    <path
+                                        d="M7.08268 12.7222C7.08268 13.7961 7.95324 14.6667 9.02713 14.6667H10.8327C11.9833 14.6667 12.916 13.7339 12.916 12.5834C12.916 11.4328 11.9833 10.5 10.8327 10.5H9.16602C8.01542 10.5 7.08268 9.56728 7.08268 8.41669C7.08268 7.26609 8.01542 6.33335 9.16602 6.33335H10.9716C12.0455 6.33335 12.916 7.20391 12.916 8.2778M9.99935 5.08335V6.33335M9.99935 14.6667V15.9167M18.3327 10.5C18.3327 15.1024 14.6017 18.8334 9.99935 18.8334C5.39698 18.8334 1.66602 15.1024 1.66602 10.5C1.66602 5.89765 5.39698 2.16669 9.99935 2.16669C14.6017 2.16669 18.3327 5.89765 18.3327 10.5Z"
+                                        stroke="white" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+
+
+
+                                <div class="dropdown">
+                                    <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        USD
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                                                                    <li>
+
+                                                <a class="dropdown-item dropdown__item active"
+                                                    href="/currency/1">USD</a>
+                                            </li>
+                                                                                    <li>
+
+                                                <a class="dropdown-item dropdown__item "
+                                                    href="/currency/4">BDT</a>
+                                            </li>
+                                                                                    <li>
+
+                                                <a class="dropdown-item dropdown__item "
+                                                    href="/currency/6">EUR</a>
+                                            </li>
+                                                                                    <li>
+
+                                                <a class="dropdown-item dropdown__item "
+                                                    href="/currency/8">INR</a>
+                                            </li>
+                                                                                    <li>
+
+                                                <a class="dropdown-item dropdown__item "
+                                                    href="/currency/9">NGN</a>
+                                            </li>
+                                                                                    <li>
+
+                                                <a class="dropdown-item dropdown__item "
+                                                    href="/currency/10">BRL</a>
+                                            </li>
+                                        
+                                    </ul>
+                                </div>
+                            </li>
+                                                <li class="d-none d-md-inline-block">
+
+                            <svg xmlns="http://www.w3.org/2000/svg" width="2" height="21" viewBox="0 0 2 21"
+                                fill="none">
+                                <path d="M1 0.5V20.5" stroke="white" stroke-opacity="0.8" />
+                            </svg>
+                        </li>
+
+                        <li class="d-none  d-md-flex gap-2 align-items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21"
+                                fill="none">
+                                <path
+                                    d="M9.99955 13C7.35782 13 5.00855 14.2755 3.51288 16.255C3.19097 16.681 3.03002 16.894 3.03528 17.1819C3.03935 17.4043 3.17902 17.6849 3.35402 17.8222C3.58054 18 3.89444 18 4.52224 18H15.4769C16.1047 18 16.4186 18 16.6451 17.8222C16.8201 17.6849 16.9598 17.4043 16.9638 17.1819C16.9691 16.894 16.8081 16.681 16.4862 16.255C14.9906 14.2755 12.6413 13 9.99955 13Z"
+                                    stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <path
+                                    d="M9.99955 10.5C12.0706 10.5 13.7496 8.82107 13.7496 6.75C13.7496 4.67893 12.0706 3 9.99955 3C7.92848 3 6.24955 4.67893 6.24955 6.75C6.24955 8.82107 7.92848 10.5 9.99955 10.5Z"
+                                    stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+
+                                                            <a href="/user/login">My Account</a>
+                            
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="header-top">
+        <div class="container custom-containerr">
+            <div class="create-navbar d-flex">
+
+                <div class="nav-left">
+                    <button type="button" class="header-toggle mobile-menu-toggle d-flex d-xl-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none">
+                            <path d="M3 12H21M3 6H21M3 18H15" stroke="#1F0300" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+
+
+                    <a class="header-logo-wrapper" href="/">
+                        <img class="logo" src="/assets/images/1730281140Blackpng.png" alt="logo">
+                    </a>
+                </div>
+                <div class="nav-center">
+                    <ul class="d-flex align-items-center nav-menus">
+                        <li class=""><a href="/"
+                                class="nav-link ">Home</a>
+                        </li>
+                        <li class="has-megamenu ">
+                            <a href="/category">
+                                Products                            </a>
+                            <span class="has-submenu-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M18.7098 8.20986C18.6169 8.11613 18.5063 8.04174 18.3844 7.99097C18.2625 7.9402 18.1318 7.91406 17.9998 7.91406C17.8678 7.91406 17.7371 7.9402 17.6152 7.99097C17.4934 8.04174 17.3828 8.11613 17.2898 8.20986L12.7098 12.7899C12.6169 12.8836 12.5063 12.958 12.3844 13.0088C12.2625 13.0595 12.1318 13.0857 11.9998 13.0857C11.8678 13.0857 11.7371 13.0595 11.6152 13.0088C11.4934 12.958 11.3828 12.8836 11.2898 12.7899L6.70982 8.20986C6.61685 8.11613 6.50625 8.04174 6.38439 7.99097C6.26253 7.9402 6.13183 7.91406 5.99982 7.91406C5.8678 7.91406 5.7371 7.9402 5.61524 7.99097C5.49338 8.04174 5.38278 8.11613 5.28982 8.20986C5.10356 8.39722 4.99902 8.65067 4.99902 8.91486C4.99902 9.17905 5.10356 9.4325 5.28982 9.61986L9.87982 14.2099C10.4423 14.7717 11.2048 15.0872 11.9998 15.0872C12.7948 15.0872 13.5573 14.7717 14.1198 14.2099L18.7098 9.61986C18.8961 9.4325 19.0006 9.17905 19.0006 8.91486C19.0006 8.65067 18.8961 8.39722 18.7098 8.20986Z"
+                                        fill="#180207" />
+                                </svg>
+                            </span>
+
+
+
+                            <div class="megamenu cat-megamenu">
+                                <div class="row w-100">
+                                                                            <div class="col-lg-3">
+                                            <div class="single-menu mt-30">
+                                                <h5><a
+                                                        href="/category/Engine-Parts">Engine Parts</a>
+                                                </h5>
+                                                                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Engine-Parts/Air-Intake-Systems">Air Intake Systems</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Engine-Parts/Fuel-Systems">Fuel Systems</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Engine-Parts/Cooling-Systems">Cooling Systems</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Engine-Parts/Exhaust-Systems">Exhaust Systems</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                                                                </div>
+                                        </div>
+                                                                            <div class="col-lg-3">
+                                            <div class="single-menu mt-30">
+                                                <h5><a
+                                                        href="/category/Body-Exterior">Body &amp; Exterior</a>
+                                                </h5>
+                                                                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Body-Exterior/Body-Parts">Body Parts</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Body-Exterior/Mirrors-Glass">Mirrors &amp; Glass</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Body-Exterior/Accessories">Accessories</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                                                                </div>
+                                        </div>
+                                                                            <div class="col-lg-3">
+                                            <div class="single-menu mt-30">
+                                                <h5><a
+                                                        href="/category/Interior-Parts">Interior Parts</a>
+                                                </h5>
+                                                                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Interior-Parts/Tires">Tires</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Interior-Parts/Wheels-Rims">Wheels &amp; Rims</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Interior-Parts/Tire-Accessories">Tire Accessories</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                                                                </div>
+                                        </div>
+                                                                            <div class="col-lg-3">
+                                            <div class="single-menu mt-30">
+                                                <h5><a
+                                                        href="/category/Electrical-Lighting">Electrical &amp; Lighting</a>
+                                                </h5>
+                                                                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Electrical-Lighting/Lighting-Lamps">Lighting &amp; Lamps</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Electrical-Lighting/Ignition-System">Ignition System</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Electrical-Lighting/Batteries-Cables">Batteries &amp; Cables</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                                                                </div>
+                                        </div>
+                                                                            <div class="col-lg-3">
+                                            <div class="single-menu mt-30">
+                                                <h5><a
+                                                        href="/category/Brakes-Brake-Parts">Brakes &amp; Brake Parts</a>
+                                                </h5>
+                                                                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Brakes-Brake-Parts/Brake-Pads-Shoes">Brake Pads &amp; Shoes</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Brakes-Brake-Parts/Rotors-Drums">Rotors &amp; Drums</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Brakes-Brake-Parts/Brake-Lines-Hoses">Brake Lines &amp; Hoses</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                                                                </div>
+                                        </div>
+                                                                            <div class="col-lg-3">
+                                            <div class="single-menu mt-30">
+                                                <h5><a
+                                                        href="/category/Transmission-Drivetrain">Transmission &amp; Drivetrain</a>
+                                                </h5>
+                                                                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Transmission-Drivetrain/Clutch-Parts">Clutch Parts</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Transmission-Drivetrain/Differentials">Differentials</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Transmission-Drivetrain/Transmission-Parts">Transmission Parts</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Transmission-Drivetrain/Suspension-Kits">Suspension Kits</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                                                                </div>
+                                        </div>
+                                                                            <div class="col-lg-3">
+                                            <div class="single-menu mt-30">
+                                                <h5><a
+                                                        href="/category/Suspension-Steering">Suspension &amp; Steering</a>
+                                                </h5>
+                                                                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Suspension-Steering/Steering-Components">Steering Components</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                            <ul>
+                                                            <li><a
+                                                                    href="/category/Suspension-Steering/Shocks-Struts">Shocks &amp; Struts</a>
+                                                            </li>
+                                                        </ul>
+                                                                                                                                                </div>
+                                        </div>
+                                                                    </div>
+                            </div>
+                        </li>
+
+
+                        <li class="has-submenu">
+                            <a href="javascript:void(0)">
+                                Pages                            </a>
+                            <span class="has-submenu-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M18.7098 8.20986C18.6169 8.11613 18.5063 8.04174 18.3844 7.99097C18.2625 7.9402 18.1318 7.91406 17.9998 7.91406C17.8678 7.91406 17.7371 7.9402 17.6152 7.99097C17.4934 8.04174 17.3828 8.11613 17.2898 8.20986L12.7098 12.7899C12.6169 12.8836 12.5063 12.958 12.3844 13.0088C12.2625 13.0595 12.1318 13.0857 11.9998 13.0857C11.8678 13.0857 11.7371 13.0595 11.6152 13.0088C11.4934 12.958 11.3828 12.8836 11.2898 12.7899L6.70982 8.20986C6.61685 8.11613 6.50625 8.04174 6.38439 7.99097C6.26253 7.9402 6.13183 7.91406 5.99982 7.91406C5.8678 7.91406 5.7371 7.9402 5.61524 7.99097C5.49338 8.04174 5.38278 8.11613 5.28982 8.20986C5.10356 8.39722 4.99902 8.65067 4.99902 8.91486C4.99902 9.17905 5.10356 9.4325 5.28982 9.61986L9.87982 14.2099C10.4423 14.7717 11.2048 15.0872 11.9998 15.0872C12.7948 15.0872 13.5573 14.7717 14.1198 14.2099L18.7098 9.61986C18.8961 9.4325 19.0006 9.17905 19.0006 8.91486C19.0006 8.65067 18.8961 8.39722 18.7098 8.20986Z"
+                                        fill="#180207" />
+                                </svg>
+                            </span>
+                            <ul class="dropdown-menu">
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="/about">About Us</a>
+                                    </li>
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="/privacy">Privacy &amp; Policy</a>
+                                    </li>
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="/terms">Terms &amp; Condition</a>
+                                    </li>
+                                
+                            </ul>
+                        </li>
+                                                    <li class=""><a
+                                    href="/blog" class="nav-link">Blog</a>
+                                                </li>
+                        <li class=""><a
+                                href="/faq" class="nav-link">Faq</a>
+                        </li>
+                        <li class=""><a
+                                href="/contact" class="nav-link">Contact Us</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-right">
+                    <div class="icon-circle">
+                        <button id="searchIcon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                viewBox="0 0 24 24" fill="none">
+                                <path
+                                    d="M21 21L17.5001 17.5M20 11.5C20 16.1944 16.1944 20 11.5 20C6.80558 20 3 16.1944 3 11.5C3 6.80558 6.80558 3 11.5 3C16.1944 3 20 6.80558 20 11.5Z"
+                                    stroke="#1F0300" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </button>
+
+                    </div>
+
+                    <div class="icon-circle">
+                        <a href="/item/compare/view">
+                            <span class="cart-count" id="compare-count">
+                                0
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                viewBox="0 0 24 24" fill="none">
+                                <path
+                                    d="M18.1777 8C23.2737 8 23.2737 16 18.1777 16C13.0827 16 11.0447 8 5.43875 8C0.85375 8 0.85375 16 5.43875 16C11.0447 16 13.0828 8 18.1788 8H18.1777Z"
+                                    stroke="#1F0300" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="icon-circle">
+
+
+
+
+
+                                                    <a href="/user/login">
+                                <span class="cart-count" id="wishlist-count">
+                                    0
+                                </span>
+
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none">
+                                    <path
+                                        d="M16.1111 3C19.6333 3 22 6.3525 22 9.48C22 15.8138 12.1778 21 12 21C11.8222 21 2 15.8138 2 9.48C2 6.3525 4.36667 3 7.88889 3C9.91111 3 11.2333 4.02375 12 4.92375C12.7667 4.02375 14.0889 3 16.1111 3Z"
+                                        stroke="#1F0300" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </a>
+                        
+
+
+                    </div>
+                                        <div class="icon-circle">
+                        <a href="/carts">
+                            <span class="cart-count" id="cart-count">
+                                0
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                viewBox="0 0 24 24" fill="none">
+                                <path
+                                    d="M2 2H3.30616C3.55218 2 3.67519 2 3.77418 2.04524C3.86142 2.08511 3.93535 2.14922 3.98715 2.22995C4.04593 2.32154 4.06333 2.44332 4.09812 2.68686L4.57143 6M4.57143 6L5.62332 13.7314C5.75681 14.7125 5.82355 15.2031 6.0581 15.5723C6.26478 15.8977 6.56108 16.1564 6.91135 16.3174C7.30886 16.5 7.80394 16.5 8.79411 16.5H17.352C18.2945 16.5 18.7658 16.5 19.151 16.3304C19.4905 16.1809 19.7818 15.9398 19.9923 15.6342C20.2309 15.2876 20.3191 14.8247 20.4955 13.8988L21.8191 6.94969C21.8812 6.62381 21.9122 6.46087 21.8672 6.3335C21.8278 6.22177 21.7499 6.12768 21.6475 6.06802C21.5308 6 21.365 6 21.0332 6H4.57143ZM10 21C10 21.5523 9.55228 22 9 22C8.44772 22 8 21.5523 8 21C8 20.4477 8.44772 20 9 20C9.55228 20 10 20.4477 10 21ZM18 21C18 21.5523 17.5523 22 17 22C16.4477 22 16 21.5523 16 21C16 20.4477 16.4477 20 17 20C17.5523 20 18 20.4477 18 21Z"
+                                    stroke="#1F0300" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </a>
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</header>
+
+    <!-- if route is user panel then show vendor.mobile-header else show frontend.mobile_menu -->
+
+    
+     
+    <!-- mobile menu -->
+<div class="mobile-menu">
+    <div class="mobile-menu-top">
+        <img src="/assets/images/1730281141Whitepng.png" alt="">
+        <svg class="close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="white" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg>
+    </div>
+    <nav>
+        <div class="nav justify-content-between pt-24" id="nav-tab" role="tablist">
+            <button class="flex-grow-1 state-left-btn active active-tab-btn" id="main-menu-tab" data-bs-toggle="tab"
+                data-bs-target="#main-menu" type="button" role="tab" aria-controls="main-menu"
+                aria-selected="true">MAIN MENU</button>
+
+            <button class="flex-grow-1 state-right-btn active-tab-btn" id="categories-tab" data-bs-toggle="tab"
+                data-bs-target="#categories" type="button" role="tab" aria-controls="categories"
+                aria-selected="false">CATEGORIES</button>
+        </div>
+    </nav>
+
+    <div class="tab-content " id="nav-tabContent1">
+        <div class="tab-pane fade show active table-responsive tb-tb" id="main-menu" role="tabpanel"
+            aria-labelledby="main-menu-tab" style="color: white;">
+
+            <div class="mobile-menu-widget">
+                <div class="single-product-widget">
+                    <!-- <h5 class="widget-title">Product categories</h5> -->
+                    <div class="product-cat-widget">
+                        <ul class="accordion">
+                            <!-- main list -->
+                            <li><a href="/">Home</a></li>
+                            <li><a href="/category">Product</a></li>
+                            <li>
+                                <a href="#" data-bs-toggle="collapse" data-bs-target="#child_level_1"
+                                    aria-controls="child_level_1" aria-expanded="false" class="collapsed">
+                                    Pages                                </a>
+
+                                <ul id="child_level_1" class="accordion-collapse collapse ms-3">
+                                                                            <li>
+                                            <a href="/about">About Us</a>
+                                        </li>
+                                                                            <li>
+                                            <a href="/privacy">Privacy &amp; Policy</a>
+                                        </li>
+                                                                            <li>
+                                            <a href="/terms">Terms &amp; Condition</a>
+                                        </li>
+                                    
+                                </ul>
+                            </li>
+                            <li><a href="/blog">BLOG</a></li>
+                            <li><a href="/faq">FAQ</a></li>
+                            <li><a href="/contact">CONTACT</a></li>
+
+                        </ul>
+
+                        <div class="auth-actions-btn gap-4 d-flex flex-column">
+
+                            
+                                                            <a class="template-btn" href="/user/vendor-login">Vendor Login</a>
+                            
+                            
+                                                            <a class="template-btn" href="/rider/login">Rider Login</a>
+                            
+                            
+                                                            <a class="template-btn" href="/user/login">User Login</a>
+                            
+                        </div>
+
+
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="tab-content " id="nav-tabContent3">
+        <div class="tab-pane fade table-responsive tb-tb" id="categories" role="tabpanel"
+            aria-labelledby="categories-tab" style="color: white;">
+
+            <div class="mobile-menu-widget">
+                <div class="single-product-widget">
+                    <!-- <h5 class="widget-title">Product categories</h5> -->
+                    <div class="product-cat-widget">
+                        <ul class="accordion">
+                                                                                                <li>
+                                                                                <div class="d-flex justify-content-between align-items-lg-baseline">
+                                            <a href="/category/Engine-Parts"
+                                                class="">
+                                                Engine Parts
+                                            </a>
+
+                                            <button data-bs-toggle="collapse"
+                                                data-bs-target="#Engine-Parts_level_2"
+                                                aria-controls="Engine-Parts_level_2"
+                                                aria-expanded="false"
+                                                class="position-relative bottom-12 collapsed">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <i class="fa-solid fa-minus"></i>
+                                            </button>
+                                        </div>
+
+                                                                                                                                <ul id="Engine-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Engine-Parts/Air-Intake-Systems"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerAir-Intake-Systems_level_2_1"
+                                        aria-controls="innerAir-Intake-Systems_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Air Intake Systems
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerAir-Intake-Systems_level_2_1"
+                                                                aria-controls="innerAir-Intake-Systems_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerAir-Intake-Systems_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Air-Intake-Systems/Air-Filters"
+                                                                        class="">
+                                                                        Air Filters
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Air-Intake-Systems/Intake-Manifolds"
+                                                                        class="">
+                                                                        Intake Manifolds
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Air-Intake-Systems/Throttle-Bodies"
+                                                                        class="">
+                                                                        Throttle Bodies
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Engine-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Engine-Parts/Fuel-Systems"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerFuel-Systems_level_2_1"
+                                        aria-controls="innerFuel-Systems_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Fuel Systems
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerFuel-Systems_level_2_1"
+                                                                aria-controls="innerFuel-Systems_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerFuel-Systems_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Fuel-Systems/Fuel-Injectors"
+                                                                        class="">
+                                                                        Fuel Injectors
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Fuel-Systems/Fuel-Pumps"
+                                                                        class="">
+                                                                        Fuel Pumps
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Fuel-Systems/Carburetors"
+                                                                        class="">
+                                                                        Carburetors
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Engine-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Engine-Parts/Cooling-Systems"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerCooling-Systems_level_2_1"
+                                        aria-controls="innerCooling-Systems_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Cooling Systems
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerCooling-Systems_level_2_1"
+                                                                aria-controls="innerCooling-Systems_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerCooling-Systems_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Cooling-Systems/Radiators"
+                                                                        class="">
+                                                                        Radiators
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Cooling-Systems/Water-Pumps"
+                                                                        class="">
+                                                                        Water Pumps
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Engine-Parts/Cooling-Systems/Thermostats"
+                                                                        class="">
+                                                                        Thermostats
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Engine-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Engine-Parts/Exhaust-Systems"
+                                                            class=" "
+                                                            >
+                                                            Exhaust Systems
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                        
+                                    </li>
+                                                                                                                                <li>
+                                                                                <div class="d-flex justify-content-between align-items-lg-baseline">
+                                            <a href="/category/Body-Exterior"
+                                                class="">
+                                                Body &amp; Exterior
+                                            </a>
+
+                                            <button data-bs-toggle="collapse"
+                                                data-bs-target="#Body-Exterior_level_2"
+                                                aria-controls="Body-Exterior_level_2"
+                                                aria-expanded="false"
+                                                class="position-relative bottom-12 collapsed">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <i class="fa-solid fa-minus"></i>
+                                            </button>
+                                        </div>
+
+                                                                                                                                <ul id="Body-Exterior_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Body-Exterior/Body-Parts"
+                                                            class=" "
+                                                            >
+                                                            Body Parts
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Body-Exterior_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Body-Exterior/Mirrors-Glass"
+                                                            class=" "
+                                                            >
+                                                            Mirrors &amp; Glass
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Body-Exterior_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Body-Exterior/Accessories"
+                                                            class=" "
+                                                            >
+                                                            Accessories
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                        
+                                    </li>
+                                                                                                                                <li>
+                                                                                <div class="d-flex justify-content-between align-items-lg-baseline">
+                                            <a href="/category/Interior-Parts"
+                                                class="">
+                                                Interior Parts
+                                            </a>
+
+                                            <button data-bs-toggle="collapse"
+                                                data-bs-target="#Interior-Parts_level_2"
+                                                aria-controls="Interior-Parts_level_2"
+                                                aria-expanded="false"
+                                                class="position-relative bottom-12 collapsed">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <i class="fa-solid fa-minus"></i>
+                                            </button>
+                                        </div>
+
+                                                                                                                                <ul id="Interior-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Interior-Parts/Tires"
+                                                            class=" "
+                                                            >
+                                                            Tires
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Interior-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Interior-Parts/Wheels-Rims"
+                                                            class=" "
+                                                            >
+                                                            Wheels &amp; Rims
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Interior-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Interior-Parts/Tire-Accessories"
+                                                            class=" "
+                                                            >
+                                                            Tire Accessories
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                        
+                                    </li>
+                                                                                                                                <li>
+                                                                                <div class="d-flex justify-content-between align-items-lg-baseline">
+                                            <a href="/category/Electrical-Lighting"
+                                                class="">
+                                                Electrical &amp; Lighting
+                                            </a>
+
+                                            <button data-bs-toggle="collapse"
+                                                data-bs-target="#Electrical-Lighting_level_2"
+                                                aria-controls="Electrical-Lighting_level_2"
+                                                aria-expanded="false"
+                                                class="position-relative bottom-12 collapsed">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <i class="fa-solid fa-minus"></i>
+                                            </button>
+                                        </div>
+
+                                                                                                                                <ul id="Electrical-Lighting_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Electrical-Lighting/Lighting-Lamps"
+                                                            class=" "
+                                                            >
+                                                            Lighting &amp; Lamps
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Electrical-Lighting_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Electrical-Lighting/Ignition-System"
+                                                            class=" "
+                                                            >
+                                                            Ignition System
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Electrical-Lighting_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Electrical-Lighting/Batteries-Cables"
+                                                            class=" "
+                                                            >
+                                                            Batteries &amp; Cables
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                        
+                                    </li>
+                                                                                                                                <li>
+                                                                                <div class="d-flex justify-content-between align-items-lg-baseline">
+                                            <a href="/category/Brakes-Brake-Parts"
+                                                class="">
+                                                Brakes &amp; Brake Parts
+                                            </a>
+
+                                            <button data-bs-toggle="collapse"
+                                                data-bs-target="#Brakes-Brake-Parts_level_2"
+                                                aria-controls="Brakes-Brake-Parts_level_2"
+                                                aria-expanded="false"
+                                                class="position-relative bottom-12 collapsed">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <i class="fa-solid fa-minus"></i>
+                                            </button>
+                                        </div>
+
+                                                                                                                                <ul id="Brakes-Brake-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Brakes-Brake-Parts/Brake-Pads-Shoes"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerBrake-Pads-Shoes_level_2_1"
+                                        aria-controls="innerBrake-Pads-Shoes_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Brake Pads &amp; Shoes
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerBrake-Pads-Shoes_level_2_1"
+                                                                aria-controls="innerBrake-Pads-Shoes_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerBrake-Pads-Shoes_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Brakes-Brake-Parts/Brake-Pads-Shoes/Front-Brake-Pads"
+                                                                        class="">
+                                                                        Front Brake Pads
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Brakes-Brake-Parts/Brake-Pads-Shoes/Rear-Brake-Pads"
+                                                                        class="">
+                                                                        Rear Brake Pads
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Brakes-Brake-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Brakes-Brake-Parts/Rotors-Drums"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerRotors-Drums_level_2_1"
+                                        aria-controls="innerRotors-Drums_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Rotors &amp; Drums
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerRotors-Drums_level_2_1"
+                                                                aria-controls="innerRotors-Drums_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerRotors-Drums_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Brakes-Brake-Parts/Rotors-Drums/Brake-Rotors"
+                                                                        class="">
+                                                                        Brake Rotors
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Brakes-Brake-Parts/Rotors-Drums/Brake-Drums"
+                                                                        class="">
+                                                                        Brake Drums
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Brakes-Brake-Parts_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Brakes-Brake-Parts/Brake-Lines-Hoses"
+                                                            class=" "
+                                                            >
+                                                            Brake Lines &amp; Hoses
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                        
+                                    </li>
+                                                                                                                                <li>
+                                                                                <div class="d-flex justify-content-between align-items-lg-baseline">
+                                            <a href="/category/Transmission-Drivetrain"
+                                                class="">
+                                                Transmission &amp; Drivetrain
+                                            </a>
+
+                                            <button data-bs-toggle="collapse"
+                                                data-bs-target="#Transmission-Drivetrain_level_2"
+                                                aria-controls="Transmission-Drivetrain_level_2"
+                                                aria-expanded="false"
+                                                class="position-relative bottom-12 collapsed">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <i class="fa-solid fa-minus"></i>
+                                            </button>
+                                        </div>
+
+                                                                                                                                <ul id="Transmission-Drivetrain_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Transmission-Drivetrain/Clutch-Parts"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerClutch-Parts_level_2_1"
+                                        aria-controls="innerClutch-Parts_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Clutch Parts
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerClutch-Parts_level_2_1"
+                                                                aria-controls="innerClutch-Parts_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerClutch-Parts_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Transmission-Drivetrain/Clutch-Parts/Clutch-Discs"
+                                                                        class="">
+                                                                        Clutch Discs
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Transmission-Drivetrain/Clutch-Parts/Pressure-Plates"
+                                                                        class="">
+                                                                        Pressure Plates
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Transmission-Drivetrain/Clutch-Parts/Flywheels"
+                                                                        class="">
+                                                                        Flywheels
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Transmission-Drivetrain_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Transmission-Drivetrain/Differentials"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerDifferentials_level_2_1"
+                                        aria-controls="innerDifferentials_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Differentials
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerDifferentials_level_2_1"
+                                                                aria-controls="innerDifferentials_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerDifferentials_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Transmission-Drivetrain/Differentials/Differential-Covers"
+                                                                        class="">
+                                                                        Differential Covers
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Transmission-Drivetrain/Differentials/Gears"
+                                                                        class="">
+                                                                        Gears
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Transmission-Drivetrain_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Transmission-Drivetrain/Transmission-Parts"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerTransmission-Parts_level_2_1"
+                                        aria-controls="innerTransmission-Parts_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Transmission Parts
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerTransmission-Parts_level_2_1"
+                                                                aria-controls="innerTransmission-Parts_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerTransmission-Parts_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Transmission-Drivetrain/Transmission-Parts/Transmission-Filters"
+                                                                        class="">
+                                                                        Transmission Filters
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Transmission-Drivetrain/Transmission-Parts/Seals"
+                                                                        class="">
+                                                                        Seals
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Transmission-Drivetrain_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Transmission-Drivetrain/Suspension-Kits"
+                                                            class=" "
+                                                            >
+                                                            Suspension Kits
+                                                        </a>
+
+                                                                                                            </div>
+
+                                                                                                    </li>
+                                            </ul>
+                                        
+                                    </li>
+                                                                                                                                <li>
+                                                                                <div class="d-flex justify-content-between align-items-lg-baseline">
+                                            <a href="/category/Suspension-Steering"
+                                                class="">
+                                                Suspension &amp; Steering
+                                            </a>
+
+                                            <button data-bs-toggle="collapse"
+                                                data-bs-target="#Suspension-Steering_level_2"
+                                                aria-controls="Suspension-Steering_level_2"
+                                                aria-expanded="false"
+                                                class="position-relative bottom-12 collapsed">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <i class="fa-solid fa-minus"></i>
+                                            </button>
+                                        </div>
+
+                                                                                                                                <ul id="Suspension-Steering_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Suspension-Steering/Steering-Components"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerSteering-Components_level_2_1"
+                                        aria-controls="innerSteering-Components_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Steering Components
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerSteering-Components_level_2_1"
+                                                                aria-controls="innerSteering-Components_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerSteering-Components_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Suspension-Steering/Steering-Components/Steering-Racks"
+                                                                        class="">
+                                                                        Steering Racks
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Suspension-Steering/Steering-Components/Tie-Rod-Ends"
+                                                                        class="">
+                                                                        Tie Rod Ends
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Suspension-Steering/Steering-Components/Steering-Columns"
+                                                                        class="">
+                                                                        Steering Columns
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                                                                                                                <ul id="Suspension-Steering_level_2"
+                                                class="accordion-collapse collapse ms-3 ">
+                                                <li class="">
+                                                    <div class="d-flex justify-content-between align-items-lg-baseline">
+                                                        <a href="/category/Suspension-Steering/Shocks-Struts"
+                                                            class=" "
+                                                             data-bs-toggle="collapse"
+                                        data-bs-target="#innerShocks-Struts_level_2_1"
+                                        aria-controls="innerShocks-Struts_level_2_1"
+                                        aria-expanded="false"
+                                        class="collapsed" >
+                                                            Shocks &amp; Struts
+                                                        </a>
+
+                                                                                                                    <button data-bs-toggle="collapse"
+                                                                data-bs-target="#innerShocks-Struts_level_2_1"
+                                                                aria-controls="innerShocks-Struts_level_2_1"
+                                                                aria-expanded="false"
+                                                                class="position-relative bottom-12 collapsed">
+                                                                <i class="fa-solid fa-plus"></i>
+                                                                <i class="fa-solid fa-minus"></i>
+                                                            </button>
+                                                                                                            </div>
+
+                                                                                                            <ul id="innerShocks-Struts_level_2_1"
+                                                            class="accordion-collapse collapse ms-3 ">
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Suspension-Steering/Shocks-Struts/Shock-Absorbers"
+                                                                        class="">
+                                                                        Shock Absorbers
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Suspension-Steering/Shocks-Struts/Coil-Springs"
+                                                                        class="">
+                                                                        Coil Springs
+                                                                    </a>
+                                                                </li>
+                                                                                                                                                                                            <li>
+                                                                    <a href="/category/Suspension-Steering/Shocks-Struts/Mounts"
+                                                                        class="">
+                                                                        Mounts
+                                                                    </a>
+                                                                </li>
+                                                                                                                    </ul>
+                                                                                                    </li>
+                                            </ul>
+                                        
+                                    </li>
+                                                                                    </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- search bar -->
+<div class="search-bar" id="searchBar">
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <form class="search-form"
+                    action="/category">
+
+                                                            
+                    <div class="input-group input__group">
+                        <input type="text" class="form-control form__control" name="search"
+                            placeholder="Search Any Product Here">
+                        <div class="input-group-append">
+                            <span class="search-separator"></span>
+                            <button class="dropdown-toggle btn btn-secondary search-category-dropdown" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                All Categories                            </button>
+                            <ul class="dropdown-menu">
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="javascript:;">Engine Parts</a>
+                                    </li>
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="javascript:;">Body &amp; Exterior</a>
+                                    </li>
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="javascript:;">Interior Parts</a>
+                                    </li>
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="javascript:;">Electrical &amp; Lighting</a>
+                                    </li>
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="javascript:;">Brakes &amp; Brake Parts</a>
+                                    </li>
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="javascript:;">Transmission &amp; Drivetrain</a>
+                                    </li>
+                                                                    <li>
+                                        <a class="dropdown-item dropdown__item"
+                                            href="javascript:;">Suspension &amp; Steering</a>
+                                    </li>
+                                                            </ul>
+                        </div>
+
+
+                        <div class="input-group-append">
+                            <button class="btn btn-primary search-icn" type="submit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none">
+                                    <path
+                                        d="M21 21L17.5001 17.5M20 11.5C20 16.1944 16.1944 20 11.5 20C6.80558 20 3 16.1944 3 11.5C3 6.80558 6.80558 3 11.5 3C16.1944 3 20 6.80558 20 11.5Z"
+                                        stroke="white" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+        <!-- user panel mobile sidebar -->
+
+       
+
+    <div class="overlay"></div>
+
+    
+<!-- breadcrumb -->
+<div class="full-row bg-light py-5">
+    <div class="container">
+        <div class="row text-secondary">
+            <div class="col-sm-6">
+                <h3 class="mb-2 text-secondary">Error Page</h3>
+            </div>
+            <div class="col-sm-6">
+                <nav aria-label="breadcrumb" class="d-flex justify-content-sm-end align-items-center h-100">
+                    <ol class="breadcrumb mb-0 d-inline-flex bg-transparent p-0">
+                        <li class="breadcrumb-item"><a href="index.html"><i class="fas fa-home me-1"></i>Home</a></li>
+                        <li class="breadcrumb-item"><a href="#">Pages</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">404</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- breadcrumb -->
+
+        <!--==================== Error Section Start ====================-->
+        <div class="full-row" style="padding: 100px 0">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 col-lg-5">
+                        <div class="text-center">
+                            <img src="/assets/images/1566878455404.png" alt="">
+                            <h2 class="my-4">404 Page not found</h2>
+                            <p>The page you are looking for dosen’t exist or another error occourd go back to home or another source</p>
+                            <a class="btn btn-secondary mt-5" href="/">Return to home</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--==================== Error Section Form Start ====================-->
+
+
+
+
+
+
+    <!-- footer section -->
+    <footer class="gs-footer-section ">
+    <div class="newslatter newslatter2">
+        <div class="container">
+            <div class="row newslatter-row">
+                <div class="col-lg-7 col-md-6 col-12 newslatter-area">
+                    <div class="newslatter-content">
+                        <h2>SIGN UP TO NEWSLATTER</h2>
+                    </div>
+                </div>
+                <div class="col-lg-5 col-md-6 col-12 newslatter-area">
+                    <div class="newslatter-form">
+                        <form action="/subscriber/store" method="POST">
+                            <input type="hidden" name="_token" value="" autocomplete="off">                            <input class="news-latter-input" type="email" placeholder="Enter Your Email" name="email">
+                            <button class="newsletter-btn" type="submit">Send</button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+
+        <div class="row footer-row gy-3">
+            <div class="col-lg-3 col-md-6 col-12 left-info">
+                <img class="logo" src="/assets/images/1730281141Whitepng.png" alt="">
+                <a class="wow-replaced" data-wow-delay=".1s" href="tel:+11234567890">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"
+                        fill="none">
+                        <g clip-path="url(#clip0_241_7633)">
+                            <path
+                                d="M16 32C24.8366 32 32 24.8366 32 16C32 7.16344 24.8366 0 16 0C7.16344 0 0 7.16344 0 16C0 24.8366 7.16344 32 16 32Z"
+                                fill="white" />
+                            <path
+                                d="M24 19.308C22.274 19.308 20.628 18.932 19.11 18.19C18.872 18.076 18.596 18.058 18.344 18.144C18.092 18.232 17.886 18.416 17.77 18.654L17.05 20.144C14.89 18.904 13.098 17.11 11.856 14.95L13.348 14.23C13.588 14.114 13.77 13.908 13.858 13.656C13.944 13.404 13.928 13.128 13.812 12.89C13.068 11.374 12.692 9.728 12.692 8C12.692 7.448 12.244 7 11.692 7H8C7.448 7 7 7.448 7 8C7 17.374 14.626 25 24 25C24.552 25 25 24.552 25 24V20.308C25 19.756 24.552 19.308 24 19.308Z"
+                                fill="#030712" />
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_241_7633">
+                                <rect width="32" height="32" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+
+                    00 000 000 000</a>
+                <a class="wow-replaced" data-wow-delay=".2s" href="mailto:info@example.com">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"
+                        fill="none">
+                        <g clip-path="url(#clip0_241_7638)">
+                            <path
+                                d="M16 32C24.8366 32 32 24.8366 32 16C32 7.16344 24.8366 0 16 0C7.16344 0 0 7.16344 0 16C0 24.8366 7.16344 32 16 32Z"
+                                fill="white" />
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M25.5214 22.6744C25.6897 22.6742 25.8511 22.6072 25.9701 22.4882C26.0891 22.3692 26.156 22.2078 26.1562 22.0395V10.0484L16.4511 17.7553C16.3228 17.8573 16.1638 17.9129 15.9999 17.9129C15.8361 17.9129 15.677 17.8573 15.5488 17.7553L5.84375 10.0484V22.0395C5.84393 22.2079 5.91087 22.3692 6.02988 22.4882C6.14889 22.6073 6.31025 22.6742 6.47856 22.6744H25.5214ZM24.7327 9.32617L16 16.2609L7.26719 9.32617H24.7327Z"
+                                fill="#030712" />
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_241_7638">
+                                <rect width="32" height="32" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+                    admin@geniusocean.com</a>
+
+                <a class="wow-replaced" data-wow-delay=".3s" href="">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"
+                        fill="none">
+                        <g clip-path="url(#clip0_241_7643)">
+                            <path
+                                d="M16 32C24.8366 32 32 24.8366 32 16C32 7.16344 24.8366 0 16 0C7.16344 0 0 7.16344 0 16C0 24.8366 7.16344 32 16 32Z"
+                                fill="white" />
+                            <path
+                                d="M15.9998 7.25C14.1548 7.25 12.3853 7.98295 11.0806 9.28762C9.77592 10.5923 9.04297 12.3618 9.04297 14.2069C9.04297 16.7119 11.9992 21.0594 14.0573 23.7838C14.2847 24.0836 14.5783 24.3268 14.9153 24.4942C15.2523 24.6617 15.6235 24.7488 15.9998 24.7488C16.3761 24.7488 16.7473 24.6617 17.0844 24.4942C17.4214 24.3268 17.715 24.0836 17.9423 23.7838C19.9998 21.0625 22.9567 16.7119 22.9567 14.2069C22.9567 12.3618 22.2238 10.5923 20.9191 9.28762C19.6144 7.98295 17.8449 7.25 15.9998 7.25ZM15.9998 16.1737C15.5107 16.1737 15.0326 16.0287 14.6258 15.757C14.2191 15.4852 13.9022 15.099 13.715 14.647C13.5278 14.1951 13.4788 13.6979 13.5742 13.2181C13.6697 12.7384 13.9052 12.2977 14.2511 11.9519C14.597 11.606 15.0376 11.3704 15.5174 11.275C15.9971 11.1796 16.4944 11.2286 16.9463 11.4158C17.3982 11.6029 17.7844 11.9199 18.0562 12.3266C18.3279 12.7333 18.473 13.2115 18.473 13.7006C18.4728 14.3565 18.2122 14.9854 17.7484 15.4492C17.2847 15.913 16.6557 16.1736 15.9998 16.1737Z"
+                                fill="#030712" />
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_241_7643">
+                                <rect width="32" height="32" fill="white" />
+                            </clipPath>
+                        </defs>
+                    </svg>
+                    3584 Hickory Heights Drive , USA
+                </a>
+
+                <div class="social-links">
+                                            <a class="wow-replaced" data-wow-delay=".3s" href="">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                                            <a class="wow-replaced" data-wow-delay=".3s" href="">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                                            <a class="wow-replaced" data-wow-delay=".3s" href="">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                                            <a class="wow-replaced" data-wow-delay=".3s" href="">
+                            <i class="fab fa-google-plus-g"></i>
+                        </a>
+                                            <a class="wow-replaced" data-wow-delay=".3s" href="">
+                            <i class="fab fa-dribbble"></i>
+                        </a>
+                                    </div>
+
+
+            </div>
+            <div class="col-lg-3 col-md-6 col-12">
+                <h5 class="wow-replaced">Product Category</h5>
+                <ul class="footer-category-links">
+                                            <li class="wow-replaced" data-wow-delay=".1s"><a
+                                href="/category/Engine-Parts">Engine Parts</a>
+                        </li>
+                                            <li class="wow-replaced" data-wow-delay=".1s"><a
+                                href="/category/Body-Exterior">Body &amp; Exterior</a>
+                        </li>
+                                            <li class="wow-replaced" data-wow-delay=".1s"><a
+                                href="/category/Interior-Parts">Interior Parts</a>
+                        </li>
+                                            <li class="wow-replaced" data-wow-delay=".1s"><a
+                                href="/category/Electrical-Lighting">Electrical &amp; Lighting</a>
+                        </li>
+                                            <li class="wow-replaced" data-wow-delay=".1s"><a
+                                href="/category/Brakes-Brake-Parts">Brakes &amp; Brake Parts</a>
+                        </li>
+                                            <li class="wow-replaced" data-wow-delay=".1s"><a
+                                href="/category/Transmission-Drivetrain">Transmission &amp; Drivetrain</a>
+                        </li>
+                                    </ul>
+            </div>
+            <div class="col-lg-3 col-md-6 col-12">
+                <h5 class="wow-replaced">Customer Care</h5>
+                <ul class="footer-category-links">
+
+
+                                            <li class="wow-replaced" data-wow-delay=".1s">
+                            <a href="/">Home</a>
+                        </li>
+                                                                <li class="wow-replaced" data-wow-delay=".1s">
+                            <a href="/blog">Blog</a>
+                        </li>
+                                                                <li class="wow-replaced" data-wow-delay=".1s">
+                            <a href="/faq">Faq</a>
+                        </li>
+                                                                <li class="wow-replaced" data-wow-delay=".1s"> <a
+                                href="/about">About Us</a></li>
+                                            <li class="wow-replaced" data-wow-delay=".1s"> <a
+                                href="/privacy">Privacy &amp; Policy</a></li>
+                                            <li class="wow-replaced" data-wow-delay=".1s"> <a
+                                href="/terms">Terms &amp; Condition</a></li>
+                                                                <li class="wow-replaced" data-wow-delay=".1s">
+                            <a href="/contact">Contact Us</a>
+                        </li>
+                    
+
+                </ul>
+            </div>
+            <div class="col-lg-3 col-md-6 col-12">
+                <h5 class=" wow-replaced">Recent Post</h5>
+                <div class="gs-sm-recent-post-wrapper">
+                                                                <a href="/blog/a-beginners-guide-to-choosing-the-right-auto-parts-for-your-vehicleZVkE"
+                            class="recent-post d-flex wow-replaced" data-wow-delay=".1s">
+                            <img src="/assets/images/blogs/1730868130customer-speaks-with-consultant-auto-parts-store1-minjpg.jpg" alt="recent post">
+                            <div class="recent-post-content">
+                                <h6 class="post-title">
+                                    A Beginner’s Guide to Choosing the Right Auto ..
+                                </h6>
+                                <span class="post-date">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                        viewBox="0 0 18 18" fill="none">
+                                        <g clip-path="url(#clip0_274_25512)">
+                                            <path
+                                                d="M14.25 1.5H13.5V0.75C13.5 0.551088 13.421 0.360322 13.2803 0.21967C13.1397 0.0790176 12.9489 0 12.75 0C12.5511 0 12.3603 0.0790176 12.2197 0.21967C12.079 0.360322 12 0.551088 12 0.75V1.5H6V0.75C6 0.551088 5.92098 0.360322 5.78033 0.21967C5.63968 0.0790176 5.44891 0 5.25 0C5.05109 0 4.86032 0.0790176 4.71967 0.21967C4.57902 0.360322 4.5 0.551088 4.5 0.75V1.5H3.75C2.7558 1.50119 1.80267 1.89666 1.09966 2.59966C0.396661 3.30267 0.00119089 4.2558 0 5.25L0 14.25C0.00119089 15.2442 0.396661 16.1973 1.09966 16.9003C1.80267 17.6033 2.7558 17.9988 3.75 18H14.25C15.2442 17.9988 16.1973 17.6033 16.9003 16.9003C17.6033 16.1973 17.9988 15.2442 18 14.25V5.25C17.9988 4.2558 17.6033 3.30267 16.9003 2.59966C16.1973 1.89666 15.2442 1.50119 14.25 1.5ZM1.5 5.25C1.5 4.65326 1.73705 4.08097 2.15901 3.65901C2.58097 3.23705 3.15326 3 3.75 3H14.25C14.8467 3 15.419 3.23705 15.841 3.65901C16.2629 4.08097 16.5 4.65326 16.5 5.25V6H1.5V5.25ZM14.25 16.5H3.75C3.15326 16.5 2.58097 16.2629 2.15901 15.841C1.73705 15.419 1.5 14.8467 1.5 14.25V7.5H16.5V14.25C16.5 14.8467 16.2629 15.419 15.841 15.841C15.419 16.2629 14.8467 16.5 14.25 16.5Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M9 12.375C9.62132 12.375 10.125 11.8713 10.125 11.25C10.125 10.6287 9.62132 10.125 9 10.125C8.37868 10.125 7.875 10.6287 7.875 11.25C7.875 11.8713 8.37868 12.375 9 12.375Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M5.25 12.375C5.87132 12.375 6.375 11.8713 6.375 11.25C6.375 10.6287 5.87132 10.125 5.25 10.125C4.62868 10.125 4.125 10.6287 4.125 11.25C4.125 11.8713 4.62868 12.375 5.25 12.375Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M12.75 12.375C13.3713 12.375 13.875 11.8713 13.875 11.25C13.875 10.6287 13.3713 10.125 12.75 10.125C12.1287 10.125 11.625 10.6287 11.625 11.25C11.625 11.8713 12.1287 12.375 12.75 12.375Z"
+                                                fill="#BDBDBD" />
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip1_274_25512">
+                                                <rect width="18" height="18" fill="white" />
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
+                                    Jan 02 - 2019</span>
+                            </div>
+                        </a>
+                                            <a href="/blog/top-10-essential-auto-parts-every-car-owner-should-knowtLc4"
+                            class="recent-post d-flex wow-replaced" data-wow-delay=".1s">
+                            <img src="/assets/images/blogs/1730868152organized-automotive-workshop-interior-minjpg.jpg" alt="recent post">
+                            <div class="recent-post-content">
+                                <h6 class="post-title">
+                                    Top 10 Essential Auto Parts Every Car Owner S ..
+                                </h6>
+                                <span class="post-date">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                        viewBox="0 0 18 18" fill="none">
+                                        <g clip-path="url(#clip0_274_25512)">
+                                            <path
+                                                d="M14.25 1.5H13.5V0.75C13.5 0.551088 13.421 0.360322 13.2803 0.21967C13.1397 0.0790176 12.9489 0 12.75 0C12.5511 0 12.3603 0.0790176 12.2197 0.21967C12.079 0.360322 12 0.551088 12 0.75V1.5H6V0.75C6 0.551088 5.92098 0.360322 5.78033 0.21967C5.63968 0.0790176 5.44891 0 5.25 0C5.05109 0 4.86032 0.0790176 4.71967 0.21967C4.57902 0.360322 4.5 0.551088 4.5 0.75V1.5H3.75C2.7558 1.50119 1.80267 1.89666 1.09966 2.59966C0.396661 3.30267 0.00119089 4.2558 0 5.25L0 14.25C0.00119089 15.2442 0.396661 16.1973 1.09966 16.9003C1.80267 17.6033 2.7558 17.9988 3.75 18H14.25C15.2442 17.9988 16.1973 17.6033 16.9003 16.9003C17.6033 16.1973 17.9988 15.2442 18 14.25V5.25C17.9988 4.2558 17.6033 3.30267 16.9003 2.59966C16.1973 1.89666 15.2442 1.50119 14.25 1.5ZM1.5 5.25C1.5 4.65326 1.73705 4.08097 2.15901 3.65901C2.58097 3.23705 3.15326 3 3.75 3H14.25C14.8467 3 15.419 3.23705 15.841 3.65901C16.2629 4.08097 16.5 4.65326 16.5 5.25V6H1.5V5.25ZM14.25 16.5H3.75C3.15326 16.5 2.58097 16.2629 2.15901 15.841C1.73705 15.419 1.5 14.8467 1.5 14.25V7.5H16.5V14.25C16.5 14.8467 16.2629 15.419 15.841 15.841C15.419 16.2629 14.8467 16.5 14.25 16.5Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M9 12.375C9.62132 12.375 10.125 11.8713 10.125 11.25C10.125 10.6287 9.62132 10.125 9 10.125C8.37868 10.125 7.875 10.6287 7.875 11.25C7.875 11.8713 8.37868 12.375 9 12.375Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M5.25 12.375C5.87132 12.375 6.375 11.8713 6.375 11.25C6.375 10.6287 5.87132 10.125 5.25 10.125C4.62868 10.125 4.125 10.6287 4.125 11.25C4.125 11.8713 4.62868 12.375 5.25 12.375Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M12.75 12.375C13.3713 12.375 13.875 11.8713 13.875 11.25C13.875 10.6287 13.3713 10.125 12.75 10.125C12.1287 10.125 11.625 10.6287 11.625 11.25C11.625 11.8713 12.1287 12.375 12.75 12.375Z"
+                                                fill="#BDBDBD" />
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip1_274_25512">
+                                                <rect width="18" height="18" fill="white" />
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
+                                    Jan 02 - 2019</span>
+                            </div>
+                        </a>
+                                            <a href="/blog/from-office-to-outing-versatile-outfits-for-the-modern-womanmByn"
+                            class="recent-post d-flex wow-replaced" data-wow-delay=".1s">
+                            <img src="/assets/images/blogs/1730868175selecting-new-equipment-man-is-hardware-shop-minjpg.jpg" alt="recent post">
+                            <div class="recent-post-content">
+                                <h6 class="post-title">
+                                    From Office to Outing: Versatile Outfits for  ..
+                                </h6>
+                                <span class="post-date">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                        viewBox="0 0 18 18" fill="none">
+                                        <g clip-path="url(#clip0_274_25512)">
+                                            <path
+                                                d="M14.25 1.5H13.5V0.75C13.5 0.551088 13.421 0.360322 13.2803 0.21967C13.1397 0.0790176 12.9489 0 12.75 0C12.5511 0 12.3603 0.0790176 12.2197 0.21967C12.079 0.360322 12 0.551088 12 0.75V1.5H6V0.75C6 0.551088 5.92098 0.360322 5.78033 0.21967C5.63968 0.0790176 5.44891 0 5.25 0C5.05109 0 4.86032 0.0790176 4.71967 0.21967C4.57902 0.360322 4.5 0.551088 4.5 0.75V1.5H3.75C2.7558 1.50119 1.80267 1.89666 1.09966 2.59966C0.396661 3.30267 0.00119089 4.2558 0 5.25L0 14.25C0.00119089 15.2442 0.396661 16.1973 1.09966 16.9003C1.80267 17.6033 2.7558 17.9988 3.75 18H14.25C15.2442 17.9988 16.1973 17.6033 16.9003 16.9003C17.6033 16.1973 17.9988 15.2442 18 14.25V5.25C17.9988 4.2558 17.6033 3.30267 16.9003 2.59966C16.1973 1.89666 15.2442 1.50119 14.25 1.5ZM1.5 5.25C1.5 4.65326 1.73705 4.08097 2.15901 3.65901C2.58097 3.23705 3.15326 3 3.75 3H14.25C14.8467 3 15.419 3.23705 15.841 3.65901C16.2629 4.08097 16.5 4.65326 16.5 5.25V6H1.5V5.25ZM14.25 16.5H3.75C3.15326 16.5 2.58097 16.2629 2.15901 15.841C1.73705 15.419 1.5 14.8467 1.5 14.25V7.5H16.5V14.25C16.5 14.8467 16.2629 15.419 15.841 15.841C15.419 16.2629 14.8467 16.5 14.25 16.5Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M9 12.375C9.62132 12.375 10.125 11.8713 10.125 11.25C10.125 10.6287 9.62132 10.125 9 10.125C8.37868 10.125 7.875 10.6287 7.875 11.25C7.875 11.8713 8.37868 12.375 9 12.375Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M5.25 12.375C5.87132 12.375 6.375 11.8713 6.375 11.25C6.375 10.6287 5.87132 10.125 5.25 10.125C4.62868 10.125 4.125 10.6287 4.125 11.25C4.125 11.8713 4.62868 12.375 5.25 12.375Z"
+                                                fill="#BDBDBD" />
+                                            <path
+                                                d="M12.75 12.375C13.3713 12.375 13.875 11.8713 13.875 11.25C13.875 10.6287 13.3713 10.125 12.75 10.125C12.1287 10.125 11.625 10.6287 11.625 11.25C11.625 11.8713 12.1287 12.375 12.75 12.375Z"
+                                                fill="#BDBDBD" />
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip1_274_25512">
+                                                <rect width="18" height="18" fill="white" />
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
+                                    Aug 02 - 2018</span>
+                            </div>
+                        </a>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="gs-footer-bottom">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="footer-bottom-content">
+                        <p>COPYRIGHT © 2024. All Rights Reserved By STautoparts</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+    <!-- footer section -->
+
+    <!--Esential Js Files-->
+    <script src="/assets/front/js/jquery.min.js"></script>
+        <script src="/assets/front/js/slick.js"></script>
+    <script src="/assets/front/js/jquery-ui.js"></script>
+    <script src="/assets/front/js/nice-select.js"></script>
+ 
+    <script src="/assets/front/js/wow.js"></script>
+    <script src="/assets/front/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/front/js/toastr.min.js"></script>
+    
+    <script src="/assets/front/js/script.js"></script>
+    <script src="/assets/front/js/myscript.js"></script>
+
+
+    <script>
+        "use strict";
+        var mainurl = "/";
+        var gs      = {"is_loader":"1","decimal_separator":".","thousand_separator":",","is_cookie":"1","is_talkto":"0","talkto":"Cillum eu id enim aliquip aute ullamco anim. Culpa deserunt nostrud excepteur voluptate velit ipsum esse enim."};
+        var ps_category = 1;
+    
+        var lang = {
+            'days': 'Days',
+            'hrs': 'Hrs',
+            'min': 'Min',
+            'sec': 'Sec',
+            'cart_already': 'Already Added To Card.',
+            'cart_out': 'Out Of Stock',
+            'cart_success': 'Successfully Added To Cart.',
+            'cart_empty': 'Cart is empty.',
+            'coupon_found': 'Coupon Found.',
+            'no_coupon': 'No Coupon Found.',
+            'already_coupon': 'Coupon Already Applied.',
+            'enter_coupon': 'Enter Coupon First',
+            'minimum_qty_error': 'Minimum Quantity is:',
+            'affiliate_link_copy': 'Affiliate Link Copied Successfully'
+        };
+    
+      </script>
+
+
+
+    
+      
+  
+</body>
+
+</html>

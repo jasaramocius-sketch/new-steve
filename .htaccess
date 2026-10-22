@@ -1,0 +1,19 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteRule ^index\.php$ - [L]
+
+    RewriteCond %{REQUEST_URI} !^/new-steve/public(?:/|$)
+    RewriteRule ^$ index.php [L]
+
+    RewriteCond %{REQUEST_URI} !^/new-steve/public(?:/|$)
+    RewriteCond %{REQUEST_URI} ^/new-steve/(.*)$
+    RewriteCond %{DOCUMENT_ROOT}/new-steve/public/%1 -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/new-steve/public/%1 -d
+    RewriteRule ^(.+)$ public/$1 [L]
+
+    RewriteCond %{REQUEST_URI} !^/new-steve/public(?:/|$)
+    RewriteRule ^ index.php [L]
+</IfModule>

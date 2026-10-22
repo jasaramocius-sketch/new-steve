@@ -1,0 +1,15 @@
+[Unit]
+Description=STAutoParts File Watcher
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/html/stautoparts
+ExecStart=/usr/bin/node file-watcher.mjs
+Restart=always
+RestartSec=5
+User=jasaram
+Group=jasaram
+
+[Install]
+WantedBy=multi-user.target

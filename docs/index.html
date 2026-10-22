@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Steve Auto Parts: Full Laravel Website Specification</title>
+<style>body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#0f172a;} .container{max-width:1100px;margin:0 auto;padding:32px;} header{padding:36px 0;text-align:center;} header h1{font-size:2.6rem;margin-bottom:.25rem;} header p{color:#475569;font-size:1.05rem;max-width:800px;margin:0 auto;} .section{background:#fff;border:1px solid #e2e8f0;border-radius:22px;padding:28px;margin-bottom:26px;box-shadow:0 20px 50px rgba(15,23,42,.08);} h2{color:#0f766e;margin-top:0;} h3{color:#0f4f4f;} ul{padding-left:1.5rem;} li{margin-bottom:.55rem;} pre{background:#111827;color:#f8fafc;padding:18px;overflow-x:auto;border-radius:14px;} code{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}</style>
+</head>
+<body>
+<div class="container">
+<header><h1>Steve Auto Parts — Full Laravel Website Specification</h1><p>Complete HTML documentation designed to guide any AI or developer to reproduce the same Laravel storefront, admin panel, and content-driven homepage.</p></header>
+<div class="section"><h2>1. Purpose</h2><p>This document serves as the definitive site reproduction specification for the Steve Auto Parts application. It includes the stack, routes, database schema, admin data model, behavior, and implementation details required to rebuild the website in Laravel.</p></div>
+<div class="section"><h2>2. Technology stack</h2><ul><li>Laravel 13 (PHP 8.3 compatible)</li><li>Blade server-side templates</li><li>Vite + Tailwind CSS for frontend asset bundling</li><li>Composer for PHP dependency management</li><li>npm for JavaScript tooling</li><li>MySQL/MariaDB or SQLite for database</li><li>Laravel queues for background jobs</li></ul><h3>PHP dependencies</h3><pre><code>{
+  &quot;php&quot;: &quot;^8.3&quot;,
+  &quot;barryvdh/laravel-dompdf&quot;: &quot;^3.1&quot;,
+  &quot;laravel/framework&quot;: &quot;^13.8&quot;,
+  &quot;laravel/tinker&quot;: &quot;^3.0&quot;,
+  &quot;stevestore/laravel-page-builder&quot;: &quot;^1.0&quot;
+}</code></pre><h3>Dev dependencies</h3><pre><code>{
+  &quot;fakerphp/faker&quot;: &quot;^1.23&quot;,
+  &quot;laravel/pail&quot;: &quot;^1.2.5&quot;,
+  &quot;laravel/pao&quot;: &quot;^1.0.6&quot;,
+  &quot;laravel/pint&quot;: &quot;^1.27&quot;,
+  &quot;mockery/mockery&quot;: &quot;^1.6&quot;,
+  &quot;nunomaduro/collision&quot;: &quot;^8.6&quot;,
+  &quot;phpunit/phpunit&quot;: &quot;^12.5.12&quot;
+}</code></pre><h3>Node development dependencies</h3><pre><code>{
+  &quot;@tailwindcss/vite&quot;: &quot;^4.0.0&quot;,
+  &quot;chokidar&quot;: &quot;^5.0.0&quot;,
+  &quot;concurrently&quot;: &quot;^9.0.1&quot;,
+  &quot;laravel-vite-plugin&quot;: &quot;^3.1&quot;,
+  &quot;tailwindcss&quot;: &quot;^4.0.0&quot;,
+  &quot;vite&quot;: &quot;^8.0.0&quot;
+}</code></pre></div>
+<div class="section"><h2>3. Environment configuration</h2><p>The application uses <code>.env</code> to configure environment-specific values. The project ships with <code>.env.example</code>.</p><pre><code>APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+# APP_MAINTENANCE_STORE=database
+
+# PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=sqlite
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=laravel
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+# CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=log
+MAIL_SCHEME=null
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_FROM_ADDRESS=&quot;hello@example.com&quot;
+MAIL_FROM_NAME=&quot;${APP_NAME}&quot;
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+VITE_APP_NAME=&quot;${APP_NAME}&quot;</code></pre><p>Key configuration areas:</p><ul><li>Application settings: <code>APP_NAME</code>, <code>APP_ENV</code>, <code>APP_URL</code>, <code>APP_DEBUG</code></li><li>Database: <code>DB_CONNECTION</code>, <code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_DATABASE</code>, <code>DB_USERNAME</code>, <code>DB_PASSWORD</code></li><li>Session and cache drivers</li><li>Queue and filesystem configuration</li><li>Mailer defaults and AWS S3 settings</li></ul></div>
+<div class="section"><h2>4. Project structure</h2><p>The codebase follows Laravel conventions with extension points for storefront and admin features.</p><ul><li><code>app/</code>: Models, Controllers, Traits, helpers.</li><li><code>resources/views/</code>: Blade templates for public and admin UIs.</li><li><code>routes/web.php</code>: all HTTP route definitions.</li><li><code>database/migrations/</code>: schema migrations for tables and relationships.</li><li><code>database/seeders/</code>: seeders for default data.</li><li><code>public/</code>: web root, uploaded media, built assets.</li><li><code>storage/</code>: logs, cache, application files.</li></ul></div>
+<div class="section"><h2>5. Route map</h2><p>All routes are defined in <code>routes/web.php</code>. The admin area is prefixed with <code>/admin</code>. The following list is the concrete route map that must be reproduced:</p><h3>Public storefront</h3><ul><li><code>GET /</code> — HomeController@index — name: <code>home</code></li><li><code>GET /shop</code> — ShopController@index — name: <code>shop</code></li><li><code>POST /shop/clear-vehicle</code> — ShopController@clearVehicleFilter — auth</li><li><code>GET /api/search/suggestions</code> — ShopController@suggestions — name: <code>search.suggestions</code></li><li><code>GET /product/{slug}</code> — ProductController@show — name: <code>product</code></li><li><code>POST /contact-seller</code> — ProductController@contactSeller — name: <code>contact.seller</code></li><li><code>GET or POST /product/{slug}/review</code> — ReviewController@store — auth — name: <code>product.review</code></li><li><code>PUT /product/{slug}/review/{reviewId}</code> — ReviewController@update — auth — name: <code>product.review.update</code></li><li><code>DELETE /product/{slug}/review/{reviewId}</code> — ReviewController@destroy — auth — name: <code>product.review.delete</code></li><li><code>GET /category/{slug}</code> — ShopController@category — name: <code>category</code></li><li><code>GET /blog</code> — BlogController@index — name: <code>blog</code></li><li><code>GET /blog/{slug}</code> — BlogController@show — name: <code>blog.show</code></li><li><code>GET /blog/category/{slug}</code> — BlogController@category — name: <code>blog.category</code></li><li><code>GET /about-us</code> — HomeController@about — name: <code>about</code></li><li><code>GET /contact-us</code> — HomeController@contact — name: <code>contact</code></li><li><code>GET /page/{slug}</code> — HomeController@page — name: <code>page.show</code></li><li><code>GET /categories</code> — CategoryController@showCategories — name: <code>categories.index</code></li><li><code>GET /brands</code> — BrandController@brands — name: <code>brands</code></li><li><code>GET /category/{parent}/{child}/{subchild?}</code> — ShopController@subcategory — name: <code>subcategory</code></li><li><code>GET /customer_products</code> — ShopController@customerProducts — name: <code>customer.products</code></li><li><code>GET /faq</code>, <code>/privacy</code>, <code>/privacy-policy</code>, <code>/terms</code>, <code>/terms-conditions</code>, <code>/return-policy</code>, <code>/support-policy</code> — HomeController static pages.</li></ul><h3>Cart and checkout</h3><ul><li><code>GET /cart</code> — CartController@index — name: <code>cart</code></li><li><code>POST /cart/add</code> — CartController@add — name: <code>cart.add</code></li><li><code>POST /cart/remove</code> — CartController@remove — name: <code>cart.remove</code></li><li><code>POST /cart/remove-selected</code> — CartController@removeSelected — name: <code>cart.removeSelected</code></li><li><code>POST /cart/update/{id}</code> — CartController@updateQuantity — name: <code>cart.update</code></li><li><code>GET /cart/mini</code> — CartController@miniCart — name: <code>cart.mini</code></li><li><code>GET /checkout</code> — CartController@checkout — auth, nocache, name: <code>checkout</code></li><li><code>POST /checkout</code> — CartController@checkoutSubmit — auth, nocache, name: <code>checkout.submit</code></li><li><code>GET /checkout/delivery-info</code> — CartController@deliveryInfo — auth, nocache, name: <code>checkout.delivery-info</code></li><li><code>POST /checkout/delivery-info</code> — CartController@deliveryInfoSubmit — auth, nocache, name: <code>checkout.delivery-info.store</code></li><li><code>GET /checkout/payment</code> — CartController@payment — auth, nocache, name: <code>checkout.payment</code></li><li><code>POST /checkout/payment</code> — CartController@paymentSubmit — auth, nocache, name: <code>checkout.payment.submit</code></li><li><code>GET /checkout/order-confirmed</code> — CartController@orderConfirmed — auth, nocache, name: <code>checkout.confirmed</code></li><li><code>POST /checkout/address/store</code> — AddressController@store — auth, nocache</li><li><code>GET /checkout/address/{address}/edit</code> — AddressController@edit — auth, nocache</li><li><code>PUT /checkout/address/{address}</code> — AddressController@update — auth, nocache</li><li><code>DELETE /checkout/address/{address}</code> — AddressController@destroy — auth, nocache</li><li><code>POST /checkout/address/{address}/default</code> — AddressController@setDefault — auth, nocache</li></ul><h3>Wishlist and compare</h3><ul><li><code>POST /wishlist/add</code> — WishlistController@add — name: <code>wishlist.add</code></li><li><code>DELETE /wishlist/clear</code> — WishlistController@clearAll — name: <code>wishlist.clear</code></li><li><code>DELETE /wishlist/{id}</code> — WishlistController@remove — name: <code>wishlist.remove</code></li><li><code>GET /wishlist</code> — WishlistController@index — name: <code>wishlist.index</code></li><li><code>GET /compare/add</code> — CompareController@add — name: <code>compare.add</code></li><li><code>GET /compare</code> — CompareController@index — name: <code>compare.index</code></li><li><code>DELETE /compare/clear</code> — CompareController@clear — name: <code>compare.clear</code></li><li><code>DELETE /compare/{id}</code> — CompareController@remove — name: <code>compare.remove</code></li></ul><h3>User authentication</h3><ul><li><code>GET /login</code> — AuthController@showLogin — name: <code>login</code></li><li><code>POST /login</code> — AuthController@login — name: <code>login.submit</code></li><li><code>GET /register</code> — AuthController@registerForm — name: <code>register</code></li><li><code>POST /register</code> — AuthController@register — name: <code>register.post</code></li><li><code>GET or POST /logout</code> — AuthController@logout — name: <code>logout</code></li></ul><h3>User dashboard</h3><ul><li><code>GET /user/dashboard</code> — DashboardController@userDashboard — name: <code>user.dashboard</code></li><li><code>GET /user/orders</code> — DashboardController@orders — name: <code>user.orders</code></li><li><code>GET /user/reviews</code> — DashboardController@reviews — name: <code>user.reviews</code></li><li><code>GET /user/orders/{id}</code> — OrderController@show — name: <code>user.orders.show</code></li><li><code>GET /user/orders/invoice/{id}</code> — OrderController@invoice — name: <code>user.orders.invoice</code></li><li><code>DELETE /user/orders/{id}</code> — OrderController@destroy — name: <code>user.orders.destroy</code></li><li><code>GET or POST /order/tracking</code> — OrderController@tracking — name: <code>order.tracking</code></li><li><code>GET /user/wishlist</code> — DashboardController@wishlist — name: <code>user.wishlist</code></li><li><code>GET /user/vehicles</code> — DashboardController@vehicles — name: <code>user.vehicles</code></li><li><code>POST /user/vehicles</code> — DashboardController@storeVehicle — name: <code>user.vehicles.store</code></li><li><code>PUT /user/vehicles/{id}</code> — DashboardController@updateVehicle — name: <code>user.vehicles.update</code></li><li><code>DELETE /user/vehicles/{id}</code> — DashboardController@destroyVehicle — name: <code>user.vehicles.destroy</code></li><li><code>POST /user/vehicles/select/{id}</code> — DashboardController@selectVehicle — name: <code>user.vehicles.select</code></li><li><code>GET /user/followed-seller</code> — DashboardController@followedSellers — name: <code>user.followed-sellers</code></li><li><code>GET /user/addresses</code> — DashboardController@addresses — name: <code>user.addresses</code></li><li><code>POST /user/addresses</code> — DashboardController@storeAddress — name: <code>user.addresses.store</code></li><li><code>PUT /user/addresses/{id}</code> — DashboardController@updateAddress — name: <code>user.addresses.update</code></li><li><code>DELETE /user/addresses/{id}</code> — DashboardController@destroyAddress — name: <code>user.addresses.destroy</code></li><li><code>GET /user/notifications</code> — DashboardController@notifications — name: <code>user.notifications</code></li><li><code>POST /user/notifications/{id}/read</code> — DashboardController@markNotificationRead — name: <code>user.notifications.read</code></li><li><code>POST /user/notifications/read-all</code> — DashboardController@markAllNotificationsRead — name: <code>user.notifications.read-all</code></li><li><code>GET /user/profile</code> — UserController@profile — name: <code>user.profile</code></li><li><code>GET /user/profile/edit</code> — UserController@editProfile — name: <code>user.profile.edit</code></li><li><code>POST /user/profile/update</code> — UserController@updateProfile — name: <code>user.profile.update</code></li><li><code>GET or POST /change-password</code> — UserController@updatePassword — name: <code>change.password.update</code></li></ul><h3>Admin panel</h3><ul><li><code>GET /admin/login</code> — AdminAuthController@showLogin — name: <code>admin.login</code></li><li><code>POST /admin/login</code> — AdminAuthController@login — name: <code>admin.login.submit</code></li><li><code>GET or POST /admin/logout</code> — AdminAuthController@logout — name: <code>logout</code></li><li><code>GET /admin/dashboard</code> — AdminController@index — name: <code>admin.dashboard</code></li><li><code>GET /admin/dashboard/today-revenue</code> — AdminController@todayRevenue — name: <code>admin.dashboard.today-revenue</code></li><li><code>GET /admin/profile</code> — AdminController@profile — name: <code>admin.profile</code></li><li><code>POST /admin/profile</code> — AdminController@updateProfile — name: <code>admin.profile.update</code></li><li><code>POST /admin/profile/password</code> — AdminController@updatePassword — name: <code>admin.profile.password</code></li><li><code>GET /admin/customers</code> — UserController@index — name: <code>admin.customers.index</code></li><li><code>GET /admin/staff</code> — UserController@staff — name: <code>admin.staff.index</code></li><li><code>GET /admin/products</code> — ProductController@index — name: <code>admin.products.index</code></li><li><code>GET /admin/products/create</code> — ProductController@create — name: <code>admin.products.create</code></li><li><code>POST /admin/products</code> — ProductController@store — name: <code>admin.products.store</code></li><li><code>GET /admin/products/import</code> — ProductController@importForm — name: <code>admin.products.import-form</code></li><li><code>POST /admin/products/import</code> — ProductController@import — name: <code>admin.products.import</code></li><li><code>GET /admin/products/import/sample</code> — ProductController@downloadSampleCsv — name: <code>admin.products.download-sample-csv</code></li><li><code>GET /admin/products/export/csv</code> — ProductController@exportCsv — name: <code>admin.products.export-csv</code></li><li><code>GET /admin/products/{id}</code> — ProductController@details — name: <code>admin.products.details</code></li><li><code>GET /admin/products/{id}/edit</code> — ProductController@edit — name: <code>admin.products.edit</code></li><li><code>PUT /admin/products/{id}</code> — ProductController@update — name: <code>admin.products.update</code></li><li><code>DELETE /admin/products/{id}</code> — ProductController@destroy — name: <code>admin.products.destroy</code></li><li><code>POST /admin/products/{id}/restore</code> — ProductController@restore — name: <code>admin.products.restore</code></li><li><code>DELETE /admin/products/{id}/force-delete</code> — ProductController@forceDelete — name: <code>admin.products.force-delete</code></li><li><code>POST /admin/products/{id}/toggle-status</code> — ProductController@toggleStatus — name: <code>admin.products.toggle-status</code></li><li><code>POST /admin/products/{id}/toggle-featured</code> — ProductController@toggleFeatured — name: <code>admin.products.toggle-featured</code></li><li><code>GET /admin/orders</code> — AdminOrderController@index — name: <code>admin.orders.index</code></li><li><code>GET /admin/orders/{id}</code> — AdminOrderController@show — name: <code>admin.orders.show</code></li><li><code>POST /admin/orders/{id}/status</code> — AdminOrderController@updateStatus — name: <code>admin.orders.update-status</code></li><li><code>GET /admin/orders/invoice/{id}</code> — OrderController@invoice — name: <code>admin.orders.invoice</code></li><li><code>GET /admin/brands</code> — BrandController@index — name: <code>admin.brands.index</code></li><li><code>GET /admin/brands/create</code> — BrandController@create — name: <code>admin.brands.create</code></li><li><code>POST /admin/brands</code> — BrandController@store — name: <code>admin.brands.store</code></li><li><code>GET /admin/brands/{id}/edit</code> — BrandController@edit — name: <code>admin.brands.edit</code></li><li><code>PUT /admin/brands/{id}</code> — BrandController@update — name: <code>admin.brands.update</code></li><li><code>DELETE /admin/brands/{id}</code> — BrandController@destroy — name: <code>admin.brands.destroy</code></li><li><code>POST /admin/brands/{id}/toggle-status</code> — BrandController@toggleStatus — name: <code>admin.brands.toggle-status</code></li><li><code>GET /admin/blogs</code> — AdminBlogController@index — name: <code>admin.blogs.index</code></li><li><code>GET /admin/blogs/create</code> — AdminBlogController@create — name: <code>admin.blogs.create</code></li><li><code>POST /admin/blogs</code> — AdminBlogController@store — name: <code>admin.blogs.store</code></li><li><code>GET /admin/blogs/{id}/edit</code> — AdminBlogController@edit — name: <code>admin.blogs.edit</code></li><li><code>PUT /admin/blogs/{id}</code> — AdminBlogController@update — name: <code>admin.blogs.update</code></li><li><code>DELETE /admin/blogs/{id}</code> — AdminBlogController@destroy — name: <code>admin.blogs.destroy</code></li><li><code>POST /admin/blogs/{id}/restore</code> — AdminBlogController@restore — name: <code>admin.blogs.restore</code></li><li><code>DELETE /admin/blogs/{id}/force-delete</code> — AdminBlogController@forceDelete — name: <code>admin.blogs.force-delete</code></li><li><code>POST /admin/blogs/{id}/toggle-status</code> — AdminBlogController@toggleStatus — name: <code>admin.blogs.toggle-status</code></li><li><code>GET /admin/blog-categories</code> — Admin\BlogCategoryController@index — name: <code>admin.blog-categories.index</code></li><li><code>GET /admin/blog-categories/create</code> — Admin\BlogCategoryController@create — name: <code>admin.blog-categories.create</code></li><li><code>POST /admin/blog-categories</code> — Admin\BlogCategoryController@store — name: <code>admin.blog-categories.store</code></li><li><code>GET /admin/blog-categories/{id}/edit</code> — Admin\BlogCategoryController@edit — name: <code>admin.blog-categories.edit</code></li><li><code>PUT /admin/blog-categories/{id}</code> — Admin\BlogCategoryController@update — name: <code>admin.blog-categories.update</code></li><li><code>DELETE /admin/blog-categories/{id}</code> — Admin\BlogCategoryController@destroy — name: <code>admin.blog-categories.destroy</code></li><li><code>POST /admin/blog-categories/{id}/restore</code> — Admin\BlogCategoryController@restore — name: <code>admin.blog-categories.restore</code></li><li><code>DELETE /admin/blog-categories/{id}/force-delete</code> — Admin\BlogCategoryController@forceDelete — name: <code>admin.blog-categories.force-delete</code></li><li><code>GET /admin/pages</code> — PageController@index — name: <code>admin.pages.index</code></li><li><code>GET /admin/pages/create</code> — PageController@create — name: <code>admin.pages.create</code></li><li><code>POST /admin/pages</code> — PageController@store — name: <code>admin.pages.store</code></li><li><code>GET /admin/pages/{id}/edit</code> — PageController@edit — name: <code>admin.pages.edit</code></li><li><code>PUT /admin/pages/{id}</code> — PageController@update — name: <code>admin.pages.update</code></li><li><code>DELETE /admin/pages/{id}</code> — PageController@destroy — name: <code>admin.pages.destroy</code></li><li><code>POST /admin/pages/{id}/restore</code> — PageController@restore — name: <code>admin.pages.restore</code></li><li><code>POST /admin/pages/{id}/toggle-status</code> — PageController@toggleStatus — name: <code>admin.pages.toggle-status</code></li><li><code>DELETE /admin/pages/{id}/force-delete</code> — PageController@forceDelete — name: <code>admin.pages.force-delete</code></li><li><code>GET /admin/faqs</code> — FaqController@index — name: <code>admin.faqs.index</code></li><li><code>GET /admin/faqs/create</code> — FaqController@create — name: <code>admin.faqs.create</code></li><li><code>POST /admin/faqs</code> — FaqController@store — name: <code>admin.faqs.store</code></li><li><code>GET /admin/faqs/{id}/edit</code> — FaqController@edit — name: <code>admin.faqs.edit</code></li><li><code>PUT /admin/faqs/{id}</code> — FaqController@update — name: <code>admin.faqs.update</code></li><li><code>DELETE /admin/faqs/{id}</code> — FaqController@destroy — name: <code>admin.faqs.destroy</code></li><li><code>POST /admin/faqs/{id}/restore</code> — FaqController@restore — name: <code>admin.faqs.restore</code></li><li><code>DELETE /admin/faqs/{id}/force-delete</code> — FaqController@forceDelete — name: <code>admin.faqs.force-delete</code></li><li><code>GET /admin/contacts</code> — Admin\ContactController@index — name: <code>admin.contacts.index</code></li><li><code>GET /admin/contacts/{id}</code> — Admin\ContactController@show — name: <code>admin.contacts.show</code></li><li><code>DELETE /admin/contacts/{id}</code> — Admin\ContactController@destroy — name: <code>admin.contacts.destroy</code></li><li><code>GET /admin/coupons</code> — CouponController@index — name: <code>admin.coupons.index</code></li><li><code>GET /admin/coupons/create</code> — CouponController@create — name: <code>admin.coupons.create</code></li><li><code>POST /admin/coupons</code> — CouponController@store — name: <code>admin.coupons.store</code></li><li><code>GET /admin/coupons/{id}/edit</code> — CouponController@edit — name: <code>admin.coupons.edit</code></li><li><code>PUT /admin/coupons/{id}</code> — CouponController@update — name: <code>admin.coupons.update</code></li><li><code>DELETE /admin/coupons/{id}</code> — CouponController@destroy — name: <code>admin.coupons.destroy</code></li><li><code>GET /admin/home-page</code> — HomePageController@index — name: <code>admin.home-page.index</code></li><li><code>GET /admin/home-page/{id}/edit</code> — HomePageController@edit — name: <code>admin.home-page.edit</code></li><li><code>PUT /admin/home-page/{id}</code> — HomePageController@update — name: <code>admin.home-page.update</code></li><li><code>POST /admin/home-page/reorder</code> — HomePageController@reorder — name: <code>admin.home-page.reorder</code></li><li><code>GET /admin/settings/header</code> — AdminController@headerSettings — name: <code>admin.settings.header</code></li><li><code>POST /admin/settings/header</code> — AdminController@updateHeaderSettings — name: <code>admin.settings.header.update</code></li><li><code>GET /admin/settings/footer</code> — AdminController@footerSettings — name: <code>admin.settings.footer</code></li><li><code>POST /admin/settings/footer</code> — AdminController@updateFooterSettings — name: <code>admin.settings.footer.update</code></li><li><code>GET /admin/logs</code> — AdminController@logs — name: <code>admin.logs.index</code></li><li><code>GET /admin/revisions</code> — AdminController@revisions — name: <code>admin.revisions.index</code></li><li><code>GET /admin/revisions/{id}</code> — AdminController@revisionDetail — name: <code>admin.revisions.detail</code></li><li><code>GET /admin/file-revisions</code> — AdminController@fileRevisions — name: <code>admin.file-revisions.index</code></li><li><code>GET /admin/file-revisions/download/{id}</code> — AdminController@fileRevisionDownload — name: <code>admin.file-revisions.download</code></li><li><code>GET /admin/file-revisions/diff/{id}</code> — AdminController@fileRevisionDiff — name: <code>admin.file-revisions.diff</code></li><li><code>GET /admin/images</code> — ImageController@index — name: <code>admin.images.index</code></li><li><code>GET /admin/images/picker</code> — ImageController@picker — name: <code>admin.images.picker</code></li><li><code>POST /admin/images/picker/upload</code> — ImageController@pickerStore — name: <code>admin.images.picker-store</code></li><li><code>POST /admin/images</code> — ImageController@store — name: <code>admin.images.store</code></li><li><code>GET /admin/images/{id}/edit</code> — ImageController@edit — name: <code>admin.images.edit</code></li><li><code>PUT /admin/images/{id}</code> — ImageController@update — name: <code>admin.images.update</code></li><li><code>POST /admin/images/{id}/convert</code> — ImageController@convert — name: <code>admin.images.convert</code></li><li><code>POST /admin/images/bulk-convert</code> — ImageController@bulkConvert — name: <code>admin.images.bulk-convert</code></li><li><code>POST /admin/images/bulk-delete</code> — ImageController@bulkDelete — name: <code>admin.images.bulk-delete</code></li><li><code>POST /admin/images/bulk-mark-unused</code> — ImageController@bulkMarkUnused — name: <code>admin.images.bulk-mark-unused</code></li><li><code>GET /admin/categories</code> — CategoryController@index — name: <code>admin.categories.index</code></li><li><code>GET /admin/categories/create</code> — CategoryController@create — name: <code>admin.categories.create</code></li><li><code>POST /admin/categories</code> — CategoryController@store — name: <code>admin.categories.store</code></li><li><code>GET /admin/categories/{id}/edit</code> — CategoryController@edit — name: <code>admin.categories.edit</code></li><li><code>PUT /admin/categories/{id}</code> — CategoryController@update — name: <code>admin.categories.update</code></li><li><code>DELETE /admin/categories/{id}</code> — CategoryController@destroy — name: <code>admin.categories.destroy</code></li><li><code>POST /admin/categories/{id}/restore</code> — CategoryController@restore — name: <code>admin.categories.restore</code></li><li><code>DELETE /admin/categories/{id}/force-delete</code> — CategoryController@forceDelete — name: <code>admin.categories.force-delete</code></li><li><code>POST /admin/categories/{id}/toggle-status</code> — CategoryController@toggleStatus — name: <code>admin.categories.toggle-status</code></li><li><code>GET /admin/customers/create</code> — UserController@createCustomer — name: <code>admin.customers.create</code></li><li><code>POST /admin/customers</code> — UserController@storeCustomer — name: <code>admin.customers.store</code></li><li><code>GET /admin/customers/{id}/edit</code> — UserController@edit — name: <code>admin.customers.edit</code></li><li><code>PUT /admin/customers/{id}</code> — UserController@update — name: <code>admin.customers.update</code></li><li><code>DELETE /admin/customers/{id}</code> — UserController@destroy — name: <code>admin.customers.destroy</code></li><li><code>POST /admin/customers/{id}/toggle-status</code> — UserController@toggleStatus — name: <code>admin.customers.toggle-status</code></li><li><code>GET /admin/staff/create</code> — UserController@createStaff — name: <code>admin.staff.create</code></li><li><code>POST /admin/staff</code> — UserController@storeStaff — name: <code>admin.staff.store</code></li><li><code>GET /admin/staff/{id}/edit</code> — UserController@editStaff — name: <code>admin.staff.edit</code></li><li><code>PUT /admin/staff/{id}</code> — UserController@updateStaff — name: <code>admin.staff.update</code></li><li><code>DELETE /admin/staff/{id}</code> — UserController@destroyStaff — name: <code>admin.staff.destroy</code></li><li><code>Resource /admin/users</code> — UserManagementController resource controller — admin-only.</li><li><code>Resource /admin/staffs</code> — StaffController resource controller — admin-only.</li><li><code>GET /staff/dashboard</code> — DashboardController@staffDashboard — role: staff.</li><li><code>GET /admin/clear-cache</code> — Artisan cache clear route.</li></ul><p>Named middleware used by admin routes includes <code>auth</code>, <code>nocache</code>, and <code>role:master_admin,admin,staff</code>. Certain users-only and master admin-only routes are enforced separately.</p></div>
+<div class="section"><h2>6. Core data model</h2><p>The following tables are essential to reproduce the website behavior.</p><h3>6.1 Home page content model</h3><p>The home page is driven by <code>home_page_sections</code>, which stores flexible content and JSON data.</p><pre><code>&lt;?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create(&#x27;home_page_sections&#x27;, function (Blueprint $table) {
+            $table-&gt;id();
+            $table-&gt;string(&#x27;section_name&#x27;)-&gt;unique(); // hero, banner_1, banner_2, etc.
+            $table-&gt;text(&#x27;title&#x27;)-&gt;nullable();
+            $table-&gt;text(&#x27;subtitle&#x27;)-&gt;nullable();
+            $table-&gt;text(&#x27;description&#x27;)-&gt;nullable();
+            $table-&gt;string(&#x27;image&#x27;)-&gt;nullable();
+            $table-&gt;string(&#x27;button_text&#x27;)-&gt;nullable();
+            $table-&gt;string(&#x27;button_url&#x27;)-&gt;nullable();
+            $table-&gt;integer(&#x27;order&#x27;)-&gt;default(0);
+            $table-&gt;boolean(&#x27;status&#x27;)-&gt;default(true);
+            $table-&gt;json(&#x27;extra_data&#x27;)-&gt;nullable(); // For storing additional data as JSON
+            $table-&gt;timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists(&#x27;home_page_sections&#x27;);
+    }
+};
+</code></pre><p>Model implementation in <code>App\Models\HomePageSection</code>:</p><pre><code>&lt;?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use App\Traits\Revisable;
+
+class HomePageSection extends Model
+{
+    use HasFactory, Revisable;
+
+    protected $fillable = [
+        &#x27;section_name&#x27;,
+        &#x27;title&#x27;,
+        &#x27;subtitle&#x27;,
+        &#x27;description&#x27;,
+        &#x27;image&#x27;,
+        &#x27;button_text&#x27;,
+        &#x27;button_url&#x27;,
+        &#x27;order&#x27;,
+        &#x27;status&#x27;,
+        &#x27;extra_data&#x27;,
+    ];
+
+    protected $casts = [
+        &#x27;extra_data&#x27; =&gt; &#x27;json&#x27;,
+        &#x27;status&#x27; =&gt; &#x27;boolean&#x27;,
+    ];
+}
+</code></pre><p>The home page sections controller validates fields, uploads images, handles external image selection, and stores extra content in JSON.</p><pre><code>        $section = HomePageSection::findOrFail($id);
+
+        $validated = $request-&gt;validate([
+            &#x27;title&#x27; =&gt; &#x27;nullable|string|max:255&#x27;,
+            &#x27;subtitle&#x27; =&gt; &#x27;nullable|string|max:255&#x27;,
+            &#x27;description&#x27; =&gt; &#x27;nullable|string&#x27;,
+            &#x27;button_text&#x27; =&gt; &#x27;nullable|string|max:100&#x27;,
+            &#x27;button_url&#x27; =&gt; &#x27;nullable|string|max:255&#x27;,
+            &#x27;status&#x27; =&gt; &#x27;nullable|boolean&#x27;,
+            &#x27;image&#x27; =&gt; &#x27;nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120&#x27;,
+            &#x27;tabs&#x27; =&gt; &#x27;nullable|array&#x27;,
+            &#x27;tabs.*.label&#x27; =&gt; &#x27;nullable|string|max:255&#x27;,
+            &#x27;tabs.*.product_ids&#x27; =&gt; &#x27;nullable|array&#x27;,
+            &#x27;tabs.*.product_ids.*&#x27; =&gt; &#x27;integer|exists:products,id&#x27;,
+        ]);
+
+        if ($request-&gt;hasFile(&#x27;image&#x27;)) {
+            $validated[&#x27;image&#x27;] = saveImageWithWebp($request-&gt;file(&#x27;image&#x27;), &#x27;assets/images/home&#x27;);
+        } elseif ($request-&gt;filled(&#x27;image_from_manager&#x27;)) {
+            $sourcePath = storage_path(&#x27;app/public/&#x27; . $request-&gt;image_from_manager);
+            if (file_exists($sourcePath)) {
+                $filename = time() . &#x27;_&#x27; . uniqid() . &#x27;.&#x27; . pathinfo($request-&gt;image_from_manager, PATHINFO_EXTENSION);
+                $destDir = public_path(&#x27;assets/images/home&#x27;);
+                if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+                copy($sourcePath, $destDir . &#x27;/&#x27; . $filename);
+                $validated[&#x27;image&#x27;] = $filename;
+            }
+        }
+
+        if ($request-&gt;has(&#x27;tabs&#x27;)) {
+            $tabs = $request-&gt;input(&#x27;tabs&#x27;);
+            // Clean up empty tabs
+            $tabs = array_values(array_filter($tabs, fn($t) =&gt; !empty(trim($t[&#x27;label&#x27;] ?? &#x27;&#x27;))));
+            $validated[&#x27;extra_data&#x27;] = [&#x27;tabs&#x27; =&gt; $tabs];
+        }
+
+        $existing = $section-&gt;extra_data ?? [];
+
+        if ($request-&gt;filled(&#x27;brands_limit&#x27;)) {
+            $existing[&#x27;brands_limit&#x27;] = $request-&gt;brands_limit;
+        }
+
+        if ($request-&gt;has(&#x27;brand_ids&#x27;)) {
+            $existing[&#x27;brand_ids&#x27;] = array_values(array_filter(array_map(&#x27;intval&#x27;, (array) $request-&gt;input(&#x27;brand_ids&#x27;, []))));
+        }
+
+        if ($request-&gt;filled(&#x27;brands_limit&#x27;) || $request-&gt;has(&#x27;brand_ids&#x27;)) {
+            $validated[&#x27;extra_data&#x27;] = $existing;
+        }
+
+        $section-&gt;update($validated);
+
+        return redirect()-&gt;route(&#x27;admin.home-page.index&#x27;)
+            -&gt;with(&#x27;success&#x27;, &#x27;Section updated successfully!&#x27;);
+    }
+</code></pre><h3>6.2 Public home page behavior</h3><p>HomeController assembles page data with categories, active sections, featured products, explore tabs, best selling products, latest posts, and selected brands.</p><pre><code>    {
+        $categories = $this-&gt;getCategories();
+
+        $sections = HomePageSection::where(&#x27;status&#x27;, true)
+            -&gt;orderBy(&#x27;order&#x27;)
+            -&gt;get()
+            -&gt;keyBy(&#x27;section_name&#x27;);
+
+        if (! $sections-&gt;has(&#x27;top_brands_heading&#x27;)) {
+            HomePageSection::create([
+                &#x27;section_name&#x27; =&gt; &#x27;top_brands_heading&#x27;,
+                &#x27;title&#x27; =&gt; &#x27;Top Brands&#x27;,
+                &#x27;description&#x27; =&gt; &#x27;Explore our curated selection of premium auto part brands known for quality and reliability.&#x27;,
+                &#x27;order&#x27; =&gt; 999,
+                &#x27;status&#x27; =&gt; true,
+                &#x27;extra_data&#x27; =&gt; [&#x27;brands_limit&#x27; =&gt; &#x27;6&#x27;],
+            ]);
+            $sections = HomePageSection::where(&#x27;status&#x27;, true)
+                -&gt;orderBy(&#x27;order&#x27;)
+                -&gt;get()
+                -&gt;keyBy(&#x27;section_name&#x27;);
+        }
+
+        $exploreSection = $sections-&gt;get(&#x27;explore_products&#x27;);
+        $exploreTabs = $this-&gt;buildExploreTabs($exploreSection);
+
+        $featuredProducts = $this-&gt;getFeaturedProducts();
+        if ($featuredProducts-&gt;isEmpty()) {
+            $featuredProducts = Product::where(&#x27;status&#x27;, true)-&gt;where(&#x27;added_by&#x27;, &#x27;admin&#x27;)-&gt;inRandomOrder()-&gt;take(8)-&gt;get();
+        }
+
+        $heroSection = $sections-&gt;get(&#x27;hero&#x27;);
+        $bannerSections = $sections-&gt;filter(fn($s) =&gt; str_starts_with($s-&gt;section_name, &#x27;banner_&#x27;));
+
+        $bestSelling = Product::where(&#x27;status&#x27;, true)-&gt;where(&#x27;added_by&#x27;, &#x27;admin&#x27;)-&gt;where(&#x27;product_type&#x27;, &#x27;best_selling&#x27;)-&gt;latest()-&gt;take(8)-&gt;get();
+        if ($bestSelling-&gt;isEmpty()) {
+            $bestSelling = Product::where(&#x27;status&#x27;, true)-&gt;where(&#x27;added_by&#x27;, &#x27;admin&#x27;)-&gt;inRandomOrder()-&gt;take(8)-&gt;get();
+        }
+
+        $latestPosts = Blog::where(&#x27;status&#x27;, &#x27;published&#x27;)-&gt;latest()-&gt;take(2)-&gt;get();
+
+        $brandsSection = $sections-&gt;get(&#x27;top_brands_heading&#x27;);
+        $brandsExtra = $brandsSection?-&gt;extra_data ?? [];
+        $selectedBrandIds = $brandsExtra[&#x27;brand_ids&#x27;] ?? [];
+        $brandsLimit = $brandsExtra[&#x27;brands_limit&#x27;] ?? &#x27;6&#x27;;
+        $brandsLimit = $brandsLimit === &#x27;all&#x27; || $brandsLimit === &#x27;&#x27; ? &#x27;6&#x27; : $brandsLimit;
+
+        $brandsQuery = Brand::where(&#x27;status&#x27;, true)
+            -&gt;orderBy(&#x27;name&#x27;);
+
+        if (!empty($selectedBrandIds) &amp;&amp; is_array($selectedBrandIds)) {
+            $selectedBrandIds = array_filter(array_map(&#x27;intval&#x27;, $selectedBrandIds));
+            if (!empty($selectedBrandIds)) {
+                $brandsQuery = Brand::whereIn(&#x27;id&#x27;, $selectedBrandIds)
+                    -&gt;where(&#x27;status&#x27;, true)
+                    -&gt;orderByRaw(&#x27;FIELD(id, &#x27; . implode(&#x27;,&#x27;, $selectedBrandIds) . &#x27;)&#x27;);
+            }
+        } elseif ((int) $brandsLimit &gt; 0) {
+            $brandsQuery-&gt;take((int) $brandsLimit);
+        }
+
+        $brands = $brandsQuery-&gt;get();
+
+        return view(&#x27;home&#x27;, compact(&#x27;categories&#x27;, &#x27;featuredProducts&#x27;, &#x27;exploreTabs&#x27;, &#x27;heroSection&#x27;, &#x27;bannerSections&#x27;, &#x27;bestSelling&#x27;, &#x27;sections&#x27;, &#x27;latestPosts&#x27;, &#x27;brands&#x27;));</code></pre><h3>6.3 Product catalog schema</h3><p>The product catalog starts with core product fields and is extended by migrations for categories, brands, year/make/model, and status.</p><pre><code>&lt;?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create(&#x27;products&#x27;, function (Blueprint $table) {
+            $table-&gt;id();
+
+            $table-&gt;string(&#x27;name&#x27;);
+            $table-&gt;string(&#x27;slug&#x27;)-&gt;unique();
+
+            $table-&gt;text(&#x27;description&#x27;)-&gt;nullable();
+
+            $table-&gt;decimal(&#x27;price&#x27;, 10, 2);
+            $table-&gt;decimal(&#x27;old_price&#x27;, 10, 2)-&gt;nullable();
+
+            $table-&gt;string(&#x27;image&#x27;)-&gt;nullable();
+
+            $table-&gt;string(&#x27;badge&#x27;)-&gt;nullable();
+
+            $table-&gt;decimal(&#x27;rating&#x27;, 3, 1)-&gt;default(0);
+
+            $table-&gt;integer(&#x27;reviews&#x27;)-&gt;default(0);
+
+            $table-&gt;boolean(&#x27;featured&#x27;)-&gt;default(true);
+
+            $table-&gt;timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists(&#x27;products&#x27;);
+    }
+};
+</code></pre><pre><code>&lt;?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        // Create categories table
+        Schema::create(&#x27;categories&#x27;, function (Blueprint $table) {
+            $table-&gt;id();
+            $table-&gt;string(&#x27;name&#x27;);
+            $table-&gt;string(&#x27;slug&#x27;);
+            $table-&gt;unsignedBigInteger(&#x27;parent_id&#x27;)-&gt;nullable();
+            $table-&gt;string(&#x27;image&#x27;)-&gt;nullable();
+            $table-&gt;timestamps();
+
+            $table-&gt;foreign(&#x27;parent_id&#x27;)-&gt;references(&#x27;id&#x27;)-&gt;on(&#x27;categories&#x27;)-&gt;onDelete(&#x27;cascade&#x27;);
+            $table-&gt;index([&#x27;parent_id&#x27;, &#x27;slug&#x27;]);
+        });
+
+        // Add category_id FK to products
+        Schema::table(&#x27;products&#x27;, function (Blueprint $table) {
+            $table-&gt;unsignedBigInteger(&#x27;category_id&#x27;)-&gt;nullable()-&gt;after(&#x27;id&#x27;);
+            $table-&gt;foreign(&#x27;category_id&#x27;)-&gt;references(&#x27;id&#x27;)-&gt;on(&#x27;categories&#x27;)-&gt;onDelete(&#x27;set null&#x27;);
+        });
+
+        // Drop old string columns
+        $dropCols = [];
+        if (Schema::hasColumn(&#x27;products&#x27;, &#x27;category&#x27;)) $dropCols[] = &#x27;category&#x27;;
+        if (Schema::hasColumn(&#x27;products&#x27;, &#x27;subcategory&#x27;)) $dropCols[] = &#x27;subcategory&#x27;;
+        if (Schema::hasColumn(&#x27;products&#x27;, &#x27;childcategory&#x27;)) $dropCols[] = &#x27;childcategory&#x27;;
+        if (!empty($dropCols)) {
+            Schema::table(&#x27;products&#x27;, function (Blueprint $table) use ($dropCols) {
+                $table-&gt;dropColumn($dropCols);
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        Schema::table(&#x27;products&#x27;, function (Blueprint $table) {
+            $table-&gt;dropForeign([&#x27;category_id&#x27;]);
+            $table-&gt;dropColumn(&#x27;category_id&#x27;);
+            $table-&gt;string(&#x27;category&#x27;)-&gt;nullable();
+            $table-&gt;string(&#x27;subcategory&#x27;)-&gt;nullable();
+            $table-&gt;string(&#x27;childcategory&#x27;)-&gt;nullable();
+        });
+        Schema::dropIfExists(&#x27;categories&#x27;);
+    }
+};
+</code></pre><h3>6.4 Authentication and users</h3><pre><code>&lt;?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create(&#x27;users&#x27;, function (Blueprint $table) {
+            $table-&gt;id();
+            $table-&gt;string(&#x27;name&#x27;);
+            $table-&gt;string(&#x27;email&#x27;)-&gt;unique();
+            $table-&gt;timestamp(&#x27;email_verified_at&#x27;)-&gt;nullable();
+            $table-&gt;string(&#x27;password&#x27;);
+            $table-&gt;rememberToken();
+            $table-&gt;timestamps();
+        });
+
+        Schema::create(&#x27;password_reset_tokens&#x27;, function (Blueprint $table) {
+            $table-&gt;string(&#x27;email&#x27;)-&gt;primary();
+            $table-&gt;string(&#x27;token&#x27;);
+            $table-&gt;timestamp(&#x27;created_at&#x27;)-&gt;nullable();
+        });
+
+        Schema::create(&#x27;sessions&#x27;, function (Blueprint $table) {
+            $table-&gt;string(&#x27;id&#x27;)-&gt;primary();
+            $table-&gt;foreignId(&#x27;user_id&#x27;)-&gt;nullable()-&gt;index();
+            $table-&gt;string(&#x27;ip_address&#x27;, 45)-&gt;nullable();
+            $table-&gt;text(&#x27;user_agent&#x27;)-&gt;nullable();
+            $table-&gt;longText(&#x27;payload&#x27;);
+            $table-&gt;integer(&#x27;last_activity&#x27;)-&gt;index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists(&#x27;users&#x27;);
+        Schema::dropIfExists(&#x27;password_reset_tokens&#x27;);
+        Schema::dropIfExists(&#x27;sessions&#x27;);
+    }
+};
+</code></pre><h3>6.5 Orders and checkout</h3><pre><code>&lt;?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create(&#x27;orders&#x27;, function (Blueprint $table) {
+            $table-&gt;id();
+            $table-&gt;foreignId(&#x27;user_id&#x27;)-&gt;constrained()-&gt;onDelete(&#x27;cascade&#x27;);
+
+            $table-&gt;string(&#x27;order_number&#x27;)-&gt;unique();
+            $table-&gt;decimal(&#x27;total_amount&#x27;, 10, 2);
+            $table-&gt;enum(&#x27;status&#x27;, [
+                &#x27;pending&#x27;,
+                &#x27;processing&#x27;,
+                &#x27;shipped&#x27;,
+                &#x27;delivered&#x27;,
+                &#x27;cancelled&#x27;
+            ])-&gt;default(&#x27;pending&#x27;);
+
+            $table-&gt;timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists(&#x27;orders&#x27;);
+    }
+};
+</code></pre><pre><code>&lt;?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create(&#x27;order_items&#x27;, function (Blueprint $table) {
+            $table-&gt;id();
+
+            $table-&gt;foreignId(&#x27;order_id&#x27;)-&gt;constrained()-&gt;onDelete(&#x27;cascade&#x27;);
+
+            $table-&gt;foreignId(&#x27;product_id&#x27;);
+
+            $table-&gt;integer(&#x27;qty&#x27;);
+            $table-&gt;decimal(&#x27;price&#x27;, 10, 2);
+
+            $table-&gt;timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists(&#x27;order_items&#x27;);
+    }
+};
+</code></pre><pre><code>&lt;?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create(&#x27;addresses&#x27;, function (Blueprint $table) {
+            $table-&gt;id();
+
+            $table-&gt;foreignId(&#x27;user_id&#x27;)-&gt;constrained()-&gt;onDelete(&#x27;cascade&#x27;);
+
+            $table-&gt;string(&#x27;full_name&#x27;);
+            $table-&gt;string(&#x27;phone&#x27;);
+
+            $table-&gt;string(&#x27;address&#x27;);
+            $table-&gt;string(&#x27;city&#x27;);
+            $table-&gt;string(&#x27;state&#x27;)-&gt;nullable();
+            $table-&gt;string(&#x27;country&#x27;);
+            $table-&gt;string(&#x27;zip_code&#x27;);
+
+            $table-&gt;timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists(&#x27;addresses&#x27;);
+    }
+};
+</code></pre></div>
+<div class="section"><h2>7. Features and behavior</h2><h3>Public storefront</h3><ul><li>Homepage section-driven hero, banners, explore tabs, featured products, top brands, and blog teasers.</li><li>Shop listing, category navigation, product detail pages, search suggestions.</li><li>Product review creation, editing, and deletion.</li><li>Contact seller form on product pages.</li><li>Static pages and content pages via the CMS.</li></ul><h3>Cart and checkout</h3><ul><li>Shopping cart management with add/remove/update.</li><li>Authenticated checkout with delivery info and payment steps.</li><li>Address CRUD and default selection.</li><li>Order confirmation page.</li></ul><h3>Customer account</h3><ul><li>User dashboard, orders, reviews, wishlist, vehicles, followed sellers, addresses, notifications, profile management.</li></ul><h3>Admin panel</h3><ul><li>Separate admin login and dashboard.</li><li>Product import/export and status controls.</li><li>Brand, blog, page, FAQ, coupon management.</li><li>Homepage CMS with section reorder and dynamic tabs.</li><li>Header/footer settings, logs, revisions, file revisions, image manager.</li></ul></div>
+<div class="section"><h2>8. Administrative data management</h2><p>The admin panel includes these management domains and exact operations:</p><ul><li><strong>Products</strong>: list, create, edit, delete, restore, force delete, import CSV, export CSV, toggle status, toggle featured.</li><li><strong>Categories</strong>: list, create, edit, restore, force delete, toggle status.</li><li><strong>Brands</strong>: list, create, edit, delete, toggle status.</li><li><strong>Blogs</strong>: list, create, edit, delete, restore, force delete, toggle status.</li><li><strong>Pages</strong>: CMS pages with activation toggles.</li><li><strong>FAQs</strong>: FAQ list and publish control.</li><li><strong>Coupons</strong>: promotional coupon CRUD.</li><li><strong>Contacts</strong>: support messages list and delete.</li><li><strong>Images</strong>: upload, picker, edit, convert, bulk actions.</li><li><strong>Users and staff</strong>: create, edit, delete, toggle status, role-limited access.</li><li><strong>Home page sections</strong>: manage hero, banners, product tabs, brand configuration, ordering.</li></ul></div>
+<div class="section"><h2>9. Build, development and deployment</h2><p>Core commands used in this repository:</p><pre><code>composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --force
+php artisan db:seed
+npm install
+npm run dev
+npm run build
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache</code></pre><p>The composer <code>dev</code> script runs the Laravel dev server, queue listener, logs, and Vite concurrently.</p></div>
+<div class="section"><h2>10. Reproduction guidance for AI</h2><p>This HTML is intentionally written as a reproducible specification. An AI should use the following checklist to rebuild the same Laravel application:</p><ol><li>Begin with a Laravel 13 application and PHP 8.3.</li><li>Implement the route groups and controller actions described above.</li><li>Create the database tables and columns based on section 6, especially <code>home_page_sections</code>, <code>products</code>, <code>categories</code>, <code>users</code>, <code>orders</code>, <code>order_items</code>, and <code>addresses</code>.</li><li>Recreate the homepage composition logic: hero and banner sections, explore tabs, featured/best-selling products, latest blog posts, and top brands configuration.</li><li>Implement admin role control with <code>auth</code>, <code>nocache</code>, and role middleware.</li><li>Use the homepage CMS and image upload validation rules exactly as shown.</li><li>Rebuild the customer dashboard and checkout flows with authenticated routes and address management.</li><li>Preserve the dependency and build tool versions from composer.json and package.json.</li></ol><p>Following this specification will allow any AI-enabled tool or human developer to reproduce the original website behavior and admin content management features.</p></div>
+</div></body></html>

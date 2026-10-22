@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin
+Disallow: /user
+Disallow: /checkout
+Disallow: /cart
+Disallow: /compare
+
+Sitemap: http://192.168.130.54/stautoparts/sitemap.xml
