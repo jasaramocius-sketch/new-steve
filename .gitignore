@@ -17,7 +17,7 @@
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot
-# /public/storage
+/public/storage
 /storage/*.key
 /storage/pail
 /vendor
@@ -33,7 +33,7 @@ database/*.sql.gz
 storage/file-backups/
 
 # Uploaded images + generated thumbnails
-/public/assets/images/
+#/public/assets/images/
 
 # Compiled Blade template cache
 /storage/framework/views/*.php
