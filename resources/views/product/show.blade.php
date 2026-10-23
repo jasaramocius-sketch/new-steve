@@ -832,7 +832,10 @@
                   <div class="swiper details_slider_thumb" id="productGallery">
                     <div class="swiper-wrapper">
                     @php
-                      $galleryImages = isset($product['galleryImages']) && $product['galleryImages'] ? $product['galleryImages'] : collect();
+                      $galleryImages = collect($product['images_json'] ?? [])
+                        ->map(fn ($image) => (object) ['path' => is_array($image) ? ($image['file'] ?? null) : $image])
+                        ->filter(fn ($image) => isSourceS3ImageReference($image->path));
+                      $hasProductImages = filled($product['image']) || $galleryImages->isNotEmpty();
                     @endphp
                     @if($product['image'])
                       <div class="swiper-slide details_slider_thumb_item swiper-zoom-container">
@@ -844,6 +847,11 @@
                         {!! imgTag(storedPath($gi->path), $product['name'], 'img-fluid w-100') !!}
                       </div>
                     @endforeach
+                    @if(!$hasProductImages)
+                      <div class="swiper-slide details_slider_thumb_item swiper-zoom-container">
+                        {!! imgTag('assets/images/placeholder.png', $product['name'], 'img-fluid w-100') !!}
+                      </div>
+                    @endif
                     </div>
                   </div>
                   <div class="zoom-lens" id="zoomLens"></div>
@@ -862,6 +870,11 @@
                     {!! imgTag(storedPath($gi->path), $product['name'], 'img-fluid w-100') !!}
                   </div>
                 @endforeach
+                @if(!$hasProductImages)
+                  <div class="swiper-slide details_slider_nav_item">
+                    {!! imgTag('assets/images/placeholder.png', $product['name'], 'img-fluid w-100') !!}
+                  </div>
+                @endif
                 </div>
                 <div class="product-detail-blade-img-gallery-nav w-100 slider-nav d-flex position-absolute top-0 justify-content-between align-items-center mt-4 z-1 px-1">
                   <button class="swiper-btn-prev steve-btn position-absolute top-0">
@@ -926,9 +939,9 @@
               @endif
 
               <h3 class="price">
-                {{ currency_format(buyerPrice($product['price'])) }}
+                {{ currency_format(buyerPrice($product['price'], $product)) }}
                 @if($product['old_price'])
-                  <del>{{ currency_format(buyerPrice($product['old_price'])) }}</del>
+                  <del>{{ currency_format(buyerPrice($product['old_price'], $product)) }}</del>
                 @endif
               </h3>
 
@@ -938,14 +951,14 @@
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $product['id'] }}">
                 <input type="hidden" name="product_name" value="{{ $product['name'] }}">
-                <input type="hidden" name="product_price" value="{{ buyerPrice($product['price']) }}">
+                <input type="hidden" name="product_price" value="{{ buyerPrice($product['price'], $product) }}">
                 <input type="hidden" name="product_image" value="{{ storedImageUrl($product['image'], 'assets/images/thumbnails') }}">
 
                 <div class="d-flex flex-column align-items-start">
                   <div class="details_qty_input">
                     <button type="button" class="minus" id="qty-minus" onclick="updateQty(-1)" disabled><i class="fas fa-minus"></i></button>
                     <input type="text" id="qty" name="qty" value="1" min="1" max="{{ max(1, (int) $product['stock']) }}" @disabled((int) $product['stock'] <= 0)
-                           data-unit-price="{{ buyerPrice($product['price']) * config('currencies.' . session('currency', 'USD') . '.rate', config('currencies.USD.rate')) }}"
+                           data-unit-price="{{ buyerPrice($product['price'], $product) * config('currencies.' . session('currency', 'USD') . '.rate', config('currencies.USD.rate')) }}"
                            data-currency-symbol="{{ config('currencies.' . session('currency', 'USD') . '.symbol', '$') }}">
                     <button type="button" class="plus" id="qty-plus" onclick="updateQty(1)"><i class="fas fa-plus"></i></button>
                   </div>
@@ -989,11 +1002,14 @@
               </ul>
 
               <ul class="details_tags_sku">
-                @if(!empty($product['sku']))
-                <!-- <li><span>SKU / Part #:</span> {{ $product['sku'] }}</li> -->
-                @endif
                 @if(isset($product['category']) && $product['category'])
                 <li><span>Category:</span> {{ $product['category']['name'] ?? $product['category']->name }}</li>
+                @endif
+                @if(!empty($product['sku']))
+                <li><span>SKU / Part #:</span> {{ $product['sku'] }}</li>
+                @endif
+                @if(!empty($product['brand']) && $product['brand'])
+                <li><span>Brand:</span> <span style="text-transform: uppercase;">{{ $product['brand']['name'] ?? $product['brand']->name }}</span></li>
                 @endif
               </ul>
 
@@ -1015,9 +1031,9 @@
             <li class="nav-item" role="presentation">
               <button class="nav-link template-btn steve-btn active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description-tab-pane" type="button" role="tab" aria-controls="description-tab-pane" aria-selected="true">Description</button>
             </li>
-            <li class="nav-item" role="presentation">
+            <!-- <li class="nav-item" role="presentation">
               <button class="nav-link template-btn steve-btn" id="policy-tab" data-bs-toggle="tab" data-bs-target="#policy-tab-pane" type="button" role="tab" aria-controls="policy-tab-pane" aria-selected="false">Buy / Return Policy</button>
-            </li>
+            </li> -->
             <li class="nav-item" role="presentation">
               <button class="nav-link template-btn steve-btn" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-tab-pane" type="button" role="tab" aria-controls="reviews-tab-pane" aria-selected="false">Reviews ({{ collect($product['reviews_data'] ?? [])->filter(fn ($r) => ! ($r['deleted'] ?? false) && ($r['approved'] ?? true) !== false)->count() }})</button>
             </li>
@@ -1026,6 +1042,7 @@
             <div class="tab-pane fade show active py-4" id="description-tab-pane" role="tabpanel" aria-labelledby="description-tab" tabindex="0">
               @php
                   $descText  = $product['description'] ?? '';
+                  $descText  = $product['overview'] ?? '';
                   $descLower = strtolower(strip_tags($descText));
                   $hasFeaturesInDesc = str_contains($descLower, 'key features') || preg_match('/^\s*[•\-*]\s/m', $descText);
               @endphp
@@ -1060,7 +1077,7 @@
             </div>
             <div class="tab-pane fade py-4" id="policy-tab-pane" role="tabpanel" aria-labelledby="policy-tab" tabindex="0">
                 <div class="product-policy-tab-body">
-                  @include('partials.product-buy-return-policy', ['product' => $product])
+                  <!-- @include('partials.product-buy-return-policy', ['product' => $product]) -->
                 </div>
             </div>
             <div class="tab-pane fade py-4" id="reviews-tab-pane" role="tabpanel" aria-labelledby="reviews-tab" tabindex="0">
@@ -1196,7 +1213,7 @@
             </ul>
           </div>
 
-          <div class="shop_details_sidebar_store">
+          <!-- <div class="shop_details_sidebar_store">
             @php $seller = $product->seller ?? null; @endphp
             @if($seller)
             <p class="sold_by">Sold by</p>
@@ -1233,7 +1250,7 @@
                 @endif
               </ul>
             @endif
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
