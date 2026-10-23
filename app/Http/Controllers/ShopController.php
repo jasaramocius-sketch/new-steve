@@ -406,7 +406,7 @@ class ShopController extends Controller
             return [
                 'name' => $product->name,
                 'slug' => $product->slug,
-                'price' => currency_format(buyerPrice($product->price)),
+                'price' => currency_format(buyerPrice($product->price, $product)),
                 'old_price' => null,
                 'image' => storedImageUrl($product->image, 'assets/images/thumbnails'),
                 'category' => $product->category->name ?? '',

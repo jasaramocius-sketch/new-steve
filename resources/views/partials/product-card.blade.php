@@ -52,7 +52,7 @@
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $p->id }}">
                 <input type="hidden" name="product_name" value="{{ $p->name }}">
-                <input type="hidden" name="product_price" value="{{ buyerPrice($p->price) }}">
+                <input type="hidden" name="product_price" value="{{ buyerPrice($p->price, $p) }}">
                 <input type="hidden" name="product_image" value="{{ storedImageUrl($pImage, 'assets/images/thumbnails') }}">
                 <button type="submit" class="add-cart border-0 steve-btn" @disabled((int) ($p->stock ?? 0) <= 0)>
                     {{ (int) ($p->stock ?? 0) > 0 ? 'Add to Cart' : 'Out of Stock' }}
@@ -79,9 +79,9 @@
             <{{ $titleTag }} class="product-title {{ $titleClass }}">{{ $p->name }}</{{ $titleTag }}>
         </a>
         <div class="price-wrapper">
-            <{{ $priceTag }}>{{ currency_format(buyerPrice($p->price)) }}</{{ $priceTag }}>
+            <{{ $priceTag }}>{{ currency_format(buyerPrice($p->price, $p)) }}</{{ $priceTag }}>
             @if(!empty($p->old_price))
-            <{{ $priceTag }}><del>{{ currency_format(buyerPrice($p->old_price)) }}</del></{{ $priceTag }}>
+            <{{ $priceTag }}><del>{{ currency_format(buyerPrice($p->old_price, $p)) }}</del></{{ $priceTag }}>
             @endif
         </div>
         @php
@@ -116,7 +116,7 @@
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $p->id }}">
                 <input type="hidden" name="product_name" value="{{ $p->name }}">
-                <input type="hidden" name="product_price" value="{{ buyerPrice($p->price) }}">
+                <input type="hidden" name="product_price" value="{{ buyerPrice($p->price, $p) }}">
                 <input type="hidden" name="product_image" value="{{ storedImageUrl($pImage, 'assets/images/thumbnails') }}">
                 <button type="submit" class="add-cart border-0 steve-btn" @disabled((int) ($p->stock ?? 0) <= 0)>
                     {{ (int) ($p->stock ?? 0) > 0 ? 'Add to Cart' : 'Out of Stock' }}

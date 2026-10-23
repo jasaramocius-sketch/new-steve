@@ -94,6 +94,8 @@ class BrandController extends Controller
 
         $brand->update($data);
 
+        \Illuminate\Support\Facades\Cache::forget('brand.aws_image.'.$brand->id);
+
         if ($request->filled('image_from_manager')) {
             Image::markUsed($request->image_from_manager, $brand);
         }

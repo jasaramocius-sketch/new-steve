@@ -52,6 +52,13 @@
                             <label class="form-label">Name *</label>
                             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $product->name) }}" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+                            <label class="form-label mt-2">SKU / Part Number</label>
+                            <div class="input-group">
+                                <input type="text" name="sku" id="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku', $product->sku) }}" placeholder="e.g. am-6113">
+                                <button type="button" class="btn btn-outline-secondary" id="sku-generate-btn" title="Generate SKU"><i class="fas fa-dice"></i> Auto</button>
+                                @error('sku') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
                         </div>
 
                         <div class="col-md-3">
@@ -61,17 +68,15 @@
                         </div>
 
                         <div class="col-md-3">
-                <label class="form-label">SKU / Part Number</label>
-                <div class="input-group">
-                    <input type="text" name="sku" id="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku', $product->sku) }}" placeholder="e.g. am-6113">
-                    <button type="button" class="btn btn-outline-secondary" id="sku-generate-btn" title="Generate SKU"><i class="fas fa-dice"></i> Auto</button>
-                    @error('sku') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-            </div>
-
-                        <div class="col-md-3">
                             <label class="form-label">Old Price</label>
                             <input type="number" step="0.01" name="old_price" class="form-control" value="{{ old('old_price', $product->old_price) }}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Commission (%)</label>
+                            <input type="number" step="0.01" min="0" max="100" name="commission" class="form-control no-spinner @error('commission') is-invalid @enderror" value="{{ old('commission', $product->commission) }}" placeholder="Global ({{ number_format(globalCommissionPercent(), 2) }}%)">
+                            @error('commission') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <small class="text-muted">Leave empty to use the global commission.</small>
                         </div>
 
                         <div class="col-md-3">
@@ -181,7 +186,7 @@
 
                         <div class="col-md-12">
                             <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control texteditor" rows="4">{{ old('description', $product->description) }}</textarea>
+                            <textarea name="description" class="form-control texteditor" rows="4">{{ old('overview', $product->overview) }}</textarea>
                         </div>
                         
                         <div class="col-md-12">

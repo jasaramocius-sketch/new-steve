@@ -31,10 +31,12 @@ class Product extends Model
         'gtin_upc',
         'hazmat',
         'cost',
+        'commission',
         'core_price',
         'super_stock',
         'vendor_stock',
         'stock',
+        'featured',
         'reviews_data',
         'packs',
         'status',
@@ -42,10 +44,12 @@ class Product extends Model
 
     protected $casts = [
         'status' => 'boolean',
+        'featured' => 'boolean',
         'features_json' => 'array',
         'specs_json' => 'array',
         'images_json' => 'array',
         'cost' => 'decimal:2',
+        'commission' => 'decimal:2',
         'core_price' => 'decimal:2',
     ];
 
@@ -66,6 +70,21 @@ class Product extends Model
     public function setPriceAttribute($value)
     {
         $this->attributes['cost'] = $value;
+    }
+
+    /**
+     * Commission percent that applies to this product.
+     * Product-level value wins; otherwise the global setting is used.
+     */
+    public function effectiveCommissionPercent(): float
+    {
+        $commission = $this->attributes['commission'] ?? null;
+
+        if ($commission !== null && $commission !== '') {
+            return max(0, min(100, (float) $commission));
+        }
+
+        return function_exists('globalCommissionPercent') ? globalCommissionPercent() : 0.0;
     }
 
     public function getSkuAttribute()

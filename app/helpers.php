@@ -25,9 +25,25 @@ if (! function_exists('calculateBuyerPrice')) {
 }
 
 if (! function_exists('buyerPrice')) {
-    function buyerPrice($basePrice): float
+    /**
+     * Buyer-facing price for a base price.
+     *
+     * Pass the product to honour a product-specific commission; without it the
+     * global commission setup in admin settings is used.
+     */
+    function buyerPrice($basePrice, $product = null): float
     {
-        return calculateBuyerPrice($basePrice, globalCommissionPercent());
+        $percent = globalCommissionPercent();
+
+        if ($product instanceof \App\Models\Product) {
+            $percent = $product->effectiveCommissionPercent();
+        } elseif (is_object($product) && isset($product->commission) && $product->commission !== null && $product->commission !== '') {
+            $percent = max(0, min(100, (float) $product->commission));
+        } elseif (is_array($product) && array_key_exists('commission', $product) && $product['commission'] !== null && $product['commission'] !== '') {
+            $percent = max(0, min(100, (float) $product['commission']));
+        }
+
+        return calculateBuyerPrice($basePrice, $percent);
     }
 }
 

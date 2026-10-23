@@ -254,6 +254,106 @@
                         </script>
                         @endif
 
+                        @if($section->section_name === 'services')
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Service Items</h5>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="addService()"><i class="fa fa-plus"></i> Add Service</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="services-container">
+                                    @php
+                                        $services = old('services', $section->extra_data['services'] ?? []);
+                                        if (empty($services)) {
+                                            $services = [['image'=>null,'title'=>'','description'=>''],['image'=>null,'title'=>'','description'=>''],['image'=>null,'title'=>'','description'=>''],['image'=>null,'title'=>'','description'=>'']];
+                                        }
+                                    @endphp
+                                    @foreach($services as $i => $svc)
+                                    <div class="border rounded p-3 mb-3 service-item">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <strong>Service #{{ $i+1 }}</strong>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.service-item').remove();"><i class="fa fa-trash"></i></button>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Image</label>
+                                                <input type="hidden" name="services[{{ $i }}][existing_image]" value="{{ $svc['image'] ?? '' }}">
+                                                <input type="hidden" name="services[{{ $i }}][image_from_manager]" id="services_image_from_manager_{{ $i }}">
+                                                <div id="impPreview_services_{{ $i }}" class="d-none mb-2"></div>
+                                                @if(!empty($svc['image']))
+                                                <div class="mb-2 svc-current-{{ $i }}">
+                                                    <img src="{{ storedImageUrl($svc['image'], 'assets/images/services') }}" style="max-width:100px;height:60px;object-fit:contain;border:1px solid #ddd;">
+                                                </div>
+                                                @endif
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_services_{{ $i }}()">Browse Image Manager</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger {{ !empty($svc['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('services_image_from_manager_{{ $i }}','impPreview_services_{{ $i }}','.svc-current-{{ $i }}',null); this.classList.add('d-none');">Clear</button>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Title</label>
+                                                <input type="text" name="services[{{ $i }}][title]" class="form-control" value="{{ $svc['title'] ?? '' }}">
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Description</label>
+                                                <input type="text" name="services[{{ $i }}][description]" class="form-control" value="{{ $svc['description'] ?? '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if($section->section_name === 'partners_heading')
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Partner Logos</h5>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="addPartner()"><i class="fa fa-plus"></i> Add Partner</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="partners-container">
+                                    @php
+                                        $partners = old('partners', $section->extra_data['partners'] ?? []);
+                                    @endphp
+                                    @foreach($partners as $i => $p)
+                                    <div class="border rounded p-3 mb-3 partner-item">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <strong>Partner #{{ $i+1 }}</strong>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.partner-item').remove();"><i class="fa fa-trash"></i></button>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Logo</label>
+                                                <input type="hidden" name="partners[{{ $i }}][existing_image]" value="{{ $p['image'] ?? '' }}">
+                                                <input type="hidden" name="partners[{{ $i }}][image_from_manager]" id="partners_image_from_manager_{{ $i }}">
+                                                <div id="impPreview_partners_{{ $i }}" class="d-none mb-2"></div>
+                                                @if(!empty($p['image']))
+                                                <div class="mb-2 partner-current-{{ $i }}">
+                                                    <img src="{{ storedImageUrl($p['image'], 'assets/images/partner') }}" style="max-width:120px;height:60px;object-fit:contain;border:1px solid #ddd;background:#fff;">
+                                                </div>
+                                                @endif
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_partners_{{ $i }}()">Browse Image Manager</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger {{ !empty($p['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('partners_image_from_manager_{{ $i }}','impPreview_partners_{{ $i }}','.partner-current-{{ $i }}',null); this.classList.add('d-none');">Clear</button>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Name</label>
+                                                <input type="text" name="partners[{{ $i }}][name]" class="form-control" value="{{ $p['name'] ?? '' }}">
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">URL (optional)</label>
+                                                <input type="text" name="partners[{{ $i }}][url]" class="form-control" value="{{ $p['url'] ?? '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                                @if(empty($partners))
+                                <p class="text-muted mb-0" id="partners-empty-note">No partners added yet. Click "Add Partner" to add logos.</p>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+
                         @if($section->section_name === 'deal_of_day')
                         @php $extra = $section->extra_data ?? []; @endphp
                         <div class="form-group mb-3">
@@ -738,6 +838,126 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+<script>
+(function () {
+    var MAX_PARTNERS = 20; // pickers are pre-rendered for partners[0..19]
+    var MAX_SERVICES = 4;  // controller saves max 4 services
+
+    var partnerIndex = {{ isset($partners) && count($partners) ? (max(array_keys($partners)) + 1) : 0 }};
+    var serviceIndex = {{ isset($services) && count($services) ? (max(array_keys($services)) + 1) : 0 }};
+
+    function esc(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function partnerRowHtml(i) {
+        return '<div class="border rounded p-3 mb-3 partner-item">' +
+            '<div class="d-flex justify-content-between mb-2">' +
+                '<strong>Partner #' + (i + 1) + '</strong>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'.partner-item\').remove();"><i class="fa fa-trash"></i></button>' +
+            '</div>' +
+            '<div class="row">' +
+                '<div class="col-md-4 mb-2">' +
+                    '<label class="form-label">Logo</label>' +
+                    '<input type="hidden" name="partners[' + i + '][existing_image]" value="">' +
+                    '<input type="hidden" name="partners[' + i + '][image_from_manager]" id="partners_image_from_manager_' + i + '">' +
+                    '<div id="impPreview_partners_' + i + '" class="d-none mb-2"></div>' +
+                    '<button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse Image Manager</button>' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'partners_image_from_manager_' + i + '\',\'impPreview_partners_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button>' +
+                '</div>' +
+                '<div class="col-md-4 mb-2">' +
+                    '<label class="form-label">Name</label>' +
+                    '<input type="text" name="partners[' + i + '][name]" class="form-control">' +
+                '</div>' +
+                '<div class="col-md-4 mb-2">' +
+                    '<label class="form-label">URL (optional)</label>' +
+                    '<input type="text" name="partners[' + i + '][url]" class="form-control">' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+
+    function serviceRowHtml(i) {
+        return '<div class="border rounded p-3 mb-3 service-item">' +
+            '<div class="d-flex justify-content-between mb-2">' +
+                '<strong>Service #' + (i + 1) + '</strong>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'.service-item\').remove();"><i class="fa fa-trash"></i></button>' +
+            '</div>' +
+            '<div class="row">' +
+                '<div class="col-md-4 mb-2">' +
+                    '<label class="form-label">Image</label>' +
+                    '<input type="hidden" name="services[' + i + '][existing_image]" value="">' +
+                    '<input type="hidden" name="services[' + i + '][image_from_manager]" id="services_image_from_manager_' + i + '">' +
+                    '<div id="impPreview_services_' + i + '" class="d-none mb-2"></div>' +
+                    '<button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_services_' + i + '()">Browse Image Manager</button>' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'services_image_from_manager_' + i + '\',\'impPreview_services_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button>' +
+                '</div>' +
+                '<div class="col-md-4 mb-2">' +
+                    '<label class="form-label">Title</label>' +
+                    '<input type="text" name="services[' + i + '][title]" class="form-control">' +
+                '</div>' +
+                '<div class="col-md-4 mb-2">' +
+                    '<label class="form-label">Description</label>' +
+                    '<input type="text" name="services[' + i + '][description]" class="form-control">' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+
+    function appendRow(container, html) {
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+        container.appendChild(wrapper.firstElementChild);
+    }
+
+    window.addPartner = function () {
+        var container = document.getElementById('partners-container');
+        if (!container) return;
+        if (partnerIndex >= MAX_PARTNERS) {
+            alert('Maximum ' + MAX_PARTNERS + ' partners allowed.');
+            return;
+        }
+        appendRow(container, partnerRowHtml(partnerIndex));
+        partnerIndex++;
+        var note = document.getElementById('partners-empty-note');
+        if (note) note.classList.add('d-none');
+    };
+
+    window.addService = function () {
+        var container = document.getElementById('services-container');
+        if (!container) return;
+        if (serviceIndex >= MAX_SERVICES) {
+            alert('Maximum ' + MAX_SERVICES + ' services allowed.');
+            return;
+        }
+        appendRow(container, serviceRowHtml(serviceIndex));
+        serviceIndex++;
+    };
+})();
+</script>
+
+<script>
+if (typeof window.addPartner !== 'function') {
+    window.addPartner = function () {
+        var container = document.getElementById('partners-container');
+        if (!container) { alert('Partners container not found'); return; }
+        var items = container.querySelectorAll('.partner-item');
+        if (items.length >= 20) { alert('Maximum 20 partners allowed.'); return; }
+        var i = items.length;
+        var html = '<div class="border rounded p-3 mb-3 partner-item"><div class="d-flex justify-content-between mb-2"><strong>Partner #' + (i+1) + '</strong><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'.partner-item\').remove();"><i class="fa fa-trash"></i></button></div><div class="row"><div class="col-md-4 mb-2"><label class="form-label">Logo</label><input type="hidden" name="partners[' + i + '][existing_image]" value=""><input type="hidden" name="partners[' + i + '][image_from_manager]" id="partners_image_from_manager_' + i + '"><div id="impPreview_partners_' + i + '" class="d-none mb-2"></div><button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse Image Manager</button><button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'partners_image_from_manager_' + i + '\',\'impPreview_partners_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button></div><div class="col-md-4 mb-2"><label class="form-label">Name</label><input type="text" name="partners[' + i + '][name]" class="form-control"></div><div class="col-md-4 mb-2"><label class="form-label">URL (optional)</label><input type="text" name="partners[' + i + '][url]" class="form-control"></div></div></div>';
+        var d = document.createElement('div');
+        d.innerHTML = html;
+        container.appendChild(d.firstElementChild);
+        var note = document.getElementById('partners-empty-note');
+        if (note) note.classList.add('d-none');
+    };
+}
+</script>
+
 @include('admin.partials.image-manager-picker', ['pickerId' => 'home_image', 'targetInput' => 'image_from_manager'])
 
 @for($i = 0; $i < 3; $i++)
@@ -746,7 +966,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
 @if($section->section_name === 'services')
 @for($i = 0; $i < 4; $i++)
-@include('admin.partials.image-manager-picker', ['pickerId' => 'service_' . $i, 'targetInput' => 'services[' . $i . '][image_from_manager]'])
+@include('admin.partials.image-manager-picker', ['pickerId' => 'services_' . $i, 'targetInput' => 'services[' . $i . '][image_from_manager]'])
+@endfor
+@endif
+
+@if($section->section_name === 'partners_heading')
+@for($i = 0; $i < 20; $i++)
+@include('admin.partials.image-manager-picker', ['pickerId' => 'partners_' . $i, 'targetInput' => 'partners[' . $i . '][image_from_manager]'])
 @endfor
 @endif
 

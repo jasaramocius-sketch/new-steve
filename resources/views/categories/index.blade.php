@@ -144,9 +144,9 @@
                         <span class="category-product-info">
                             <span class="category-product-name">{{ $previewProduct->name }}</span>
                             <span class="category-product-price">
-                                {{ currency_format(buyerPrice($previewProduct->price)) }}
+                                {{ currency_format(buyerPrice($previewProduct->price, $previewProduct)) }}
                                 @if(!empty($previewProduct->old_price) && $previewProduct->old_price > $previewProduct->price)
-                                <del class="category-product-old-price">{{ currency_format(buyerPrice($previewProduct->old_price)) }}</del>
+                                <del class="category-product-old-price">{{ currency_format(buyerPrice($previewProduct->old_price, $previewProduct)) }}</del>
                                 @endif
                             </span>
                         </span>

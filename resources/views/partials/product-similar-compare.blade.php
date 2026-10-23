@@ -33,7 +33,7 @@
             <tr>
                 <th class="compare-row-label">Brand</th>
                 @foreach($all as $p)
-                    <td class="similar-col">
+                    <td class="similar-col"  style="text-transform: uppercase;">
                         {{ $p->brand->name ?? '—' }}
                     </td>
                 @endforeach
@@ -42,9 +42,9 @@
                 <th class="compare-row-label">Price</th>
                 @foreach($all as $p)
                     <td class="similar-col fw-bold text-danger">
-                        {{ currency_format(buyerPrice($p->price)) }}
+                        {{ currency_format(buyerPrice($p->price, $p)) }}
                         @if($p->old_price)
-                            <div><del class="text-muted small">{{ currency_format(buyerPrice($p->old_price)) }}</del></div>
+                            <div><del class="text-muted small">{{ currency_format(buyerPrice($p->old_price, $p)) }}</del></div>
                         @endif
                     </td>
                 @endforeach
@@ -109,7 +109,7 @@
                                     @csrf
                                     <input type="hidden" name="product_id" value="{{ $p->id }}">
                                     <input type="hidden" name="product_name" value="{{ $p->name }}">
-                                    <input type="hidden" name="product_price" value="{{ buyerPrice($p->price) }}">
+                                    <input type="hidden" name="product_price" value="{{ buyerPrice($p->price, $p) }}">
                                     <input type="hidden" name="product_image" value="{{ storedImageUrl($p->image, 'assets/images/thumbnails') }}">
                                     <button type="submit" class="btn btn-danger btn-sm steve-btn w-100">Add to Cart</button>
                                 </form>

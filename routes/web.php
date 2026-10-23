@@ -264,6 +264,8 @@ Route::prefix('admin')
             ->name('admin.products.toggle-status');
         Route::post('/products/{id}/toggle-featured', [ProductController::class, 'toggleFeatured'])
             ->name('admin.products.toggle-featured');
+        Route::post('/products/{id}/commission', [ProductController::class, 'updateCommission'])
+            ->name('admin.products.commission');
         Route::post('/products/{id}/duplicate', [ProductController::class, 'duplicate'])
             ->name('admin.products.duplicate');
 
@@ -749,3 +751,6 @@ Route::get('/contact-us', [ContactController::class, 'index'])
 
 Route::post('/contact-us', [ContactController::class, 'store'])
     ->name('contact.store');
+
+Route::get('/contact/thank-you', [ContactController::class, 'thankYou'])
+    ->name('contact.thank-you');

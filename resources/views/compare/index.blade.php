@@ -69,7 +69,7 @@
                 <th>Price</th>
                 @foreach($compareItems as $item)
                     <td class="fw-bold text-danger compare-col" data-compare-id="{{ $item->id }}">
-                        {{ currency_format(buyerPrice($item->product->price)) }}
+                        {{ currency_format(buyerPrice($item->product->price, $item->product)) }}
                     </td>
                 @endforeach
             </tr>
@@ -78,7 +78,7 @@
                 @foreach($compareItems as $item)
                     <td class="compare-col border-top-1" data-compare-id="{{ $item->id }}">
                         @if($item->product->old_price)
-                            <del>{{ currency_format(buyerPrice($item->product->old_price)) }}</del>
+                            <del>{{ currency_format(buyerPrice($item->product->old_price, $item->product)) }}</del>
                         @else
                             -
                         @endif
@@ -129,7 +129,7 @@
                             <input type="hidden" name="product_name"
                                    value="{{ $item->product->name }}">
                             <input type="hidden" name="product_price"
-                                   value="{{ buyerPrice($item->product->price) }}">
+                                   value="{{ buyerPrice($item->product->price, $item->product) }}">
                             <input type="hidden" name="product_image"
                                    value="{{ storedImageUrl($item->product->image, 'assets/images/thumbnails') }}">
                             <button type="submit" class="btn btn-danger mb-2 steve-btn">

@@ -503,10 +503,28 @@
             </div>
         </div>
         <div class="gs-partnerss row justify-content-center">
+            @php
+                $partners = $sections->get('partners_heading')?->extra_data['partners'] ?? [];
+            @endphp
+            @forelse($partners as $partner)
+            @if(!empty($partner['image']))
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
+                @if(!empty($partner['url']))
+                <a href="{{ $partner['url'] }}" target="_blank" rel="noopener">
+                @endif
+                <div class="single-partner">
+                    {!! imgTag($partner['image'], $partner['name'] ?? 'partner') !!}
+                </div>
+                @if(!empty($partner['url']))
+                </a>
+                @endif
+            </div>
+            @endif
+            @empty
             <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
                 <div class="single-partner">
                     {!! imgTag('assets/images/partner/1571289583p1.jpg', 'partner') !!}
-                </div>                
+                </div>
             </div>
             <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
                 <div class="single-partner">
@@ -563,6 +581,7 @@
                     {!! imgTag('assets/images/partner/1571289675p13.jpg', 'partner') !!}
                 </div>
             </div>
+            @endforelse
         </div>
     </div>
 </section>

@@ -80,24 +80,25 @@ class HomePageController extends Controller
     {
         $section = HomePageSection::findOrFail($id);
 
-        $validated = $request->validate([
-            'title' => 'nullable|string|max:255',
-            'subtitle' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'button_text' => 'nullable|string|max:100',
-            'button_url' => 'nullable|string|max:255',
-            'status' => 'nullable|boolean',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'tabs' => 'nullable|array',
-            'tabs.*.label' => 'nullable|string|max:255',
-            'tabs.*.product_ids' => 'nullable|array|max:8',
-            'tabs.*.product_ids.*' => 'integer|exists:products,id',
-            'services' => 'nullable|array|size:4',
-            'services.*.title' => 'nullable|string|max:100',
-            'services.*.description' => 'nullable|string|max:255',
-            'services.*.image_from_manager' => 'nullable|string|max:1000',
-            'services.*.existing_image' => 'nullable|string|max:1000',
-        ]);
+        if ($section->section_name === 'services') {
+            $request->validate([
+                'services' => 'nullable|array|max:4',
+                'services.*.title' => 'nullable|string|max:255',
+                'services.*.description' => 'nullable|string|max:500',
+                'services.*.image_from_manager' => 'nullable|string|max:1000',
+                'services.*.existing_image' => 'nullable|string|max:1000',
+            ]);
+        }
+
+        if ($section->section_name === 'partners_heading') {
+            $request->validate([
+                'partners' => 'nullable|array',
+                'partners.*.name' => 'nullable|string|max:255',
+                'partners.*.url' => 'nullable|string|max:1000',
+                'partners.*.image_from_manager' => 'nullable|string|max:1000',
+                'partners.*.existing_image' => 'nullable|string|max:1000',
+            ]);
+        }
 
         $validated['status'] = $request->has('status') ? 1 : 0;
 
@@ -221,6 +222,33 @@ class HomePageController extends Controller
             $existing['services'] = array_slice($savedServices, 0, 4);
         }
 
+        if ($section->section_name === 'partners_heading' && $request->has('partners')) {
+            $savedPartners = [];
+            foreach ((array) $request->input('partners') as $partner) {
+                if (! is_array($partner)) {
+                    continue;
+                }
+
+                $image = $partner['existing_image'] ?? null;
+                if (! empty($partner['image_from_manager'])) {
+                    $image = 'storage/'.ltrim($partner['image_from_manager'], '/');
+                    $pickedPaths[] = $partner['image_from_manager'];
+                }
+
+                if (! $image && empty($partner['name']) && empty($partner['url'])) {
+                    continue;
+                }
+
+                $savedPartners[] = [
+                    'image' => $image,
+                    'name' => $partner['name'] ?? '',
+                    'url' => $partner['url'] ?? '',
+                ];
+            }
+
+            $existing['partners'] = array_values($savedPartners);
+        }
+
         $extraChanged = $request->filled('brands_limit')
             || $request->has('brand_ids')
             || $request->filled('posts_count')
@@ -229,6 +257,7 @@ class HomePageController extends Controller
             || $request->filled('countdown')
             || ($section->section_name === 'offers' && $request->has('banners'))
             || ($section->section_name === 'services' && $request->has('services'))
+            || ($section->section_name === 'partners_heading' && $request->has('partners'))
             || ($section->section_name === 'deal_of_day' && ($request->filled('deal_bg_image_from_manager') || $request->has('remove_deal_bg_image')));
 
         if ($extraChanged) {

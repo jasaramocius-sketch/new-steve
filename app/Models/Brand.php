@@ -33,11 +33,32 @@ class Brand extends Model
     public function getImageAttribute()
     {
         $logo = trim((string) ($this->attributes['logo'] ?? ''));
-        if (isSourceS3ImageReference($logo)) {
+
+        if ($logo !== '') {
+            if (str_starts_with($logo, 'storage/')) {
+                return $logo;
+            }
+
+            if (str_starts_with($logo, 'uploads/')) {
+                return $logo;
+            }
+
+            if (preg_match('#^https?://#i', $logo)) {
+                return $logo;
+            }
+
+            if (str_starts_with($logo, 's3://')) {
+                return $logo;
+            }
+
+            if (function_exists('isSourceS3ImageReference') && isSourceS3ImageReference($logo)) {
+                return $logo;
+            }
+
             return $logo;
         }
 
-        return Cache::remember('brand.aws_image.'.$this->id, now()->addHours(6), function () {
+        return \Illuminate\Support\Facades\Cache::remember('brand.aws_image.'.$this->id, now()->addHours(6), function () {
             $bucket = (string) config('filesystems.disks.source_images.bucket');
             if ($bucket === '') {
                 return null;
@@ -56,9 +77,13 @@ class Brand extends Model
                 ->where('images_json', 'like', '%s3://'.$bucket.'/%')
                 ->orderBy('id')
                 ->value('images_json');
+
             foreach ((array) (is_string($gallery) ? json_decode($gallery, true) : $gallery) as $entry) {
                 $candidate = is_array($entry) ? ($entry['file'] ?? null) : $entry;
-                if (is_string($candidate) && isSourceS3ImageReference($candidate)) {
+                if (is_string($candidate) && function_exists('isSourceS3ImageReference') && isSourceS3ImageReference($candidate)) {
+                    return $candidate;
+                }
+                if (is_string($candidate) && str_starts_with($candidate, 's3://')) {
                     return $candidate;
                 }
             }

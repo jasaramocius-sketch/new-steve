@@ -205,7 +205,7 @@ class ProductController extends Controller
 
     public function show($slug)
     {
-        $product = Product::with(['galleryImages', 'category.parent', 'seller' => fn ($q) => $q->withCount('products')])->where('slug', $slug)->where('status', true)->firstOrFail();
+        $product = Product::with(['galleryImages', 'category.parent', 'brand', 'seller' => fn ($q) => $q->withCount('products')])->where('slug', $slug)->where('status', true)->firstOrFail();
         $related = Product::with('category')->where('status', true)->where('id', '!=', $product->id)->take(4)->get();
 
         // "Similar Products To Compare" — same part, other brands (Moglix-style).
@@ -308,6 +308,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
+            'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
@@ -328,6 +329,7 @@ class ProductController extends Controller
 
         $data = $request->only(['name', 'description', 'price', 'old_price', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
         $data['featured'] = $request->boolean('featured');
+        $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
             (string) ($data['description'] ?? ''),
             (string) ($data['policy_text'] ?? '')
@@ -398,6 +400,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
+            'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
@@ -418,6 +421,7 @@ class ProductController extends Controller
 
         $data = $request->only(['name', 'description', 'price', 'old_price', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
         $data['featured'] = $request->boolean('featured');
+        $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
             (string) ($data['description'] ?? ''),
             (string) ($data['policy_text'] ?? '')
@@ -541,6 +545,33 @@ class ProductController extends Controller
         $product->save();
 
         return back()->with('success', 'Product featured status updated successfully.');
+    }
+
+    /**
+     * Update the per-product commission from the All Products table.
+     * An empty value clears the override and falls back to the global commission.
+     */
+    public function updateCommission(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $validated = $request->validate([
+            'commission' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $product->commission = $request->filled('commission') ? (float) $validated['commission'] : null;
+        $product->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'commission' => $product->commission,
+                'effective' => $product->effectiveCommissionPercent(),
+                'total_price' => currency_format(buyerPrice($product->price, $product)),
+            ]);
+        }
+
+        return back()->with('success', 'Product commission updated successfully.');
     }
 
     public function duplicate($id)

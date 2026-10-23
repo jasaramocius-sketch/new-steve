@@ -84,7 +84,16 @@ class HomeController extends Controller
 
     private function getFeaturedProducts()
     {
-        return Product::where('status', true)->latest()->take(8)->get();
+        return $this->filterProductsWithImages(
+            Product::where('status', true)->latest()->take(8)->get()
+        );
+    }
+
+    private function filterProductsWithImages($products)
+    {
+        return $products
+            ->filter(fn (Product $product) => filled($product->image))
+            ->values();
     }
 
     private function randomProducts(int $take = 8)
@@ -99,9 +108,12 @@ class HomeController extends Controller
             ->where('id', '>=', random_int(1, $maxId))
             ->take($take)
             ->get();
+        $products = $this->filterProductsWithImages($products);
 
         if ($products->isEmpty()) {
-            $products = Product::where('status', true)->latest()->take($take)->get();
+            $products = $this->filterProductsWithImages(
+                Product::where('status', true)->latest()->take($take)->get()
+            );
         }
 
         return $products;
@@ -251,6 +263,8 @@ class HomeController extends Controller
                 continue;
             }
 
+            $products = $this->filterProductsWithImages($products);
+
             if ($products->isEmpty()) {
                 $products = $this->randomProducts(8);
             }
@@ -264,7 +278,7 @@ class HomeController extends Controller
         if (empty($result)) {
             $result[] = [
                 'label' => 'New Arrivals',
-                'products' => Product::where('status', true)->latest()->take(8)->get(),
+                'products' => $this->getFeaturedProducts(),
             ];
         }
 

@@ -66,7 +66,7 @@ class CartController extends Controller
             $cart[$id] = [
                 'id' => $id,
                 'name' => $product->name,
-                'price' => buyerPrice($product->price),
+                'price' => buyerPrice($product->price, $product),
                 'image' => storedImageUrl($product->image, 'assets/images/thumbnails'),
                 'qty' => $qty,
             ];
@@ -275,7 +275,7 @@ class CartController extends Controller
 
                 'id' => $product->id,
                 'name' => $product->name,
-                'price' => buyerPrice($product->price),
+                'price' => buyerPrice($product->price, $product),
                 'image' => $product->image,
                 'qty' => 1,
 
@@ -674,7 +674,7 @@ class CartController extends Controller
             }
 
             $cart[$id]['name'] = $product->name;
-            $cart[$id]['price'] = buyerPrice($product->price);
+            $cart[$id]['price'] = buyerPrice($product->price, $product);
             $cart[$id]['image'] = storedImageUrl($product->image, 'assets/images/thumbnails');
         }
 

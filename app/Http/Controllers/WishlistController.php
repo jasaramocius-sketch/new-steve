@@ -162,7 +162,7 @@ class WishlistController extends Controller
             $cart[$productId] = [
                 'id' => $wishlist->product->id,
                 'name' => $wishlist->product->name,
-                'price' => buyerPrice($wishlist->product->price),
+                'price' => buyerPrice($wishlist->product->price, $wishlist->product),
                 'image' => storedImageUrl($wishlist->product->image, 'assets/images/thumbnails'),
                 'qty' => 1,
             ];
