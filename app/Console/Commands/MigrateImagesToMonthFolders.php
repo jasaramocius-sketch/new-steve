@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 class MigrateImagesToMonthFolders extends Command
 {
@@ -168,6 +169,23 @@ class MigrateImagesToMonthFolders extends Command
         return true;
     }
 
+    /**
+     * Resolve the column that actually holds the image path of a model. The
+     * catalogue schema names them differently (products.main_image, brands.logo).
+     */
+    private function imageColumn(string $model, array $candidates): ?string
+    {
+        $table = (new $model)->getTable();
+
+        foreach ($candidates as $candidate) {
+            if (Schema::hasColumn($table, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
     private function migrateImagesTable()
     {
         $this->info('Migrating images table...');
@@ -204,12 +222,19 @@ class MigrateImagesToMonthFolders extends Command
 
     private function migrateProducts()
     {
-        $this->info('Migrating products.image...');
-        $products = Product::whereNotNull('image')->where('image', '!=', '')->get();
+        $column = $this->imageColumn(Product::class, ['main_image', 'image']);
+        if ($column === null) {
+            $this->warn('  products has no image column');
+
+            return;
+        }
+
+        $this->info("Migrating products.{$column}...");
+        $products = Product::whereNotNull($column)->where($column, '!=', '')->get();
         $baseDir = 'assets/images/thumbnails/';
 
         foreach ($products as $product) {
-            $oldValue = $product->image;
+            $oldValue = $product->{$column};
             $sourcePath = $this->findPhysicalFile($oldValue, [$baseDir]);
             if (! $sourcePath) {
                 $this->warn("  File not found for product {$product->id}: $oldValue");
@@ -226,19 +251,26 @@ class MigrateImagesToMonthFolders extends Command
             }
 
             $newPath = $this->moveFile($sourcePath, $targetPath);
-            $this->updateDB('products', 'image', $oldValue, $newPath, ['id' => $product->id]);
+            $this->updateDB('products', $column, $oldValue, $newPath, ['id' => $product->id]);
         }
         $this->info("  Processed {$products->count()} products");
     }
 
     private function migrateCategories()
     {
-        $this->info('Migrating categories.image...');
-        $items = Category::whereNotNull('image')->where('image', '!=', '')->get();
+        $column = $this->imageColumn(Category::class, ['image']);
+        if ($column === null) {
+            $this->warn('  categories has no image column');
+
+            return;
+        }
+
+        $this->info("Migrating categories.{$column}...");
+        $items = Category::whereNotNull($column)->where($column, '!=', '')->get();
         $baseDir = 'assets/images/categories/';
 
         foreach ($items as $item) {
-            $oldValue = $item->image;
+            $oldValue = $item->{$column};
             $sourcePath = $this->findPhysicalFile($oldValue, [$baseDir]);
             if (! $sourcePath) {
                 $this->warn("  File not found for category {$item->id}: $oldValue");
@@ -255,19 +287,26 @@ class MigrateImagesToMonthFolders extends Command
             }
 
             $newPath = $this->moveFile($sourcePath, $targetPath);
-            $this->updateDB('categories', 'image', $oldValue, $newPath, ['id' => $item->id]);
+            $this->updateDB('categories', $column, $oldValue, $newPath, ['id' => $item->id]);
         }
         $this->info("  Processed {$items->count()} categories");
     }
 
     private function migrateBrands()
     {
-        $this->info('Migrating brands.image...');
-        $items = Brand::whereNotNull('image')->where('image', '!=', '')->get();
+        $column = $this->imageColumn(Brand::class, ['logo', 'image']);
+        if ($column === null) {
+            $this->warn('  brands has no image column');
+
+            return;
+        }
+
+        $this->info("Migrating brands.{$column}...");
+        $items = Brand::whereNotNull($column)->where($column, '!=', '')->get();
         $baseDir = 'assets/images/brands/';
 
         foreach ($items as $item) {
-            $oldValue = $item->image;
+            $oldValue = $item->{$column};
             $sourcePath = $this->findPhysicalFile($oldValue, [$baseDir]);
             if (! $sourcePath) {
                 $this->warn("  File not found for brand {$item->id}: $oldValue");
@@ -284,7 +323,7 @@ class MigrateImagesToMonthFolders extends Command
             }
 
             $newPath = $this->moveFile($sourcePath, $targetPath);
-            $this->updateDB('brands', 'image', $oldValue, $newPath, ['id' => $item->id]);
+            $this->updateDB('brands', $column, $oldValue, $newPath, ['id' => $item->id]);
         }
         $this->info("  Processed {$items->count()} brands");
     }

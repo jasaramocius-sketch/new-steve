@@ -165,6 +165,10 @@ button {
   justify-content: center;
 }
 
+.btn-w40{
+  min-width: 40px;
+}
+
 .featured-status-btn .steve-btn {
   min-height: auto;
 }
@@ -1786,7 +1790,7 @@ p.text-lg {
   border: 1px solid #9a8e8c;
   background: #fff;
   color: #1f0300;
-  font-size: 20px;
+  font-size: 12px;
   line-height: 130%;
   -webkit-transition: all .3s ease-in;
   -o-transition: all .3s ease-in;

@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Traits\Revisable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class Category extends Model
 {
@@ -19,6 +19,7 @@ class Category extends Model
         'slug',
         'parent_id',
         'level',
+        'image',
     ];
 
     public function parent()
@@ -86,7 +87,40 @@ class Category extends Model
 
     public function getImageAttribute()
     {
-        return $this->attributes['image'] ?? null;
+        $image = trim((string) ($this->attributes['image'] ?? ''));
+        if (isSourceS3ImageReference($image)) {
+            return $image;
+        }
+
+        return Cache::remember('category.aws_image.'.$this->id, now()->addHours(6), function () {
+            $bucket = (string) config('filesystems.disks.source_images.bucket');
+            if ($bucket === '') {
+                return null;
+            }
+
+            $categoryIds = $this->getAllDescendantIds();
+            $primaryImage = Product::whereIn('category_id', $categoryIds)
+                ->where('main_image', 'like', 's3://'.$bucket.'/%')
+                ->orderBy('id')
+                ->value('main_image');
+
+            if ($primaryImage) {
+                return $primaryImage;
+            }
+
+            $gallery = Product::whereIn('category_id', $categoryIds)
+                ->where('images_json', 'like', '%s3://'.$bucket.'/%')
+                ->orderBy('id')
+                ->value('images_json');
+            foreach ((array) (is_string($gallery) ? json_decode($gallery, true) : $gallery) as $entry) {
+                $candidate = is_array($entry) ? ($entry['file'] ?? null) : $entry;
+                if (is_string($candidate) && isSourceS3ImageReference($candidate)) {
+                    return $candidate;
+                }
+            }
+
+            return null;
+        });
     }
 
     public function getStatusAttribute()
@@ -101,30 +135,15 @@ class Category extends Model
 
     public function getDisplayImagePath(): string
     {
-        $storedImage = trim((string) ($this->attributes['image'] ?? ''));
+        $storedImage = trim((string) ($this->image ?? ''));
         if ($storedImage !== '') {
             $candidate = storedPath($storedImage, 'assets/images/categories');
-            $checkPath = str_starts_with($candidate, 'uploads/') ? 'storage/'.$candidate : $candidate;
-            if (file_exists(public_path($checkPath))) {
+            if (preg_match('#^https?://#i', $candidate)) {
                 return $candidate;
             }
-        }
 
-        $fallbacks = [
-            'engine-parts' => '1730804224silver-device-with-white-cover-that-says-word-it-minpng.png',
-            'body-exterior' => '173080421331792401shockabsorber2-minpng.png',
-            'interior-parts' => '1730804204oval-shaped-car-mirror-minpng.png',
-            'electrical-lighting' => '1730804142c1b1489eb0545231cf0bfa44a827e2ae-minpng.png',
-            'brakes-brake-parts' => '173080413017369231014177a5f-cedb-407a-8a1d-a6aa0f40249d-minpng.png',
-            'transmission-drivetrain' => '1730804110engineering-concept-project-heating-house-thermostatic-valve-copper-fitting-project-minpng.png',
-            'suspension-steering' => '1730804093huelpful-steering-wheel-isolated-white-background-minpng.png',
-        ];
-
-        $slug = Str::slug((string) ($this->slug ?: $this->name));
-        $fallback = $fallbacks[$slug] ?? null;
-        if ($fallback) {
-            $candidate = 'assets/images/categories/'.$fallback;
-            if (file_exists(public_path($candidate))) {
+            $checkPath = str_starts_with($candidate, 'uploads/') ? 'storage/'.$candidate : $candidate;
+            if (file_exists(public_path($checkPath))) {
                 return $candidate;
             }
         }

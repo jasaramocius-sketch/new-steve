@@ -22,12 +22,16 @@
         <a href="{{ route('admin.products.index') }}" class="nav-item {{ request()->routeIs('admin.products.*') && !request()->routeIs('admin.products.import-form') && !request()->routeIs('admin.products.stock') ? 'active' : '' }}">
             <i class="fas fa-box"></i> Products
         </a>
+
+        <a href="{{ route('admin.settings.commission') }}" class="nav-item {{ request()->routeIs('admin.settings.commission*') ? 'active' : '' }}">
+            <i class="fas fa-percent"></i> Commission
+        </a>
         <a href="{{ route('admin.products.stock') }}" class="nav-item {{ request()->routeIs('admin.products.stock') ? 'active' : '' }}">
             <i class="fas fa-warehouse"></i> Stock Management
         </a>
         <!-- <a href="{{ route('admin.products.import-form') }}" class="nav-item nav-item-sub {{ request()->routeIs('admin.products.import-form') ? 'active' : '' }}">
-            <i class="fas fa-upload"></i> Import Products -->
-        </a>
+            <i class="fas fa-upload"></i> Import Products 
+        </a>-->
         <a href="{{ route('admin.categories.index') }}" class="nav-item {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
             <i class="fas fa-list"></i> Categories
         </a>
@@ -73,9 +77,6 @@
         </a>
         <a href="{{ route('admin.settings.header') }}" class="nav-item {{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}">
             <i class="fas fa-sliders-h"></i> Header Settings
-        </a>
-        <a href="{{ route('admin.settings.commission') }}" class="nav-item {{ request()->routeIs('admin.settings.commission*') ? 'active' : '' }}">
-            <i class="fas fa-percent"></i> Commission
         </a>
         <a href="{{ route('admin.settings.footer') }}" class="nav-item {{ request()->routeIs('admin.settings.footer*') ? 'active' : '' }}">
             <i class="fas fa-address-book"></i> Footer Settings

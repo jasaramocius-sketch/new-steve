@@ -5,12 +5,38 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\HomePageSection;
 use App\Models\Image;
+use App\Models\Product;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 
 class HomePageController extends Controller
 {
+    private function serviceItems(): array
+    {
+        $stored = Setting::get('homepage_services');
+        if (is_string($stored)) {
+            $stored = json_decode($stored, true);
+        }
+
+        $defaults = config('homepage.services', []);
+
+        return is_array($stored) && count($stored) === count($defaults)
+            ? array_replace_recursive($defaults, $stored)
+            : $defaults;
+    }
+
     public function index(Request $request)
     {
+        HomePageSection::firstOrCreate(
+            ['section_name' => 'services'],
+            [
+                'title' => 'Services',
+                'order' => ((int) HomePageSection::where('order', '<', 999)->max('order')) + 1,
+                'status' => true,
+                'extra_data' => ['services' => $this->serviceItems()],
+            ]
+        );
+
         $sortBy = in_array($request->sort_by, ['section_name', 'title', 'status', 'order', 'created_at']) ? $request->sort_by : 'order';
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 10;
@@ -28,6 +54,28 @@ class HomePageController extends Controller
         return view('admin.home-page.edit', compact('section'));
     }
 
+    public function searchProducts(Request $request)
+    {
+        $search = trim((string) $request->query('search', ''));
+        if (mb_strlen($search) < 2) {
+            return response()->json([]);
+        }
+
+        $products = Product::where('status', true)
+            ->where(function ($query) use ($search) {
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('part_number', 'like', '%'.$search.'%');
+            })
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'part_number']);
+
+        return response()->json($products->map(fn ($product) => [
+            'id' => $product->id,
+            'label' => trim($product->name.' ('.$product->part_number.')'),
+        ])->values());
+    }
+
     public function update(Request $request, $id)
     {
         $section = HomePageSection::findOrFail($id);
@@ -42,8 +90,13 @@ class HomePageController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'tabs' => 'nullable|array',
             'tabs.*.label' => 'nullable|string|max:255',
-            'tabs.*.product_ids' => 'nullable|array',
+            'tabs.*.product_ids' => 'nullable|array|max:8',
             'tabs.*.product_ids.*' => 'integer|exists:products,id',
+            'services' => 'nullable|array|size:4',
+            'services.*.title' => 'nullable|string|max:100',
+            'services.*.description' => 'nullable|string|max:255',
+            'services.*.image_from_manager' => 'nullable|string|max:1000',
+            'services.*.existing_image' => 'nullable|string|max:1000',
         ]);
 
         $validated['status'] = $request->has('status') ? 1 : 0;
@@ -145,6 +198,29 @@ class HomePageController extends Controller
             $existing['banners'] = $savedBanners;
         }
 
+        if ($section->section_name === 'services' && $request->has('services')) {
+            $savedServices = [];
+            foreach ((array) $request->input('services') as $service) {
+                if (! is_array($service)) {
+                    continue;
+                }
+
+                $image = $service['existing_image'] ?? null;
+                if (! empty($service['image_from_manager'])) {
+                    $image = 'storage/'.ltrim($service['image_from_manager'], '/');
+                    $pickedPaths[] = $service['image_from_manager'];
+                }
+
+                $savedServices[] = [
+                    'image' => $image,
+                    'title' => $service['title'] ?? '',
+                    'description' => $service['description'] ?? '',
+                ];
+            }
+
+            $existing['services'] = array_slice($savedServices, 0, 4);
+        }
+
         $extraChanged = $request->filled('brands_limit')
             || $request->has('brand_ids')
             || $request->filled('posts_count')
@@ -152,6 +228,7 @@ class HomePageController extends Controller
             || $request->has('category_ids')
             || $request->filled('countdown')
             || ($section->section_name === 'offers' && $request->has('banners'))
+            || ($section->section_name === 'services' && $request->has('services'))
             || ($section->section_name === 'deal_of_day' && ($request->filled('deal_bg_image_from_manager') || $request->has('remove_deal_bg_image')));
 
         if ($extraChanged) {

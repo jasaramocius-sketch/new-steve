@@ -16,7 +16,16 @@ class BrandController extends Controller
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 10;
 
-        $brands = Brand::orderBy($sortBy, $sortDir)->paginate($perPage);
+        $brands = Brand::query()
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = trim((string) $request->input('search'));
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('slug', 'like', '%'.$search.'%');
+                });
+            })
+            ->orderBy($sortBy, $sortDir)
+            ->paginate($perPage);
         $brands->appends($request->query())->onEachSide(1);
 
         return view('admin.brands.index', compact('brands', 'sortBy', 'sortDir'));
@@ -41,9 +50,9 @@ class BrandController extends Controller
         $data['status'] = $request->boolean('status');
 
         if ($request->filled('image_from_manager')) {
-            $data['image'] = 'storage/'.ltrim($request->image_from_manager, '/');
+            $data['logo'] = 'storage/'.ltrim($request->image_from_manager, '/');
         } elseif ($request->hasFile('image')) {
-            $data['image'] = saveImageWithWebp($request->file('image'));
+            $data['logo'] = saveImageWithWebp($request->file('image'));
         }
 
         $brand = Brand::create($data);
@@ -78,9 +87,9 @@ class BrandController extends Controller
         $data['status'] = $request->boolean('status');
 
         if ($request->filled('image_from_manager')) {
-            $data['image'] = 'storage/'.ltrim($request->image_from_manager, '/');
+            $data['logo'] = 'storage/'.ltrim($request->image_from_manager, '/');
         } elseif ($request->hasFile('image')) {
-            $data['image'] = saveImageWithWebp($request->file('image'));
+            $data['logo'] = saveImageWithWebp($request->file('image'));
         }
 
         $brand->update($data);

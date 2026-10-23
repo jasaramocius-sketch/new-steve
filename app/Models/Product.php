@@ -80,7 +80,24 @@ class Product extends Model
 
     public function getImageAttribute()
     {
-        return $this->attributes['main_image'] ?? null;
+        $image = trim((string) ($this->attributes['main_image'] ?? ''));
+        if (isSourceS3ImageReference($image)) {
+            return $image;
+        }
+
+        $images = $this->attributes['images_json'] ?? [];
+        if (is_string($images)) {
+            $images = json_decode($images, true) ?: [];
+        }
+
+        foreach ((array) $images as $entry) {
+            $candidate = is_array($entry) ? ($entry['file'] ?? null) : $entry;
+            if (is_string($candidate) && isSourceS3ImageReference($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     public function setImageAttribute($value)

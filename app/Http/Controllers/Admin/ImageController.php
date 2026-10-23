@@ -168,7 +168,17 @@ class ImageController extends Controller
 
         $uploaded = [];
         foreach ($request->file('images') as $file) {
-            $image = Image::storeFromUpload($file, 'images');
+            try {
+                $image = Image::storeFromUpload($file, 'images');
+            } catch (\Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage() ?: 'The image could not be uploaded.',
+                ], 500);
+            }
+
             $uploaded[] = [
                 'id' => $image->id,
                 'thumb_url' => $image->thumb_url,
@@ -246,6 +256,13 @@ class ImageController extends Controller
             file_put_contents($tmp, $contents);
             $uploadedFile = new UploadedFile($tmp, $originalName, $mime, null, true);
             $image = Image::storeFromUpload($uploadedFile, 'images');
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage() ?: 'The image could not be saved.',
+            ], 500);
         } finally {
             @unlink($tmp);
         }
@@ -272,9 +289,15 @@ class ImageController extends Controller
         ]);
 
         $uploaded = 0;
-        foreach ($request->file('images') as $file) {
-            Image::storeFromUpload($file, 'images');
-            $uploaded++;
+        try {
+            foreach ($request->file('images') as $file) {
+                Image::storeFromUpload($file, 'images');
+                $uploaded++;
+            }
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', $e->getMessage() ?: 'The image could not be uploaded.');
         }
 
         return back()->with('success', "{$uploaded} image(s) uploaded successfully.");

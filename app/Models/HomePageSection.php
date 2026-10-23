@@ -24,9 +24,38 @@ class HomePageSection extends Model
     ];
 
     protected $casts = [
-        'extra_data' => 'json',
         'status' => 'boolean',
     ];
+
+    public function getExtraDataAttribute($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+        if (is_string($decoded)) {
+            $decoded = json_decode($decoded, true);
+        }
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    public function setExtraDataAttribute($value): void
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                $value = $decoded;
+            }
+        }
+
+        $this->attributes['extra_data'] = json_encode(is_array($value) ? $value : []);
+    }
 
     public function imagePath(): ?string
     {

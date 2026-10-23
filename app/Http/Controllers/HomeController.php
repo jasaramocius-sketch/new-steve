@@ -10,6 +10,7 @@ use App\Models\Faq;
 use App\Models\HomePageSection;
 use App\Models\Page;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\Tag;
 
 class HomeController extends Controller
@@ -150,6 +151,21 @@ class HomeController extends Controller
 
         $bestSelling = $this->randomProducts(8);
 
+        $servicesSection = HomePageSection::where('section_name', 'services')->first();
+        if ($servicesSection) {
+            $services = $servicesSection->status
+                ? ($servicesSection->extra_data['services'] ?? config('homepage.services', []))
+                : [];
+        } else {
+            $services = Setting::get('homepage_services');
+            if (is_string($services)) {
+                $services = json_decode($services, true);
+            }
+            if (! is_array($services) || count($services) !== count(config('homepage.services', []))) {
+                $services = config('homepage.services', []);
+            }
+        }
+
         $latestPostSection = $sections->get('latest_post');
         $latestPostLimit = (int) ($latestPostSection?->extra_data['posts_count'] ?? 2);
         if ($latestPostLimit < 1 || $latestPostLimit > 12) {
@@ -189,7 +205,7 @@ class HomeController extends Controller
 
         $brands = $brandsQuery->get();
 
-        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'brands') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
+        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'brands', 'services') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
     }
 
     private function buildExploreTabs($section): array

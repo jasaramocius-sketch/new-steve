@@ -66,7 +66,7 @@
             <div class="category-image">
                 <a href="{{ route('shop', ['brand' => $brand->slug]) }}">
                     @if($brand->image)
-                        {!! imgTag(storedPath($brand->image, 'assets/images/brands'), $brand->name, '', 'style="width:100%;height:200px;object-fit:cover;"') !!}
+                        {!! imgTag(storedPath($brand->image, 'assets/images/brands'), $brand->name, '', 'style="width:100%;height:200px;object-fit:contain;"') !!}
                     @else
                         <div style="width:100%;height:200px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;">
                             <i class="fas fa-tag fa-3x text-muted"></i>

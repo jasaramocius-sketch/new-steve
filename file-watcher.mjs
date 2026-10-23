@@ -1,5 +1,6 @@
 import chokidar from 'chokidar';
 import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -8,6 +9,12 @@ const BASE = __dirname;
 const WATCH_DIRS = ['app', 'config', 'database', 'resources', 'routes', 'public/assets'];
 const EXCLUDE = [/[/\\]vendor[/\\]/, /[/\\]node_modules[/\\]/, /[/\\]storage[/\\]/, /[/\\]\.git[/\\]/,
   /\.log$/, /\.DS_Store$/, /[/\\]bootstrap[/\\]cache[/\\]/];
+
+const STATE_FILE = path.join(BASE, 'storage/file-backups/.state.json');
+
+if (!existsSync(STATE_FILE)) {
+  execSync('php artisan file:audit --init', { cwd: BASE, stdio: 'inherit' });
+}
 
 const debounceTimers = {};
 

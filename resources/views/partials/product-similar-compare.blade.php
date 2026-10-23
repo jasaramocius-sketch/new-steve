@@ -114,7 +114,7 @@
                                     <button type="submit" class="btn btn-danger btn-sm steve-btn w-100">Add to Cart</button>
                                 </form>
                             @else
-                                <span class="text-muted small">Out of Stock</span>
+                                <!-- <span class="text-muted small">Out of Stock</span> -->
                             @endif
                             <a href="{{ route('product', $p->slug) }}" class="btn btn-outline-secondary btn-sm steve-btn">View Details</a>
                         </div>

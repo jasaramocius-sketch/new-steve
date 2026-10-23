@@ -111,6 +111,45 @@
                             @enderror
                         </div>
 
+                        @if($section->section_name === 'services')
+                        @php
+                            $serviceItems = $section->extra_data['services'] ?? config('homepage.services', []);
+                        @endphp
+                        <div class="card mb-3 border-info">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Service Cards</h5>
+                            </div>
+                            <div class="card-body">
+                                @foreach($serviceItems as $i => $service)
+                                <div class="border rounded p-3 mb-3 bg-light">
+                                    <strong class="d-block mb-2">Service {{ $i + 1 }}</strong>
+                                    @if(!empty($service['image']))
+                                        <div class="mb-2 service-image-current-{{ $i }}">
+                                            <img src="{{ storedImageUrl($service['image'], 'assets/images/services') }}" alt="{{ $service['title'] ?? 'Service' }}" width="80" height="80" class="admin-image-thumb-bordered">
+                                        </div>
+                                    @endif
+                                    <input type="hidden" name="services[{{ $i }}][existing_image]" value="{{ $service['image'] ?? '' }}">
+                                    <input type="hidden" name="services[{{ $i }}][image_from_manager]" id="service_image_from_manager_{{ $i }}">
+                                    <div id="impPreview_service_{{ $i }}" class="d-none mt-2"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2 mb-3" onclick="impOpen_service_{{ $i }}()">
+                                        <i class="fas fa-images me-1"></i> Change Image
+                                    </button>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="service_title_{{ $i }}">Title</label>
+                                            <input type="text" id="service_title_{{ $i }}" name="services[{{ $i }}][title]" class="form-control" maxlength="100" value="{{ old('services.'.$i.'.title', $service['title'] ?? '') }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="service_description_{{ $i }}">Description</label>
+                                            <input type="text" id="service_description_{{ $i }}" name="services[{{ $i }}][description]" class="form-control" maxlength="255" value="{{ old('services.'.$i.'.description', $service['description'] ?? '') }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
                         @if($section->section_name === 'offers')
                         @php
                             $extra = $section->extra_data ?? [];
@@ -283,7 +322,7 @@
                         @endphp
                         <div class="form-group mb-3">
                             <label for="posts_count" class="form-label"><strong>Number of Posts to Show</strong></label>
-                            <select name="posts_count" id="posts_count" class="form-control">
+                            <select name="posts_count" id="posts_count" class="form-control form-select">
                                 @foreach([2, 3, 4, 6] as $n)
                                     <option value="{{ $n }}" {{ (int)($extra['posts_count'] ?? 2) === $n ? 'selected' : '' }}>{{ $n }} Posts</option>
                                 @endforeach
@@ -308,7 +347,7 @@
                         @php
                             $extra = $section->extra_data ?? [];
                             $selectedCategoryIds = collect($extra['category_ids'] ?? [])->map(fn($id) => (int) $id)->all();
-                            $allCategories = \App\Models\Category::whereNull('parent_id')->where('status', true)->orderBy('name')->get();
+                            $allCategories = \App\Models\Category::whereNull('parent_id')->orderBy('name')->get();
                         @endphp
                         <div class="form-group mb-3">
                             <label for="category_ids" class="form-label"><strong>Select Categories for Home Page</strong></label>
@@ -332,7 +371,7 @@
                         @endphp
                         <div class="form-group mb-3">
                             <label for="brands_limit" class="form-label"><strong>Number of Brands to Show</strong></label>
-                            <select name="brands_limit" id="brands_limit" class="form-control">
+                            <select name="brands_limit" id="brands_limit" class="form-control form-select">
                                 <option value="6" {{ $brandsLimit == '6' ? 'selected' : '' }}>6 Brands</option>
                                 <option value="9" {{ $brandsLimit == '9' ? 'selected' : '' }}>9 Brands</option>
                                 <option value="12" {{ $brandsLimit == '12' ? 'selected' : '' }}>12 Brands</option>
@@ -359,7 +398,6 @@
                         @php
                             $extra = $section->extra_data ?? [];
                             $tabs = $extra['tabs'] ?? [];
-                            $allProducts = \App\Models\Product::where('status', true)->orderBy('name')->get();
                         @endphp
                         <div class="card mb-3 border-info">
                             <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
@@ -369,23 +407,36 @@
                             <div class="card-body" id="tabs-container">
                                 <p class="text-muted small">Manage the tabs shown in the Explore Our Products section. Each tab shows up to 8 products.</p>
                                 @foreach($tabs as $i => $tab)
+                                @php
+                                    $selectedProductIds = array_values(array_filter(array_map('intval', $tab['product_ids'] ?? [])));
+                                    $selectedProducts = \App\Models\Product::whereIn('id', $selectedProductIds)->get(['id', 'name', 'part_number'])->keyBy('id');
+                                @endphp
                                 <div class="tab-row border rounded p-3 mb-3 bg-light">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <div class="flex-grow-1 me-3">
                                             <label class="form-label mb-0 fw-600">Tab Heading</label>
                                             <input type="text" name="tabs[{{ $i }}][label]" class="form-control" value="{{ $tab['label'] ?? '' }}" placeholder="e.g., New Arrivals">
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-danger mt-4 steve-btn" onclick="this.closest('.tab-row').remove()">x</button>
+                                        <button type="button" class="btn btn-sm btn-danger mt-4 steve-btn btn-w40" onclick="this.closest('.tab-row').remove()" style="font-size: 18px;">x</button>
                                     </div>
                                     <label class="form-label mb-0 fw-600">Products</label>
-                                    <select name="tabs[{{ $i }}][product_ids][]" class="form-control" multiple size="5">
-                                        @foreach($allProducts as $product)
-                                            <option value="{{ $product->id }}" {{ in_array($product->id, $tab['product_ids'] ?? []) ? 'selected' : '' }}>
-                                                {{ $product->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <small class="text-muted">Hold Ctrl/Cmd to select multiple products</small>
+                                    <div class="tab-product-picker" data-tab-index="{{ $i }}">
+                                        <input type="search" class="form-control tab-product-search" placeholder="Search by product name or part number" autocomplete="off">
+                                        <div class="list-group tab-product-results d-none mt-1"></div>
+                                        <div class="tab-product-selected d-flex flex-wrap gap-2 mt-2">
+                                            @foreach($selectedProductIds as $productId)
+                                                @if($selectedProducts->has($productId))
+                                                    @php $selectedProduct = $selectedProducts->get($productId); @endphp
+                                                    <span class="badge bg-secondary d-inline-flex align-items-center gap-2 p-2" data-product-id="{{ $productId }}">
+                                                        {{ $selectedProduct->name }} ({{ $selectedProduct->part_number }})
+                                                        <button type="button" class="btn-close btn-close-white tab-product-remove" aria-label="Remove product"></button>
+                                                        <input type="hidden" name="tabs[{{ $i }}][product_ids][]" value="{{ $productId }}">
+                                                    </span>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                        <small class="text-muted">Choose up to 8 products. Search by name or part number.</small>
+                                    </div>
                                 </div>
                                 @endforeach
                             </div>
@@ -401,22 +452,107 @@
                                     <button type="button" class="btn btn-sm btn-danger mt-4 steve-btn" onclick="this.closest('.tab-row').remove()">x</button>
                                 </div>
                                 <label class="form-label mb-0 fw-600">Products</label>
-                                <select name="tabs[__INDEX__][product_ids][]" class="form-control" multiple size="5">
-                                    @foreach($allProducts as $product)
-                                    <option value="{{ $product->id }}">{{ $product->name }}</option>
-                                    @endforeach
-                                </select>
-                                <small class="text-muted">Hold Ctrl/Cmd to select multiple products</small>
+                                <div class="tab-product-picker" data-tab-index="__INDEX__">
+                                    <input type="search" class="form-control tab-product-search" placeholder="Search by product name or part number" autocomplete="off">
+                                    <div class="list-group tab-product-results d-none mt-1"></div>
+                                    <div class="tab-product-selected d-flex flex-wrap gap-2 mt-2"></div>
+                                    <small class="text-muted">Choose up to 8 products. Search by name or part number.</small>
+                                </div>
                             </div>
                         </template>
 
                         <script>
                         let tabIndex = {{ count($tabs) }};
+                        const productSearchUrl = @json(route('admin.home-page.product-search'));
+
+                        function initTabProductPicker(picker) {
+                            const input = picker.querySelector('.tab-product-search');
+                            const results = picker.querySelector('.tab-product-results');
+                            const selected = picker.querySelector('.tab-product-selected');
+                            let timer;
+
+                            function addProduct(product) {
+                                if (selected.querySelector('[data-product-id="' + product.id + '"]')) return;
+                                if (selected.querySelectorAll('[data-product-id]').length >= 8) {
+                                    input.setCustomValidity('Choose no more than 8 products.');
+                                    input.reportValidity();
+                                    return;
+                                }
+
+                                input.setCustomValidity('');
+                                const chip = document.createElement('span');
+                                chip.className = 'badge bg-secondary d-inline-flex align-items-center gap-2 p-2';
+                                chip.dataset.productId = product.id;
+
+                                const label = document.createElement('span');
+                                label.textContent = product.label;
+                                const remove = document.createElement('button');
+                                remove.type = 'button';
+                                remove.className = 'btn-close btn-close-white tab-product-remove';
+                                remove.setAttribute('aria-label', 'Remove product');
+                                const hidden = document.createElement('input');
+                                hidden.type = 'hidden';
+                                hidden.name = 'tabs[' + picker.dataset.tabIndex + '][product_ids][]';
+                                hidden.value = product.id;
+
+                                chip.append(label, remove, hidden);
+                                selected.appendChild(chip);
+                            }
+
+                            input.addEventListener('input', function() {
+                                clearTimeout(timer);
+                                const search = input.value.trim();
+                                if (search.length < 2) {
+                                    results.replaceChildren();
+                                    results.classList.add('d-none');
+                                    return;
+                                }
+
+                                timer = setTimeout(function() {
+                                    fetch(productSearchUrl + '?search=' + encodeURIComponent(search), {
+                                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                                    })
+                                    .then(response => response.ok ? response.json() : [])
+                                    .then(products => {
+                                        results.replaceChildren();
+                                        products.forEach(product => {
+                                            if (selected.querySelector('[data-product-id="' + product.id + '"]')) return;
+                                            const option = document.createElement('button');
+                                            option.type = 'button';
+                                            option.className = 'list-group-item list-group-item-action';
+                                            option.textContent = product.label;
+                                            option.addEventListener('click', function() {
+                                                addProduct(product);
+                                                input.value = '';
+                                                results.replaceChildren();
+                                                results.classList.add('d-none');
+                                            });
+                                            results.appendChild(option);
+                                        });
+                                        results.classList.toggle('d-none', results.childElementCount === 0);
+                                    })
+                                    .catch(() => {
+                                        results.replaceChildren();
+                                        results.classList.add('d-none');
+                                    });
+                                }, 250);
+                            });
+
+                            selected.addEventListener('click', function(event) {
+                                const remove = event.target.closest('.tab-product-remove');
+                                if (remove) remove.closest('[data-product-id]').remove();
+                            });
+                        }
+
+                        document.querySelectorAll('.tab-product-picker').forEach(initTabProductPicker);
+
                         function addTab() {
                             const html = document.getElementById('tab-template').innerHTML.replace(/__INDEX__/g, tabIndex++);
                             const div = document.createElement('div');
                             div.innerHTML = html;
-                            document.getElementById('tabs-container').appendChild(div.firstElementChild);
+                            const row = div.firstElementChild;
+                            document.getElementById('tabs-container').appendChild(row);
+                            initTabProductPicker(row.querySelector('.tab-product-picker'));
                         }
                         </script>
                         @endif
@@ -607,6 +743,12 @@ document.addEventListener('DOMContentLoaded', function () {
 @for($i = 0; $i < 3; $i++)
 @include('admin.partials.image-manager-picker', ['pickerId' => 'banner_' . $i, 'targetInput' => 'banners[' . $i . '][image_from_manager]'])
 @endfor
+
+@if($section->section_name === 'services')
+@for($i = 0; $i < 4; $i++)
+@include('admin.partials.image-manager-picker', ['pickerId' => 'service_' . $i, 'targetInput' => 'services[' . $i . '][image_from_manager]'])
+@endfor
+@endif
 
 @if($section->section_name === 'deal_of_day')
 @include('admin.partials.image-manager-picker', ['pickerId' => 'deal_of_day_image', 'targetInput' => 'image_from_manager'])

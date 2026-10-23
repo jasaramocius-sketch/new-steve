@@ -128,31 +128,41 @@ if (! function_exists('storedPath')) {
     }
 }
 
+if (! function_exists('isSourceS3ImageReference')) {
+    function isSourceS3ImageReference(?string $value): bool
+    {
+        if (! $value) {
+            return false;
+        }
+
+        $parts = parse_url(trim($value));
+        $bucket = strtolower((string) config('filesystems.disks.source_images.bucket'));
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+
+        if ($bucket === '' || empty($parts['path'])) {
+            return false;
+        }
+
+        if ($scheme === 's3') {
+            return strtolower((string) ($parts['host'] ?? '')) === $bucket;
+        }
+
+        if ($scheme !== 'http' && $scheme !== 'https') {
+            return false;
+        }
+
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        return $host === $bucket.'.s3.amazonaws.com'
+            || (str_starts_with($host, $bucket.'.s3.') && str_ends_with($host, '.amazonaws.com'));
+    }
+}
+
 if (! function_exists('sourceS3ImageUrl')) {
     function sourceS3ImageUrl(string $value): ?string
     {
         $parts = parse_url($value);
-        $bucket = (string) config('filesystems.disks.source_images.bucket');
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-
-        if ($bucket === '' || empty($parts['path'])) {
-            return null;
-        }
-
-        if ($scheme === 's3') {
-            if (strtolower((string) ($parts['host'] ?? '')) !== strtolower($bucket)) {
-                return null;
-            }
-        } elseif ($scheme === 'http' || $scheme === 'https') {
-            $host = strtolower((string) ($parts['host'] ?? ''));
-            $bucketHost = strtolower($bucket.'.s3.amazonaws.com');
-            $isSourceHost = $host === $bucketHost
-                || (str_starts_with($host, strtolower($bucket.'.s3.')) && str_ends_with($host, '.amazonaws.com'));
-
-            if (! $isSourceHost) {
-                return null;
-            }
-        } else {
+        if (! isSourceS3ImageReference($value)) {
             return null;
         }
 

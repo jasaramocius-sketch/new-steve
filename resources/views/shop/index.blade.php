@@ -551,7 +551,7 @@
                       <input type="hidden" name="{{ $name }}" value="{{ $value }}">
                     @endif
                   @endforeach
-                  <select name="brand" class="form-select" style="/*width:180px;*/ border:1px solid #c7c0bf; border-radius:4px;">
+                  <select name="brand" class="form-select" style="width:180px; border:1px solid #c7c0bf; border-radius:4px;">
                     <option value="">All Brands</option>
                     @foreach($brands as $brand)
                       <option value="{{ $brand->slug }}" {{ request('brand') == $brand->slug ? 'selected' : '' }}>{{ $brand->name }}</option>

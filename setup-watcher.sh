@@ -9,7 +9,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # Stop manual watcher if running
-"$DIR/file-watcher.sh" stop 2>/dev/null
+bash "$DIR/file-watcher.sh" stop 2>/dev/null
 
 # Copy service file
 cp "$SERVICE_FILE" "$TARGET"
@@ -17,7 +17,11 @@ cp "$SERVICE_FILE" "$TARGET"
 # Reload, enable, start
 systemctl daemon-reload
 systemctl enable file-watcher
-systemctl start file-watcher
+if systemctl is-active --quiet file-watcher; then
+  systemctl restart file-watcher
+else
+  systemctl start file-watcher
+fi
 
 echo "Done. Status:"
 systemctl status file-watcher --no-pager

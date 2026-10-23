@@ -6,6 +6,7 @@ use App\Traits\TracksIsDeleted;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 
 class Image extends Model
 {
@@ -57,20 +58,21 @@ class Image extends Model
             $this->load('products');
         }
 
-        $norm = static::normalizePath($this->path) ?? $this->path;
-        $matches = function ($value) use ($norm) {
-            if ($value === null || trim((string) $value) === '') {
+        $key = static::imageKey($this->path);
+        $candidates = static::pathVariants($key);
+        $matches = function ($value) use ($key) {
+            if ($key === null || $value === null || trim((string) $value) === '') {
                 return false;
             }
 
-            return (static::normalizePath($value) ?? $value) === $norm;
+            return static::imageKey($value) === $key;
         };
 
         $locations = [];
         $add = function ($type, $id, $label = '', $route = null, $usage = null) use (&$locations) {
-            $key = $type.':'.$id;
-            if (! isset($locations[$key])) {
-                $locations[$key] = [
+            $locationKey = $type.':'.$id;
+            if (! isset($locations[$locationKey])) {
+                $locations[$locationKey] = [
                     'type' => $type,
                     'id' => $id,
                     'label' => $label,
@@ -79,7 +81,7 @@ class Image extends Model
                 ];
             }
             if ($usage) {
-                $locations[$key]['usages'][] = $usage;
+                $locations[$locationKey]['usages'][] = $usage;
             }
         };
 
@@ -88,52 +90,82 @@ class Image extends Model
             $add('Product', $product->id, $product->name, route('admin.products.edit', $product->id), 'Gallery');
         }
 
-        // Entities that store an image path in their image column
-        foreach (Product::withTrashed()->whereNotNull('image')->where('image', '!=', '')->get() as $item) {
-            if ($matches($item->image)) {
-                $add('Product', $item->id, $item->name, route('admin.products.edit', $item->id), 'Primary Image');
+        // Entities that keep the image path in their own column. The catalogue
+        // schema stores these under different names than the models expose
+        // (products.main_image, brands.logo), so resolve the real column
+        // instead of assuming it is always called "image".
+        $productColumn = static::imageColumn('products', ['main_image', 'image']);
+        if ($productColumn) {
+            foreach (static::findByImageColumn(Product::class, $productColumn, $candidates) as $item) {
+                if ($matches($item->{$productColumn})) {
+                    $add('Product', $item->id, $item->name, route('admin.products.edit', $item->id), 'Primary Image');
+                }
             }
         }
-        foreach (Category::withTrashed()->whereNotNull('image')->where('image', '!=', '')->get() as $item) {
-            if ($matches($item->image)) {
-                $add('Category', $item->id, $item->name, route('admin.categories.edit', $item->id));
+
+        $categoryColumn = static::imageColumn('categories', ['image']);
+        if ($categoryColumn) {
+            foreach (static::findByImageColumn(Category::class, $categoryColumn, $candidates) as $item) {
+                if ($matches($item->{$categoryColumn})) {
+                    $add('Category', $item->id, $item->name, route('admin.categories.edit', $item->id));
+                }
             }
         }
-        foreach (Brand::withTrashed()->whereNotNull('image')->where('image', '!=', '')->get() as $item) {
-            if ($matches($item->image)) {
-                $add('Brand', $item->id, $item->name, route('admin.brands.edit', $item->id));
+
+        $brandColumn = static::imageColumn('brands', ['logo', 'image']);
+        if ($brandColumn) {
+            foreach (static::findByImageColumn(Brand::class, $brandColumn, $candidates) as $item) {
+                if ($matches($item->{$brandColumn})) {
+                    $add('Brand', $item->id, $item->name, route('admin.brands.edit', $item->id));
+                }
             }
         }
-        foreach (Seller::withTrashed()->whereNotNull('image')->where('image', '!=', '')->get() as $item) {
-            if ($matches($item->image)) {
-                $add('Seller', $item->id, $item->name, route('admin.sellers.edit', $item->id));
+
+        $sellerColumn = static::imageColumn('sellers', ['image']);
+        if ($sellerColumn) {
+            foreach (static::findByImageColumn(Seller::class, $sellerColumn, $candidates) as $item) {
+                if ($matches($item->{$sellerColumn})) {
+                    $add('Seller', $item->id, $item->name, route('admin.sellers.edit', $item->id));
+                }
             }
         }
-        foreach (Blog::withTrashed()->whereNotNull('image')->where('image', '!=', '')->get() as $item) {
-            if ($matches($item->image)) {
-                $add('Blog', $item->id, $item->title, route('admin.blogs.edit', $item->id));
+
+        $blogColumn = static::imageColumn('blogs', ['image']);
+        if ($blogColumn) {
+            foreach (static::findByImageColumn(Blog::class, $blogColumn, $candidates) as $item) {
+                if ($matches($item->{$blogColumn})) {
+                    $add('Blog', $item->id, $item->title, route('admin.blogs.edit', $item->id));
+                }
             }
         }
-        foreach (Page::withTrashed()->whereNotNull('image')->where('image', '!=', '')->get() as $item) {
-            if ($matches($item->image)) {
-                $add('Page', $item->id, $item->title, route('admin.pages.edit', $item->id));
+
+        $pageColumn = static::imageColumn('pages', ['image']);
+        if ($pageColumn) {
+            foreach (static::findByImageColumn(Page::class, $pageColumn, $candidates) as $item) {
+                if ($matches($item->{$pageColumn})) {
+                    $add('Page', $item->id, $item->title, route('admin.pages.edit', $item->id));
+                }
             }
         }
-        foreach (HomePageSection::whereNotNull('image')->get() as $item) {
-            if ($matches($item->image)) {
-                $add('Home Page Section', $item->id, $item->section_name, route('admin.home-page.edit'));
-            }
-            $dealImage = $item->extra_data['deal_image'] ?? null;
-            if ($matches($dealImage)) {
-                $add('Home Page Section', $item->id, $item->section_name.' (Deal Image)', route('admin.home-page.edit'));
+
+        $sectionColumn = static::imageColumn('home_page_sections', ['image']);
+        if ($sectionColumn) {
+            foreach (static::findByImageColumn(HomePageSection::class, $sectionColumn, $candidates) as $item) {
+                if ($matches($item->{$sectionColumn})) {
+                    $add('Home Page Section', $item->id, $item->section_name, route('admin.home-page.edit'));
+                }
+                $dealImage = $item->extra_data['deal_image'] ?? null;
+                if ($matches($dealImage)) {
+                    $add('Home Page Section', $item->id, $item->section_name.' (Deal Image)', route('admin.home-page.edit'));
+                }
             }
         }
 
         // Header/footer settings
-        foreach (['header_logo', 'header_favicon', 'mobile_logo', 'footer_logo', 'admin_header_bg'] as $key) {
-            $value = Setting::get($key);
+        foreach (['header_logo', 'header_favicon', 'mobile_logo', 'footer_logo', 'admin_header_bg'] as $settingKey) {
+            $value = Setting::get($settingKey);
             if ($matches($value)) {
-                $add('Site Setting', $key, ucwords(str_replace('_', ' ', $key)), route('admin.settings.header'));
+                $add('Site Setting', $settingKey, ucwords(str_replace('_', ' ', $settingKey)), route('admin.settings.header'));
             }
         }
 
@@ -206,6 +238,13 @@ class Image extends Model
         $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs('uploads/'.now()->format('Y/m'), $filename, 'public');
 
+        // The "public" disk does not throw on failure, so storeAs() hands back
+        // false instead of raising. Bail out instead of storing a row that
+        // points at a file that was never written.
+        if (! is_string($path) || $path === '') {
+            throw new \RuntimeException('The uploaded file could not be saved to storage. Please check the storage folder permissions.');
+        }
+
         $dimensions = @getimagesize($file->getPathname());
 
         return self::create([
@@ -243,6 +282,120 @@ class Image extends Model
         }
 
         return $path === '' ? null : $path;
+    }
+
+    /**
+     * Canonical key for an image reference.
+     *
+     * Local paths are normalised (no "storage/" or "public/" prefix), while hub
+     * (S3) references collapse to their object key so that "s3://bucket/key",
+     * "https://bucket.s3.amazonaws.com/key" and a plain "key" path all resolve
+     * to the same image. Anything hosted outside the hub bucket is not tracked.
+     */
+    public static function imageKey(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('#^(?:s3|https?)://#i', $value)) {
+            $parts = parse_url($value);
+            $bucket = strtolower((string) config('filesystems.disks.source_images.bucket'));
+            $host = strtolower((string) ($parts['host'] ?? ''));
+
+            if ($bucket === '') {
+                return null;
+            }
+
+            $isHub = $host === $bucket
+                || $host === $bucket.'.s3.amazonaws.com'
+                || (str_starts_with($host, $bucket.'.s3.') && str_ends_with($host, '.amazonaws.com'));
+
+            if (! $isHub) {
+                return null;
+            }
+
+            $key = ltrim((string) ($parts['path'] ?? ''), '/');
+
+            return $key === '' ? null : $key;
+        }
+
+        return static::normalizePath($value);
+    }
+
+    /**
+     * Every raw value that resolves to the given image key. Used to look the
+     * references up in SQL instead of loading whole tables into memory.
+     */
+    protected static function pathVariants(?string $key): array
+    {
+        if ($key === null || $key === '') {
+            return [];
+        }
+
+        $variants = [
+            $key,
+            'storage/'.$key,
+            'public/'.$key,
+            '/'.$key,
+        ];
+
+        $bucket = strtolower((string) config('filesystems.disks.source_images.bucket'));
+        if ($bucket !== '') {
+            $variants[] = 's3://'.$bucket.'/'.$key;
+
+            $region = strtolower((string) config('filesystems.disks.source_images.region'));
+            $variants[] = 'https://'.$bucket.'.s3.amazonaws.com/'.$key;
+            if ($region !== '') {
+                $variants[] = 'https://'.$bucket.'.s3.'.$region.'.amazonaws.com/'.$key;
+            }
+        }
+
+        return array_values(array_unique($variants));
+    }
+
+    /**
+     * Resolve the column that actually holds the image path of a table.
+     */
+    protected static function imageColumn(string $table, array $candidates): ?string
+    {
+        static $columns = [];
+
+        foreach ($candidates as $candidate) {
+            $cacheKey = $table.'.'.$candidate;
+            if (! array_key_exists($cacheKey, $columns)) {
+                $columns[$cacheKey] = Schema::hasColumn($table, $candidate);
+            }
+
+            if ($columns[$cacheKey]) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Fetch the rows of a model whose image column points at one of the paths.
+     */
+    protected static function findByImageColumn(string $model, string $column, array $candidates)
+    {
+        if ($candidates === []) {
+            return collect();
+        }
+
+        $query = $model::query();
+
+        if (in_array(SoftDeletes::class, class_uses_recursive($model), true)) {
+            $query->withTrashed();
+        }
+
+        return $query->whereIn($column, $candidates)->get();
     }
 
     public static function markUsed(string $path, ?Model $attachable = null, bool $attach = true): void

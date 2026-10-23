@@ -1,11 +1,11 @@
 [Unit]
-Description=STAutoParts File Watcher
+Description=New Steve File Revision Watcher
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/var/www/html/stautoparts
-ExecStart=/usr/bin/node file-watcher.mjs
+WorkingDirectory=/var/www/html/new-steve
+ExecStart=/usr/bin/php artisan file:audit --watch --interval=10 --max-archive-days=0 --per-file-limit=0
 Restart=always
 RestartSec=5
 User=jasaram

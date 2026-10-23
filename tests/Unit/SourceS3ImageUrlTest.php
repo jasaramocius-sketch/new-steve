@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -46,5 +47,28 @@ class SourceS3ImageUrlTest extends TestCase
         $url = 'https://images.example.com/product.jpg';
 
         $this->assertSame($url, storedImageUrl($url));
+    }
+
+    public function test_product_image_uses_an_aws_gallery_image_instead_of_a_local_path(): void
+    {
+        config(['filesystems.disks.source_images.bucket' => 'autoparts-hub']);
+        $product = new Product;
+        $product->setRawAttributes([
+            'main_image' => 'uploads/local-product.jpg',
+            'images_json' => json_encode([
+                ['file' => 's3://autoparts-hub/steveautoparts/images/brand/part_Fro.jpg'],
+            ]),
+        ]);
+
+        $this->assertSame('s3://autoparts-hub/steveautoparts/images/brand/part_Fro.jpg', $product->image);
+    }
+
+    public function test_product_image_is_empty_when_only_a_local_image_exists(): void
+    {
+        config(['filesystems.disks.source_images.bucket' => 'autoparts-hub']);
+        $product = new Product;
+        $product->setRawAttributes(['main_image' => 'uploads/local-product.jpg']);
+
+        $this->assertNull($product->image);
     }
 }

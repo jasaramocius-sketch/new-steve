@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Image;
 use App\Models\Page;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CategoryController extends Controller
 {
@@ -131,6 +133,8 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image_url' => 'nullable|url',
         ]);
 
         $category = new Category;
@@ -138,7 +142,12 @@ class CategoryController extends Controller
         $category->slug = Str::slug($request->name);
         $category->parent_id = $request->filled('parent_id') ? $request->parent_id : null;
         $category->level = $this->resolveLevel($category->parent_id);
+        $category->image = $this->resolveImage($request);
         $category->save();
+
+        if ($request->filled('image_from_manager')) {
+            Image::markUsed($request->image_from_manager, $category);
+        }
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Category created successfully.');
@@ -165,6 +174,8 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image_url' => 'nullable|url',
         ]);
 
         $category = Category::findOrFail($id);
@@ -172,7 +183,16 @@ class CategoryController extends Controller
         $category->slug = Str::slug($request->name);
         $category->parent_id = $request->filled('parent_id') ? $request->parent_id : null;
         $category->level = $this->resolveLevel($category->parent_id);
+
+        if ($image = $this->resolveImage($request)) {
+            $category->image = $image;
+        }
+
         $category->save();
+
+        if ($request->filled('image_from_manager')) {
+            Image::markUsed($request->image_from_manager, $category);
+        }
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Category updated successfully');
@@ -185,6 +205,31 @@ class CategoryController extends Controller
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Category deleted successfully');
+    }
+
+    private function resolveImage(Request $request): ?string
+    {
+        if ($request->filled('image_from_manager')) {
+            return 'storage/'.ltrim($request->image_from_manager, '/');
+        }
+
+        if ($request->hasFile('image')) {
+            return saveImageWithWebp($request->file('image'));
+        }
+
+        if ($request->filled('image_url')) {
+            $path = saveImageFromUrlWithWebp($request->input('image_url'));
+
+            if ($path === null) {
+                throw ValidationException::withMessages([
+                    'image_url' => 'Could not download image from the provided URL.',
+                ]);
+            }
+
+            return $path;
+        }
+
+        return null;
     }
 
     private function resolveLevel(?int $parentId): int

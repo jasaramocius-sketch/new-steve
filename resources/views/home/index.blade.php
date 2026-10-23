@@ -315,58 +315,29 @@
 <!-- Featured Product Section Completed -->
 @endif
 
+@if(count($services) > 0)
 <!-- Service Section -->
 <section class="gs-service-section px-4 bg-light-white">
     <div class="container section-with-padding">
         <div class="row service-row">
+            @foreach($services as $service)
             <div class="col-lg-3 col-md-6 col-sm-12 services-area wow-removed">
                 <div class="single-service d-flex flex-lg-column flex-xl-row text-lg-center text-xl-start">
                     <div class="icon-wrapper">
-                        {!! imgTag('assets/images/services/1667473770badgepng.png', 'service') !!}
+                        {!! imgTag(storedPath($service['image'] ?? null, 'assets/images/services'), $service['title'] ?? 'service') !!}
                     </div>
                     <div class="service-content">
-                        <h3 class="service-title">Manage Quality</h3>
-                        <p class="service-desc">Best Quality Guarantee</p>
+                        <h3 class="service-title">{{ $service['title'] ?? '' }}</h3>
+                        <p class="service-desc">{{ $service['description'] ?? '' }}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 col-sm-12 services-area wow-removed">
-                <div class="single-service d-flex flex-lg-column flex-xl-row text-lg-center text-xl-start">
-                    <div class="icon-wrapper">
-                        {!! imgTag('assets/images/services/1667473742carts1png.png', 'service') !!}
-                    </div>
-                    <div class="service-content">
-                        <h3 class="service-title">Win $100 To Shop</h3>
-                        <p class="service-desc">Enter Now</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 col-sm-12 services-area wow-removed">
-                <div class="single-service d-flex flex-lg-column flex-xl-row text-lg-center text-xl-start">
-                    <div class="icon-wrapper">
-                        {!! imgTag('assets/images/services/1667473728customer-service-agentpng.png', 'service') !!}
-                    </div>
-                    <div class="service-content">
-                        <h3 class="service-title">Best Online Support</h3>
-                        <p class="service-desc">Hour: 10:00AM - 5:00PM</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 col-sm-12 services-area wow-removed">
-                <div class="single-service d-flex flex-lg-column flex-xl-row text-lg-center text-xl-start">
-                    <div class="icon-wrapper">
-                        {!! imgTag('assets/images/services/1667473683money-bagpng.png', 'service') !!}
-                    </div>
-                    <div class="service-content">
-                        <h3 class="service-title">Money Back Guarantee</h3>
-                        <p class="service-desc">With A 30 Days</p>
-                    </div>
-                </div>
-            </div>
+            @endforeach
         </div>
     </div>
 </section>
 <!-- Service Section Completed -->
+@endif
 
 @if($sections->has('best_selling'))
 <!-- Best Selling Section -->

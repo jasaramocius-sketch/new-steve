@@ -60,7 +60,7 @@
             <div class="form-rows">
             <div class="mb-3 form-rows-col">
                 <label>Status</label>
-                <select name="status" class="form-control">
+                <select name="status" class="form-control form-select">
                     <option value="1" {{ old('status', '1') == '1' ? 'selected' : '' }}>Active</option>
                     <option value="0" {{ old('status', '1') == '0' ? 'selected' : '' }}>Inactive</option>
                 </select>
@@ -70,7 +70,7 @@
 
                 <label>Parent Category</label>
 
-                <select class="form-control" name="parent_id">
+                <select class="form-control form-select" name="parent_id">
 
                     <option value="">
                         Main Category

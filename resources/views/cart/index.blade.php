@@ -40,11 +40,11 @@
                     </span>
                     <span class="fs-14 opacity-60">{{ $item['name'] }}</span>
                   </div>
-                  <div class="col-3 col-lg cart-summary-item">
+                  <div class="col-4 col-lg cart-summary-item">
                     <span class="opacity-60 fs-12 d-block d-lg-none">Price</span>
                     <span class="fw-600 fs-16">{{ currency_format($item['price']) }}</span>
                   </div>
-                  <div class="col-1 col-lg cart-summary-item">
+                  <div class="col-2 col-lg cart-summary-item" style="display: flex;">
                     <div class="row g-0 align-items-center aiz-plus-minus mr-2 ml-0">
                       <button class="btn col-auto btn-icon btn-sm btn-circle btn-light change-qty steve-btn" type="button" data-action="decrease" data-id="{{ $key }}">
                         <i class="las la-minus"></i>

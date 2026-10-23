@@ -10,6 +10,7 @@ use App\Models\Image;
 use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 class SyncImagesToManager extends Command
 {
@@ -18,11 +19,11 @@ class SyncImagesToManager extends Command
     protected $description = 'Scan all image directories and sync into the images table';
 
     protected array $sources = [
-        ['dir' => 'thumbnails',  'model' => Product::class,         'column' => 'image'],
-        ['dir' => 'categories',  'model' => Category::class,        'column' => 'image'],
-        ['dir' => 'blogs',       'model' => Blog::class,             'column' => 'image'],
-        ['dir' => 'brands',      'model' => Brand::class,            'column' => 'image'],
-        ['dir' => 'home',        'model' => HomePageSection::class,  'column' => 'image'],
+        ['dir' => 'thumbnails',  'model' => Product::class,         'columns' => ['main_image', 'image']],
+        ['dir' => 'categories',  'model' => Category::class,        'columns' => ['image']],
+        ['dir' => 'blogs',       'model' => Blog::class,             'columns' => ['image']],
+        ['dir' => 'brands',      'model' => Brand::class,            'columns' => ['logo', 'image']],
+        ['dir' => 'home',        'model' => HomePageSection::class,  'columns' => ['image']],
     ];
 
     public function handle(): int
@@ -40,8 +41,15 @@ class SyncImagesToManager extends Command
                 continue;
             }
 
+            $column = $this->imageColumn($source['model'], $source['columns']);
+            if ($column === null) {
+                $this->warn("No image column found for {$source['model']}");
+
+                continue;
+            }
+
             $files = File::files($dir);
-            $this->info("Scanning [{$source['dir']}] — {$source['model']} — {$source['column']} — {$this->count($files)} files");
+            $this->info("Scanning [{$source['dir']}] — {$source['model']} — {$column} — {$this->count($files)} files");
 
             foreach ($files as $file) {
                 $filename = $file->getFilename();
@@ -59,7 +67,7 @@ class SyncImagesToManager extends Command
                     continue;
                 }
 
-                $parent = $source['model']::where($source['column'], $filename)->first();
+                $parent = $source['model']::where($column, $filename)->first();
 
                 if ($dryRun) {
                     $this->line("  WOULD INSERT: {$filename} → ".($parent ? get_class($parent).' #'.$parent->id : 'UNUSED'));
@@ -102,6 +110,23 @@ class SyncImagesToManager extends Command
         $this->info("Done. {$inserted} inserted, {$skipped} skipped.");
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Resolve the column that actually holds the image path of a model. The
+     * catalogue schema names them differently (products.main_image, brands.logo).
+     */
+    private function imageColumn(string $model, array $candidates): ?string
+    {
+        $table = (new $model)->getTable();
+
+        foreach ($candidates as $candidate) {
+            if (Schema::hasColumn($table, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     private function count(array|int $value): int

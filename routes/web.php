@@ -419,6 +419,8 @@ Route::prefix('admin')
 
         Route::get('/home-page', [HomePageController::class, 'index'])
             ->name('admin.home-page.index');
+        Route::get('/home-page/product-search', [HomePageController::class, 'searchProducts'])
+            ->name('admin.home-page.product-search');
         Route::get('/home-page/{id}/edit', [HomePageController::class, 'edit'])
             ->name('admin.home-page.edit');
         Route::put('/home-page/{id}', [HomePageController::class, 'update'])
