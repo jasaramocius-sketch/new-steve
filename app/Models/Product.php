@@ -100,7 +100,14 @@ class Product extends Model
     public function getImageAttribute()
     {
         $image = trim((string) ($this->attributes['main_image'] ?? ''));
-        if (isSourceS3ImageReference($image)) {
+        if ($image !== '' && (isSourceS3ImageReference($image) || preg_match('#^https?://#i', $image))) {
+            return $image;
+        }
+
+        $localPath = $image !== '' ? normalizeImagePath($image, 'assets/images/thumbnails') : '';
+        $checkPath = str_starts_with($localPath, 'uploads/') ? 'storage/'.$localPath : $localPath;
+        $isPlaceholder = preg_match('/placeholder|dummy|no[-_]?image|default/i', basename($localPath));
+        if ($image !== '' && ! $isPlaceholder && file_exists(public_path($checkPath))) {
             return $image;
         }
 
@@ -122,6 +129,65 @@ class Product extends Model
     public function setImageAttribute($value)
     {
         $this->attributes['main_image'] = $value;
+    }
+
+    public function hasUsableImage(): bool
+    {
+        $imageCandidates = [$this->attributes['main_image'] ?? null];
+
+        $images = $this->attributes['images_json'] ?? [];
+        if (is_string($images)) {
+            $images = json_decode($images, true) ?: [];
+        }
+
+        foreach ((array) $images as $entry) {
+            $candidate = is_array($entry) ? ($entry['file'] ?? null) : $entry;
+            if (is_string($candidate) && trim($candidate) !== '') {
+                $imageCandidates[] = $candidate;
+            }
+        }
+
+        foreach (array_filter(array_map('trim', $imageCandidates), fn ($value) => $value !== '') as $image) {
+            $baseName = strtolower(basename($image));
+            if (str_contains($baseName, 'placeholder') || str_contains($baseName, 'dummy') || str_contains($baseName, 'no-image') || str_contains($baseName, 'default')) {
+                continue;
+            }
+
+            if (isSourceS3ImageReference($image) || preg_match('#^https?://#i', $image)) {
+                return true;
+            }
+
+            $localPath = normalizeImagePath($image, 'assets/images/thumbnails');
+            $checkPath = str_starts_with($localPath, 'uploads/') ? 'storage/'.$localPath : $localPath;
+
+            if (file_exists(public_path($checkPath))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function scopeHasUsableImage($query)
+    {
+        return $query->where(function ($q) {
+            $q->where(function ($sub) {
+                $sub->whereNotNull('main_image')
+                    ->where('main_image', '<>', '')
+                    ->whereRaw("LOWER(COALESCE(main_image, '')) NOT LIKE '%placeholder%'")
+                    ->whereRaw("LOWER(COALESCE(main_image, '')) NOT LIKE '%dummy%'")
+                    ->whereRaw("LOWER(COALESCE(main_image, '')) NOT LIKE '%no-image%'")
+                    ->whereRaw("LOWER(COALESCE(main_image, '')) NOT LIKE '%default%'");
+            })->orWhere(function ($sub) {
+                $sub->whereNotNull('images_json')
+                    ->where('images_json', '<>', '')
+                    ->where('images_json', '<>', '[]')
+                    ->whereRaw("LOWER(COALESCE(images_json, '')) NOT LIKE '%placeholder%'")
+                    ->whereRaw("LOWER(COALESCE(images_json, '')) NOT LIKE '%dummy%'")
+                    ->whereRaw("LOWER(COALESCE(images_json, '')) NOT LIKE '%no-image%'")
+                    ->whereRaw("LOWER(COALESCE(images_json, '')) NOT LIKE '%default%'");
+            });
+        });
     }
 
     public function getStockAttribute()
@@ -272,8 +338,9 @@ class Product extends Model
      */
     public static function statusCountsByCategoryId(): \Illuminate\Support\Collection
     {
-        return DB::table(DB::raw('products FORCE INDEX (idx_category_status)'))
+        return self::query()
             ->where('status', true)
+            ->hasUsableImage()
             ->selectRaw('category_id, COUNT(*) as aggregate')
             ->groupBy('category_id')
             ->pluck('aggregate', 'category_id');

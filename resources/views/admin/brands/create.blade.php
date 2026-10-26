@@ -33,6 +33,8 @@
 
                 <div class="col-md-6">
                     <label class="form-label">Image</label>
+                    <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/jpeg,image/png,image/webp">
+                    @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     <input type="hidden" name="image_from_manager" id="image_from_manager_brand_image">
                     <div id="impPreview_brand_image" class="d-none mt-2"></div>
                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_brand_image()">

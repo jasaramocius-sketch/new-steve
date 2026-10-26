@@ -103,7 +103,7 @@ class Image extends Model
             }
         }
 
-        $categoryColumn = static::imageColumn('categories', ['image']);
+        $categoryColumn = static::imageColumn('categories', ['banner']);
         if ($categoryColumn) {
             foreach (static::findByImageColumn(Category::class, $categoryColumn, $candidates) as $item) {
                 if ($matches($item->{$categoryColumn})) {

@@ -59,7 +59,9 @@ class HomeController extends Controller
                     'image' => $category->getDisplayImagePath(),
                     'count' => $count,
                 ];
-            });
+            })
+            ->filter(fn ($category) => $category['image'] !== 'assets/images/placeholder.png' && $category['count'] > 0)
+            ->values();
     }
 
     private function getCategoryImage(string $slug): string
@@ -136,6 +138,28 @@ class HomeController extends Controller
                 'order' => 999,
                 'status' => true,
                 'extra_data' => ['brands_limit' => '6'],
+            ]);
+            $sections = HomePageSection::where('status', true)
+                ->orderBy('order')
+                ->get()
+                ->keyBy('section_name');
+        }
+
+        if (! HomePageSection::where('section_name', 'buy_with_confidence')->exists()) {
+            HomePageSection::create([
+                'section_name' => 'buy_with_confidence',
+                'title' => 'Buy With Confidence',
+                'description' => '40 years of getting it right. Here’s how we make sure you get the right part, every time.',
+                'button_text' => '1-800-555-AUTO',
+                'button_url' => 'tel:1800555',
+                'order' => 1000,
+                'status' => true,
+                'extra_data' => ['items' => [
+                    ['icon' => 'fa-solid fa-circle-check', 'title' => 'Fitment Guarantee', 'description' => 'Enter your VIN or vehicle specs and we show only parts that fit. Wrong part? We cover return shipping.'],
+                    ['icon' => 'fa-solid fa-truck-fast', 'title' => 'Fast Shipping', 'description' => '5 distribution centers coast-to-coast. Most orders arrive in 1–3 business days. Free over $99.'],
+                    ['icon' => 'fa-solid fa-rotate-left', 'title' => '30-Day Returns', 'description' => 'Parts don’t fit or change your mind? Return within 30 days. No restocking fee on most items.'],
+                    ['icon' => 'fa-solid fa-user-gear', 'title' => 'Mechanic Tested', 'description' => 'Every brand we carry is vetted by ASE-certified technicians. No junk, no knock-offs, no surprises.'],
+                ]],
             ]);
             $sections = HomePageSection::where('status', true)
                 ->orderBy('order')

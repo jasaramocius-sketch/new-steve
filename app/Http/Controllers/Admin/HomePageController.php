@@ -100,6 +100,17 @@ class HomePageController extends Controller
             ]);
         }
 
+        if ($section->section_name === 'buy_with_confidence') {
+            $request->validate([
+                'items' => 'nullable|array|max:8',
+                'items.*.icon' => 'nullable|string|max:100',
+                'items.*.title' => 'nullable|string|max:255',
+                'items.*.description' => 'nullable|string|max:500',
+                'hotline_heading' => 'nullable|string|max:255',
+                'hotline_description' => 'nullable|string|max:1000',
+            ]);
+        }
+
         $validated['status'] = $request->has('status') ? 1 : 0;
 
         $pickedPaths = [];
@@ -249,6 +260,41 @@ class HomePageController extends Controller
             $existing['partners'] = array_values($savedPartners);
         }
 
+        if ($section->section_name === 'buy_with_confidence' && $request->has('items')) {
+            $savedItems = [];
+            foreach ((array) $request->input('items') as $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $cleanTitle = trim((string) ($item['title'] ?? ''));
+                $cleanDescription = trim((string) ($item['description'] ?? ''));
+                $cleanIcon = trim((string) ($item['icon'] ?? ''));
+
+                if ($cleanTitle === '' && $cleanDescription === '' && $cleanIcon === '') {
+                    continue;
+                }
+
+                $savedItems[] = [
+                    'icon' => $cleanIcon !== '' ? $cleanIcon : 'fa-solid fa-circle-check',
+                    'title' => $cleanTitle,
+                    'description' => $cleanDescription,
+                ];
+            }
+
+            $existing['items'] = array_values($savedItems);
+        }
+
+        if ($section->section_name === 'buy_with_confidence') {
+            if ($request->has('hotline_heading')) {
+                $existing['hotline_heading'] = trim((string) $request->input('hotline_heading'));
+            }
+
+            if ($request->has('hotline_description')) {
+                $existing['hotline_description'] = trim((string) $request->input('hotline_description'));
+            }
+        }
+
         $extraChanged = $request->filled('brands_limit')
             || $request->has('brand_ids')
             || $request->filled('posts_count')
@@ -258,6 +304,8 @@ class HomePageController extends Controller
             || ($section->section_name === 'offers' && $request->has('banners'))
             || ($section->section_name === 'services' && $request->has('services'))
             || ($section->section_name === 'partners_heading' && $request->has('partners'))
+            || ($section->section_name === 'buy_with_confidence' && $request->has('items'))
+            || ($section->section_name === 'buy_with_confidence' && ($request->has('hotline_heading') || $request->has('hotline_description')))
             || ($section->section_name === 'deal_of_day' && ($request->filled('deal_bg_image_from_manager') || $request->has('remove_deal_bg_image')));
 
         if ($extraChanged) {

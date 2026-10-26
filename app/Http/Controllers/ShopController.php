@@ -204,7 +204,7 @@ class ShopController extends Controller
 
     public function index(Request $request)
     {
-        $productsQuery = Product::where('status', true);
+        $productsQuery = Product::where('status', true)->hasUsableImage();
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery, true);
 
         $baseQuery = clone $productsQuery;
@@ -259,7 +259,7 @@ class ShopController extends Controller
 
     public function customerProducts(Request $request)
     {
-        $productsQuery = Product::where('status', true);
+        $productsQuery = Product::where('status', true)->hasUsableImage();
 
         $baseQuery = clone $productsQuery;
         $this->filterProducts($request, $baseQuery, false);
@@ -304,7 +304,7 @@ class ShopController extends Controller
 
         $categoryIds = $category->getAllDescendantIds();
 
-        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true);
+        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
 
         $baseQuery = clone $productsQuery;
@@ -338,7 +338,7 @@ class ShopController extends Controller
             $categoryIds = $childCat->getAllDescendantIds();
         }
 
-        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true);
+        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
 
         $baseQuery = clone $productsQuery;
@@ -396,6 +396,7 @@ class ShopController extends Controller
         }
 
         $products = Product::where('status', true)
+            ->hasUsableImage()
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('part_number', 'like', "%{$query}%");

@@ -341,10 +341,10 @@ class ProductController extends Controller
         $data['slug'] = Str::slug($request->name).'-'.time();
         $data['sku'] = $data['sku'] ?: Product::generateSku((string) $request->name);
 
-        if ($request->filled('image_from_manager')) {
-            $data['image'] = 'storage/'.ltrim($request->image_from_manager, '/');
-        } elseif ($request->hasFile('image')) {
-            $data['image'] = saveImageWithWebp($request->file('image'));
+        if ($request->hasFile('image')) {
+            $data['main_image'] = saveImageWithWebp($request->file('image'));
+        } elseif ($request->filled('image_from_manager')) {
+            $data['main_image'] = 'storage/'.ltrim($request->image_from_manager, '/');
         }
 
         $product = Product::create($data);
@@ -431,10 +431,10 @@ class ProductController extends Controller
         $data['specifications'] = $this->parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
 
-        if ($request->filled('image_from_manager')) {
-            $data['image'] = 'storage/'.ltrim($request->image_from_manager, '/');
-        } elseif ($request->hasFile('image')) {
-            $data['image'] = saveImageWithWebp($request->file('image'));
+        if ($request->hasFile('image')) {
+            $data['main_image'] = saveImageWithWebp($request->file('image'));
+        } elseif ($request->filled('image_from_manager')) {
+            $data['main_image'] = 'storage/'.ltrim($request->image_from_manager, '/');
         }
 
         $product->update($data);

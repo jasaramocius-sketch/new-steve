@@ -258,9 +258,9 @@ class MigrateImagesToMonthFolders extends Command
 
     private function migrateCategories()
     {
-        $column = $this->imageColumn(Category::class, ['image']);
+        $column = $this->imageColumn(Category::class, ['banner']);
         if ($column === null) {
-            $this->warn('  categories has no image column');
+            $this->warn('  categories has no banner column');
 
             return;
         }

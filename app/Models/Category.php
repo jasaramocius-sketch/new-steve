@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Traits\Revisable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Cache;
 
 class Category extends Model
 {
@@ -19,7 +18,9 @@ class Category extends Model
         'slug',
         'parent_id',
         'level',
-        'image',
+        'banner',
+        'icon',
+        'cover_image',
     ];
 
     public function parent()
@@ -87,40 +88,14 @@ class Category extends Model
 
     public function getImageAttribute()
     {
-        $image = trim((string) ($this->attributes['image'] ?? ''));
-        if (isSourceS3ImageReference($image)) {
-            return $image;
-        }
+        $image = trim((string) ($this->attributes['banner'] ?? ''));
+        return $image !== '' ? $image : null;
+    }
 
-        return Cache::remember('category.aws_image.'.$this->id, now()->addHours(6), function () {
-            $bucket = (string) config('filesystems.disks.source_images.bucket');
-            if ($bucket === '') {
-                return null;
-            }
-
-            $categoryIds = $this->getAllDescendantIds();
-            $primaryImage = Product::whereIn('category_id', $categoryIds)
-                ->where('main_image', 'like', 's3://'.$bucket.'/%')
-                ->orderBy('id')
-                ->value('main_image');
-
-            if ($primaryImage) {
-                return $primaryImage;
-            }
-
-            $gallery = Product::whereIn('category_id', $categoryIds)
-                ->where('images_json', 'like', '%s3://'.$bucket.'/%')
-                ->orderBy('id')
-                ->value('images_json');
-            foreach ((array) (is_string($gallery) ? json_decode($gallery, true) : $gallery) as $entry) {
-                $candidate = is_array($entry) ? ($entry['file'] ?? null) : $entry;
-                if (is_string($candidate) && isSourceS3ImageReference($candidate)) {
-                    return $candidate;
-                }
-            }
-
-            return null;
-        });
+    public function setImageAttribute($value): void
+    {
+        $this->attributes['banner'] = $value;
+        $this->attributes['cover_image'] = $value;
     }
 
     public function getStatusAttribute()

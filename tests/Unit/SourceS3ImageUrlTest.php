@@ -71,4 +71,25 @@ class SourceS3ImageUrlTest extends TestCase
 
         $this->assertNull($product->image);
     }
+
+    public function test_catalog_scope_excludes_products_without_a_real_image(): void
+    {
+        $valid = new Product;
+        $valid->setRawAttributes([
+            'main_image' => 's3://autoparts-hub/steveautoparts/images/brand/part_Fro.jpg',
+            'images_json' => json_encode([
+                ['file' => 's3://autoparts-hub/steveautoparts/images/brand/part_Fro.jpg'],
+            ]),
+        ]);
+
+        $placeholder = new Product;
+        $placeholder->setRawAttributes(['main_image' => 'assets/images/placeholder.png']);
+
+        $empty = new Product;
+        $empty->setRawAttributes(['main_image' => '']);
+
+        $this->assertTrue($valid->hasUsableImage());
+        $this->assertFalse($placeholder->hasUsableImage());
+        $this->assertFalse($empty->hasUsableImage());
+    }
 }

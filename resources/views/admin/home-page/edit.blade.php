@@ -354,6 +354,58 @@
                         </div>
                         @endif
 
+                        @if($section->section_name === 'buy_with_confidence')
+                        @php
+                            $extra = $section->extra_data ?? [];
+                            $items = $extra['items'] ?? [
+                                ['icon' => 'fa-solid fa-circle-check', 'title' => 'Fitment Guarantee', 'description' => 'Enter your VIN or vehicle specs and we show only parts that fit. Wrong part? We cover return shipping.'],
+                                ['icon' => 'fa-solid fa-truck-fast', 'title' => 'Fast Shipping', 'description' => '5 distribution centers coast-to-coast. Most orders arrive in 1–3 business days. Free over $99.'],
+                                ['icon' => 'fa-solid fa-rotate-left', 'title' => '30-Day Returns', 'description' => 'Parts don’t fit or change your mind? Return within 30 days. No restocking fee on most items.'],
+                                ['icon' => 'fa-solid fa-user-gear', 'title' => 'Mechanic Tested', 'description' => 'Every brand we carry is vetted by ASE-certified technicians. No junk, no knock-offs, no surprises.'],
+                            ];
+                        @endphp
+                        <div class="card mb-3 border-info">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Hotline Copy</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group mb-3">
+                                    <label for="hotline_heading" class="form-label">Lead-in</label>
+                                    <input type="text" id="hotline_heading" name="hotline_heading" class="form-control" maxlength="255" value="{{ old('hotline_heading', $extra['hotline_heading'] ?? 'Not sure what fits?') }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="hotline_description" class="form-label">Supporting text</label>
+                                    <textarea id="hotline_description" name="hotline_description" class="form-control" rows="3" maxlength="1000">{{ old('hotline_description', $extra['hotline_description'] ?? 'Call our parts hotline with your VIN and a real mechanic will match you. We read the diagrams so you don’t have to.') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3 border-info">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Trust Cards</h5>
+                            </div>
+                            <div class="card-body">
+                                @foreach($items as $i => $item)
+                                <div class="border rounded p-3 mb-3 bg-light">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-2">
+                                            <label class="form-label">Icon Class</label>
+                                            <input type="text" name="items[{{ $i }}][icon]" class="form-control" value="{{ old('items.'.$i.'.icon', $item['icon'] ?? '') }}" placeholder="fa-solid fa-circle-check">
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label">Title</label>
+                                            <input type="text" name="items[{{ $i }}][title]" class="form-control" value="{{ old('items.'.$i.'.title', $item['title'] ?? '') }}">
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="items[{{ $i }}][description]" class="form-control" rows="2">{{ old('items.'.$i.'.description', $item['description'] ?? '') }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
                         @if($section->section_name === 'deal_of_day')
                         @php $extra = $section->extra_data ?? []; @endphp
                         <div class="form-group mb-3">

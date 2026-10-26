@@ -213,7 +213,7 @@ class CleanupDuplicateImages extends Command
         $pairs = [
             ['products', $this->imageColumn('products', ['main_image', 'image'])],
             ['brands', $this->imageColumn('brands', ['logo', 'image'])],
-            ['categories', $this->imageColumn('categories', ['image'])],
+            ['categories', $this->imageColumn('categories', ['banner'])],
             ['blogs', $this->imageColumn('blogs', ['image'])],
             ['pages', $this->imageColumn('pages', ['image'])],
             ['home_page_sections', $this->imageColumn('home_page_sections', ['image'])],

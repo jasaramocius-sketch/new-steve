@@ -28,6 +28,7 @@ class CategoryTree
 
         $json = cache()->remember(self::CACHE_KEY, 21600, function () {
             $productCounts = Product::where('status', true)
+                ->hasUsableImage()
                 ->selectRaw('category_id, COUNT(*) as count')
                 ->groupBy('category_id')
                 ->pluck('count', 'category_id');

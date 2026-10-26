@@ -71,14 +71,14 @@ class CategoryController extends Controller
     {
         $page = Page::where('slug', 'categories')->first();
         $search = $request->get('search', '');
-        $sort = $request->get('sort', 'latest');
+        $sort = $request->get('sort', 'name');
 
         $topCategories = Category::topLevel()
-            ->withCount(['products' => fn ($q) => $q->where('status', true)])
+            ->withCount(['products' => fn ($q) => $q->where('status', true)->hasUsableImage()])
             ->with(['children' => function ($q) {
-                $q->withCount(['products' => fn ($q2) => $q2->where('status', true)])
+                $q->withCount(['products' => fn ($q2) => $q2->where('status', true)->hasUsableImage()])
                     ->with(['children' => function ($q2) {
-                        $q2->withCount(['products' => fn ($q3) => $q3->where('status', true)]);
+                        $q2->withCount(['products' => fn ($q3) => $q3->where('status', true)->hasUsableImage()]);
                     }]);
             }]);
 
@@ -96,14 +96,23 @@ class CategoryController extends Controller
             $descIds = $category->getAllDescendantIds();
             $category->total_products_count = Product::whereIn('category_id', $descIds)
                 ->where('status', true)
+                ->hasUsableImage()
                 ->count();
             $category->preview_products = Product::whereIn('category_id', $descIds)
                 ->where('status', true)
+                ->hasUsableImage()
                 ->latest()
                 ->take(3)
                 ->get();
 
             return $category;
+        })->filter(function ($category) {
+            $imageValue = trim((string) ($category->image ?? $category->banner ?? ''));
+            $hasImage = $imageValue !== '' && $category->getDisplayImagePath() !== 'assets/images/placeholder.png';
+            $hasProducts = (int) ($category->total_products_count ?? 0) > 0;
+            $hasSubcategories = $category->children && $category->children->count() > 0;
+
+            return $hasImage && ($hasProducts || $hasSubcategories);
         });
 
         if ($sort === 'name') {

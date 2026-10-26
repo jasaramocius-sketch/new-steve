@@ -490,13 +490,62 @@
 <!-- Top Brands Section Completed -->
 @endif
 
+@if($sections->has('buy_with_confidence'))
+@php
+    $buyConfidenceSection = $sections->get('buy_with_confidence');
+    $buyConfidenceExtra = $buyConfidenceSection?->extra_data ?? [];
+    $buyConfidenceItems = $buyConfidenceSection?->extra_data['items'] ?? [
+        ['icon' => 'las la-box', 'title' => 'Fitment Guarantee', 'description' => 'Enter your VIN or vehicle specs and we show only parts that fit. Wrong part? We cover return shipping.'],
+        ['icon' => 'las la-shipping-fast', 'title' => 'Fast Shipping', 'description' => '5 distribution centers coast-to-coast. Most orders arrive in 1–3 business days. Free over $99.'],
+        ['icon' => 'las la-undo-alt', 'title' => '30-Day Returns', 'description' => 'Parts don’t fit or change your mind? Return within 30 days. No restocking fee on most items.'],
+        ['icon' => 'las la-wrench', 'title' => 'Mechanic Tested', 'description' => 'Every brand we carry is vetted by ASE-certified technicians. No junk, no knock-offs, no surprises.'],
+    ];
+@endphp
+<section class="gs-buy-confidence-section">
+    <div class="container section-with-padding">
+        <div class="row pb-20 justify-content-center">
+            <div class="col-lg-8 text-center">
+                <div class="gs-title-box text-center">
+                    <h2 class="title wow-replaced">{{ $buyConfidenceSection?->title ?? 'Buy With Confidence' }}</h2>
+                    <p class="des mb-0 wow-replaced" data-wow-delay=".1s">{!! $buyConfidenceSection?->description ?? '40 years of getting it right. Here’s how we make sure you get the right part, every time.' !!}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            @foreach($buyConfidenceItems as $index => $item)
+            @php $icon = $item['icon'] ?? 'las la-box'; $title = $item['title'] ?? ''; $description = $item['description'] ?? ''; @endphp
+            <div class="col-md-6 col-xl-3 wow-replaced" data-wow-delay=".{{ ($index + 1) / 10 }}s">
+                <div class="buy-confidence-card" style="height:100%; background:#fff; border:1px solid #ece8e2; padding:28px 22px; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,.04);">
+                    <i class="{{ $icon }} text-primary d-block mb-3" style="font-size:36px;" aria-hidden="true"></i>
+                    <h4 style="font-size: 1.15rem; font-weight:700; margin-bottom:10px;">{{ $title }}</h4>
+                    <p style="margin:0; color:#5d5d5d; line-height:1.7; font-size:0.95rem;">{{ $description }}</p>
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        <div class="row mt-5 justify-content-center py-4" style="background: #f8f8f8; border-radius: 12px;">
+            <div class="col d-flex align-items-center justify-content-between flex-column flex-md-row gap-2">
+                <p class="col d-flex gap-2 flex-column flex-md-row" style="margin:0; font-size:1rem; color:#333; line-height:1.7;">
+                    <i class="las la-search text-primary mr-2" style="font-size:26px;" aria-hidden="true"></i><strong>{{ $buyConfidenceExtra['hotline_heading'] ?? 'Not sure what fits?' }}</strong> {{ $buyConfidenceExtra['hotline_description'] ?? 'Call our parts hotline with your VIN and a real mechanic will match you. We read the diagrams so you don’t have to.' }}
+                </p>
+                <div class="">
+                    <a href="{{ $buyConfidenceSection?->button_url ?? 'tel:1800555' }}" class="template-btn steve-btn w-100 wow-replaced" style="font-weight:700; font-size:1.15rem; color: #fff; text-decoration:none;">{{ $buyConfidenceSection?->button_text ?? '1-800-555-AUTO' }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+@endif
+
 @if($sections->has('partners_heading'))
 <!-- Partner Section -->
 <section class="gs-partner-section" {!! $sections->get('partners_heading')?->bgStyle() !!}>
     <div class="container section-with-padding">
         <div class="row pb-20 justify-content-center">
-            <div class="col-lg-7">
-                <div class="gs-title-box text-center">
+            <div class="col">
+                <div class="gs-title-box">
                     <h2 class="title wow-replaced">{{ $sections->get('partners_heading')?->title ??  'Our Partners' }}</h2>
                     <p class="des mb-0 wow-replaced" data-wow-delay=".1s">{!! $sections->get('partners_heading')?->description ??  'We collaborate with world-class manufacturers to provide the highest-grade auto parts and accessories.' !!}</p>
                 </div>

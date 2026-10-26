@@ -65,9 +65,9 @@
                             <input type="hidden" name="search" value="{{ request('search') }}">
                             <input type="hidden" name="page" value="">
                             <select class="form-select" name="sort" onchange="this.form.submit()">
-                                <option value="latest" {{ request('sort') == 'latest' ? 'selected' : '' }}>Latest</option>
-                                <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
-                                <option value="name" {{ request('sort') == 'name' ? 'selected' : '' }}>Name A-Z</option>
+                                <option value="name" {{ request('sort', 'name') == 'name' ? 'selected' : '' }}>Name A-Z</option>
+                                <option value="latest" {{ request('sort', 'name') == 'latest' ? 'selected' : '' }}>Latest</option>
+                                <option value="oldest" {{ request('sort', 'name') == 'oldest' ? 'selected' : '' }}>Oldest</option>
                             </select>
                         </form>
                     </div>

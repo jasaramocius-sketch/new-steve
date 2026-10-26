@@ -1,5 +1,5 @@
 {{-- Meta tags partial. Include from a @section('meta_tags') block.
-     Available variables: $pageTitle, $metaTitle, $metaDescription, $ogImage, $ogUrl, $ogType, $robots
+    Available variables: $pageTitle, $metaTitle, $metaDescription, $ogImage, $ogUrl, $ogType
 --}}
 @php
     $appName = config('app.name', 'StAutoparts');
@@ -8,7 +8,7 @@
     $ogImage   = $ogImage ?? ($page->og_image ?? null);
     $ogUrl     = $ogUrl ?? url()->current();
     $ogType    = $ogType ?? 'website';
-    $robots    = $robots ?? 'noindex, nofollow';
+    $robots    = 'noindex, nofollow';
     $canonical = $canonical ?? $ogUrl;
 @endphp
 

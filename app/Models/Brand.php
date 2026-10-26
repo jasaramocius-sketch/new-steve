@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Traits\Revisable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 
 class Brand extends Model
 {
@@ -58,38 +57,7 @@ class Brand extends Model
             return $logo;
         }
 
-        return \Illuminate\Support\Facades\Cache::remember('brand.aws_image.'.$this->id, now()->addHours(6), function () {
-            $bucket = (string) config('filesystems.disks.source_images.bucket');
-            if ($bucket === '') {
-                return null;
-            }
-
-            $primaryImage = $this->products()
-                ->where('main_image', 'like', 's3://'.$bucket.'/%')
-                ->orderBy('id')
-                ->value('main_image');
-
-            if ($primaryImage) {
-                return $primaryImage;
-            }
-
-            $gallery = $this->products()
-                ->where('images_json', 'like', '%s3://'.$bucket.'/%')
-                ->orderBy('id')
-                ->value('images_json');
-
-            foreach ((array) (is_string($gallery) ? json_decode($gallery, true) : $gallery) as $entry) {
-                $candidate = is_array($entry) ? ($entry['file'] ?? null) : $entry;
-                if (is_string($candidate) && function_exists('isSourceS3ImageReference') && isSourceS3ImageReference($candidate)) {
-                    return $candidate;
-                }
-                if (is_string($candidate) && str_starts_with($candidate, 's3://')) {
-                    return $candidate;
-                }
-            }
-
-            return null;
-        });
+        return null;
     }
 
     public function getStatusAttribute()

@@ -20,7 +20,7 @@ class SyncImagesToManager extends Command
 
     protected array $sources = [
         ['dir' => 'thumbnails',  'model' => Product::class,         'columns' => ['main_image', 'image']],
-        ['dir' => 'categories',  'model' => Category::class,        'columns' => ['image']],
+        ['dir' => 'categories',  'model' => Category::class,        'columns' => ['banner']],
         ['dir' => 'blogs',       'model' => Blog::class,             'columns' => ['image']],
         ['dir' => 'brands',      'model' => Brand::class,            'columns' => ['logo', 'image']],
         ['dir' => 'home',        'model' => HomePageSection::class,  'columns' => ['image']],
