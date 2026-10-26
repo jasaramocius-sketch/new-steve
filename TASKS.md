@@ -4411,3 +4411,58 @@ php artisan tinker --execute="dump(array_slice(json_decode(DB::table('settings')
 **Follow-up (optional):** page still renders ~8.2 MB / ~21,300 checkboxes (~20s CLI, faster without Xdebug) — next optimization is limiting the tree to top-level + second-level categories instead of the full 21,300.
 
 
+
+## 318. FollowedSeller Product Relationship & Nav Menu Active State Fixes (Oct 26 2026)
+
+**Problem:**
+1. FollowedSeller relationship (`seller.products`) triggered SQL error: `products` table lacks a `seller_id` column, causing "Column not found" on queries trying to filter by `products.seller_id`.
+2. Nav menu active state incorrectly highlighted items due to simple `url()` concatenation; pages like `/page/home` did not map to their canonical routes (e.g., `/`); `$activeCategoryUrls` not populated for product pages, so mega‑menu categories/subcategories never highlighted.
+
+**Solution:**
+1. Added missing `seller_id` column to `products` table (nullable foreign key → `sellers.id`) – a lightweight `ALTER TABLE` preserves all existing data and restores the `Seller::products` relationship.
+2. Created `canonicalMenuUrl()` helper (in `app/helpers.php`):
+   * Normalizes stored links (menu/banner/button) into front‑end URLs.
+   * Handles page‑builder live URL maps: maps `/page/home`, `/page/blog`, etc., to their canonical route names (via `page-builder.live_url_map`).
+   * Applied this helper everywhere URLs are rendered in nav menus (desktop, mobile, mega‑menu) and replaced old `url()` calls.
+3. Updated nav‑menu views:
+   * `resources/views/partials/nav-menu.blade.php`
+   * `resources/views/layouts/app.blade.php` (desktop + mobile)
+   * All menu partial renders now use `$menuUrl = $url === '#' ? '' : canonicalMenuUrl($url);`
+   * `$activeCategoryUrls` now populated for product pages (via `ProductController::show()` loading `category->parent` chain and sharing via `view()->share()`).
+   * Mega‑menu child/subchild links check against `$activeCategoryUrls` for proper active highlighting.
+4. Adjusted FollowedSeller controller:
+   * `DashboardController::followedSellers()` removed eager loading of `seller.products` (no longer needed for list display – followedSeller fields `products`, `rating`, `followers` are used instead).
+   * `getSellerDetails()` and `getSellerProducts()` still use the now‑functional `Seller::products()` relationship (which leverages the new `seller_id` column).
+5. Updated admin product forms:
+   * Admin create/edit pages include seller dropdown; `seller_id` column now exists, so form submission works.
+   * Admin filters on product index now correctly filter by seller.
+
+**Files changed/created:**
+- `database/migrations/2026_08_11_000001_add_seller_id_to_products_table.php` – re‑applied (or manual `ALTER TABLE`)
+- `app/helpers.php` – new `canonicalMenuUrl()` function
+- `app/Models/Seller.php` – unchanged (relationship remains `hasMany(Product)`)
+- `app/Http/Controllers/DashboardController.php` – `followedSellers()`, `getSellerDetails()`, `getSellerProducts()` updated
+- `app/Http/Controllers/ProductController.php` – `create()` / `store()` / `edit()` / `update()` handle new `seller_id` from request
+- `resources/views/user/followed-sellers.blade.php` – now uses FollowedSeller fields for stats, no longer relies on `seller->products` (fallback preserved)
+- `resources/views/admin/products/index.blade.php`, `create.blade.php`, `edit.blade.php` – seller select dropdowns (populated from `Seller` model)
+- `resources/views/layouts/app.blade.php` – nav menu (desktop/mobile) URLs switched to `canonicalMenuUrl()`
+- `resources/views/partials/nav-menu.blade.php` – similar
+- `routes/web.php` – no changes; `/shop` redirect and `/terms-and-conditions` redirect already applied
+
+**Verification:**
+- `/user/followed-seller` loads 200, shows seller stats from FollowedSeller fields, no SQL errors.
+- Nav menu active state verified on home (`Home` active), blog (`Blog` active), product pages (category chain highlighted), and all other pages.
+- Admin product create/edit form renders seller dropdown, product save succeeds with seller_id.
+- `/shop` redirect works (301 → `/search` preserving query) and nav menu highlights “Products” when on `/shop?q=...`.
+- All previously broken links (category menu, terms, etc.) now correctly resolve; home link crawl shows 0 non‑200.
+- Product page mega‑menu correctly highlights current category chain.
+
+**Impact:**
+- Fixes a blocking bug for users trying to follow sellers and eliminates SQL errors.
+- Improves navigation clarity and SEO friendliness after page‑builder URL changes.
+- Maintains backward compatibility: existing products remain without a seller (`seller_id` NULL), and existing admin queries continue to work.
+
+**Next steps (optional):**
+- Populate `seller_id` where appropriate (e.g., for products that have a vendor).
+- Consider lightweight admin optimization for the search‑categories tree (already noted in task #317).
+- Run full test suite (if environment can install `pdo_sqlite`).
