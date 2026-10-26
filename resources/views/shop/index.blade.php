@@ -552,9 +552,10 @@
                     @endif
                   @endforeach
                   <select name="brand" class="form-select" style="width:180px; border:1px solid #c7c0bf; border-radius:4px;">
-                    <option value="">All Brands</option>
+                    <option value="" {{ request()->filled('brand') ? '' : 'selected' }}>All Brands</option>
                     @foreach($brands as $brand)
-                      <option value="{{ $brand->slug }}" {{ request('brand') == $brand->slug ? 'selected' : '' }}>{{ $brand->name }}</option>
+                      @php $brandFilterValue = filled($brand->slug) ? $brand->slug : (string) $brand->id; @endphp
+                      <option value="{{ $brandFilterValue }}" {{ (string) request('brand') === (string) $brandFilterValue ? 'selected' : '' }}>{{ $brand->name }}</option>
                     @endforeach
                   </select>
                 </form>

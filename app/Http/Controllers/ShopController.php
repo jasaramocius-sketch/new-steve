@@ -160,6 +160,8 @@ class ShopController extends Controller
 
         $brands = Cache::remember('catalog.brands', now()->addDay(), function () {
             return DB::table('brands')
+                ->whereNotNull('name')
+                ->where('name', '<>', '')
                 ->whereExists(function ($q) {
                     $q->select(DB::raw(1))
                         ->from('products')

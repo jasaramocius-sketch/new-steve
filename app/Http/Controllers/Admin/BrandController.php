@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Image;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class BrandController extends Controller
@@ -61,6 +62,8 @@ class BrandController extends Controller
             Image::markUsed($request->image_from_manager, $brand);
         }
 
+        Cache::forget('catalog.brands');
+
         return redirect()->route('admin.brands.index')->with('success', 'Brand created successfully.');
     }
 
@@ -94,7 +97,8 @@ class BrandController extends Controller
 
         $brand->update($data);
 
-        \Illuminate\Support\Facades\Cache::forget('brand.aws_image.'.$brand->id);
+        Cache::forget('brand.aws_image.'.$brand->id);
+        Cache::forget('catalog.brands');
 
         if ($request->filled('image_from_manager')) {
             Image::markUsed($request->image_from_manager, $brand);
@@ -108,6 +112,7 @@ class BrandController extends Controller
         $brand = Brand::findOrFail($id);
         $brand->status = ! $brand->status;
         $brand->save();
+        Cache::forget('catalog.brands');
 
         return back()->with('success', 'Brand status updated successfully.');
     }
@@ -116,6 +121,7 @@ class BrandController extends Controller
     {
         $brand = Brand::findOrFail($id);
         $brand->delete();
+        Cache::forget('catalog.brands');
 
         return redirect()->route('admin.brands.index')->with('success', 'Brand deleted successfully.');
     }
