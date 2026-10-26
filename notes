@@ -1,0 +1,67 @@
+<option value="10">
+        &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;└ Cooling Systems
+    </option>
+
+$2y$12$5uBS3u6Rr3DNRa.6iPqh0e2djvaW4E/Wphhc./0cygMMM.OmSolBi
+
+wp-core-ui wp-editor-wrap html-active
+wp-core-ui wp-editor-wrap tmce-active
+
+
+
+4:- Automotive Parts Maintenance Collage
+5:- Automotive Maintenance Parts Collage
+6:- Automotive Maintenance Part Collage
+7:- Automotive Parts and Service Collage
+8:- Automotive Parts Maintenance Collage
+
+
+
+02/09/2026
+
+Admin
+1. Dashboard “Orders by Status” responsive update
+2. Site logs page update
+
+Frontend
+1. Home page “Top Partner” section image “#” hyperlink removed
+2. Home page sections heading gap fix 
+
+03/09/2026
+
+Admin
+1. File Revisions/Revisions/Logs delete/bulk delete and trash function added
+
+Frontend
+1. Product detail page “Buy / Return Policy” content added
+2. Product detail page “Similar Products To Compare” section added
+
+04/09/2026
+
+Admin
+1. Order detail page redesign
+2. Coupons function set
+
+Frontend
+1. Shop page sidebar “Categories” gap set
+
+14/09/2026
+
+Admin
+1. Header
+    - Search bar categories managed by admin panel
+
+Frontend
+1. Home page
+    - Add " description " to the Featured Products section.
+2. Product detail page 
+    - Description/(Buy / Return Policy) content: remove inline CSS and add global CSS by class
+
+
+admin ke "Stock Management" selectAll checkbox se clik krne pr bhi all select nhi ho rha he asa kiyo
+
+
+kiya form submit hone pr thank you page pr redirect ho skta he
+
+
+aiz-carousel product-gallery-thumb slick-initialized slick-slider 

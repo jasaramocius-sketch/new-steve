@@ -42,8 +42,6 @@ storage/file-backups/
 *.sql
 *.sql.bak
 storage/file-backups/
-notes
-TASKS.md
 chat-watcher.mjs
 chat-logs
 /_dev-archive
