@@ -26,7 +26,7 @@
 }
 
 .user-order-details-page .order-page-header {
-    margin-bottom: 28px;
+    margin-bottom: 24px;
 }
 
 .user-order-details-page .order-back-btn {
@@ -60,7 +60,7 @@
     justify-content: space-between;
     gap: 20px;
     padding: 24px;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
     background: #fff;
     border: 1px solid var(--order-border);
     border-radius: 12px;
@@ -108,7 +108,7 @@
 
 .user-order-details-page .order-status-card {
     padding: 28px 24px 22px;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     background: #fff;
     border: 1px solid var(--order-border);
     border-radius: 12px;
@@ -338,7 +338,7 @@
 }
 
 .user-order-details-page .order-items-section {
-    margin-top: 32px;
+    margin-top: 24px;
     padding: 24px;
     background: #fff;
     border: 1px solid var(--order-border);
@@ -422,8 +422,8 @@
     justify-content: center;
     flex: 0 0 auto;
     border-radius: 8px;
-    background: #f8fafc;
-    color: var(--order-primary);
+    background: var(--order-primary);
+    color: #f8fafc;
     font-size: 12px;
     font-weight: 700;
 }
@@ -668,7 +668,7 @@
 </div>
 
 @if(count($order->getStatusHistory()) > 1)
-<div class="order-status-card mt-4">
+<div class="order-status-card">
     <h4 class="order-status-title">Status History</h4>
     @include('partials.order-status-timeline', ['order' => $order])
 </div>

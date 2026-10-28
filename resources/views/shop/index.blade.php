@@ -63,6 +63,12 @@
     font-weight: 600;
     color: #6b7280;
   }
+  
+  .active-filter-chips form.ms-auto .btn:hover {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: var(--primary) !important;
+  }
   .filter-chip {
     display: inline-flex;
     align-items: center;
@@ -634,11 +640,6 @@
         @if($hasSortFilter || $hasBrandFilter || $hasSearchFilter || $hasPriceFilter || $hasYearFilter || $hasMakeFilter || $hasModelFilter || $hasVehicleFilterChip)
           <div class="active-filter-chips d-flex align-items-center flex-wrap gap-2 mb-3">
             <span class="active-filter-chips-label">Active filters:</span>
-            <form method="POST" action="{{ route('shop.clear-filters') }}" class="ms-auto">
-              @csrf
-              <input type="hidden" name="return_path" value="{{ '/'.request()->path() }}">
-              <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-underline">Clear all</button>
-            </form>
             @if($hasSearchFilter)
               <span class="filter-chip">
                 <span class="filter-chip-label">Search:</span>
@@ -720,6 +721,12 @@
                 </form>
               </span>
             @endif
+
+            <form method="POST" action="{{ route('shop.clear-filters') }}" class="ms-auto">
+              @csrf
+              <input type="hidden" name="return_path" value="{{ '/'.request()->path() }}">
+              <button type="submit" class="btn p-0 text-decoration-underline">Clear all</button>
+            </form>
           </div>
         @endif
 

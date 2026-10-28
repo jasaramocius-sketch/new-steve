@@ -60,6 +60,33 @@
             </div>
         </div>
     </div>
+    <div class="container-home-vehicle-filter d-flex justify-content-center">
+            <div class="home-vehicle-filter">
+                        <!-- Vehicle Widget -->
+                        <form id="home-vehicle-filter-form" action="{{ route('shop') }}" method="GET" class="d-flex flex-column gap-2" style="">
+                            @if($years->isNotEmpty())
+                            <select name="year" class="form-select filter-select" id="home-filter-year">
+                                <option value="">All Years</option>
+                                @foreach($years as $year)
+                                    <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
+                                @endforeach
+                            </select>
+                            @endif
+                            <select name="make" class="form-select filter-select" id="home-filter-make">
+                                <option value="">All Makes</option>
+                                @foreach($makes as $make)
+                                    <option value="{{ $make }}" {{ request('make') == $make ? 'selected' : '' }}>{{ $make }}</option>
+                                @endforeach
+                            </select>
+                            <select name="model" class="form-select filter-select" id="home-filter-model">
+                                <option value="">All Models</option>
+                                @foreach($models as $model)
+                                    <option value="{{ $model }}" {{ request('model') == $model ? 'selected' : '' }}>{{ $model }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn btn-sm text-white steve-btn"><i class="las la-search mr-1"></i>Find My Parts</button>
+                        </form>
+</div></div>
 </section>
 @endif
 <!-- hero section end -->
@@ -382,7 +409,7 @@
         @endphp
 
         <div class="justify-content-center">
-            <div class="col-12 d-flex column flex-lg-row flex-xl-row latest-post-title-row-first pb-20">
+            <div class="col-12 d-flex column flex-lg-row flex-xl-row flex-sm-column latest-post-title-row-first pb-20">
                 <div class="gs-title-box">
                     <h2 class="title wow-replaced">{{ $sections->get('latest_post')?->title ??  'Latest Post' }}</h2>
                     <p class="des mb-0 wow-replaced" data-wow-delay=".1s">{!! $sections->get('latest_post')?->description ??  'Stay updated with our latest maintenance guides, tips, and insights from professional automotive mechanics.' !!}</p>
@@ -668,6 +695,60 @@
     }
 
     $(document).ready(function() {
+        (function() {
+            var yearEl = document.getElementById('home-filter-year');
+            var makeEl = document.getElementById('home-filter-make');
+            var modelEl = document.getElementById('home-filter-model');
+            if (!yearEl && !makeEl && !modelEl) return;
+            var makesUrl = @json(route('vehicles.makes'));
+            var modelsUrl = @json(route('vehicles.models'));
+            function label(el, word) { el.innerHTML = '<option value="">All ' + word + '</option>'; }
+            function populateSelect(el, values, selected) {
+                if (!el) return;
+                var word = el.name.charAt(0).toUpperCase() + el.name.slice(1) + 's';
+                label(el, word);
+                values.forEach(function(v) {
+                    var opt = document.createElement('option');
+                    opt.value = v; opt.textContent = v;
+                    if (v == selected) opt.selected = true;
+                    el.appendChild(opt);
+                });
+            }
+            function loadMakes(year, selected, cb) {
+                if (!makeEl) { if (cb) cb(); return; }
+                fetch(makesUrl + (year ? '?year=' + encodeURIComponent(year) : ''))
+                    .then(function(r){return r.json();})
+                    .then(function(makes){ populateSelect(makeEl, makes, selected); if(cb) cb(); })
+                    .catch(function(){ if(cb) cb(); });
+            }
+            function loadModels(year, make, selected) {
+                if (!modelEl) return;
+                var url = modelsUrl + '?';
+                if (year) url += 'year=' + encodeURIComponent(year) + '&';
+                if (make) url += 'make=' + encodeURIComponent(make);
+                fetch(url).then(function(r){return r.json();}).then(function(models){ populateSelect(modelEl, models, selected); }).catch(function(){});
+            }
+            if (yearEl) {
+                yearEl.addEventListener('change', function() {
+                    if (makeEl) makeEl.value = '';
+                    if (modelEl) modelEl.value = '';
+                    loadMakes(yearEl.value, '', function(){ loadModels(yearEl.value, '', ''); });
+                });
+            }
+            if (makeEl) {
+                makeEl.addEventListener('change', function() {
+                    if (modelEl) modelEl.value = '';
+                    loadModels(yearEl ? yearEl.value : '', makeEl.value, '');
+                });
+            }
+            var form = document.getElementById('home-vehicle-filter-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    var hasValue = (yearEl && yearEl.value) || (makeEl && makeEl.value) || (modelEl && modelEl.value);
+                    if (!hasValue) { e.preventDefault(); }
+                });
+            }
+        })();
         if ($('.home-cate-slider').length) {
             var cateSwiper = new Swiper('.home-cate-slider', {
                 slidesPerView: 6,

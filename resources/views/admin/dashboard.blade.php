@@ -10,7 +10,7 @@
 @endsection
 
 @section('content')
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-md">
         <div class="card border-0 shadow-sm h-100 admin-dashboard-card-blue">
             <div class="card-body d-flex align-items-center justify-content-between gap-2">
@@ -78,7 +78,7 @@
     </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">

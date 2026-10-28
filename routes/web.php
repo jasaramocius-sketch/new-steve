@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SellerController;
 use App\Http\Controllers\Admin\SubscriberController;
+use App\Http\Controllers\Admin\ApiIntegrationController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
@@ -298,6 +299,19 @@ Route::prefix('admin')
         Route::get('/orders/export/csv', [AdminOrderController::class, 'exportCsv'])->name('admin.orders.export-csv');
         Route::post('/orders/{id}/email-customer', [AdminOrderController::class, 'emailCustomer'])->name('admin.orders.email-customer');
         Route::get('/orders/{id}/invoice', [AdminOrderController::class, 'invoice'])->name('admin.orders.invoice');
+        Route::post('/orders/{id}/ship-api', [AdminOrderController::class, 'shipViaApi'])->name('admin.orders.ship-api');
+
+        // API Integrations
+        Route::get('/api-integrations', [ApiIntegrationController::class, 'index'])->name('admin.api-integrations.index');
+        Route::get('/api-integrations/create', [ApiIntegrationController::class, 'create'])->name('admin.api-integrations.create');
+        Route::post('/api-integrations', [ApiIntegrationController::class, 'store'])->name('admin.api-integrations.store');
+        Route::get('/api-integrations/{apiIntegration}/edit', [ApiIntegrationController::class, 'edit'])->name('admin.api-integrations.edit');
+        Route::put('/api-integrations/{apiIntegration}', [ApiIntegrationController::class, 'update'])->name('admin.api-integrations.update');
+        Route::delete('/api-integrations/{apiIntegration}', [ApiIntegrationController::class, 'destroy'])->name('admin.api-integrations.destroy');
+        Route::post('/api-integrations/{apiIntegration}/toggle', [ApiIntegrationController::class, 'toggle'])->name('admin.api-integrations.toggle');
+        Route::post('/api-integrations/{apiIntegration}/set-default', [ApiIntegrationController::class, 'setDefault'])->name('admin.api-integrations.set-default');
+        Route::post('/api-integrations/{apiIntegration}/test', [ApiIntegrationController::class, 'test'])->name('admin.api-integrations.test');
+        Route::get('/api-integrations/get-provider-fields', [ApiIntegrationController::class, 'getProviderFields'])->name('admin.api-integrations.get-provider-fields');
         Route::get('/brands', [BrandController::class, 'index'])
             ->name('admin.brands.index');
         Route::get('/brands/create', [BrandController::class, 'create'])

@@ -12,9 +12,12 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Tag;
-
+use App\Services\VehicleCatalog;
+ 
 class HomeController extends Controller
 {
+    public function __construct(private VehicleCatalog $vehicleCatalog) {}
+
     private function formatCategoryName(string $slug): string
     {
         $names = [
@@ -241,7 +244,11 @@ class HomeController extends Controller
 
         $brands = $brandsQuery->get();
 
-        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'brands', 'services') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
+        $years = $this->vehicleCatalog->years();
+        $makes = collect();
+        $models = collect();
+
+        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
     }
 
     private function buildExploreTabs($section): array

@@ -209,6 +209,10 @@
                     </div>
                     <div class="mt-3">
                         <button type="submit" class="btn btn-primary steve-btn gap-1"><i class="fas fa-sync"></i> Update</button>
+                        <form action="{{ route('admin.orders.ship-api', $order->id) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-success gap-1" onclick="return confirm('Create shipment via configured courier API and auto-generate tracking number?')"><i class="fas fa-shipping-fast"></i> Ship via API</button>
+                        </form>
                     </div>
                 </div>
             </div>

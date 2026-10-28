@@ -157,7 +157,7 @@
                 <th>Action</th>
                 @foreach($compareItems as $item)
                     <td class="compare-col compare-action-btn" data-compare-id="{{ $item->id }}">
-                        <div>
+                        <div class="gap-1">
                         @if((int) ($item->product->stock ?? 0) > 0)
                         <form action="{{ route('cart.add') }}" method="POST" class="add-cart-form">
                             @csrf

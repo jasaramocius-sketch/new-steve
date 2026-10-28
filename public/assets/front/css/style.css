@@ -11709,7 +11709,58 @@ ul.tagit li.tagit-choice .tagit-close {
   z-index: 1;
   align-items: flex-start;
 }
+.hero-slider-wrapper{
+  position: relative;
+}
 
+.home-vehicle-filter {
+  position: absolute;
+  bottom: 0;
+  background-color: #d02a03;
+  padding: 20px;
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+}
+form#home-vehicle-filter-form {
+  flex-direction: row !important;
+  justify-content: center;
+  align-items: center;
+}
+.form-select{
+  height: 40px;
+}
+.container.container-home-vehicle-filter{
+  position: relative;
+  width: 50%;
+}
+
+.home-vehicle-filter form#home-vehicle-filter-form button {
+    background: #fff !important;
+    color: var(--primary) !important;
+}
+.home-vehicle-filter form#home-vehicle-filter-form button:hover {
+    background: var(--hov-primary) !important;
+    color: #fff !important;
+}
+@media (max-width:767px) {
+  form#home-vehicle-filter-form {
+    flex-direction: column !important;
+  }
+  .form-select-wrapper{
+    width: 100%;
+  }
+  form#home-vehicle-filter-form button{
+    width: 100%;
+  }
+  .home-vehicle-filter {
+  position: relative;
+  }
+  .container.container-home-vehicle-filter{
+    width: 90%;
+    box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  }
+}
 @media (max-width:1199.97px) {
   .gs-hero-section {
     height: 500px;
@@ -15700,7 +15751,6 @@ button.action-btn.border-0 {
 td.compare-col.compare-action-btn div {
   display: flex;
   align-items: center;
-  gap: 10px;
   justify-content: center;
 }
 .compare-table img {
@@ -16234,6 +16284,19 @@ i.fas.fa-chevron-right:hover {
 @media (max-width: 991px) {
 .latest-post-title-row-first .gs-title-box{
   width: 80% !important;
+}
+}
+@media (max-width: 767.98px) {
+.latest-post-title-row-first{
+  flex-direction:column;
+}
+.latest-post-nav{  
+  position: relative;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+.latest-post-title-row-first .gs-title-box{
+  width: 100% !important;
 }
 }
 
@@ -17882,8 +17945,8 @@ td.admin-product-name a {
 } */
 .gs-similar-compare-area .compare-similar-table th:first-child {
   left: 0;
-  min-width: 150px;
-  max-width: 150px;
+  min-width: 180px;
+  max-width: 180px;
   white-space: nowrap;
   vertical-align: middle;
   background: #eef0f4;

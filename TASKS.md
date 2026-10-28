@@ -4728,3 +4728,52 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - Server-side validation intact: `'refund_amount' => 'nullable|numeric|min:0'`, reject par null override hota hai
 - Stock restore sirf `refunded` status par (pehle se intact)
 - Note: Page admin-only, direct HTTP test login ke bina possible nahi.
+
+## 328. (2026-10-28): Admin Panel - Generic API Integrations + Courier Auto-Shipment
+
+**Goal:** Admin panel mein "Courier/API Integration Configuration" system banana taaki bina code edit kiye koi bhi API (Courier, Payment, SMS, WhatsAP, Email, Other) configure kiya ja sake. Saath hi courier APIs (Shiprocket/Delhivery/Pickrr/Custom) se tracking number/carrier auto-generate karke order ship ho sake.
+
+**DB / Model:**
+- Migration: `2026_10_28_105100_create_api_integrations_table.php`
+  - `type` enum(courier,payment,sms,email,whatsapp,other), `provider`, `name`, `base_url`, `auth_type`, `credentials` (longText encrypted), `endpoints` (JSON), `config` (JSON), `description`, `is_active`, `is_default`, `priority`, `last_tested_at`, `last_test_result`
+- Model: `app/Models/ApiIntegration.php`
+  - Credentials auto-encrypt/decrypt via `Crypt`, JSON cast helpers, `getDefaultCourier()`, `getActiveCourier()`
+
+**Admin Controller / Routes:**
+- Controller: `app/Http/Controllers/Admin/ApiIntegrationController.php` (CRUD, toggle, setDefault, test, getProviderFields)
+- Routes (admin): `GET/POST/PUT/DELETE /admin/api-integrations/*`, `POST /admin/api-integrations/{id}/toggle`, `POST /admin/api-integrations/{id}/set-default`, `POST /admin/api-integrations/{id}/test`, `GET /admin/api-integrations/get-provider-fields`
+- Sidebar: `resources/views/admin/partials/sidebar.blade.php` -> Settings mein `API Integrations` link add
+
+**Admin Views:**
+- `resources/views/admin/api-integrations/index.blade.php` (list, status/default/test actions)
+- `resources/views/admin/api-integrations/create.blade.php` (type/provider dynamic, credentials dynamic)
+- `resources/views/admin/api-integrations/edit.blade.php` (update + test result)
+
+**Courier Automation Structure:**
+- Contract: `app/Contracts/CourierInterface.php` (authenticate, createShipment, getTracking, cancelShipment, getCouriers)
+- Manager: `app/Services/Couriers/CourierManager.php` (default/active courier resolve)
+- Services: `ShiprocketService`, `DelhiveryService`, `PickrrService`, `CustomCourierService`
+- Admin Order: `app/Http/Controllers/Admin/OrderController.php` -> `shipViaApi($id)`, route `POST /admin/orders/{id}/ship-api`, button `Ship via API` in `resources/views/admin/orders/show.blade.php`
+  - API se shipment create hone par `tracking_number`, `tracking_carrier` auto-save, status `shipped`, `recordStatusChange('shipped')`, mail/notification trigger
+
+**Supported Providers (configurable):**
+- Courier: shiprocket, delhivery, pickrr, nimbuspost, clickpost, ecomexpress, custom
+- Payment: razorpay, stripe, payu, cashfree, ccavenue, custom
+- SMS: msg91, textlocal, twilio, fast2sms, custom
+- WhatsApp: meta, interakt, wati, gupshup, custom
+- Email: smtp, mailgun, sendgrid, brevo, custom
+- Other: custom
+
+**Verification:**
+- `php artisan migrate --force` -> `2026_10_28_105100_create_api_integrations_table` DONE
+- `php artisan view:cache` DONE
+- `php -l` on controllers/services passed
+- Routes registered: `admin.api-integrations.*`, `admin.orders.ship-api`
+
+**Notes:**
+- Credentials Laravel Crypt se encrypt hote hain
+- Generic system (future mein aur APIs add ho sakti hain)
+- Agar koi active default courier nahi hai to `Ship via API` error show karega
+- Custom API ke liye base_url + endpoints configure karke use kiya ja sakta hai
+
+- [x] Vehicle widget added to home page hero banner (year/make/model filter) with dynamic makes/models JS.

@@ -84,6 +84,9 @@
         <a href="{{ route('admin.settings.search-categories') }}" class="nav-item {{ request()->routeIs('admin.settings.search-categories*') ? 'active' : '' }}">
             <i class="fas fa-list-ul"></i> Search Categories
         </a>
+        <a href="{{ route('admin.api-integrations.index') }}" class="nav-item {{ request()->routeIs('admin.api-integrations*') ? 'active' : '' }}">
+            <i class="fas fa-plug"></i> API Integrations
+        </a>
         <a href="{{ route('admin.logs.index') }}" class="nav-item {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
             <i class="fas fa-file-alt"></i> Logs
         </a>
