@@ -38,6 +38,8 @@ class Product extends Model
         'stock',
         'featured',
         'reviews_data',
+        'rating',
+        'reviews',
         'packs',
         'status',
     ];

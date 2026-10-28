@@ -42,9 +42,9 @@
 
             <li><a class="nav-link {{ request()->routeIs('user.wishlist') ? 'active' : '' }}" href="{{ route('user.wishlist') }}"><i class="fas fa-heart me-2"></i>My Wishlist</a></li>
 
-            <!-- <li><a class="nav-link {{ request()->routeIs('compare.index') ? 'active' : '' }}" href="{{ route('compare.index') }}"><i class="fas fa-exchange-alt me-2"></i>Compare Products</a></li> -->
+            <!-- <li><a class="nav-link {{ request()->routeIs('compare.index') ? 'active' : '' }}" href="{{ route('compare.index') }}"><i class="fas fa-exchange-alt me-2"></i>Compare Products</a></li> 
 
-            <li><a class="nav-link {{ request()->routeIs('user.followed-sellers') ? 'active' : '' }}" href="{{ route('user.followed-sellers') }}"><i class="fas fa-user-friends me-2"></i>Followed Sellers</a></li>
+            <li><a class="nav-link {{ request()->routeIs('user.followed-sellers') ? 'active' : '' }}" href="{{ route('user.followed-sellers') }}"><i class="fas fa-user-friends me-2"></i>Followed Sellers</a></li> -->
 
             <li><a class="nav-link {{ request()->routeIs('user.vehicles') ? 'active' : '' }}" href="{{ route('user.vehicles') }}"><i class="fas fa-car me-2"></i>My Vehicles</a></li>
 
@@ -52,7 +52,7 @@
 
             <li><a class="nav-link {{ request()->routeIs('user.notifications') ? 'active' : '' }}" href="{{ route('user.notifications') }}"><i class="fas fa-bell me-2"></i>Notifications</a></li>
             <li><a class="nav-link {{ request()->routeIs('user.inquiries') ? 'active' : '' }}" href="{{ route('user.inquiries') }}"><i class="fas fa-question-circle me-2"></i>My Inquiries</a></li>
-            <li class="nav-item mb-2 user-sidebar-my-profile">
+            <li class="nav-item user-sidebar-my-profile">
                 <a class="nav-link {{ request()->routeIs('user.profile') ? 'active' : '' }}" href="{{ route('user.profile') }}"><i class="fas fa-user-cog"></i>My Profile</a>
             </li>
             <li class="nav-item mb-2">

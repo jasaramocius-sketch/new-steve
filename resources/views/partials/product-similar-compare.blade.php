@@ -1,7 +1,6 @@
 @php
-    $similarItems = $similar ?? collect();
-    if (!is_array($similarItems)) { $similarItems = collect($similarItems); }
-    $all = collect([$current])->merge($similarItems);
+    $similarItems = collect($similar ?? [])->take(2);
+    $all = collect([$current])->merge($similarItems)->take(3);
 @endphp
 
 @if($all->count() > 1)
@@ -21,9 +20,6 @@
                             {!! imgTag(storedPath($p->image, 'assets/images/thumbnails'), '', 'img-fluid mb-2', 'style="height:100%; width:100%; object-fit:cover;"') !!}
                         </a>
                     </div>
-                    <a href="{{ route('product', $p->slug) }}" class="d-block text-decoration-none small fw-semibold p-10">
-                        {{ $p->name }}
-                    </a>
                     @if($p->id === $product['id'])
                         <span class="badge bg-primary-subtle text-white border border-primary-subtle mt-1">Current Product</span>
                     @endif
@@ -31,10 +27,29 @@
                 @endforeach
             </tr>
             <tr>
+                <th class="compare-row-label">Product</th>
+                @foreach($all as $p)
+                    <td class="similar-col"  style="text-transform: uppercase;">
+                        <a href="{{ route('product', $p->slug) }}" class="d-block text-decoration-none small fw-semibold p-10">
+                        {{ $p->name }}
+                    </a>
+                    </td>
+                @endforeach
+            </tr>
+            <tr>
                 <th class="compare-row-label">Brand</th>
                 @foreach($all as $p)
                     <td class="similar-col"  style="text-transform: uppercase;">
                         {{ $p->brand->name ?? '—' }}
+                    </td>
+                @endforeach
+            </tr>
+
+            <tr>
+                <th class="compare-row-label">Category</th>
+                @foreach($all as $p)
+                    <td class="similar-col"  style="text-transform: uppercase;">
+                        {{ $p->category->name ?? '—' }}
                     </td>
                 @endforeach
             </tr>
@@ -68,11 +83,11 @@
                 @endforeach
             </tr>
             <tr>
-                <th class="compare-row-label">Fitment / Vehicle</th>
+                <th class="compare-row-label">Part Number</th>
                 @foreach($all as $p)
                     <td class="similar-col">
-                        @if($p->year || $p->make || $p->model)
-                            {{ $p->year ?? '' }}{{ $p->make || $p->model ? ' / ' : '' }}{{ $p->make ?? '' }}{{ $p->model ? ' / ' : '' }}{{ $p->model ?? '' }}
+                        @if($p->part_number)
+                            {{ $p->part_number }}
                         @else
                             <span class="text-muted">Universal</span>
                         @endif
@@ -95,7 +110,7 @@
                 <th class="compare-row-label">Description</th>
                 @foreach($all as $p)
                     <td class="similar-col small text-muted" style="max-width:260px;">
-                        {{ \Illuminate\Support\Str::limit(strip_tags(html_entity_decode((string) $p->description)), 90) }}
+                        {{ \Illuminate\Support\Str::limit(strip_tags(html_entity_decode((string) $p->overview)), 90) }}
                     </td>
                 @endforeach
             </tr>

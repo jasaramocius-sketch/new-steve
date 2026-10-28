@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('assets/front/css/backend.css') }}?v={{ filemtime(public_path('assets/front/css/backend.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/front/css/nice-select.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/searchable-select.css') }}?v={{ filemtime(public_path('assets/front/css/searchable-select.css')) }}">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="stylesheet" href="{{ asset('assets/front/css/toastr.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/front/css/style.css') }}?v={{ filemtime(public_path('assets/front/css/style.css')) }}">
@@ -112,6 +113,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="{{ asset('assets/front/js/backend.js') }}?v={{ filemtime(public_path('assets/front/js/backend.js')) }}"></script>
     <script src="{{ asset('assets/front/js/form-select.js') }}?v={{ filemtime(public_path('assets/front/js/form-select.js')) }}"></script>
+    <script src="{{ asset('assets/front/js/searchable-select.js') }}?v={{ filemtime(public_path('assets/front/js/searchable-select.js')) }}"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -13,7 +13,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h4 class="h4-style mb-0">My Wishlist</h4>
     @if(count($wishlist) > 0)
-    <form action="{{ route('wishlist.clear') }}" method="POST">
+    <form action="{{ route('wishlist.clear') }}" method="POST" id="wishlist-clear-all-form">
         @csrf
         @method('DELETE')
         <button class="btn btn-danger steve-btn">

@@ -4466,3 +4466,265 @@ php artisan tinker --execute="dump(array_slice(json_decode(DB::table('settings')
 - Populate `seller_id` where appropriate (e.g., for products that have a vendor).
 - Consider lightweight admin optimization for the search‑categories tree (already noted in task #317).
 - Run full test suite (if environment can install `pdo_sqlite`).
+
+## 319. (2026-10-26): Stock Management — Select All Checkbox Fix
+
+**Problem:** The Stock Management page's header checkbox did not select product rows because its JavaScript handler was not included in the admin layout output.
+
+**Root cause:** `resources/views/admin/products/stock.blade.php` declared its script with `@section('scripts')`, while `resources/views/admin/layouts/app.blade.php` renders scripts using `@stack('scripts')`.
+
+**Fix:** Changed the stock view script block to `@push('scripts')` / `@endpush`, so the existing select-all and toggle-all handlers load with the page.
+
+**Verification:** Blade diagnostics report no errors. Select-all controls target the current page's `.row-check` product checkboxes.
+
+## 320. (2026-10-27): Products Without Usable Image — Excluded From All Storefront Listings
+
+**Problem:** `products` table (761k rows) me bahut se products aise hain jinke paas usable image nahi hai — `main_image` khaali, ya placeholder/dummy/no-image/default file. Ye products category cards, category product counts, shop/search listings, brand pages, nav mega-menu counts aur home page sections me show ho rahe the → broken/placeholder images aur inflated product counts.
+
+**Solution:** Ek reusable "usable image" filter add kiya aur usse har storefront listing/count me apply kiya:
+
+1. `Product::scopeHasUsableImage()` — SQL-level filter:
+   * `main_image` non-empty **aur** `placeholder` / `dummy` / `no-image` / `default` keywords nahi
+   * **ya** `images_json` non-empty (`<> ''`, `<> '[]'`) aur usme bhi ye keywords nahi
+2. `Product::hasUsableImage()` — PHP-level check (basename keyword check + local file existence / S3 / `http(s)` URL).
+3. Filter apply kiya gaya:
+   * `CategoryController::showCategories()` — 3-level `withCount`, `total_products_count` (descendants) aur `preview_products`
+   * `ShopController` — `index()`, `customerProducts()`, category + child/sub-child listings, `suggestions()`
+   * `Product::statusCountsByCategoryId()` — category-wise counts (covering index scan)
+   * `CategoryTree::tree()` — cached nav mega-menu / sidebar counts
+   * `HomeController::filterProductsWithImages()` — featured / random / home sections
+
+**Impact — "Accessories and Fluids" (category `id=1`, measured 2026-10-27):**
+
+| Metric | Count |
+|---|---|
+| Active products (category + all descendants) | **1,430** |
+| With usable image | **1,057** |
+| Excluded (no usable image) | **373** |
+
+Note: `category_id = 1` par direct products **0** hain — saare products descendants me hain, isliye page/count 1,057 dikhata hai (1,430 − 373).
+
+**Files changed:**
+- `app/Models/Product.php` — `hasUsableImage()`, `scopeHasUsableImage()`, `statusCountsByCategoryId()` me filter
+- `app/Http/Controllers/CategoryController.php` — counts + preview products
+- `app/Http/Controllers/ShopController.php` — shop/search/category/brand listings + suggestions
+- `app/Services/CategoryTree.php` — cached tree counts
+- `app/Http/Controllers/HomeController.php` — `filterProductsWithImages()`
+- `resources/views/categories/index.blade.php`, `resources/views/shop/index.blade.php`, `resources/views/home/index.blade.php` — counts/preview display
+
+**File Revisions (per `file_revisions` table):**
+
+| File | Event | Rev | Timestamp |
+|---|---|---|---|
+| `app/Models/Product.php` | updated | 14379 | 2026-10-23 07:31:45 |
+| `resources/views/categories/index.blade.php` | updated | 14390 | 2026-10-23 07:32:55 |
+| `app/Http/Controllers/HomeController.php` | updated | 14453 | 2026-10-23 10:58:25 |
+| `resources/views/shop/index.blade.php` | updated | 14490 | 2026-10-23 13:34:34 |
+| `app/Http/Controllers/ShopController.php` | updated | 14491 | 2026-10-23 13:34:44 |
+| `app/Http/Controllers/CategoryController.php` | updated | 13567 | 2026-09-15 06:09:21 (last recorded; later edits not captured) |
+| `app/Services/CategoryTree.php` | — | — | no revision record |
+
+**Note:** File Revisions watcher last entry **2026-10-23 13:34:44** (rev 14491) hai — uske baad watcher band tha, isliye Oct 26 (commit `d42c741`) ke changes File Revisions me record nahi hue. Watcher dobara start karne ke liye: `sudo systemctl restart file-watcher` (ya `node file-watcher.mjs`), phir missing snapshots ke liye `php artisan file:audit --init` ke baad `php artisan file:audit`.
+
+**Verification:**
+- SQL (subtree CTE) se cross-check: 1,430 active vs 1,057 usable-image products — code ke scope se match.
+- Category cards / product grids me placeholder images wale products nahi aate.
+- Category counts, shop filters aur mega-menu counts consistent (same scope use hota hai).
+- `php -l` clean on all touched PHP files.
+
+## 321. (2026-10-27): Shop Sidebar + Mobile Menu Categories — A-Z Ordering
+
+**Problem:** Products page (`/shop` → `/search`) ke sidebar me categories DB insertion order me aa rahi thi — A-Z nahi. Same tree mobile menu ke "Categories" tab me bhi use hota hai (`mobileCategoryTree`), isliye wahan bhi order random tha.
+
+**Solution:**
+- `app/Services/CategoryTree.php` — tree build se pehle query me `orderByRaw('LOWER(name) ASC')->orderBy('id')` add kiya. Children `$childrenMap` me query order me append hote hain, isliye **har level** (top → sub → child) A-Z sort ho jata hai. `LOWER()` use kiya taaki collation par depend na kare (`utf8mb4_unicode_ci` case-insensitive hai, phir bhi deterministic).
+- Cache key `front_category_tree_v1` → **`front_category_tree_v2`** — purana 6-hour cached tree automatically invalid, manual `cache:clear` ki zarurat nahi. Purana `v1` key `cache()->forget()` se hata diya.
+- Admin me category save/delete par pehle se hi `CategoryTree::flush()` chalta hai (`AppServiceProvider`), isliye naya key bhi auto-refresh hoga.
+
+**Files changed:**
+- `app/Services/CategoryTree.php` — A-Z `orderBy` + cache key bump
+
+**File Revisions:** is change ka koi record nahi — watcher ka last entry **2026-10-23 13:34:44 (rev 14491)** hai aur uske baad band hai. Start karne ke liye: `sudo systemctl restart file-watcher`, phir `php artisan file:audit`.
+
+**Verification:**
+- `php -l app/Services/CategoryTree.php` → no syntax errors.
+- Tinker (`CategoryTree::tree()`): top-level = `Accessories and Fluids | Air and Fuel Delivery | Air Brake Hose Label | Belts and Cooling | Body | Brake | Driveline and Axles | Electrical, Charging and Starting | …` (25 tops, A-Z).
+- Children of "Accessories and Fluids" = `Adhesives | Appearance Products | Books | Brackets, Flanges and Hangers | Cleaning Products | Clothing | Control Cables | …` (A-Z).
+- HTTP check `GET /new-steve/search` → 200; sidebar ka first category "Accessories and Fluids" aur uske children A-Z order me render ho rahe hain.
+
+## 322. (2026-10-27): Shop Sidebar — Collapsible Widgets (Categories / Price Range / Vehicle)
+
+**Problem:** Products page ke sidebar me teeno widgets (Categories, Price Range, Vehicle) hamesha expanded rehte the. Categories list bahut lambi hone se sidebar scroll bada ho jata tha aur Price/Vehicle tak pahunchne ke liye kaafi scroll karna padta tha.
+
+**Solution:** Har widget ke heading ko Bootstrap 5 collapse toggle bana diya (default **closed / collapsed**):
+
+- Heading ke andar native `<button type="button" class="widget-collapse-toggle">` (keyboard-accessible) + right side chevron icon (`fa-chevron-down`) jo expanded state me 180° rotate hota hai.
+- Body `<div class="collapse" id="sidebar…Collapse">` me wrap kiya (`show` class nahi → page load par closed):
+  * `#sidebarCategoriesCollapse` — Categories widget
+  * `#sidebarPriceCollapse` — Price Range form
+  * `#sidebarVehicleCollapse` — Vehicle form
+- `aria-expanded="false"` / `aria-controls` attributes add kiye (expanded hone par Bootstrap khud `true` kar deta hai).
+- CSS (`custom.css`): toggle button reset (full width, flex, transparent), chevron transition, hover/focus-visible states, aur `:has(+ .collapse:not(.show))` se collapsed heading ka extra bottom margin hata diya.
+- **Price slider fix:** panel default collapsed hone se jQuery UI slider hidden container me init hota tha (width 0 → handle drag galat). Isliye slider options ko `priceSliderOptions(values)` function me extract kiya aur `shown.bs.collapse` par slider ko current values ke saath `destroy` + re-init karte hain — sirf pehli baar expand hone par sahi width milti hai.
+
+**Files changed:**
+- `resources/views/shop/index.blade.php` — 3 widget headers + collapse wrappers (default closed) + slider re-init handler
+- `public/assets/front/css/custom.css` — `.widget-collapse-toggle` styles
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `php artisan view:cache` → "Blade templates cached successfully" (syntax OK).
+- `GET /new-steve/search` → **200**; HTML me teeno panels `class="collapse"` (bina `show`) + `aria-expanded="false"` render ho rahe hain — yaani default closed. `collapse show` panels ki count = **0**.
+- `bootstrap.bundle.min.js` page par load ho raha hai, isliye `data-bs-toggle="collapse"` data-api kaam karega.
+- Price panel expand → `shown.bs.collapse` handler slider ko visible width ke saath re-init karta hai (values preserve).
+- Nested category `+/-` toggles (jo pehle se collapse use karte hain) outer collapse ke andar bhi intact hain.
+
+## 323. (2026-10-27): Searchable Selects — Options Zyada Hon To Search Box
+
+**Problem:** Jin `<select>` forms me options bahut zyada hain (admin product form ka Category select ~21,000 options, Brand ~300+, shop page ka Brand 305, Year 125), unme native dropdown se option dhoondhna practically impossible tha. Aage options badhne wale selects bhi cover karne the.
+
+**Solution:** Naya reusable vanilla-JS enhancer `searchable-select.js` — koi library nahi, koi markup change nahi:
+
+- **Threshold-based:** sirf wahi `select.form-select` enhance hote hain jinke options `>= 10` hon (default). Per-select override: `data-searchable-min="N"`; skip: `data-searchable="off"`.
+- **Native `<select>` DOM me hi rehta hai** (off-screen, `display:none` nahi) — is liye form submit, HTML5 `required` validation, aur existing saare change handlers (jQuery included: brand auto-submit, sort, vehicle form) bilkul waise hi kaam karte hain.
+- **UI:** trigger (theme ka `.form-select` look + existing chevron) → click par panel with search input + filtered list. Panel `document.body` me `position:fixed` append hota hai, is liye `table-responsive`/modal/off-canvas me clip nahi hota; viewport ke hisaab se neeche/upar khulta hai.
+- **Keyboard:** Enter / Space / ArrowDown se open, ArrowUp-Down se navigate, Enter se select, Esc se close, Tab se close. Open hone par currently selected option highlight hota hai.
+- **Dynamic options:** per-select `MutationObserver` (options add/remove, disabled/required change) + document-level observer (jo select pehle threshold se chhota tha aur baad me bada ho gaya — e.g. AJAX se aane wale makes/models) → khud enhance/refresh ho jata hai.
+- **Performance:** ek waqt me max **200 rows** render hote hain + footer hint ("Showing first 200 of N matches — type to narrow down"). Empty search par 200 rows + type karte hi poore 21k options par filter (21,400 options: open ~0ms, filter ~0ms measured).
+- **A11y:** `role="combobox"` + `aria-expanded` / `aria-controls` / `aria-activedescendant`, list `role="listbox"`, options `role="option"` + `aria-selected`; disabled select par `aria-disabled` + `tabindex="-1"`. Required select invalid hone par panel khul kar focus control par aa jata hai.
+- `.nice-select` / address fields ke `.address-suggest` widgets ko chhoda nahi (unka apna searchable implementation already hai).
+
+**Files changed:**
+- `public/assets/front/js/searchable-select.js` — naya enhancer (vanilla JS, ~430 lines)
+- `public/assets/front/css/searchable-select.css` — naya stylesheet (panel, search input, list, group/empty/footer states)
+- `resources/views/layouts/app.blade.php` — CSS + JS include (form-select.js ke baad)
+- `resources/views/admin/layouts/app.blade.php` — CSS + JS include (form-select.js ke baad)
+- `TASKS.md` — ye entry
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `node --check public/assets/front/js/searchable-select.js` → OK; `php artisan view:cache` → "Blade templates cached successfully".
+- `GET /new-steve/search` → **200**; dono assets include ho rahe hain. Rendered DOM (headless Chrome) me **2 selects enhance** hue: Brand (305 options, `min-width:180px` inline style se) aur Year (125 options) — `ss-control` + `ss-panel` present.
+- **E2E (headless Chrome, real page):** Vehicle panel expand → Year search "2021" → 1 row → select → `value=2021`, label `2021`. Brand search "555" → 1 row → select → existing auto-submit chala → URL `…/search?brand=555`.
+- **Unit-ish (headless Chrome):** 12-option select — filter `ap` → 4 rows (Apple/Apricot/Grape/Pineapple), click → `value=apple`, `FormData` me value, label update, panel close, `change` sirf value badalne par; keyboard ArrowDown+Enter → `mango`; Esc → close; disabled select → `tabindex="-1"`, no open.
+- **Dynamic:** 2-option select pehle enhance nahi hua, 12 options add hone par automatically enhance ho gaya.
+- **Perf:** 21,401-option select — open 0ms (200 rows rendered), filter "Item 21000" → 1 match, footer hint visible.
+- **Fallback:** `nice-select`/address-fields selects untouched (unka apna search UI), aur `select` without search needs native hi rehta hai.
+
+## 324. (2026-10-27): Price Filter — Displayed Price (Commission Included) Par Lagao
+
+**Problem:** `?min_price=0&max_price=172` par `Rad / Cond Fan Assy. $190.29` list ho raha tha.
+
+**Root cause:** Filter DB ki base `cost` par lag raha tha, lekin card par price `buyerPrice($p->price, $p)` se dikhti hai = `cost * (1 + commission/100)` (global commission **10%**, product-level override ho to wo).
+
+- Product `295342` (`rad-cond-fan-assy-75638`): `cost = 172.99`, commission = NULL → displayed `$190.29`.
+- Filter condition `cost <= 172 + 0.999999` → `172.99 <= 172.999999` ✅ pass → product list ho gaya, jabki customer ko `$190.29` dikh raha tha.
+- Isi tarah `sort=price_asc/desc` bhi `cost` par tha (per-product commission alag hone par displayed order galat), aur slider bounds `MAX(cost)/MIN(cost)` se ban rahe the (displayed range se kam).
+- Bonus bug: slider label `currency_format($sliderMin)` — `$sliderMin` pehle hi `* $rate` tha, is liye non-USD currency me **double conversion** ho rahi thi.
+
+**Fix:** Naya private helper `buyerPriceExpression()` (ShopController) — bilkul `buyerPrice()` jaisa SQL expression:
+
+```sql
+(cost * (1 + (LEAST(GREATEST(COALESCE(commission, 10.00), 0), 100) / 100)))
+```
+
+- `min_price` / `max_price` ab isi expression par `whereRaw` (currency conversion pehle jaisa: `price / rate`).
+- `sort=price_asc|price_desc` ab displayed price par.
+- Price slider range (`catalog.price_range` → **`catalog.price_range_v2`**, cache auto-invalidate) ab displayed price ka `MIN/MAX`.
+- Slider label ab `{{ $currencySymbol }}{{ number_format($sliderMin, 2) }}` (double conversion khatam).
+
+**Files changed:**
+- `app/Http/Controllers/ShopController.php` — `buyerPriceExpression()`, filter + sort + price range
+- `resources/views/shop/index.blade.php` — slider label
+- `TASKS.md` — ye entry
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `?min_price=0&max_price=172&sort=price_desc` → **200**; `rad-cond-fan-assy-75638` (cost 172.99) aur `rad-cond-fan-assy-76170` (cost 263.01) dono page par **absent**; listing ki max displayed price **$173.00** (172.99 range ka rounding), pehle $190.29/$289.31 aa rahe the.
+- Tinker: filter se `total = 463,552`, `max_displayed_in_result = 173.00`, `min = 0.07`; dono bad products excluded.
+- `?min_price=100&max_price=172&sort=price_asc` → 24 cards sab `$100.00` (DB me cost 90.91 × 1.1 = 100.00 wale 24 products — data sahi).
+- Slider: `#price-slider-max = 105727` (buyer-price max 105,727 × rate), label `$0.00 - $105,727.00`.
+- Performance (no regression): buyer-price filter `3.87s` vs purana cost filter `4.01s`; slider range scan `2.54s` (1 din cache).
+- Note: `max_price` ka purana `+0.999999` fudge baraqar hai — yaani max 172 par 172.99 tak (displayed $173.00) include hota hai. Strict `<= 172.00` chahiye to `+0.999999` hata dena hoga.
+
+## 325. (2026-10-28): User Return — Qty to Return Validation (Client-Side)
+
+**Problem:** Request Return page (`user.returns.create`) par sabhi "Qty to Return" inputs default `0` hote the. User agar sab 0 chhod kar Submit click karta tha to server validation (`items.*.qty => min:1`) fail hoti thi, page reload hota tha, aur koi inline error nahi dikhta tha — sirf server-side error aata tha jo achhi tarah se visible nahi tha.
+
+**Fix:** Client-side validation add kiya taaki page reload na ho aur turant error dikhe:
+
+- Qty inputs par class `return-qty` + `data-index` add kiya.
+- Naya error div `#return-qty-error` (`d-none` by default): *"Please select at least one item with quantity greater than 0."`
+- `@error('items')` block add kiya taaki server-side validation error bhi inline dikhe (pehle sirf `reason` ka error dikhta tha).
+- Inline JS (`DOMContentLoaded`-safe IIFE):
+  - Form submit par check karta hai ki koi bhi qty `> 0` hai ya nahi.
+  - Agar sab `0` hain → `e.preventDefault()` + `e.stopPropagation()` (page reload nahi hota), error box show karta hai, sab `0` inputs par `is-invalid` class lagata hai (Bootstrap red border), pehle input par focus set karta hai.
+  - Agar koi qty `> 0` hai → error box hide, highlights clear.
+  - Har qty input par `input` listener: agar user kisi input me value `> 0` daalta hai to uska `is-invalid` hat jata hai aur agar koi bhi `> 0` ho to error box hide ho jata hai.
+
+**Files changed:**
+- `resources/views/user/returns/create.blade.php` — qty input class/data-index, `@error('items')`, `#return-qty-error`, inline JS
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `php artisan view:cache` → "Blade templates cached successfully" (syntax OK).
+- Form action selector `form[action*="/returns/"]` store route `/user/returns/{orderId}` se match karta hai.
+- Server-side backup validation `items.*.qty => required|integer|min:1` intact `ReturnController@store` me.
+- Note: Page me login hona zaroori hai (`auth` middleware), isliye direct HTTP test login ke bina possible nahi.
+
+## 326. (2026-10-28): Admin Return Request — Prevent Accidental Approve on Save
+
+**Problem:** Admin "Process Request" page (`admin.returns.show`) ka Decision select me koi empty/placeholder option nahi tha. Jab return request ka status `pending` hota hai, to koi bhi option (`approved`/`rejected`/`refunded`) match nahi karta, is liye koi option `selected` nahi hota. Browser form submit karte waqt **pehla option (`Approve`)** default submit kar deta hai — agar admin koi change kiye bina "Save Decision" click karta to return request galt se approve ho jati thi.
+
+**Fix:** Decision select me pehle ek disabled placeholder option add kiya:
+
+```html
+<option value="" disabled {{ $return->status === 'pending' ? 'selected' : '' }}>Select Decision...</option>
+```
+
+- `pending` status par placeholder `selected` hota hai — admin ko faura decision choose karna padta hai.
+- Disabled option ki value submit nahi hoti, is liye bina select kiye submit par server validation (`status => required|in:approved,rejected,refunded`) fail hoti hai.
+- `approved`/`rejected`/`refunded` status par wohi option `selected` rehta hai (current decision dikhta hai, change karna padega).
+- `@error('status')` block add kiya taaki server validation error inline dikhe.
+
+**Files changed:**
+- `resources/views/admin/returns/show.blade.php` — Decision select placeholder + `@error('status')`
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `php artisan view:cache` → "Blade templates cached successfully".
+- Server-side validation intact: `ReturnController@update` me `'status' => 'required|in:approved,rejected,refunded'` — empty value reject ho jati hai.
+- Note: Page admin-only (`auth` + admin middleware), direct HTTP test login ke bina possible nahi.
+
+## 327. (2026-10-28): Admin Return — Refund Amount Should Not Show on Reject
+
+**Problem:** Admin "Process Request" page (`admin.returns.show`) par jab return request reject ki jati thi, tab bhi "Refund amount" me amount dikhta rehta tha (kyunki controller `refund_amount` input ki value save kar leta tha chahe status `rejected` ho). Ye inconsistent hai — reject par koi refund nahi hota, to amount dikhana galat hai.
+
+**Decision:** Reject karne par "Refund amount" **amount nahi dikhna chahiye** — ye sirf `approved` / `refunded` status par show hona chahiye. Reject par `refund_amount = null` ho aur UI me `—` dikhe.
+
+**Fix:**
+1. **Controller** (`app/Http/Controllers/Admin/ReturnController.php`): `update()` me — agar status `rejected` ho to `refund_amount = null` set kiya jata hai; `approved`/`refunded` par input value save hoti hai.
+2. **View** (`resources/views/admin/returns/show.blade.php`):
+   - Decision select me pehle se hi disabled placeholder (`Select Decision...`) add ho chuka hai (Task #326).
+   - Refund amount input par `data-decision` + `refund-amount-input` class add ki; `pending`/`rejected` status par input `disabled` rehta hai.
+   - Inline JS: decision change hone par `rejected` select karne se refund input disable + clear ho jata hai; `approved`/`refunded` select karne se enable ho jata hai (default order total load hota hai agar empty ho).
+   - Return Details display card pehle se null par `—` dikhata hai, is liye controller se null set karne par UI sahi dikhega.
+
+**Files changed:**
+- `app/Http/Controllers/Admin/ReturnController.php` — refund_amount null on reject
+- `resources/views/admin/returns/show.blade.php` — refund input disabled state + JS toggle
+- `TASKS.md` — ye entry
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `php artisan view:cache` → "Blade templates cached successfully"
+- `php -l app/Http/Controllers/Admin/ReturnController.php` → No syntax errors
+- Server-side validation intact: `'refund_amount' => 'nullable|numeric|min:0'`, reject par null override hota hai
+- Stock restore sirf `refunded` status par (pehle se intact)
+- Note: Page admin-only, direct HTTP test login ke bina possible nahi.

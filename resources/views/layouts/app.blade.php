@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="{{ asset('assets/front/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/front/css/style.css') }}?v={{ filemtime(public_path('assets/front/css/style.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/front/css/custom.css') }}?v={{ filemtime(public_path('assets/front/css/custom.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/front/css/searchable-select.css') }}?v={{ filemtime(public_path('assets/front/css/searchable-select.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/front/css/all.min.css') }}">
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <!-- Non-critical CSS - loaded async -->
@@ -121,7 +122,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="2" height="21" viewBox="0 0 2 21" fill="none">
                                     <path d="M1 0.5V20.5" stroke="white" stroke-opacity="0.8" />
                                 </svg>
-                            </li>-->
+                            </li>
                             <li class="d-flex gap-2 align-items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21" fill="none">
                                     <path d="M9.99935 2.16669C12.4993 3.83335 13.2683 7.41005 13.3327 10.5C13.2683 13.59 12.4994 17.1667 9.99935 18.8334M9.99935 2.16669C7.49935 3.83335 6.73039 7.41005 6.66602 10.5C6.73039 13.59 7.49935 17.1667 9.99935 18.8334M9.99935 2.16669C5.39698 2.16669 1.66602 5.89765 1.66602 10.5M9.99935 2.16669C14.6017 2.16669 18.3327 5.89765 18.3327 10.5M9.99935 18.8334C14.6017 18.8334 18.3327 15.1024 18.3327 10.5M9.99935 18.8334C5.39698 18.8334 1.66602 15.1024 1.66602 10.5M18.3327 10.5C16.666 13 13.0893 13.769 9.99935 13.8334C6.90938 13.769 3.33268 13 1.66602 10.5M18.3327 10.5C16.666 8.00002 13.0893 7.23106 9.99935 7.16669C6.90938 7.23106 3.33268 8.00002 1.66602 10.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -141,7 +142,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="2" height="21" viewBox="0 0 2 21" fill="none">
                                     <path d="M1 0.5V20.5" stroke="white" stroke-opacity="0.8"></path>
                                 </svg>
-                            </li>
+                            </li> -->
                             <li class="d-flex gap-2 align-items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21" fill="none">
                                     <path d="M7.08268 12.7222C7.08268 13.7961 7.95324 14.6667 9.02713 14.6667H10.8327C11.9833 14.6667 12.916 13.7339 12.916 12.5834C12.916 11.4328 11.9833 10.5 10.8327 10.5H9.16602C8.01542 10.5 7.08268 9.56728 7.08268 8.41669C7.08268 7.26609 8.01542 6.33335 9.16602 6.33335H10.9716C12.0455 6.33335 12.916 7.20391 12.916 8.2778M9.99935 5.08335V6.33335M9.99935 14.6667V15.9167M18.3327 10.5C18.3327 15.1024 14.6017 18.8334 9.99935 18.8334C5.39698 18.8334 1.66602 15.1024 1.66602 10.5C1.66602 5.89765 5.39698 2.16669 9.99935 2.16669C14.6017 2.16669 18.3327 5.89765 18.3327 10.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -656,6 +657,7 @@
     <script src="{{ asset('assets/front/js/myscript.js') }}?v={{ filemtime(public_path('assets/front/js/myscript.js')) }}" defer></script>
 
     <script src="{{ asset('assets/front/js/form-select.js') }}?v={{ filemtime(public_path('assets/front/js/form-select.js')) }}"></script>
+    <script src="{{ asset('assets/front/js/searchable-select.js') }}?v={{ filemtime(public_path('assets/front/js/searchable-select.js')) }}"></script>
 
     <!-- Session Flash Notifications (must remain inline for Blade PHP) -->
     <script>

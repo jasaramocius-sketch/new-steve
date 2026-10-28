@@ -185,8 +185,17 @@
           </div>
 
           <!-- Categories Widget -->
+          @php
+            $isCategoryPage = isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory);
+          @endphp
           <div class="single-product-widget shadow-sm rounded border">
-            <h5 class="widget-title">Categories</h5>
+            <h5 class="widget-title">
+              <button type="button" class="widget-collapse-toggle {{ $isCategoryPage ? '' : 'collapsed' }}" data-bs-toggle="collapse" data-bs-target="#sidebarCategoriesCollapse" aria-expanded="{{ $isCategoryPage ? 'true' : 'false' }}" aria-controls="sidebarCategoriesCollapse">
+                <span>Categories</span>
+                <i class="fa-solid fa-chevron-down widget-collapse-icon" aria-hidden="true"></i>
+              </button>
+            </h5>
+            <div class="collapse {{ $isCategoryPage ? 'show' : '' }}" id="sidebarCategoriesCollapse">
             <div class="product-cat-widget">
               <ul class="list-unstyled mb-0 gap-1 d-flex flex-column">
                 @if(isset($currentCategory))
@@ -281,11 +290,17 @@
                 @endforeach
               </ul>
             </div>
+            </div>
           </div>
 
           <!-- Price Filter Widget -->
           <div class="single-product-widget shadow-sm rounded border">
-            <h5 class="widget-title">Price Range</h5>
+            <h5 class="widget-title">Price Range
+              <!-- <button type="button" class="widget-collapse-toggle" data-bs-toggle="collapse" data-bs-target="#sidebarPriceCollapse" aria-expanded="false" aria-controls="sidebarPriceCollapse">
+                <span>Price Range</span>
+                <i class="fa-solid fa-chevron-down widget-collapse-icon" aria-hidden="true"></i>
+              </button> -->
+            </h5>
             <form id="price-filter-form" action="{{ url()->current() }}" method="GET">
               @foreach(request()->except(['min_price', 'max_price', 'page']) as $name => $value)
                 @if(is_array($value))
@@ -306,7 +321,7 @@
                 @endphp
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <span class="text-muted" style="font-size: 14px;">Range:</span>
-                  <span id="price-range-label" style="font-weight: 600; color: #1f0300;">{{ currency_format($sliderMin) }} - {{ currency_format($sliderMax) }}</span>
+                  <span id="price-range-label" style="font-weight: 600; color: #1f0300;">{{ $currencySymbol }}{{ number_format($sliderMin, 2) }} - {{ $currencySymbol }}{{ number_format($sliderMax, 2) }}</span>
                 </div>
                 <input type="hidden" id="price-min" name="min_price" value="{{ request('min_price', $sliderMin) }}">
                 <input type="hidden" id="price-max" name="max_price" value="{{ request('max_price', $sliderMax) }}">
@@ -321,11 +336,20 @@
                 </div>
               </div>
             </form>
+            <div class="collapse" id="sidebarPriceCollapse">
+            
+            </div>
           </div>
 
           <!-- Vehicle Filter Widgets (Year, Make, Model) -->
           <div class="single-product-widget shadow-sm rounded border mb-4">
-            <h5 class="widget-title mb-4">Vehicle</h5>
+            <h5 class="widget-title mb-4">
+              <button type="button" class="widget-collapse-toggle" data-bs-toggle="collapse" data-bs-target="#sidebarVehicleCollapse" aria-expanded="true" aria-controls="sidebarVehicleCollapse">
+                <span>Vehicle</span>
+                <i class="fa-solid fa-chevron-down widget-collapse-icon" aria-hidden="true"></i>
+              </button>
+            </h5>
+            <div class="collapse show" id="sidebarVehicleCollapse">
             <form id="vehicle-filter-form" action="{{ url()->current() }}" class="d-flex flex-column gap-2" method="GET" class="vehicle-filter-form">
             @foreach(request()->except(['brand', 'year', 'make', 'model', 'page']) as $name => $value)
               @if(is_array($value))
@@ -397,6 +421,7 @@
             @endif
             </div> -->
           </form>
+          </div>
 
           </div>
           <script>
@@ -609,6 +634,11 @@
         @if($hasSortFilter || $hasBrandFilter || $hasSearchFilter || $hasPriceFilter || $hasYearFilter || $hasMakeFilter || $hasModelFilter || $hasVehicleFilterChip)
           <div class="active-filter-chips d-flex align-items-center flex-wrap gap-2 mb-3">
             <span class="active-filter-chips-label">Active filters:</span>
+            <form method="POST" action="{{ route('shop.clear-filters') }}" class="ms-auto">
+              @csrf
+              <input type="hidden" name="return_path" value="{{ '/'.request()->path() }}">
+              <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-underline">Clear all</button>
+            </form>
             @if($hasSearchFilter)
               <span class="filter-chip">
                 <span class="filter-chip-label">Search:</span>
@@ -786,19 +816,33 @@ $(document).ready(function() {
     var minPrice = minPriceRaw === '' ? sliderMinVal : (parseInt(minPriceRaw) || sliderMinVal);
     var maxPrice = parseInt("{{ request('max_price', 0) }}") || sliderMaxVal;
 
-    $("#price-slider").slider({
-        range: true, min: sliderMinVal, max: sliderMaxVal,
-        values: [minPrice, maxPrice],
-        slide: function(event, ui) {
-            $("#price-min").val(ui.values[0]);
-            $("#price-max").val(ui.values[1]);
-            $("#price-range-label").text(priceSymbol + ui.values[0].toLocaleString() + " - " + priceSymbol + ui.values[1].toLocaleString());
-        },
-        change: function(event, ui) {
-            togglePriceApply();
-        }
-    });
+    function priceSliderOptions(values) {
+        return {
+            range: true, min: sliderMinVal, max: sliderMaxVal,
+            values: values || [minPrice, maxPrice],
+            slide: function(event, ui) {
+                $("#price-min").val(ui.values[0]);
+                $("#price-max").val(ui.values[1]);
+                $("#price-range-label").text(priceSymbol + ui.values[0].toLocaleString() + " - " + priceSymbol + ui.values[1].toLocaleString());
+            },
+            change: function(event, ui) {
+                togglePriceApply();
+            }
+        };
+    }
+
+    $("#price-slider").slider(priceSliderOptions());
     $("#price-range-label").text(priceSymbol + $("#price-slider").slider("values", 0).toLocaleString() + " - " + priceSymbol + $("#price-slider").slider("values", 1).toLocaleString());
+
+    // Widget default collapsed hai — slider tab init hota hai jab container hidden
+    // hota hai, isliye width/handle calculations galat ho sakti hain. Panel expand
+    // hone par slider ko current values ke saath dobara init karte hain.
+    $(document).on('shown.bs.collapse', '#sidebarPriceCollapse', function () {
+        var $slider = $("#price-slider");
+        if (!$slider.hasClass('ui-slider')) return;
+        var current = $slider.slider('values');
+        $slider.slider('destroy').slider(priceSliderOptions(current));
+    });
 
     function isDefaultPriceRange() {
         var v = $("#price-slider").slider("values");

@@ -1006,7 +1006,7 @@
                 <li><span>Category:</span> {{ $product['category']['name'] ?? $product['category']->name }}</li>
                 @endif
                 @if(!empty($product['sku']))
-                <li><span>SKU / Part #:</span> {{ $product['sku'] }}</li>
+                <li><span>Part Number:</span> {{ $product['sku'] }}</li>
                 @endif
                 @if(!empty($product['brand']) && $product['brand'])
                 <li><span>Brand:</span> <span style="text-transform: uppercase;">{{ $product['brand']['name'] ?? $product['brand']->name }}</span></li>

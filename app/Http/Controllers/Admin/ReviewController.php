@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Services\ProductReviewSync;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -87,6 +88,7 @@ class ReviewController extends Controller
         }
 
         $product->update(['reviews_data' => array_values($reviews)]);
+        app(ProductReviewSync::class)->sync($product, array_values($reviews));
 
         return back()->with('success', 'Review visibility updated.');
     }
@@ -104,6 +106,7 @@ class ReviewController extends Controller
         }
 
         $product->update(['reviews_data' => array_values($reviews)]);
+        app(ProductReviewSync::class)->sync($product, array_values($reviews));
 
         return back()->with('success', 'Review deleted.');
     }

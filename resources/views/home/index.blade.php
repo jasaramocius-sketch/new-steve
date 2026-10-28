@@ -38,7 +38,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-12 col-md-6 col-lg-6">
-                    <div class="hero-content" style="position:relative; z-index:1;">
+                    <div class="hero-content">
                         @if($heroSection->subtitle)
                             <h6 class="subtitle wow-replaced" style="color:var(--hov-primary)">{{ $heroSection->subtitle }}</h6>
                         @endif
@@ -46,9 +46,9 @@
                             <h1 class="title wow-replaced" data-wow-delay=".1s" style="color:#090909; font-weight: 800;">{{ $heroSection->title }}</h1>
                         @endif
                         @if($heroSection->description)
-                            <p class="des wow-replaced" data-wow-delay=".2s" style="color:#000000">
+                            <div class="des wow-replaced text-align-start" data-wow-delay=".2s" style="color:#000000">
                                 {!! $heroSection->description !!}
-                            </p>
+                            </div>
                         @endif
                         @if($heroSection->button_text && $heroSection->button_url)
                             <a class="template-btn hero-shop-now-btn steve-btn wow-replaced" data-wow-delay=".3s" href="{{ $heroSection->button_url }}">
@@ -390,18 +390,22 @@
 
                 
                 <div class="align-items-start flex-lg-column flex-xl-column latest-post-nav">
-                    <div class="flex-column" data-wow-delay=".2s">
+                    @if($showAsSlider)
+                    <div class="slider-nav d-flex gap-2">
+                        <button class="latest-posts-prev steve-btn"><i class="fas fa-chevron-left"></i></button>
                         <a href="{{ route('blog') }}" class="a-tag-hover-color">
                             {{ $sections->get('latest_post')?->button_text ??  'View More' }}
                             <i class="fas fa-arrow-right ms-1"></i> 
                         </a>
-                    </div>
-                    @if($showAsSlider)
-                    <div class="slider-nav d-flex gap-2">
-                        <button class="latest-posts-prev steve-btn"><i class="fas fa-chevron-left"></i></button>
                         <button class="latest-posts-next steve-btn"><i class="fas fa-chevron-right"></i></button>
                     </div>
                     @endif
+                    <!-- <div class="flex-column" data-wow-delay=".2s">
+                        <a href="{{ route('blog') }}" class="a-tag-hover-color">
+                            {{ $sections->get('latest_post')?->button_text ??  'View More' }}
+                            <i class="fas fa-arrow-right ms-1"></i> 
+                        </a>
+                    </div> -->
                 </div>
             </div>
         </div>
@@ -490,6 +494,7 @@
 <!-- Top Brands Section Completed -->
 @endif
 
+<!-- Buy With Confidence Section -->
 @if($sections->has('buy_with_confidence'))
 @php
     $buyConfidenceSection = $sections->get('buy_with_confidence');
@@ -525,7 +530,7 @@
             @endforeach
         </div>
 
-        <div class="row mt-5 justify-content-center py-4" style="background: #f8f8f8; border-radius: 12px;">
+        <div class="row mt-5 justify-content-center py-4 mx-0" style="background: #f8f8f8; border-radius: 12px;">
             <div class="col d-flex align-items-center justify-content-between flex-column flex-md-row gap-2">
                 <p class="col d-flex gap-2 flex-column flex-md-row" style="margin:0; font-size:1rem; color:#333; line-height:1.7;">
                     <i class="las la-search text-primary mr-2" style="font-size:26px;" aria-hidden="true"></i><strong>{{ $buyConfidenceExtra['hotline_heading'] ?? 'Not sure what fits?' }}</strong> {{ $buyConfidenceExtra['hotline_description'] ?? 'Call our parts hotline with your VIN and a real mechanic will match you. We read the diagrams so you don’t have to.' }}
@@ -538,9 +543,10 @@
     </div>
 </section>
 @endif
+<!-- Buy With Confidence Section Completed -->
 
-@if($sections->has('partners_heading'))
 <!-- Partner Section -->
+<!-- @if($sections->has('partners_heading'))
 <section class="gs-partner-section" {!! $sections->get('partners_heading')?->bgStyle() !!}>
     <div class="container section-with-padding">
         <div class="row pb-20 justify-content-center">
@@ -634,8 +640,8 @@
         </div>
     </div>
 </section>
+@endif -->
 <!-- Partner Section Completed -->
-@endif
 
 @endsection
 

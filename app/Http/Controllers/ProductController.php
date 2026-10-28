@@ -210,7 +210,7 @@ class ProductController extends Controller
 
         // "Similar Products To Compare" — same part, other brands (Moglix-style).
         $similar = collect();
-        $similarLimit = 3;
+        $similarLimit = 2;
         $similarBase = Product::with('brand', 'category')
             ->where('status', true)
             ->where('id', '!=', $product->id);

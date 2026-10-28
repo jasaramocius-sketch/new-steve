@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\ProductReviewSync;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ReviewController extends Controller
@@ -53,6 +55,7 @@ class ReviewController extends Controller
             'text' => $validated['text'],
             'images' => $imagePaths,
             'date' => now()->format('M d, Y'),
+            'review_date' => now()->toDateString(),
             'deleted' => false,
         ];
 
@@ -171,9 +174,13 @@ class ReviewController extends Controller
         $visible = collect($reviews)->where('deleted', false);
         $avg = $visible->avg('rating');
 
-        $product->reviews_data = $reviews;
-        $product->rating = $visible->isEmpty() ? 0 : round($avg);
-        $product->reviews = $visible->count();
-        $product->save();
+        DB::transaction(function () use ($product, $reviews, $visible, $avg) {
+            $product->reviews_data = $reviews;
+            $product->rating = $visible->isEmpty() ? 0 : round($avg);
+            $product->reviews = $visible->count();
+            $product->save();
+
+            app(ProductReviewSync::class)->sync($product, $reviews);
+        });
     }
 }

@@ -18,6 +18,22 @@ class ShopController extends Controller
 {
     public function __construct(private VehicleCatalog $vehicleCatalog) {}
 
+    /**
+     * Buyer-facing price ka SQL expression (cost + product/global commission).
+     *
+     * Storefront par price `buyerPrice()` se dikhti hai (cost + commission), is liye
+     * price filter/sort bhi isi expression par hone chahiye — warna max_price = 172
+     * par $190.29 wala product (cost 172.99 + 10%) bhi list ho jata hai.
+     */
+    private function buyerPriceExpression(): string
+    {
+        $global = max(0, min(100, (float) globalCommissionPercent()));
+        $global = number_format($global, 2, '.', '');
+
+        // Model ki tarah 0–100 clamp karo (product-level commission null ho to global).
+        return '(cost * (1 + (LEAST(GREATEST(COALESCE(commission, '.$global.'), 0), 100) / 100)))';
+    }
+
     private function filterProducts(Request $request, $query, bool $applyPriceFilter = true)
     {
         $search = $request->get('search', '');
@@ -42,13 +58,13 @@ class ShopController extends Controller
 
         if ($applyPriceFilter) {
             if ($minPrice !== '') {
-                $query->where('cost', '>=', (float) $minPrice / $rate);
+                $query->whereRaw($this->buyerPriceExpression().' >= ?', [(float) $minPrice / $rate]);
             }
 
             if ($maxPrice !== '') {
                 // Add 0.999999 to cover decimal prices up to the selected max integer (e.g. max_price = 4 covers 4.42)
                 $effectiveMax = (float) $maxPrice + 0.999999;
-                $query->where('cost', '<=', $effectiveMax / $rate);
+                $query->whereRaw($this->buyerPriceExpression().' <= ?', [$effectiveMax / $rate]);
             }
         }
 
@@ -80,9 +96,9 @@ class ShopController extends Controller
         }
 
         if ($sort === 'price_asc') {
-            $query->orderBy('cost', 'asc');
+            $query->orderByRaw($this->buyerPriceExpression().' asc');
         } elseif ($sort === 'price_desc') {
-            $query->orderBy('cost', 'desc');
+            $query->orderByRaw($this->buyerPriceExpression().' desc');
         } elseif ($sort === 'name_asc') {
             $query->orderBy('name', 'asc');
         } elseif ($sort === 'oldest') {
@@ -146,10 +162,12 @@ class ShopController extends Controller
 
         $currency = session('currency', 'USD');
 
-        $priceRange = Cache::remember('catalog.price_range', now()->addDay(), function () {
+        $priceRange = Cache::remember('catalog.price_range_v2', now()->addDay(), function () {
+            $expr = $this->buyerPriceExpression();
+
             $row = DB::table('products')
                 ->where('status', true)
-                ->selectRaw('MAX(cost) as max_price, MIN(cost) as min_price')
+                ->selectRaw('MAX('.$expr.') as max_price, MIN('.$expr.') as min_price')
                 ->first();
 
             return [
@@ -255,6 +273,20 @@ class ShopController extends Controller
         unset($query['year'], $query['make'], $query['model'], $query['page']);
 
         return redirect($path.(! empty($query) ? '?'.http_build_query($query) : ''));
+    }
+
+    public function clearAllFilters(Request $request)
+    {
+        session(['shop_vehicle_cleared' => true]);
+
+        $returnPath = (string) $request->input('return_path', '/search');
+        if (! str_starts_with($returnPath, '/')
+            || str_starts_with($returnPath, '//')
+            || ($returnPath !== '/search' && ! str_starts_with($returnPath, '/category/'))) {
+            $returnPath = '/search';
+        }
+
+        return redirect($returnPath);
     }
 
     public function customerProducts(Request $request)

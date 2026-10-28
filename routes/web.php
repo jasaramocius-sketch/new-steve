@@ -53,6 +53,7 @@ Route::get('/sitemap.xml', [HomeController::class, 'sitemap'])->name('sitemap');
 
 Route::get('/search', [ShopController::class, 'index'])->name('shop');
 Route::post('/search/clear-vehicle', [ShopController::class, 'clearVehicleFilter'])->middleware('auth')->name('shop.clear-vehicle');
+Route::post('/search/clear-filters', [ShopController::class, 'clearAllFilters'])->name('shop.clear-filters');
 Route::get('/api/vehicles/years', [ShopController::class, 'vehicleYears'])->name('vehicles.years');
 Route::get('/api/vehicles/makes', [ShopController::class, 'vehicleMakes'])->name('vehicles.makes');
 Route::get('/api/vehicles/models', [ShopController::class, 'vehicleModels'])->name('vehicles.models');

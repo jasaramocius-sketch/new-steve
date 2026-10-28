@@ -104,7 +104,7 @@ class WishlistController extends Controller
     /**
      * Remove Product
      */
-    public function remove($id)
+    public function remove(Request $request, $id)
     {
         // Logged In User
         if (session('user_profile.id') && session('user_profile.id')) {
@@ -115,6 +115,14 @@ class WishlistController extends Controller
                     session('user_profile.id')
                 )
                 ->delete();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product removed from wishlist.',
+                    'count' => Wishlist::where('user_id', session('user_profile.id'))->count(),
+                ]);
+            }
 
             return back()->with(
                 'success',
@@ -137,6 +145,14 @@ class WishlistController extends Controller
             'guest_wishlist',
             $wishlist
         );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Product removed from wishlist.',
+                'count' => count($wishlist),
+            ]);
+        }
 
         return back()->with(
             'success',

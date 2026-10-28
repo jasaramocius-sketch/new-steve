@@ -65,3 +65,32 @@ kiya form submit hone pr thank you page pr redirect ho skta he
 
 
 aiz-carousel product-gallery-thumb slick-initialized slick-slider 
+
+fa-solid fa-circle-check
+
+
+
+Home : 
+<!-- Banner "Shop Now" button top space add -->
+<!-- Swiper button disable to cursor change. -->
+<!-- Latest Post view more and navigation button check. -->
+<!-- Top partner hide -->
+Product : 
+<!-- Error : Product Review submit -->
+<!-- Product list page : Sidebar category spacing add and default open.  -->
+<!-- SKU / Part #    -->  Part number   (Only part number) -->
+<!-- Compare product page action button line -->
+<!-- Compare product add : Part number, Category, Brand.   -->
+<!-- Compare product description wrong get.  -->
+
+
+
+<!-- Header hide language option. -->
+My return check.
+<!-- Followed seller ??   View seller details not get. -->
+<!-- Review table missing -->
+<!-- Page scroll up to top header show. -->
+<!-- Wishlist delete : load -->
+Product list : Clear all filter option add.   Brand disable show
+Home banner : add year, make, model filter
+My profile : Phone, country, state, city, Address and zip code optional set.

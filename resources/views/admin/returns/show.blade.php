@@ -83,15 +83,21 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Decision</label>
                             <select name="status" class="form-select">
+                                <option value="" disabled {{ $return->status === 'pending' ? 'selected' : '' }}>Select Decision...</option>
                                 <option value="approved" {{ $return->status === 'approved' ? 'selected' : '' }}>Approve</option>
                                 <option value="rejected" {{ $return->status === 'rejected' ? 'selected' : '' }}>Reject</option>
-                                <option value="refunded" {{ $return->status === 'refunded' ? 'selected' : '' }}>Approve & Refund (restore stock)</option>
+                                <option value="refunded" {{ $return->status === 'refunded' ? 'selected' : '' }}>Approve &amp; Refund (restore stock)</option>
                             </select>
+                            @error('status')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Refund Amount</label>
-                            <input type="number" name="refund_amount" step="0.01" min="0" class="form-control"
-                                   value="{{ $return->refund_amount ?? ($return->order->total_amount ?? '') }}">
+                            <input type="number" name="refund_amount" step="0.01" min="0" class="form-control refund-amount-input"
+                                   value="{{ $return->refund_amount ?? ($return->order->total_amount ?? '') }}"
+                                   {{ $return->status === 'refunded' || $return->status === 'approved' ? '' : 'disabled' }}
+                                   data-decision="{{ $return->status }}">
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Admin Note (shown to customer)</label>
@@ -102,6 +108,34 @@
                         </div>
                     </div>
                 </form>
+
+                <script>
+                (function () {
+                    var statusSelect = document.querySelector('select[name="status"]');
+                    var refundInput = document.querySelector('.refund-amount-input');
+                    if (!statusSelect || !refundInput) return;
+
+                    function toggleRefundInput() {
+                        var val = statusSelect.value;
+                        if (val === 'rejected') {
+                            refundInput.disabled = true;
+                            refundInput.value = '';
+                        } else {
+                            refundInput.disabled = false;
+                            if (!refundInput.value) {
+                                refundInput.value = refundInput.getAttribute('data-default') || '';
+                            }
+                        }
+                    }
+
+                    // Preserve the default order total as a data attribute before JS clears it
+                    var defaultVal = refundInput.value;
+                    if (defaultVal) refundInput.setAttribute('data-default', defaultVal);
+
+                    statusSelect.addEventListener('change', toggleRefundInput);
+                    toggleRefundInput();
+                })();
+                </script>
             </div>
         </div>
     </div>

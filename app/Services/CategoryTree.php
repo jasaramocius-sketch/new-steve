@@ -7,7 +7,7 @@ use App\Models\Product;
 
 class CategoryTree
 {
-    public const CACHE_KEY = 'front_category_tree_v1';
+    public const CACHE_KEY = 'front_category_tree_v2';
 
     /**
      * Build (and cache) the full nested category tree as lightweight objects.
@@ -33,7 +33,12 @@ class CategoryTree
                 ->groupBy('category_id')
                 ->pluck('count', 'category_id');
 
-            $rows = Category::query()->get(['id', 'name', 'slug', 'parent_id']);
+            // A-Z (case-insensitive) at every level: children are appended to
+            // the tree in query order, so this also sorts subcategories.
+            $rows = Category::query()
+                ->orderByRaw('LOWER(name) ASC')
+                ->orderBy('id')
+                ->get(['id', 'name', 'slug', 'parent_id']);
 
             $childrenMap = [];
             $nodes = [];
