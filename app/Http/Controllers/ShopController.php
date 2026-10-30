@@ -353,22 +353,26 @@ class ShopController extends Controller
         ));
     }
 
-    public function subcategory(Request $request, $parent, $child, $subchild = null)
+    public function categoryByPath(Request $request, $parent, $child, $subchild = null)
     {
         $parentCat = Category::where('slug', $parent)->firstOrFail();
         $childCat = Category::where('slug', $child)->where('parent_id', $parentCat->id)->firstOrFail();
 
+        if ($subchild) {
+            $category = Category::where('slug', $subchild)->where('parent_id', $childCat->id)->firstOrFail();
+        } else {
+            $category = $childCat;
+        }
+
         $currentCategory = $parentCat;
         $currentSubcategory = $childCat;
-        $currentChildcategory = null;
+        $currentChildcategory = $subchild ? $category : null;
 
-        if ($subchild) {
-            $subchildCat = Category::where('slug', $subchild)->where('parent_id', $childCat->id)->firstOrFail();
-            $categoryIds = $subchildCat->getAllDescendantIds();
-            $currentChildcategory = $subchildCat;
-        } else {
-            $categoryIds = $childCat->getAllDescendantIds();
+        if (!$subchild) {
+            $currentChildcategory = null;
         }
+
+        $categoryIds = $category->getAllDescendantIds();
 
         $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
@@ -384,6 +388,11 @@ class ShopController extends Controller
             $vehicleData,
             $this->getSharedData($request, $baseQuery)
         ));
+    }
+
+    public function subcategory(Request $request, $parent, $child, $subchild = null)
+    {
+        return $this->categoryByPath($request, $parent, $child, $subchild);
     }
 
     public function product($slug)

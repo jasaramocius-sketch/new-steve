@@ -207,7 +207,7 @@
                             <input type="text" name="tracking_carrier" class="form-control" value="{{ $order->tracking_carrier }}" placeholder="e.g. DHL / FedEx / USPS">
                         </div>
                     </div>
-                    <div class="mt-3">
+                    <div class="order-detail-actions mt-3">
                         <button type="submit" class="btn btn-primary steve-btn gap-1"><i class="fas fa-sync"></i> Update</button>
                         <form action="{{ route('admin.orders.ship-api', $order->id) }}" method="POST" class="d-inline">
                             @csrf

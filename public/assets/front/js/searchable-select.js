@@ -302,7 +302,7 @@
         control.setAttribute('aria-haspopup', 'listbox');
         control.setAttribute('aria-expanded', 'false');
         control.tabIndex = 0;
-        if (measured > 0) control.style.minWidth = Math.round(measured) + 'px';
+        // if (measured > 0) control.style.minWidth = Math.round(measured) + 'px';
 
         var valueSpan = document.createElement('span');
         valueSpan.className = 'ss-value';

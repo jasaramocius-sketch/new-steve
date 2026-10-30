@@ -62,31 +62,32 @@
     </div>
     <div class="container-home-vehicle-filter d-flex justify-content-center">
             <div class="home-vehicle-filter">
-                        <!-- Vehicle Widget -->
-                        <form id="home-vehicle-filter-form" action="{{ route('shop') }}" method="GET" class="d-flex flex-column gap-2" style="">
-                            @if($years->isNotEmpty())
-                            <select name="year" class="form-select filter-select" id="home-filter-year">
-                                <option value="">All Years</option>
-                                @foreach($years as $year)
-                                    <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
-                                @endforeach
-                            </select>
-                            @endif
-                            <select name="make" class="form-select filter-select" id="home-filter-make">
-                                <option value="">All Makes</option>
-                                @foreach($makes as $make)
-                                    <option value="{{ $make }}" {{ request('make') == $make ? 'selected' : '' }}>{{ $make }}</option>
-                                @endforeach
-                            </select>
-                            <select name="model" class="form-select filter-select" id="home-filter-model">
-                                <option value="">All Models</option>
-                                @foreach($models as $model)
-                                    <option value="{{ $model }}" {{ request('model') == $model ? 'selected' : '' }}>{{ $model }}</option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="btn btn-sm text-white steve-btn"><i class="las la-search mr-1"></i>Find My Parts</button>
-                        </form>
-</div></div>
+                <!-- Vehicle Widget -->
+                <form id="home-vehicle-filter-form" action="{{ route('shop') }}" method="GET" class="d-flex flex-column gap-2" style="">
+                    @if($years->isNotEmpty())
+                    <select name="year" class="form-select filter-select" id="home-filter-year">
+                        <option value="">All Years</option>
+                        @foreach($years as $year)
+                            <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
+                        @endforeach
+                    </select>
+                    @endif
+                    <select name="make" class="form-select filter-select" id="home-filter-make">
+                        <option value="">All Makes</option>
+                        @foreach($makes as $make)
+                            <option value="{{ $make }}" {{ request('make') == $make ? 'selected' : '' }}>{{ $make }}</option>
+                        @endforeach
+                    </select>
+                    <select name="model" class="form-select filter-select" id="home-filter-model">
+                        <option value="">All Models</option>
+                        @foreach($models as $model)
+                            <option value="{{ $model }}" {{ request('model') == $model ? 'selected' : '' }}>{{ $model }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="btn btn-sm text-white steve-btn"><i class="las la-search mr-1"></i>Find My Parts</button>
+                </form>
+            </div>
+    </div>
 </section>
 @endif
 <!-- hero section end -->
@@ -573,7 +574,7 @@
 <!-- Buy With Confidence Section Completed -->
 
 <!-- Partner Section -->
-<!-- @if($sections->has('partners_heading'))
+@if($sections->has('partners_heading'))
 <section class="gs-partner-section" {!! $sections->get('partners_heading')?->bgStyle() !!}>
     <div class="container section-with-padding">
         <div class="row pb-20 justify-content-center">
@@ -667,7 +668,7 @@
         </div>
     </div>
 </section>
-@endif -->
+@endif
 <!-- Partner Section Completed -->
 
 @endsection

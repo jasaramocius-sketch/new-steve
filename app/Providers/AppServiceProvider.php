@@ -105,7 +105,11 @@ class AppServiceProvider extends ServiceProvider
             $cartCount = count($cart);
             $cartTotal = array_sum(array_map(fn ($item) => ($item['price'] ?? 0) * ($item['qty'] ?? ($item['quantity'] ?? 0)), $cart));
 
-            $mobileCategoryTree = \App\Services\CategoryTree::tree();
+            // The mobile category tree is only rendered by the storefront layout.
+            // Skip the (cache-backed) tree lookup for admin pages so the panel
+            // stays light even when the tree cache is being rebuilt.
+            $isAdminArea = str_contains('/'.ltrim(request()->path(), '/').'/', '/admin/');
+            $mobileCategoryTree = $isAdminArea ? [] : \App\Services\CategoryTree::tree();
 
             $sharedData = [
                 'wishlistCount' => $wishlistCount,

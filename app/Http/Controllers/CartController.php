@@ -69,6 +69,7 @@ class CartController extends Controller
                 'price' => buyerPrice($product->price, $product),
                 'image' => storedImageUrl($product->image, 'assets/images/thumbnails'),
                 'qty' => $qty,
+                'stock' => $stock,
             ];
         }
 
@@ -145,6 +146,15 @@ class CartController extends Controller
         }
 
         $qty = max((int) $request->quantity, 1);
+        $stock = (int) ($cart[$id]['stock'] ?? 0);
+
+        $product = \App\Models\Product::find($id);
+        if ($product) {
+            $stock = (int) ($product->vendor_stock ?? $product->stock ?? 0);
+            if ($stock > 0 && $qty > $stock) {
+                $qty = $stock;
+            }
+        }
 
         $cart[$id]['qty'] = $qty;
 
@@ -164,6 +174,8 @@ class CartController extends Controller
             'success' => true,
 
             'qty' => $qty,
+
+            'stock' => $stock,
 
             'itemSubtotal' => currency_format($itemSubtotal),
 
@@ -666,7 +678,7 @@ class CartController extends Controller
             return [];
         }
 
-        $products = Product::whereIn('id', array_keys($cart))->get(['id', 'name', 'cost', 'main_image'])->keyBy('id');
+        $products = Product::whereIn('id', array_keys($cart))->get(['id', 'name', 'cost', 'main_image', 'vendor_stock'])->keyBy('id');
         foreach ($cart as $id => $item) {
             $product = $products->get((int) $id);
             if (! $product) {
@@ -676,6 +688,7 @@ class CartController extends Controller
             $cart[$id]['name'] = $product->name;
             $cart[$id]['price'] = buyerPrice($product->price, $product);
             $cart[$id]['image'] = storedImageUrl($product->image, 'assets/images/thumbnails');
+            $cart[$id]['stock'] = (int) $product->stock;
         }
 
         session()->put('cart', $cart);

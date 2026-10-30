@@ -152,7 +152,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center gap-3">
                     @if($contact->product->image)
-                        <img src="{{ storedImageUrl($contact->product->image, 'assets/images/thumbnails') }}" alt="" class="admin-contact-product-image">
+                        <img src="{{ storedImageUrl($contact->product->image, 'assets/images/thumbnails') }}" alt="" class="admin-contact-product-image" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                     @endif
                     <div>
                         <a href="{{ route('product', $contact->product->slug) }}" target="_blank" class="fw-semibold text-dark text-decoration-none">{{ $contact->product->name }}</a>

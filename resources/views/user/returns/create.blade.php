@@ -55,7 +55,7 @@
             @error('items')
                 <div class="text-danger small mt-2">{{ $message }}</div>
             @enderror
-            <div id="return-qty-error" class="text-danger small mt-2 d-none">
+            <div id="return-qty-error" class="text-danger small d-none">
                 Please select at least one item with quantity greater than 0.
             </div>
 

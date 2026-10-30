@@ -12,7 +12,7 @@
     <div class="table-responsive bg-white border">
         <table class="table table-bordered align-middle text-center compare-similar-table mb-0">
             <tr>
-                <th class="compare-row-label" width="10%" style="vertical-align: middle;">Product</th>
+                <th class="compare-row-label" width="10%" style="vertical-align: middle;"></th>
                 @foreach($all as $p)
                 <td class="similar-col p-0">
                     <div class="compare-product-image-wrapper">

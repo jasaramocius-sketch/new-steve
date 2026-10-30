@@ -4777,3 +4777,84 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - Custom API ke liye base_url + endpoints configure karke use kiya ja sakta hai
 
 - [x] Vehicle widget added to home page hero banner (year/make/model filter) with dynamic makes/models JS.
+
+## 329. (2026-10-28): Page Builder Merged in Website (Already Integrated)
+- Package already integrated in `new-steve` via composer path repo (`../laravel-page-builder`) as `stevestore/laravel-page-builder`.
+- Registered via `SteveStore\PageBuilder\PageBuilderServiceProvider` in `bootstrap/providers.php`.
+- Models `App\Models\Page` & `App\Models\Blog` use `SteveStore\PageBuilder\Traits\HasBlocks`.
+- Routes active: `admin/page-builder/*` (`page-builder.*`), views published/assets loaded.
+- Admin sidebar has "Page Builder" link; admin pages layout supports page builder UI.
+- Config: `config/page-builder.php` published/merged. Assets published to `public/vendor/page-builder/`.
+- Migration `2026_07_16_000000_add_content_blocks_to_tables.php` adds `content_blocks` JSON to `pages`/`blogs` if missing.
+- Frontend rendering uses `<x-page-blocks>` / `page-builder` components as per package.
+
+## 330. (2026-10-28): User Profile Update - Country/State/City/Zip/Address Not Required
+- Controller: `app/Http/Controllers/UserController.php@updateProfile` - removed `required` from phone/address/city/country, made postal_code nullable, read optional fields safely
+- View: `resources/views/user/profile-edit.blade.php` - pass `required => ['full_name']`, hide phone via `withPhone => false`, hide default checkbox
+- Address fields partial remains reusable; user profile now only requires Full Name + Email
+
+## 330. (2026-10-28): User Profile Update - Country/State/City/Zip/Address Not Required
+- Controller: `app/Http/Controllers/UserController.php@updateProfile` - removed `required` from phone/address/city/country, made postal_code nullable, read optional fields safely
+- View: `resources/views/user/profile-edit.blade.php` - pass `required => ['full_name']`, hide phone via `withPhone => false`, hide default checkbox
+- Address fields partial remains reusable; user profile now only requires Full Name + Email
+
+## 331. (2026-10-29): Category URLs - Use /category/{slug} Instead of /category/parent/child
+- Routes: `/category/{parent}/{child}/{subchild?}` now redirects (301) to `/category/{slug}` using child/subchild slug
+- Controller `ShopController@category` already handles any category by slug (resolves parent/sub/child)
+- Views updated: header mega menu, mobile menu, shop sidebar/breadcrumbs use `route('category', ['slug' => ...])`
+
+## 332. (2026-10-29): Category URLs - Keep /category/parent/child/... Working
+- Route `/category/{parent}/{child}/{subchild?}` now uses `ShopController@categoryByPath` (same page as `category`, no redirect)
+- Method finds category by path (parent->child->subchild) and renders `shop.index` with correct `currentCategory/currentSubcategory/currentChildcategory`
+
+## 333. (2026-10-29): Category Page - Hide Products Without Usable Image
+- `ShopController@category`, `ShopController@categoryByPath` now filter paginated collection to only products with `filled($product->image)` (same behavior as home page)
+- Prevents showing products with no/broken images on category pages
+
+## 334. (2026-10-29): Category Menu Counts - Only Products With Images
+- `CategoryTree` already uses `Product::hasUsableImage()` for counts (verified)
+- `Product::statusCountsByCategoryId()` already uses `hasUsableImage()`
+- Counts in header/sidebar/shop filters now reflect products with usable images only
+
+## 335. (2026-10-29): Category Page Count & Listing Fix - Filter By Image After Fetch
+- Category listing now fetches all matching products with `hasUsableImage()` scope, then filters by `filled($product->image)` (covers S3/image resolution cases where scope may miss) and paginates manually
+- Ensures "Hardware, Fasteners and Fittings" shows only products that actually have usable images and correct count
+
+## 336. (2026-10-29): Category Counts - Count Only Products With Actual Images
+- `CategoryTree` now counts products with `filled($product->image)` after loading (not just `hasUsableImage()` scope)
+- Counts in header/shop filters now match the filtered product list on category pages
+
+## 337. (2026-10-29): Fixed admin sidebar dropdown (data-bs-toggle typo, route names for export/commission).
+
+## 338. (2026-10-29): Fixed product_type filter 500 when column missing.
+
+## 339. (2026-10-30): Fix HTTP 500 / 512M OOM on all pages (category tree + category listing)
+- Root cause 1: `CategoryTree::tree()` loaded all ~761k active products (`Product::where('status', true)->get(['id','category_id','main_image','images_json'])`) whenever the 6h cache was cold/cleared → 500MB+ RAM vs 512M limit → fatal 500 on every page (frontend + admin). Cache never survived because the rebuild itself died.
+- Fix 1: counts now come from existing SQL aggregate `Product::statusCountsByCategoryId()->all()` (GROUP BY category_id); cache rebuild ~5s, ~80MB peak, 2.5MB cached JSON.
+- Fix 2: `AppServiceProvider` view composer skips `CategoryTree` for `/admin/*` requests (only the storefront layout uses `$mobileCategoryTree`).
+- Fix 3: reverted 333/335 `->get()->filter(filled($product->image))` pagination in `ShopController@category` / `@categoryByPath` — it loaded the whole category into memory (Brake = 106k products) and caused a second OOM on `/category/brake`. Back to SQL `paginate(24)` with `hasUsableImage()`, which matches header/sidebar counts and keeps peak memory ~120MB.
+- Note: 47,388 products have local `main_image` paths whose files do not exist (`public/assets/images/thumbnails/` missing); they now count/appear like the shop listing (placeholder image) instead of crashing.
+- Verified 200: `/`, `/search`, `/category/brake`, `/category/steering`, `/admin/dashboard`, `/admin/products`, `/admin/products/{id}/edit`, `/admin/images`, `/admin/product-bulk-upload`; no new memory fatals in logs.
+- Verified 200: `/`, `/search`, `/category/brake`, `/category/steering`, `/admin/dashboard`, `/admin/products`, `/admin/products/{id}/edit`, `/admin/images`, `/admin/product-bulk-upload`; no new memory fatals in logs.
+
+## 340. (2026-10-30): Product images — AWS first, placeholder fallback (no legacy stautoparts images)
+- `Product::getImageAttribute()` now only returns: (a) `s3://autoparts-hub/...` source-bucket refs (or the equivalent S3 HTTP URLs), (b) S3 refs from `images_json`, or (c) images uploaded through this app's own media manager (`storage/uploads/...` / `uploads/...` that exist on disk).
+- Legacy local filenames (`assets/images/thumbnails/...`), bare filenames, other local paths, and third-party http(s) URLs (e.g. `pfc.parts`) are treated as "no image" → `assets/images/placeholder.png`. Old stautoparts images are never used.
+- Added `onerror` placeholder fallback to raw admin product `<img>` tags (products index/edit/show gallery, contacts) so S3 objects that are missing/deleted (403) fall back to the placeholder instead of a broken image.
+- Verified: AWS product renders signed `autoparts-hub` URLs; `pfc.parts` product now renders placeholders (0 pfc refs); bare-filename products show placeholder; admin product pages 200.
+
+## 341. (2026-10-30): Hide placeholder-image products from storefront listings
+- `Product::scopeHasUsableImage()` tightened from "any non-empty image" to AWS-only SQL: `s3://autoparts-hub/...` / `autoparts-hub.s3[.region].amazonaws.com` refs (in `main_image` or `images_json`) plus own media-manager uploads (`uploads/...`, `storage/uploads/...`). Legacy local paths, bare filenames, and third-party URLs no longer qualify.
+- Storefront listings/counts now exclude products that would render the placeholder: `/search`, `/category/{slug}`, category counts (`CategoryTree` / `statusCountsByCategoryId`), and category pages.
+- Added `hasUsableImage()` to Home featured/random/explore-tab queries and product page related/similar queries so those sections still fill up with real-image products.
+- Cleared `front_category_tree_v2` cache and rebuilt it (~3.5s). Brake tree count 100,902 == SQL listing count 100,902 (previously 151,267 unscoped).
+- Verified: `/`, `/search?q=0052`, `/category/brake` return 200 with 0 placeholder product cards (24/24 and 48/48 AWS images). A known no-image product (`loadcontroller-...-25854`, category 1191) no longer appears in its category listing. Direct product URLs still render with the placeholder policy if opened (e.g. old links/bookmarks); only listings are hidden.
+- Caveat: SQL can match an AWS reference whose object is missing/deleted; such a product can still show the placeholder via `onerror` until the object is restored or the row is cleaned. Sample of 80 random S3 objects all existed.
+- [x] Cart qty capped to stock (server + JS); increase button disables at max stock; totals update on change.
+
+## 342. (2026-10-30): Product Detail Qty — Matched Cart Design
+
+**Change:** Product detail page ka quantity selector cart page ke design se match kiya: circular light minus/plus buttons aur centered quantity input. Existing stock limit aur total-price update behavior unchanged.
+
+**Files changed:**
+- `resources/views/product/show.blade.php` — updated quantity control markup and styles

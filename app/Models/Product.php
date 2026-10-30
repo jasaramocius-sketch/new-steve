@@ -102,26 +102,25 @@ class Product extends Model
     public function getImageAttribute()
     {
         $image = trim((string) ($this->attributes['main_image'] ?? ''));
-        if ($image !== '' && (isSourceS3ImageReference($image) || preg_match('#^https?://#i', $image))) {
+
+        // Product images must come from the AWS source bucket. Anything else
+        // (legacy stautoparts filenames, assets/images/thumbnails paths, or
+        // third-party URLs) is intentionally treated as "no image" so the
+        // placeholder is shown instead of an outdated image.
+        if ($image !== '' && isSourceS3ImageReference($image)) {
             return $image;
         }
 
-        $localPath = $image !== '' ? normalizeImagePath($image, 'assets/images/thumbnails') : '';
-        $checkPath = str_starts_with($localPath, 'uploads/') ? 'storage/'.$localPath : $localPath;
-        $isPlaceholder = preg_match('/placeholder|dummy|no[-_]?image|default/i', basename($localPath));
-        if ($image !== '' && ! $isPlaceholder && file_exists(public_path($checkPath))) {
-            return $image;
-        }
+        // Images uploaded through this app's own media manager are valid too.
+        // They live under storage/app/public/uploads and are referenced as
+        // "storage/uploads/..." or "uploads/...".
+        if ($image !== '') {
+            $localPath = (string) normalizeImagePath($image);
+            $isOwnUpload = str_starts_with($localPath, 'uploads/');
+            $isPlaceholder = (bool) preg_match('/placeholder|dummy|no[-_]?image|default/i', basename($localPath));
 
-        $images = $this->attributes['images_json'] ?? [];
-        if (is_string($images)) {
-            $images = json_decode($images, true) ?: [];
-        }
-
-        foreach ((array) $images as $entry) {
-            $candidate = is_array($entry) ? ($entry['file'] ?? null) : $entry;
-            if (is_string($candidate) && isSourceS3ImageReference($candidate)) {
-                return $candidate;
+            if ($isOwnUpload && ! $isPlaceholder && file_exists(public_path('storage/'.$localPath))) {
+                return $localPath;
             }
         }
 
@@ -135,59 +134,66 @@ class Product extends Model
 
     public function hasUsableImage(): bool
     {
-        $imageCandidates = [$this->attributes['main_image'] ?? null];
+        $image = trim((string) ($this->attributes['main_image'] ?? ''));
 
-        $images = $this->attributes['images_json'] ?? [];
-        if (is_string($images)) {
-            $images = json_decode($images, true) ?: [];
+        if ($image === '') {
+            return false;
         }
 
-        foreach ((array) $images as $entry) {
-            $candidate = is_array($entry) ? ($entry['file'] ?? null) : $entry;
-            if (is_string($candidate) && trim($candidate) !== '') {
-                $imageCandidates[] = $candidate;
-            }
+        $baseName = strtolower(basename($image));
+        if (str_contains($baseName, 'placeholder') || str_contains($baseName, 'dummy') || str_contains($baseName, 'no-image') || str_contains($baseName, 'default')) {
+            return false;
         }
 
-        foreach (array_filter(array_map('trim', $imageCandidates), fn ($value) => $value !== '') as $image) {
-            $baseName = strtolower(basename($image));
-            if (str_contains($baseName, 'placeholder') || str_contains($baseName, 'dummy') || str_contains($baseName, 'no-image') || str_contains($baseName, 'default')) {
-                continue;
-            }
+        if (isSourceS3ImageReference($image)) {
+            return true;
+        }
 
-            if (isSourceS3ImageReference($image) || preg_match('#^https?://#i', $image)) {
-                return true;
-            }
-
-            $localPath = normalizeImagePath($image, 'assets/images/thumbnails');
-            $checkPath = str_starts_with($localPath, 'uploads/') ? 'storage/'.$localPath : $localPath;
-
-            if (file_exists(public_path($checkPath))) {
-                return true;
-            }
+        $localPath = normalizeImagePath($image);
+        if (str_starts_with($localPath, 'uploads/') && ! preg_match('/placeholder|dummy|no[-_]?image|default/i', basename($localPath)) && file_exists(public_path('storage/'.$localPath))) {
+            return true;
         }
 
         return false;
     }
 
+    /**
+     * Only products with a real AWS source-bucket image (or a valid own upload)
+     * should be visible in storefront listings. Products that would fall back
+     * to the placeholder are hidden entirely.
+     */
     public function scopeHasUsableImage($query)
     {
-        return $query->where(function ($q) {
-            $q->where(function ($sub) {
-                $sub->whereNotNull('main_image')
-                    ->where('main_image', '<>', '')
+        $bucket = strtolower((string) config('filesystems.disks.source_images.bucket', 'autoparts-hub'));
+
+        if ($bucket === '') {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $s3Patterns = [
+            's3://'.$bucket.'/%',
+            'http://'.$bucket.'.s3.amazonaws.com/%',
+            'https://'.$bucket.'.s3.amazonaws.com/%',
+            'http://'.$bucket.'.s3.%amazonaws.com/%',
+            'https://'.$bucket.'.s3.%amazonaws.com/%',
+        ];
+
+        return $query->where(function ($q) use ($s3Patterns) {
+            foreach ($s3Patterns as $pattern) {
+                $q->orWhere('main_image', 'like', $pattern)
+                    ->orWhere('images_json', 'like', '%'.$pattern.'%');
+            }
+
+            // Images uploaded through this app's own media manager.
+            $q->orWhere(function ($upload) {
+                $upload->where(function ($path) {
+                    $path->where('main_image', 'like', 'uploads/%')
+                        ->orWhere('main_image', 'like', 'storage/uploads/%');
+                })
                     ->whereRaw("LOWER(COALESCE(main_image, '')) NOT LIKE '%placeholder%'")
                     ->whereRaw("LOWER(COALESCE(main_image, '')) NOT LIKE '%dummy%'")
                     ->whereRaw("LOWER(COALESCE(main_image, '')) NOT LIKE '%no-image%'")
                     ->whereRaw("LOWER(COALESCE(main_image, '')) NOT LIKE '%default%'");
-            })->orWhere(function ($sub) {
-                $sub->whereNotNull('images_json')
-                    ->where('images_json', '<>', '')
-                    ->where('images_json', '<>', '[]')
-                    ->whereRaw("LOWER(COALESCE(images_json, '')) NOT LIKE '%placeholder%'")
-                    ->whereRaw("LOWER(COALESCE(images_json, '')) NOT LIKE '%dummy%'")
-                    ->whereRaw("LOWER(COALESCE(images_json, '')) NOT LIKE '%no-image%'")
-                    ->whereRaw("LOWER(COALESCE(images_json, '')) NOT LIKE '%default%'");
             });
         });
     }

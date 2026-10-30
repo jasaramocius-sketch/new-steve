@@ -154,8 +154,8 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/register', [AuthController::class, 'registerForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+Route::get('/registration', [AuthController::class, 'registerForm'])->name('register');
+Route::post('/registration', [AuthController::class, 'register'])->name('register.post');
 
 Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->middleware('throttle:5,1')->name('password.email');
@@ -236,13 +236,13 @@ Route::prefix('admin')
         Route::post('/products', [ProductController::class, 'store'])
             ->name('admin.products.store');
 
-        Route::get('/products/import', [ProductController::class, 'importForm'])
+        Route::get('/product-bulk-upload', [ProductController::class, 'importForm'])
             ->name('admin.products.import-form');
-        Route::post('/products/import', [ProductController::class, 'import'])
+        Route::post('/product-bulk-upload', [ProductController::class, 'import'])
             ->name('admin.products.import');
-        Route::get('/products/import/sample', [ProductController::class, 'downloadSampleCsv'])
+        Route::get('/product-bulk-upload/index', [ProductController::class, 'downloadSampleCsv'])
             ->name('admin.products.download-sample-csv');
-        Route::get('/products/export/csv', [ProductController::class, 'exportCsv'])
+        Route::get('/product-bulk-export/csv', [ProductController::class, 'exportCsv'])
             ->name('admin.products.export-csv');
 
         Route::get('/products/stock', [ProductController::class, 'stockIndex'])
@@ -675,7 +675,7 @@ Route::get('/category', function () {
     return redirect('/categories');
 });
 Route::get('/customer_products', [ShopController::class, 'customerProducts'])->name('customer.products');
-Route::get('/category/{parent}/{child}/{subchild?}', [ShopController::class, 'subcategory'])->name('subcategory');
+Route::get('/category/{parent}/{child}/{subchild?}', [ShopController::class, 'categoryByPath'])->name('subcategory');
 Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
 Route::get('/privacy-policy', [HomeController::class, 'privacy'])->name('privacy.policy');

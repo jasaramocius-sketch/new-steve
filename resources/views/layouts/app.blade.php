@@ -479,7 +479,7 @@
                                                 <li class="mb-2 {{ $subActive || $hasActiveSubChild ? 'active' : '' }}">
                                                     <div class="d-flex justify-content-between align-items-center gap-3">
                                                         @if($subCat->descendant_count > 0)
-                                                            <a href="{{ route('subcategory', ['parent' => $topCat->slug, 'child' => $subCat->slug]) }}" class="text-decoration-none flex-grow-1 {{ $subActive || $hasActiveSubChild ? 'fw-bold' : '' }}" style="color: {{ $subActive || $hasActiveSubChild ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $subActive || $hasActiveSubChild ? '600' : '400' }}; font-size: 15px;">
+                                                            <a href="{{ route('category', ['slug' => $subCat->slug]) }}" class="text-decoration-none flex-grow-1 {{ $subActive || $hasActiveSubChild ? 'fw-bold' : '' }}" style="color: {{ $subActive || $hasActiveSubChild ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $subActive || $hasActiveSubChild ? '600' : '400' }}; font-size: 15px;">
                                                                 {{ $subCat->name }}
                                                                 <span class="text-muted" style="font-size: 12px; font-weight: 400;">({{ $subCat->descendant_count }})</span>
                                                             </a>
@@ -507,7 +507,7 @@
                                                                 @endphp
                                                                 <li class="my-1 {{ $childActive ? 'active' : '' }}">
                                                                     @if($childCat->descendant_count > 0)
-                                                                        <a href="{{ route('subcategory', ['parent' => $topCat->slug, 'child' => $subCat->slug, 'subchild' => $childCat->slug]) }}" class="text-decoration-none {{ $childActive ? 'fw-bold' : '' }}" style="color: {{ $childActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $childActive ? '600' : '400' }}; font-size: 14px;">
+                                                                        <a href="{{ route('category', ['slug' => $childCat->slug]) }}" class="text-decoration-none {{ $childActive ? 'fw-bold' : '' }}" style="color: {{ $childActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $childActive ? '600' : '400' }}; font-size: 14px;">
                                                                             {{ $childCat->name }}
                                                                             <span class="text-muted" style="font-size: 12px; font-weight: 400;">({{ $childCat->descendant_count }})</span>
                                                                         </a>

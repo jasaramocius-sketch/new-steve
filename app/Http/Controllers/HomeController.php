@@ -38,7 +38,9 @@ class HomeController extends Controller
         $selectedIds = $categorySection?->extra_data['category_ids'] ?? [];
         $selectedIds = is_array($selectedIds) ? array_values(array_filter(array_map('intval', $selectedIds))) : [];
 
-        $counts = Product::statusCountsByCategoryId();
+        $counts = \Illuminate\Support\Facades\Cache::remember('home.category_counts', 3600, function () {
+            return Product::statusCountsByCategoryId();
+        });
 
         $query = Category::whereNull('parent_id');
 
@@ -90,7 +92,7 @@ class HomeController extends Controller
     private function getFeaturedProducts()
     {
         return $this->filterProductsWithImages(
-            Product::where('status', true)->latest()->take(8)->get()
+            Product::where('status', true)->hasUsableImage()->latest()->take(8)->get()
         );
     }
 
@@ -110,6 +112,7 @@ class HomeController extends Controller
         }
 
         $products = Product::where('status', true)
+            ->hasUsableImage()
             ->where('id', '>=', random_int(1, $maxId))
             ->take($take)
             ->get();
@@ -117,7 +120,7 @@ class HomeController extends Controller
 
         if ($products->isEmpty()) {
             $products = $this->filterProductsWithImages(
-                Product::where('status', true)->latest()->take($take)->get()
+                Product::where('status', true)->hasUsableImage()->latest()->take($take)->get()
             );
         }
 
@@ -281,12 +284,14 @@ class HomeController extends Controller
 
             if (! empty($ids)) {
                 $products = Product::where('status', true)
+                    ->hasUsableImage()
                     ->whereIn('id', $ids)
                     ->latest()
                     ->take(8)
                     ->get();
             } elseif ($sectionKey) {
                 $products = Product::where('status', true)
+                    ->hasUsableImage()
                     ->latest()
                     ->take(8)
                     ->get();

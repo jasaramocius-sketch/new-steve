@@ -27,7 +27,7 @@
             </div>
             <ul class="list-group list-group-flush">
               @foreach($cart as $key => $item)
-              <li class="list-group-item px-0 px-lg-3 cart-item" data-id="{{ $key }}">
+              <li class="list-group-item px-0 px-lg-3 cart-item" data-id="{{ $key }}" data-stock="{{ $item['stock'] ?? 0 }}">
                 <div class="row gutters-5 align-items-center cart-summary-item-group">
                   <div class="col-lg-5 d-flex align-items-center cart-summary-item mb-2 mb-lg-0">
                     <span class="mr-2 ml-0 flex-shrink-0">

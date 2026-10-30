@@ -13,31 +13,51 @@
         <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
             <i class="fas fa-tachometer-alt"></i> Dashboard
         </a>
+        @php
+            $productsExpanded = request()->routeIs(
+                'admin.products.*',
+                'admin.categories.*',
+                'admin.brands.*',
+                'admin.settings.commission'
+            ) && !request()->routeIs('admin.products.import-form', 'admin.products.stock');
+        @endphp
+
+        <ul class="admin-sidebar-drop list-unstyled">
+            <li>
+                <a href="#productsSubmenu"
+                class="nav-item sidebar-link {{ $productsExpanded ? 'active' : 'collapsed' }}"
+                data-bs-toggle="collapse"
+                role="button"
+                aria-expanded="{{ $productsExpanded ? 'true' : 'false' }}"
+                aria-controls="productsSubmenu">
+                    <i class="fas fa-box"></i>
+                    Products
+                    <i class="fas fa-chevron-down submenu-arrow"></i>
+                </a>
+
+                <ul class="collapse list-unstyled submenu {{ $productsExpanded ? 'show' : '' }}"
+                    id="productsSubmenu">
+
+                    <li><a href="{{ route('admin.products.index') }}">All Products</a></li>
+                    <li><a href="{{ route('admin.products.import-form') }}">Bulk Import</a></li>
+                    <li><a href="{{ route('admin.products.export-csv') }}">Bulk Export</a></li>
+                    <li><a href="{{ route('admin.categories.index') }}">Categories</a></li>
+                    <li><a href="{{ route('admin.brands.index') }}">Brands</a></li>
+                    <li><a href="{{ route('admin.products.stock') }}">Stock Management</a></li>
+                    <li><a href="{{ route('admin.settings.commission') }}">Commission</a></li>
+
+                </ul>
+            </li>
+        </ul>
         <a href="{{ route('admin.orders.index') }}" class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
             <i class="fas fa-shopping-cart"></i> Orders
         </a>
         <a href="{{ route('admin.returns.index') }}" class="nav-item {{ request()->routeIs('admin.returns.*') ? 'active' : '' }}">
             <i class="fas fa-undo"></i> Returns
         </a>
-        <a href="{{ route('admin.products.index') }}" class="nav-item {{ request()->routeIs('admin.products.*') && !request()->routeIs('admin.products.import-form') && !request()->routeIs('admin.products.stock') ? 'active' : '' }}">
-            <i class="fas fa-box"></i> Products
-        </a>
-
-        <a href="{{ route('admin.settings.commission') }}" class="nav-item {{ request()->routeIs('admin.settings.commission*') ? 'active' : '' }}">
-            <i class="fas fa-percent"></i> Commission
-        </a>
-        <a href="{{ route('admin.products.stock') }}" class="nav-item {{ request()->routeIs('admin.products.stock') ? 'active' : '' }}">
-            <i class="fas fa-warehouse"></i> Stock Management
-        </a>
         <!-- <a href="{{ route('admin.products.import-form') }}" class="nav-item nav-item-sub {{ request()->routeIs('admin.products.import-form') ? 'active' : '' }}">
             <i class="fas fa-upload"></i> Import Products 
         </a>-->
-        <a href="{{ route('admin.categories.index') }}" class="nav-item {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
-            <i class="fas fa-list"></i> Categories
-        </a>
-        <a href="{{ route('admin.brands.index') }}" class="nav-item {{ request()->routeIs('admin.brands.*') ? 'active' : '' }}">
-            <i class="fas fa-tag"></i> Brands
-        </a>
         <a href="{{ route('admin.sellers.index') }}" class="nav-item {{ request()->routeIs('admin.sellers.*') ? 'active' : '' }}">
             <i class="fas fa-store"></i> Sellers
         </a>
@@ -213,6 +233,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 opacity: 0;
                 max-width: 0;
             }
+            .admin-sidebar.icon-collapsed .admin-sidebar-drop .submenu{
+                opacity: 0;
+                max-width: 0;
+                max-height: 0;
+            }
 
             .admin-sidebar .nav-section {
                 position: relative;
@@ -325,5 +350,23 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebar.classList.add('icon-collapsed');
         document.body.classList.add('icon-collapsed-body');
     }
+});
+
+document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (link) {
+    const target = document.querySelector(link.getAttribute('href'));
+
+    if (!target) return;
+
+    link.addEventListener('click', function () {
+        const isExpanded = link.classList.contains('expanded');
+
+        if (isExpanded) {
+            link.classList.remove('active', 'expanded');
+            link.classList.add('collapsed');
+        } else {
+            link.classList.add('active', 'expanded');
+            link.classList.remove('collapsed');
+        }
+    });
 });
 </script>

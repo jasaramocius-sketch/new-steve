@@ -208,7 +208,28 @@ $(document).ready((function() {
   })), $(window).on("resize", (function() {
     $(".nicEdit-panelContain").parent().width("100%"), $(".nicEdit-panelContain").parent().next().width("99.6%")
   }))
-})), document.addEventListener("DOMContentLoaded", (function() {})), document.querySelectorAll(".change-qty").forEach((e => {
+})), document.addEventListener("DOMContentLoaded", (function() {})), (() => {
+  const syncCartQtyButtons = (cartItem, quantity, stock) => {
+    const incBtn = cartItem.querySelector('.change-qty[data-action="increase"]');
+    if (incBtn) {
+      incBtn.disabled = stock > 0 && quantity >= stock;
+      incBtn.classList.toggle('disabled', incBtn.disabled);
+    }
+
+    const decBtn = cartItem.querySelector('.change-qty[data-action="decrease"]');
+    if (decBtn) {
+      decBtn.disabled = quantity <= 1;
+      decBtn.classList.toggle('disabled', decBtn.disabled);
+    }
+  };
+
+  document.querySelectorAll(".cart-item").forEach((cartItem) => {
+    const quantity = parseInt(cartItem.querySelector('.qty-input')?.value, 10) || 1;
+    const stock = parseInt(cartItem.getAttribute('data-stock'), 10) || 0;
+    syncCartQtyButtons(cartItem, quantity, stock);
+  });
+
+  document.querySelectorAll(".change-qty").forEach((e => {
   e.addEventListener("click", (function() {
     const e = this.getAttribute("data-action"),
       t = this.closest(".cart-item");
@@ -235,9 +256,12 @@ $(document).ready((function() {
       })
     }).then((e => e.json())).then((e => {
       if (e.success) {
-        a.value = n;
-        const t = document.getElementById(`prc${o}`);
-        t && (t.textContent = e.itemSubtotal);
+        a.value = e.qty ?? n;
+        const stock = Number.isFinite(Number(e.stock)) ? Number(e.stock) : (parseInt(t.getAttribute('data-stock')) || 0);
+        t.setAttribute('data-stock', stock);
+        syncCartQtyButtons(t, e.qty ?? n, stock);
+        const priceEl = document.getElementById(`prc${o}`);
+        priceEl && (priceEl.textContent = e.itemSubtotal);
         const s = document.querySelector(".total-cart-price-sub");
         s && (s.textContent = e.cartTotal);
         const i = document.querySelector(".total-cart-price-val");
@@ -247,7 +271,8 @@ $(document).ready((function() {
       console.error("Error updating cart:", e), "undefined" != typeof toastr && toastr.error("An error occurred while updating the cart.")
     }))
   }))
-})), $(document).ready((function() {
+  }));
+})(), $(document).ready((function() {
   observeSwiperAutoplayGlobal(new Swiper(".featured-products.product-cards-slider", {
     slidesPerView: 4,
     spaceBetween: 24,
@@ -507,3 +532,46 @@ $(document).ready((function() {
     $(this).attr("href") == e && ($(this).addClass("active"), $(this).closest(".single-menu").find("h5 a").addClass("active"), $(this).closest(".has-megamenu").addClass("active").children(".menu-item-with-icon").find(".nav-link").addClass("active"))
   }))
 }));
+
+$(document).ready(function () {
+
+    const yearSelect = $('#home-filter-year');
+    const makeSelect = $('#home-filter-make');
+    const modelSelect = $('#home-filter-model');
+
+    // Initial state
+    makeSelect.prop('disabled', !yearSelect.val());
+    modelSelect.prop('disabled', true);
+
+    // Year change
+    yearSelect.on('change', function () {
+
+        const year = $(this).val();
+
+        makeSelect.prop('disabled', !year);
+        modelSelect.prop('disabled', true);
+
+        makeSelect.val('');
+        modelSelect.val('');
+
+        modelSelect.html('<option value="">All Models</option>');
+
+        if (year) {
+            // Yahan aapka existing AJAX Make loading code chalega
+        }
+    });
+
+    // Make change
+    makeSelect.on('change', function () {
+
+        const make = $(this).val();
+
+        modelSelect.prop('disabled', !make);
+        modelSelect.val('');
+
+        if (!make) {
+            modelSelect.html('<option value="">All Models</option>');
+        }
+    });
+
+});

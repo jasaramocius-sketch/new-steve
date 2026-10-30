@@ -115,7 +115,7 @@
                         <ul class="list-unstyled mb-0" style="font-size:13px;">
                             @foreach($category->children->take(3) as $child)
                                 <li class="mb-1 d-flex align-items-center">
-                                    <a href="{{ route('subcategory', ['parent' => $category->slug, 'child' => $child->slug]) }}" class="text-decoration-none d-flex align-items-center gap-2 subcategory-link" style="color:#1f0300;">
+                                    <a href="{{ route('category', ['slug' => $child->slug]) }}" class="text-decoration-none d-flex align-items-center gap-2 subcategory-link" style="color:#1f0300;">
                                         {!! imgTag($child->getDisplayImagePath(), $child->name, 'subcategory-thumb-img') !!}
                                         <span>{{ $child->name }}</span>
                                     </a>

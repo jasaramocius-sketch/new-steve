@@ -146,10 +146,7 @@
         @if(isset($currentSubcategory))
             @if(isset($currentChildcategory))
                 <li>
-                    <a href="{{ route('subcategory', [
-                        'parent' => $currentCategory->slug,
-                        'child' => $currentSubcategory->slug
-                    ]) }}">
+                    <a href="{{ route('category', ['slug' => $currentSubcategory->slug]) }}">
                         {{ $currentSubcategory->name }}
                     </a>
                 </li>
@@ -196,12 +193,12 @@
           @endphp
           <div class="single-product-widget shadow-sm rounded border">
             <h5 class="widget-title">
-              <button type="button" class="widget-collapse-toggle {{ $isCategoryPage ? '' : 'collapsed' }}" data-bs-toggle="collapse" data-bs-target="#sidebarCategoriesCollapse" aria-expanded="{{ $isCategoryPage ? 'true' : 'false' }}" aria-controls="sidebarCategoriesCollapse">
+              <button type="button" class="widget-collapse-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#sidebarCategoriesCollapse" aria-expanded="false" aria-controls="sidebarCategoriesCollapse">
                 <span>Categories</span>
                 <i class="fa-solid fa-chevron-down widget-collapse-icon" aria-hidden="true"></i>
               </button>
             </h5>
-            <div class="collapse {{ $isCategoryPage ? 'show' : '' }}" id="sidebarCategoriesCollapse">
+            <div class="collapse show" id="sidebarCategoriesCollapse">
             <div class="product-cat-widget">
               <ul class="list-unstyled mb-0 gap-1 d-flex flex-column">
                 @if(isset($currentCategory))
@@ -247,7 +244,7 @@
                           <li class="mb-2 gap-1 d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-center gap-3">
                               @if($subCat->descendant_count > 0 || $isSubActive)
-                                <a href="{{ route('subcategory', ['parent' => $topCat->slug, 'child' => $subCat->slug]) }}" class="text-decoration-none flex-grow-1 primary-a-tag-text-hover" style="color: {{ $isSubActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $isSubActive ? '600' : '400' }};">
+                                <a href="{{ route('category', ['slug' => $subCat->slug]) }}" class="text-decoration-none flex-grow-1 primary-a-tag-text-hover" style="color: {{ $isSubActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $isSubActive ? '600' : '400' }};">
                                   {{ $subCat->name }}
                                   <span class="text-muted" style="font-size: 12px; font-weight: 400;">({{ $subCat->descendant_count }})</span>
                                 </a>
@@ -273,7 +270,7 @@
                                   @endphp
                                   <li class="my-1 gap-1 d-flex flex-column">
                                     @if($childCat->descendant_count > 0 || $isChildActive)
-                                      <a href="{{ route('subcategory', ['parent' => $topCat->slug, 'child' => $subCat->slug, 'subchild' => $childCat->slug]) }}" class="text-decoration-none a-tag-text-hover" style="color: {{ $isChildActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $isChildActive ? '600' : '400' }};">
+                                      <a href="{{ route('category', ['slug' => $childCat->slug]) }}" class="text-decoration-none a-tag-text-hover" style="color: {{ $isChildActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $isChildActive ? '600' : '400' }};">
                                         {{ $childCat->name }}
                                         <span class="text-muted" style="font-size: 12px; font-weight: 400;">({{ $childCat->descendant_count }})</span>
                                       </a>
@@ -562,7 +559,7 @@
             <div class="d-flex align-items-center gap-3 flex-wrap filter-sort-brand-wrapper w-84 w-77">
               <div class="d-flex align-items-center gap-2 filter-sort-wrapper">
                 <h5 class="mb-0" style="font-size: 14px; font-weight: 500;">Sort by</h5>
-                <select class="form-select" style="/*width:180px;*/ border:1px solid #c7c0bf; border-radius:4px;" id="sort-select">
+                <select class="form-select" style="/*width:180px;*/" id="sort-select">
                   <option value="default" {{ request('sort') == 'default' ? 'selected' : '' }}>Newest</option>
                   <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
                   <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Price: Low to High</option>
@@ -582,7 +579,7 @@
                       <input type="hidden" name="{{ $name }}" value="{{ $value }}">
                     @endif
                   @endforeach
-                  <select name="brand" class="form-select" style="width:180px; border:1px solid #c7c0bf; border-radius:4px;">
+                  <select name="brand" class="form-select" style="width:180px;">
                     <option value="" {{ request()->filled('brand') ? '' : 'selected' }}>All Brands</option>
                     @foreach($brands as $brand)
                       @php $brandFilterValue = filled($brand->slug) ? $brand->slug : (string) $brand->id; @endphp
@@ -597,7 +594,7 @@
                     <h5 class="mb-0" style="font-size: 14px; font-weight: 500;">Vehicle</h5>
                     <form id="vehicle-nav-filter-form" method="POST">
                       @csrf
-                      <select id="vehicle-nav-select" class="form-select" style="border:1px solid #c7c0bf; border-radius:4px;">
+                      <select id="vehicle-nav-select" class="form-select">
                         <option value="">All Vehicles</option>
                         @foreach($userVehicles as $vehicle)
                           <option value="{{ $vehicle->id }}" {{ (isset($selectedVehicle) && $selectedVehicle && $selectedVehicle->id == $vehicle->id) ? 'selected' : '' }}>

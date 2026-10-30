@@ -313,63 +313,44 @@
 
 .details_qty_input {
     display: flex;
-    flex-wrap: wrap;
+  flex-wrap: nowrap;
     align-items: center;
-    background: #F5F5F5;
-    overflow: hidden;
+  background: transparent;
+  overflow: visible;
     margin-right: 15px;
     width: 140px;
-    border-radius: 8px;
     margin-bottom: 15px;
 }
 
 .details_qty_input input {
-    width: 60px;
+  width: 44px;
     min-height: 40px;
     padding: 0;
     text-align: center;
-    background: none;
+  background: transparent;
     border: none;
-    border-right: 1px solid #fff;
-    border-left: 1px solid #fff;
-    font-size: 14px;
-    font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
     color: #333;
     border-radius: 0;
 }
 
 .details_qty_input button {
-    width: 40px;
-    min-height: 40px;
-    font-weight: 400;
-    color: #333;
-    background: #F5F5F5;
-    transition: all linear .3s;
-    padding: 0;
-    font-size: 15px;
-    line-height: 40px;
-    text-align: center;
-    border: none;
-    cursor: pointer;
-}
-
-.details_qty_input button:hover {
-    background: #05A845;
-    color: #fff;
-}
-
-.details_qty_input button.minus:hover {
-    background: #DB4437;
+  width: 40px !important;
+  height: 40px !important;
+  min-height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 20px;
 }
 
 .details_qty_input button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.details_qty_input button:disabled:hover {
-    background: #F5F5F5;
-    color: #333;
+  opacity: 0.8;
+  cursor: not-allowed;
+  pointer-events: auto;
 }
 
 .details_total_price {
@@ -525,7 +506,7 @@
 }
 
 .shop_details_shate li a:hover {
-    color: #ffa500;
+    color: var(--primary);
 }
 
 /* Sidebar */
@@ -955,12 +936,12 @@
                 <input type="hidden" name="product_image" value="{{ storedImageUrl($product['image'], 'assets/images/thumbnails') }}">
 
                 <div class="d-flex flex-column align-items-start">
-                  <div class="details_qty_input">
-                    <button type="button" class="minus" id="qty-minus" onclick="updateQty(-1)" disabled><i class="fas fa-minus"></i></button>
-                    <input type="text" id="qty" name="qty" value="1" min="1" max="{{ max(1, (int) $product['stock']) }}" @disabled((int) $product['stock'] <= 0)
+                  <div class="details_qty_input aiz-plus-minus">
+                    <button type="button" class="btn col-auto btn-icon btn-sm btn-circle btn-light steve-btn minus" id="qty-minus" onclick="updateQty(-1)" disabled><i class="las la-minus"></i></button>
+                    <input type="text" class="col border-0 text-center flex-grow-1 fs-16" id="qty" name="qty" value="1" min="1" max="{{ max(1, (int) $product['stock']) }}" @disabled((int) $product['stock'] <= 0)
                            data-unit-price="{{ buyerPrice($product['price'], $product) * config('currencies.' . session('currency', 'USD') . '.rate', config('currencies.USD.rate')) }}"
                            data-currency-symbol="{{ config('currencies.' . session('currency', 'USD') . '.symbol', '$') }}">
-                    <button type="button" class="plus" id="qty-plus" onclick="updateQty(1)"><i class="fas fa-plus"></i></button>
+                    <button type="button" class="btn col-auto btn-icon btn-sm btn-circle btn-light steve-btn plus" id="qty-plus" onclick="updateQty(1)"><i class="las la-plus"></i></button>
                   </div>
                   <div class="details_total_price">
                     <span class="details_total_price_label">Total Price:</span>
@@ -1003,7 +984,7 @@
 
               <ul class="details_tags_sku">
                 @if(isset($product['category']) && $product['category'])
-                <li><span>Category:</span> {{ $product['category']['name'] ?? $product['category']->name }}</li>
+                <li><span>Category:</span><a href="{{ route('category', $product['category']['slug'] ?? $product['category']->slug) }}" class="text-decoration-none">{{ $product['category']['name'] ?? $product['category']->name }}</a></li>
                 @endif
                 @if(!empty($product['sku']))
                 <li><span>Part Number:</span> {{ $product['sku'] }}</li>
@@ -1041,13 +1022,13 @@
           <div class="tab-content border px-4 " id="myTabContent">
             <div class="tab-pane fade show active py-4" id="description-tab-pane" role="tabpanel" aria-labelledby="description-tab" tabindex="0">
               @php
-                  $descText  = $product['description'] ?? '';
+                  $descText1  = $product['description'] ?? '';
                   $descText  = $product['overview'] ?? '';
                   $descLower = strtolower(strip_tags($descText));
                   $hasFeaturesInDesc = str_contains($descLower, 'key features') || preg_match('/^\s*[•\-*]\s/m', $descText);
               @endphp
               @if(!empty($descText))
-              <div class="product-description-body">{!! $descText !!}</div>
+              <div class="product-description-body">{!! $descText1 !!} {!! $descText !!}</div>
               @else
               <p class="text-muted mb-0">No description available for this product yet.</p>
               @endif

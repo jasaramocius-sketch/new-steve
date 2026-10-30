@@ -228,7 +228,7 @@
                             <div class="card p-3 border-dashed h-100">
                                 @if($product->image)
                                     <div class="mb-3 d-flex align-items-center bg-light p-2 rounded">
-                                        <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="60" height="60" class="admin-image-thumb-bordered">
+                                        <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="60" height="60" class="admin-image-thumb-bordered" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                                         <div class="ms-3">
                                             <small class="text-muted d-block fw-bold">Current Primary Image</small>
                                             <small class="text-muted">Upload a new one below or choose from image manager to replace.</small>

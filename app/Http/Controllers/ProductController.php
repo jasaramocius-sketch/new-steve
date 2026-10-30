@@ -157,7 +157,7 @@ class ProductController extends Controller
             $query->where('seller_id', $request->query('seller_id'));
         }
 
-        if ($request->filled('product_type') && $request->query('product_type') !== 'all') {
+        if ($request->filled('product_type') && $request->query('product_type') !== 'all' && \Illuminate\Support\Facades\Schema::hasColumn('products', 'product_type')) {
             $query->where('product_type', $request->query('product_type'));
         }
 
@@ -206,13 +206,14 @@ class ProductController extends Controller
     public function show($slug)
     {
         $product = Product::with(['galleryImages', 'category.parent', 'brand', 'seller' => fn ($q) => $q->withCount('products')])->where('slug', $slug)->where('status', true)->firstOrFail();
-        $related = Product::with('category')->where('status', true)->where('id', '!=', $product->id)->take(4)->get();
+        $related = Product::with('category')->where('status', true)->hasUsableImage()->where('id', '!=', $product->id)->take(4)->get();
 
         // "Similar Products To Compare" — same part, other brands (Moglix-style).
         $similar = collect();
         $similarLimit = 2;
         $similarBase = Product::with('brand', 'category')
             ->where('status', true)
+            ->hasUsableImage()
             ->where('id', '!=', $product->id);
 
         if (! empty($product->category_id) && ! empty($product->year) && ! empty($product->make) && ! empty($product->model)) {

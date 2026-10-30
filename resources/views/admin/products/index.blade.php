@@ -21,9 +21,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
     <div class=""></div>
     <div class="d-flex gap-2 flex-wrap admin-product-page-important-btn">
-        <a href="{{ route('admin.products.import-form') }}" class="btn btn-outline-primary product-import-export-btn steve-btn"><i class="fas fa-upload"></i> Import</a>
-        <a href="{{ route('admin.products.export-csv') }}" class="btn btn-outline-secondary product-import-export-btn"><i class="fas fa-download"></i> Export CSV</a>
-        <a href="{{ route('admin.products.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Product</a>
+        <a href="{{ route('admin.products.import-form') }}" class="btn btn-outline-primary product-import-export-btn steve-btn gap-1"><i class="fas fa-upload"></i> Import</a>
+        <a href="{{ route('admin.products.export-csv') }}" class="btn btn-outline-secondary product-import-export-btn gap-1"><i class="fas fa-download"></i> Export CSV</a>
+        <a href="{{ route('admin.products.create') }}" class="btn btn-primary gap-1"><i class="fas fa-plus"></i> Add Product</a>
     </div>
 </div>
 
@@ -49,14 +49,14 @@
 {{-- Filter bar --}}
 <div class="card border-0 shadow-sm mb-3 admin-product-index-filter-bar">
     <div class="card-body py-3">
-        <form action="{{ route('admin.products.index') }}" method="GET" class="row g-2 align-items-end">
+        <form action="{{ route('admin.products.index') }}" method="GET" class="row d-grid grid-auto-flow-column g-2 align-items-end">
             @if(request()->has('trashed'))
                 <input type="hidden" name="trashed" value="1">
             @endif
             @if(request()->filled('search'))
                 <input type="hidden" name="search" value="{{ request('search') }}">
             @endif
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Category</label>
                 <select name="category_id" class="form-select">
                     <option value="">All Categories</option>
@@ -65,7 +65,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Brand</label>
                 <select name="brand_id" class="form-select">
                     <option value="">All Brands</option>
@@ -74,7 +74,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Seller</label>
                 <select name="seller_id" class="form-select">
                     <option value="">All Sellers</option>
@@ -83,7 +83,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Section</label>
                 <select name="product_type" class="form-select">
                     <option value="all" {{ request('product_type') === 'all' ? 'selected' : '' }}>All Sections</option>
@@ -92,7 +92,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Stock</label>
                 <select name="stock_filter" class="form-select">
                     <option value="all" {{ request('stock_filter') === 'all' ? 'selected' : '' }}>Any Stock</option>
@@ -100,7 +100,7 @@
                     <option value="out_of_stock" {{ request('stock_filter') === 'out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Status</label>
                 <select name="status" class="form-select">
                     <option value="">Any Status</option>
@@ -108,7 +108,7 @@
                     <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Inactive</option>
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Featured</label>
                 <select name="featured" class="form-select">
                     <option value="">Any</option>
@@ -116,10 +116,10 @@
                     <option value="0" {{ request('featured') === '0' ? 'selected' : '' }}>Not Featured</option>
                 </select>
             </div>
-            <div class="col-12 col-md-auto d-flex gap-2 flex-wrap">
-                <button type="submit" class="btn btn-primary btn-sm steve-btn"><i class="fas fa-filter me-1"></i> Filter</button>
+            <div class="admin-product-index-filter-item d-flex gap-2 flex-wrap">
+                <button type="submit" class="btn btn-primary steve-btn"><i class="fas fa-filter me-1"></i> Filter</button>
                 @if($hasActiveFilters)
-                    <a href="{{ route('admin.products.index', request()->has('trashed') ? ['trashed' => 1] : []) }}" class="btn btn-outline-danger btn-sm steve-btn"><i class="fas fa-times me-1"></i> Clear Filters</a>
+                    <a href="{{ route('admin.products.index', request()->has('trashed') ? ['trashed' => 1] : []) }}" class="btn btn-outline-danger steve-btn"><i class="fas fa-times"></i></a>
                 @endif
             </div>
         </form>
@@ -203,7 +203,7 @@
                         </td>
                         <td>{{ $products->firstItem() + $loop->index }}</td>
                         <td>
-                            <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="50" height="50" class="admin-image-thumb">
+                            <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="50" height="50" class="admin-image-thumb" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                         </td>
                         <td class="admin-product-name">
                             <a href="{{ route('product', $product->slug) }}" target="_blank">{{ Str::words($product->name, 3, '...') }}</a>
