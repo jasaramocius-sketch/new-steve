@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Blog;
 use App\Models\Category;
+use App\Models\CommissionHistory;
 use App\Models\FileRevision;
 use App\Models\Image;
 use App\Models\Order;
@@ -651,7 +652,17 @@ class AdminController extends Controller
             'commission_percent' => 'required|numeric|min:0|max:100',
         ]);
 
-        Setting::set('global_commission_percent', number_format((float) $validated['commission_percent'], 2, '.', ''));
+        $oldCommission = number_format((float) Setting::get('global_commission_percent', 0), 2, '.', '');
+        $newCommission = number_format((float) $validated['commission_percent'], 2, '.', '');
+
+        DB::transaction(function () use ($oldCommission, $newCommission) {
+            Setting::set('global_commission_percent', $newCommission);
+
+            if ($oldCommission !== $newCommission) {
+                CommissionHistory::recordChange('global', null, $oldCommission, $newCommission);
+            }
+        });
+
         Cache::forget('pricing.global_commission_percent');
 
         return redirect()->route('admin.settings.commission')

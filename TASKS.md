@@ -4858,3 +4858,15 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 
 **Files changed:**
 - `resources/views/product/show.blade.php` — updated quantity control markup and styles
+
+## 343. (2026-10-30): Dedicated Commission History Records
+
+**Change:** Added a dedicated `commission_histories` table for product-level and global commission changes. Records include scope, old/new commission, product reference, actor, IP address, and timestamps. Unchanged values do not create duplicate history entries.
+
+**Files changed:**
+- `database/migrations/2026_10_30_000001_create_commission_histories_table.php` — created the history table and indexes
+- `app/Models/CommissionHistory.php` — added history model and record helper
+- `app/Http/Controllers/ProductController.php` — records product commission changes transactionally
+- `app/Http/Controllers/AdminController.php` — records global commission changes transactionally
+
+**Verification:** Migration applied successfully; a temporary insert was verified and rolled back.

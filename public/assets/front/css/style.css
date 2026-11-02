@@ -11768,7 +11768,7 @@ form#home-vehicle-filter-form {
 } */
 
 .filter-select:disabled {
-    opacity: 0.5;
+    opacity: 0.9;
     cursor: not-allowed;
     background-color: #e9ecef;
 }

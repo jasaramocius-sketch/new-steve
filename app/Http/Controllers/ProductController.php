@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\NotificationHelper;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\CommissionHistory;
 use App\Models\Contact;
 use App\Models\Image;
 use App\Models\Product;
@@ -560,8 +561,21 @@ class ProductController extends Controller
             'commission' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $product->commission = $request->filled('commission') ? (float) $validated['commission'] : null;
-        $product->save();
+        $oldCommission = $product->commission === null
+            ? null
+            : number_format((float) $product->commission, 2, '.', '');
+        $newCommission = $request->filled('commission')
+            ? number_format((float) $validated['commission'], 2, '.', '')
+            : null;
+
+        DB::transaction(function () use ($product, $oldCommission, $newCommission) {
+            $product->commission = $newCommission;
+            $product->save();
+
+            if ($oldCommission !== $newCommission) {
+                CommissionHistory::recordChange('product', (int) $product->id, $oldCommission, $newCommission);
+            }
+        });
 
         if ($request->expectsJson()) {
             return response()->json([
