@@ -1,15 +1,22 @@
 @extends('admin.layouts.app')
-
+{{-- Add your custom page ID and classes right here --}}
+@include('partials.page-attributes', ['pageId' => 'admin-pickup-points-form-page', 'pageClass' => 'admin-pickup-points-form-page'])
+@section('page-title', 'Pickup Points Form')
+@section('meta_tags')
+    @include('partials.meta-tags', [
+        'pageTitle' => 'Pickup Points Form',
+    ])
+@endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
     <div class="ap-page-header mb-3">
-        <nav class="ap-breadcrumb" aria-label="Breadcrumb">
+        <!-- <nav class="ap-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ route('admin.settings.index') }}">Settings</a>
             <span class="sep" aria-hidden="true">/</span>
             <a href="{{ route('admin.settings.pickup-points.index') }}">Pickup Points</a>
             <span class="sep" aria-hidden="true">/</span>
             <span class="current" aria-current="page">{{ $isEditing ? 'Edit Pickup Point' : 'Add New Pick-up Point' }}</span>
-        </nav>
+        </nav> -->
         <div class="ap-page-header-row"><h1 class="ap-page-title">{{ $isEditing ? 'Edit Pickup Point' : 'Add New Pick-up Point' }}</h1></div>
     </div>
 

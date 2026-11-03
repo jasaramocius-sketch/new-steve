@@ -7,6 +7,7 @@ use App\Models\Image;
 use App\Models\Page;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -73,14 +74,7 @@ class CategoryController extends Controller
         $search = $request->get('search', '');
         $sort = $request->get('sort', 'name');
 
-        $topCategories = Category::topLevel()
-            ->withCount(['products' => fn ($q) => $q->where('status', true)->hasUsableImage()])
-            ->with(['children' => function ($q) {
-                $q->withCount(['products' => fn ($q2) => $q2->where('status', true)->hasUsableImage()])
-                    ->with(['children' => function ($q2) {
-                        $q2->withCount(['products' => fn ($q3) => $q3->where('status', true)->hasUsableImage()]);
-                    }]);
-            }]);
+        $topCategories = Category::topLevel()->with('children.children');
 
         if ($search !== '') {
             $topCategories->where(function ($q) use ($search) {
@@ -88,25 +82,62 @@ class CategoryController extends Controller
             });
         }
 
-        $topCategories = $topCategories->get();
+        $categories = $topCategories->get();
+        $categoryRows = Category::query()->get(['id', 'parent_id']);
+        $childIdsByParent = $categoryRows
+            ->groupBy(fn ($category) => $category->parent_id ?? 0)
+            ->map(fn ($children) => $children->pluck('id')->all())
+            ->all();
+        $descendantIdsByRoot = [];
+        $allCategoryIds = [];
+        foreach ($categories as $category) {
+            $descendantIds = [];
+            $stack = [(int) $category->id];
+            while ($stack !== []) {
+                $categoryId = array_pop($stack);
+                $descendantIds[] = $categoryId;
+                foreach ($childIdsByParent[$categoryId] ?? [] as $childId) {
+                    $stack[] = (int) $childId;
+                }
+            }
+            $descendantIdsByRoot[(int) $category->id] = $descendantIds;
+            $allCategoryIds = array_merge($allCategoryIds, $descendantIds);
+        }
 
-        $categories = $topCategories;
-
-        $categories = $categories->map(function ($category) {
-            $descIds = $category->getAllDescendantIds();
-            $category->total_products_count = Product::whereIn('category_id', $descIds)
+        $productCountsByCategory = empty($allCategoryIds)
+            ? collect()
+            : Product::query()
+                ->whereIn('category_id', $allCategoryIds)
                 ->where('status', true)
                 ->hasUsableImage()
-                ->count();
-            $category->preview_products = Product::whereIn('category_id', $descIds)
-                ->where('status', true)
-                ->hasUsableImage()
-                ->latest()
-                ->take(3)
-                ->get();
+                ->selectRaw('category_id, COUNT(*) as aggregate')
+                ->groupBy('category_id')
+                ->pluck('aggregate', 'category_id');
 
-            return $category;
-        })->filter(function ($category) {
+        $subtreeProductCount = function (int $categoryId) use ($childIdsByParent, $productCountsByCategory): int {
+            $count = 0;
+            $stack = [$categoryId];
+
+            while ($stack !== []) {
+                $currentId = array_pop($stack);
+                $count += (int) $productCountsByCategory->get($currentId, 0);
+                foreach ($childIdsByParent[$currentId] ?? [] as $childId) {
+                    $stack[] = (int) $childId;
+                }
+            }
+
+            return $count;
+        };
+
+        foreach ($categories as $category) {
+            $category->total_products_count = $subtreeProductCount((int) $category->id);
+
+            foreach ($category->children as $child) {
+                $child->total_products_count = $subtreeProductCount((int) $child->id);
+            }
+        }
+
+        $categories = $categories->filter(function ($category) {
             $imageValue = trim((string) ($category->image ?? $category->banner ?? ''));
             $hasImage = $imageValue !== '' && $category->getDisplayImagePath() !== 'assets/images/placeholder.png';
             $hasProducts = (int) ($category->total_products_count ?? 0) > 0;
@@ -121,6 +152,27 @@ class CategoryController extends Controller
             $categories = $categories->sortBy('created_at')->values();
         } else {
             $categories = $categories->sortByDesc('created_at')->values();
+        }
+
+        $perPage = 24;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $totalCategories = $categories->count();
+        $categories = new LengthAwarePaginator(
+            $categories->forPage($currentPage, $perPage)->values(),
+            $totalCategories,
+            $perPage,
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
+        foreach ($categories as $category) {
+            $category->preview_products = Product::query()
+                ->whereIn('category_id', $descendantIdsByRoot[(int) $category->id])
+                ->where('status', true)
+                ->hasUsableImage()
+                ->latest()
+                ->take(3)
+                ->get(['id', 'category_id', 'slug', 'name', 'main_image', 'cost', 'commission']);
         }
 
         return view('categories.index', compact('categories', 'page'));

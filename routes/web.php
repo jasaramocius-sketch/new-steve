@@ -57,7 +57,25 @@ Route::get('/currency', [CurrencyController::class, 'rates']);
 Route::get('/address/states', [LocationController::class, 'states'])->name('location.states');
 Route::get('/address/cities', [LocationController::class, 'cities'])->name('location.cities');
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/sitemap.xml', [HomeController::class, 'sitemap'])->name('sitemap');
+Route::get('/sitemap.xml', [HomeController::class, 'sitemapIndex'])->name('sitemap');
+$sitemapTypes = [
+    'page' => 'pages',
+    'product' => 'products',
+    'blogs' => 'blogs',
+    'brands' => 'brands',
+    'categories' => 'categories',
+    'blog-categories' => 'blog-categories',
+    'blog-tags' => 'blog-tags',
+];
+foreach ($sitemapTypes as $sitemapSlug => $sitemapType) {
+    Route::get('/'.$sitemapSlug.'-sitemap.xml', function () use ($sitemapType) {
+        return app(HomeController::class)->sitemapSection($sitemapType);
+    });
+    Route::get('/'.$sitemapSlug.'-sitemap{page}.xml', function (int $page) use ($sitemapType) {
+        return app(HomeController::class)->sitemapSection($sitemapType, $page);
+    })->whereNumber('page');
+}
+Route::get('/robots.txt', [HomeController::class, 'robots'])->name('robots');
 
 Route::get('/search', [ShopController::class, 'index'])->name('shop');
 Route::post('/search/clear-vehicle', [ShopController::class, 'clearVehicleFilter'])->middleware('auth')->name('shop.clear-vehicle');
@@ -541,12 +559,14 @@ Route::prefix('admin')
             ->name('admin.settings.header');
         Route::post('/settings/header', [AdminController::class, 'updateHeaderSettings'])
             ->name('admin.settings.header.update');
+        Route::get('/settings/seo', [AdminController::class, 'seoSettings'])
+            ->name('admin.settings.seo');
+        Route::post('/settings/seo', [AdminController::class, 'updateSeoSettings'])
+            ->name('admin.settings.seo.update');
         Route::get('/settings/commission', [AdminController::class, 'commissionSettings'])
             ->name('admin.settings.commission');
         Route::post('/settings/commission', [AdminController::class, 'updateCommissionSettings'])
             ->name('admin.settings.commission.update');
-        Route::get('/settings/footer', [AdminController::class, 'footerSettings'])
-            ->name('admin.settings.footer');
         Route::post('/settings/footer', [AdminController::class, 'updateFooterSettings'])
             ->name('admin.settings.footer.update');
         Route::get('/settings/search-categories', [AdminController::class, 'searchCategorySettings'])

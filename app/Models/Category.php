@@ -137,6 +137,10 @@ class Category extends Model
      */
     public function getTotalProductsCountAttribute(): int
     {
+        if (array_key_exists('total_products_count', $this->attributes)) {
+            return (int) $this->attributes['total_products_count'];
+        }
+
         $count = $this->products_count ?? 0;
         if ($this->relationLoaded('children')) {
             foreach ($this->children as $child) {

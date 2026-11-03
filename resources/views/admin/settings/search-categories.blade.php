@@ -46,7 +46,7 @@
                                             <label class="form-check-label sc-checkbox">
                                                 <input type="checkbox" class="form-check-input me-2 sc-category-cb"
                                                        data-label="{{ $orphan->name }}"
-                                                       data-url="{{ route('category', $orphan->slug) }}"
+                                                       data-url="{{ route('category', $orphan->slug, false) }}"
                                                        @checked($selectedLabels->contains($orphan->name))>
                                                 {{ $orphan->name }}
                                             </label>

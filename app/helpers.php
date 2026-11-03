@@ -8,10 +8,16 @@ use Illuminate\Support\Str;
 if (! function_exists('globalCommissionPercent')) {
     function globalCommissionPercent(): float
     {
-        return (float) Cache::rememberForever(
-            'pricing.global_commission_percent',
-            fn () => Setting::get('global_commission_percent', 0)
-        );
+        static $commissionPercent = null;
+
+        if ($commissionPercent === null) {
+            $commissionPercent = (float) Cache::rememberForever(
+                'pricing.global_commission_percent',
+                fn () => Setting::get('global_commission_percent', 0)
+            );
+        }
+
+        return $commissionPercent;
     }
 }
 
@@ -334,5 +340,163 @@ if (! function_exists('prefixAppBasePathInHtml')) {
             },
             $html
         );
+    }
+}
+
+if (! function_exists('defaultRobotsTxt')) {
+    /**
+     * Build the default robots.txt content.
+     *
+     * The sitemap URL is stored as a placeholder so the value stays portable
+     * between local development and the live domain.
+     */
+    function defaultRobotsTxt(): string
+    {
+        $lines = [
+            'User-agent: *',
+            'Allow: /',
+            'Disallow: /admin',
+            'Disallow: /user',
+            'Disallow: /checkout',
+            'Disallow: /cart',
+            'Disallow: /compare',
+            '',
+            'Sitemap: {{sitemap}}',
+        ];
+
+        return implode("\n", $lines);
+    }
+}
+
+if (! function_exists('normalizeAppUrlPath')) {
+    /**
+     * Convert an absolute or relative URL to an app-relative path.
+     *
+     * Menu links are stored without a host so they keep working when the site
+     * moves between domains or between a subdirectory and the domain root.
+     */
+    function normalizeAppUrlPath(string $url): string
+    {
+        $url = trim($url);
+
+        if ($url === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $url)) {
+            $url = (string) parse_url($url, PHP_URL_PATH);
+        }
+
+        $url = '/'.ltrim($url, '/');
+
+        $basePaths = array_filter([
+            trim((string) parse_url((string) config('app.url'), PHP_URL_PATH), '/'),
+            trim((string) request()->getBaseUrl(), '/'),
+        ]);
+
+        foreach (array_unique($basePaths) as $basePath) {
+            $prefix = '/'.$basePath;
+
+            while ($url === $prefix || str_starts_with($url, $prefix.'/')) {
+                $url = '/'.ltrim(substr($url, strlen($prefix)), '/');
+            }
+        }
+
+        return $url === '' ? '/' : $url;
+    }
+}
+
+if (! function_exists('robotsLocalHosts')) {
+    /**
+     * Hosts whose sitemap URLs should be rewritten to the current domain.
+     *
+     * @return array<int, string>
+     */
+    function robotsLocalHosts(): array
+    {
+        $hosts = [
+            'localhost',
+            '127.0.0.1',
+            '::1',
+            request()->getHost(),
+            parse_url((string) config('app.url'), PHP_URL_HOST),
+        ];
+
+        return array_values(array_unique(array_filter(array_map(
+            static fn ($host) => strtolower((string) $host),
+            $hosts
+        ))));
+    }
+}
+
+if (! function_exists('normalizeRobotsTxtForStorage')) {
+    /**
+     * Replace host-specific sitemap URLs with a portable placeholder.
+     *
+     * This keeps the saved robots.txt content working when the site moves to
+     * another domain. External sitemap URLs are left untouched.
+     */
+    function normalizeRobotsTxtForStorage(string $content): string
+    {
+        $localHosts = robotsLocalHosts();
+
+        return preg_replace_callback('/^Sitemap:\s*(\S+)\s*$/mi', function ($matches) use ($localHosts) {
+            $host = strtolower((string) parse_url($matches[1], PHP_URL_HOST));
+
+            if ($host === '' || in_array($host, $localHosts, true)) {
+                return 'Sitemap: {{sitemap}}';
+            }
+
+            return $matches[0];
+        }, $content);
+    }
+}
+
+if (! function_exists('renderRobotsTxt')) {
+    /**
+     * Render robots.txt for the current request.
+     *
+     * Existing sitemap lines pointing at localhost or the current host are
+     * rebased automatically, so no domain needs to be hardcoded.
+     */
+    function renderRobotsTxt(?string $content = null): string
+    {
+        $sitemapUrl = url('/sitemap.xml');
+        $content = trim((string) $content);
+
+        if ($content === '') {
+            $content = defaultRobotsTxt();
+        }
+
+        $content = str_replace('{{sitemap}}', $sitemapUrl, $content);
+
+        $sitemapEnabled = Setting::get('seo_sitemap_enabled', '1') !== '0';
+
+        if (! $sitemapEnabled) {
+            $content = trim((string) preg_replace('/^\s*Sitemap:\s*\S+\s*$/mi', '', $content));
+            $content = preg_replace("/\n{3,}/", "\n\n", $content);
+
+            return $content;
+        }
+
+        $localHosts = robotsLocalHosts();
+        $hasSitemap = false;
+
+        $content = preg_replace_callback('/^Sitemap:\s*(\S+)\s*$/mi', function ($matches) use ($sitemapUrl, $localHosts, &$hasSitemap) {
+            $hasSitemap = true;
+            $host = strtolower((string) parse_url($matches[1], PHP_URL_HOST));
+
+            if ($host === '' || in_array($host, $localHosts, true)) {
+                return 'Sitemap: '.$sitemapUrl;
+            }
+
+            return $matches[0];
+        }, $content);
+
+        if (! $hasSitemap) {
+            $content = rtrim($content)."\n\nSitemap: ".$sitemapUrl;
+        }
+
+        return $content;
     }
 }

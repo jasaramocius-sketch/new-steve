@@ -1,5 +1,12 @@
 @extends('admin.layouts.app')
-
+{{-- Add your custom page ID and classes right here --}}
+@include('partials.page-attributes', ['pageId' => 'admin-languages-form-page', 'pageClass' => 'admin-languages-form-page'])
+@section('page-title', 'Language Form')
+@section('meta_tags')
+    @include('partials.meta-tags', [
+        'pageTitle' => 'Language Form',
+    ])
+@endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
     <div class="ap-page-header mb-3">

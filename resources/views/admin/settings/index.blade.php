@@ -1,6 +1,14 @@
 @extends('admin.layouts.app')
-
+{{-- Add your custom page ID and classes right here --}}
+@include('partials.page-attributes', ['pageId' => 'admin-settings-page', 'pageClass' => 'admin-settings-page'])
+@section('page-title', 'All Settings')
+@section('meta_tags')
+    @include('partials.meta-tags', [
+        'pageTitle' => 'All Settings',
+    ])
+@endsection
 @section('content')
+
 <div class="container-fluid ap-settings-hub">
     <div class="mb-4">
         <h4 class="mb-1">All Settings</h4>
@@ -15,9 +23,12 @@
             </h5>
             <div class="row gutters-10">
                 @foreach ($group['items'] as $item)
+                    @php
+                        $tileUrl = !empty($item['route']) ? route($item['route']) : ($item['url'] ?? null);
+                    @endphp
                     <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
-                        @if (!empty($item['route']))
-                            <a href="{{ route($item['route']) }}" class="ap-settings-tile">
+                        @if ($tileUrl)
+                            <a href="{{ $tileUrl }}" class="ap-settings-tile" @if (!empty($item['external'])) target="_blank" rel="noopener" @endif>
                         @else
                             <div class="ap-settings-tile ap-settings-tile-disabled" aria-disabled="true" title="This settings page is not available yet">
                         @endif
@@ -26,7 +37,7 @@
                                 <span class="nm">{{ $item['name'] }}</span>
                                 <span class="ds">{{ $item['description'] }}</span>
                             </span>
-                        @if (!empty($item['route']))
+                        @if ($tileUrl)
                             </a>
                         @else
                             </div>

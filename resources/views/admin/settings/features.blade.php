@@ -39,7 +39,6 @@
                                         <input type="checkbox" name="enabled" value="1" aria-label="{{ $item['label'] }}" @checked($item['enabled'])>
                                         <span class="feature-switch-track" aria-hidden="true"></span>
                                     </label>
-                                    <p class="feature-setting-status small mb-0 mt-2" role="status" aria-live="polite"></p>
                                 </form>
 
                                 @if (!empty($item['description']))
@@ -133,13 +132,10 @@
 <script>
 document.querySelectorAll('.feature-setting-form').forEach((form) => {
     const checkbox = form.querySelector('input[name="enabled"]');
-    const status = form.querySelector('.feature-setting-status');
 
     checkbox.addEventListener('change', async () => {
         const previousValue = !checkbox.checked;
         checkbox.disabled = true;
-        status.textContent = 'Saving...';
-        status.classList.remove('text-danger', 'text-success');
 
         try {
             const response = await fetch(form.dataset.endpoint, {
@@ -155,16 +151,19 @@ document.querySelectorAll('.feature-setting-form').forEach((form) => {
                 }),
             });
 
+            const result = await response.json();
             if (!response.ok) {
-                throw new Error('Could not save this setting.');
+                throw new Error(result.message || 'Could not save this setting.');
             }
 
-            status.textContent = 'Saved';
-            status.classList.add('text-success');
+            if (window.toastr) {
+                toastr.success(result.message || 'Feature setting saved successfully.');
+            }
         } catch (error) {
             checkbox.checked = previousValue;
-            status.textContent = error.message || 'Could not save this setting.';
-            status.classList.add('text-danger');
+            if (window.toastr) {
+                toastr.error(error.message || 'Could not save this setting.');
+            }
         } finally {
             checkbox.disabled = false;
         }

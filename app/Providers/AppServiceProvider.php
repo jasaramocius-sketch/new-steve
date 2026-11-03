@@ -149,7 +149,8 @@ class AppServiceProvider extends ServiceProvider
             // Skip the (cache-backed) tree lookup for admin pages so the panel
             // stays light even when the tree cache is being rebuilt.
             $isAdminArea = str_contains('/'.ltrim(request()->path(), '/').'/', '/admin/');
-            $mobileCategoryTree = $isAdminArea ? [] : \App\Services\CategoryTree::tree();
+            $isCategoryIndex = request()->routeIs('categories.index');
+            $mobileCategoryTree = ($isAdminArea || $isCategoryIndex) ? [] : \App\Services\CategoryTree::tree();
 
             $sharedData = [
                 'wishlistCount' => $wishlistCount,

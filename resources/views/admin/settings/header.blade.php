@@ -1,9 +1,9 @@
 @extends('admin.layouts.app')
 @include('partials.page-attributes', ['pageId' => 'admin-settings-header-page', 'pageClass' => 'admin-settings-header-page'])
-@section('page-title', 'Header Settings')
+@section('page-title', 'General Settings')
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Header Settings - Admin Panel',
+        'pageTitle' => 'General Settings - Admin Panel',
         'robots' => 'noindex, nofollow',
     ])
 @endsection
@@ -173,6 +173,15 @@
                     </form>
                 </div>
             </div>
+        </div>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- FOOTER CONFIGURATION                                         --}}
+    {{-- ============================================================ --}}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            @include('admin.settings.partials.footer-columns')
         </div>
     </div>
 

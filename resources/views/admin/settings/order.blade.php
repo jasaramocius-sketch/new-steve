@@ -1,21 +1,18 @@
 @extends('admin.layouts.app')
-
+{{-- Add your custom page ID and classes right here --}}
+@include('partials.page-attributes', ['pageId' => 'admin-order-settings-page', 'pageClass' => 'admin-order-settings-page'])
+@section('page-title', 'Order Settings')
+@section('meta_tags')
+    @include('partials.meta-tags', [
+        'pageTitle' => 'Order Settings',
+    ])
+@endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <div class="ap-page-header mb-4">
-        <nav class="ap-breadcrumb" aria-label="Breadcrumb">
-            <a href="{{ route('admin.settings.index') }}">Settings</a>
-            <span class="sep" aria-hidden="true">/</span>
-            <span class="current" aria-current="page">Minimum Order Amount Settings</span>
-        </nav>
-        <div class="ap-page-header-row">
-            <h1 class="ap-page-title">Minimum Order Amount Settings</h1>
-        </div>
-    </div>
 
     <div class="col-lg-6 px-0">
         <div class="card">
-            <form action="{{ route('admin.settings.order.update') }}" method="POST">
+            <form action="{{ route('admin.settings.order.update') }}" method="POST" class="order-settings-form">
                 @csrf
                 <div class="card-body">
                     @if ($errors->any())
@@ -34,7 +31,7 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-flex align-items-center">
                             <label class="control-label" for="minimum-order-amount">Set Minimum Order Amount</label>
                         </div>
                         <div class="col-md-8">
@@ -42,7 +39,7 @@
                         </div>
                     </div>
                     <div class="form-group mb-0 text-right">
-                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                        <button type="submit" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                     </div>
                 </div>
             </form>

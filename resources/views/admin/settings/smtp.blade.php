@@ -1,16 +1,15 @@
 @extends('admin.layouts.app')
-
+{{-- Add your custom page ID and classes right here --}}
+@include('partials.page-attributes', ['pageId' => 'admin-SMTP-settings-page', 'pageClass' => 'admin-SMTP-settings-page'])
+@section('page-title', 'SMTP Settings')
+@section('meta_tags')
+    @include('partials.meta-tags', [
+        'pageTitle' => 'SMTP Settings',
+    ])
+@endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <div class="ap-page-header mb-3">
-        <nav class="ap-breadcrumb" aria-label="Breadcrumb">
-            <a href="{{ route('admin.settings.index') }}">Settings</a>
-            <span class="sep" aria-hidden="true">/</span>
-            <span class="current" aria-current="page">SMTP Settings</span>
-        </nav>
-        <div class="ap-page-header-row"><h1 class="ap-page-title">SMTP Settings</h1></div>
-    </div>
-
+    
     @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
@@ -20,7 +19,7 @@
             <div class="card">
                 <div class="card-header"><h2 class="h6 mb-0">Mail Settings</h2></div>
                 <div class="card-body">
-                    <form action="{{ route('admin.settings.smtp.update') }}" method="POST" autocomplete="off">
+                    <form action="{{ route('admin.settings.smtp.update') }}" method="POST" autocomplete="off" class="smtp-settings-form">
                         @csrf
                         <div class="form-group row">
                             <label class="col-md-3 col-form-label" for="mail-driver">Type</label>
@@ -120,8 +119,11 @@
                 <div class="card-body">
                     <form action="{{ route('admin.settings.smtp.test') }}" method="POST" class="form-inline">
                         @csrf
-                        <label for="test-email" class="sr-only">Test recipient email</label>
-                        <input id="test-email" type="email" name="email" class="form-control mr-2 flex-grow-1" value="{{ old('email', $testEmail) }}" placeholder="Enter your email address" required>
+                        <div class="form-group mb-2 mr-2">
+                            <label for="test-email" class="sr-only">Test recipient email</label>
+                            <input id="test-email" type="email" name="email" class="form-control" value="{{ old('email', $testEmail) }}" placeholder="Enter your email address" required>
+                        </div>
+
                         <button type="submit" class="btn btn-primary">Send test email</button>
                     </form>
                 </div>

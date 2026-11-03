@@ -380,14 +380,14 @@
                 </select>
               @endif
                 <span class="shop-page-widget-title">Make</span>
-                <select name="make" class="form-select filter-select" id="filter-make">
+                <select name="make" class="form-select filter-select" id="filter-make" @disabled(!request()->filled('year'))>
                   <option value="">All Makes</option>
                   @foreach($makes as $make)
                     <option value="{{ $make }}" {{ request('make') == $make ? 'selected' : '' }}>{{ $make }}</option>
                   @endforeach
                 </select>
                 <span class="shop-page-widget-title">Model</span>
-                <select name="model" class="form-select filter-select" id="filter-model">
+                <select name="model" class="form-select filter-select" id="filter-model" @disabled(!request()->filled('year') || !request()->filled('make'))>
                   <option value="">All Models</option>
                   @foreach($models as $model)
                     <option value="{{ $model }}" {{ request('model') == $model ? 'selected' : '' }}>{{ $model }}</option>
@@ -459,6 +459,9 @@
                 if (v == selected) opt.selected = true;
                 el.appendChild(opt);
               });
+              if (window.jQuery && jQuery.fn.niceSelect && el.nextElementSibling && el.nextElementSibling.classList.contains('nice-select')) {
+                jQuery(el).niceSelect('update');
+              }
             }
 
             function loadMakes(year, selected, cb) {
@@ -484,6 +487,24 @@
             }
 
             var vehicleApplyBtn = document.getElementById('apply-vehicle-filter');
+            function syncVehicleControls() {
+              var yearSelected = Boolean(yearEl && yearEl.value);
+              var makeSelected = Boolean(makeEl && makeEl.value);
+              setControlDisabled(makeEl, !yearSelected);
+              setControlDisabled(modelEl, !yearSelected || !makeSelected);
+            }
+
+            function setControlDisabled(select, disabled) {
+              if (!select) return;
+              select.disabled = disabled;
+              var customSelect = select.nextElementSibling;
+              if (customSelect && customSelect.classList.contains('nice-select')) {
+                customSelect.classList.toggle('disabled', disabled);
+                customSelect.tabIndex = disabled ? -1 : 0;
+                if (disabled) customSelect.classList.remove('open');
+              }
+            }
+
             function toggleVehicleApply() {
               if (!vehicleApplyBtn) return;
               var hasValue = (yearEl && yearEl.value) || (makeEl && makeEl.value) || (modelEl && modelEl.value);
@@ -495,13 +516,18 @@
               yearEl.addEventListener('change', function() {
                 if (makeEl) makeEl.value = '';
                 if (modelEl) modelEl.value = '';
-                loadMakes(yearEl.value, '', function() { loadModels(yearEl.value, '', ''); });
+                syncVehicleControls();
+                loadMakes(yearEl.value, '', function() {
+                  syncVehicleControls();
+                  loadModels(yearEl.value, '', '');
+                });
                 toggleVehicleApply();
               });
             }
             if (makeEl) {
               makeEl.addEventListener('change', function() {
                 if (modelEl) modelEl.value = '';
+                syncVehicleControls();
                 loadModels(yearEl ? yearEl.value : '', makeEl.value, '');
                 toggleVehicleApply();
               });
@@ -509,6 +535,7 @@
             if (modelEl) {
               modelEl.addEventListener('change', toggleVehicleApply);
             }
+            syncVehicleControls();
             toggleVehicleApply();
           })();
           </script>

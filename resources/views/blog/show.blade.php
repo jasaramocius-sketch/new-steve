@@ -7,6 +7,8 @@
         'pageTitle' => $blog->title . ' - ' . config('app.name', 'StAutoparts'),
         'metaTitle' => $blog->title . ' | ' . config('app.name', 'StAutoparts'),
         'metaDescription' => $blogDesc ?: null,
+        'ogImage' => $blog->image ?? null,
+        'ogImagePrefix' => 'assets/images/blogs',
         'robots' => 'index, follow',
     ])
 @endsection

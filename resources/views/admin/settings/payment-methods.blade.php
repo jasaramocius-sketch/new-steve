@@ -31,7 +31,7 @@
                 <div class="card h-100">
                     <div class="card-header"><h2 class="h6 mb-0">{{ $method['title'] }}</h2></div>
                     <div class="card-body">
-                        <form action="{{ route('admin.settings.payment-methods.update', $method['provider']) }}" method="POST" autocomplete="off">
+                        <form action="{{ route('admin.settings.payment-methods.update', $method['provider']) }}" method="POST" autocomplete="off" class="payment-method-form">
                             @csrf
                             @foreach ($method['fields'] as $field)
                                 <div class="form-group row">
@@ -56,7 +56,7 @@
                             @if ($method['sandbox'])
                                 <div class="form-group row">
                                     <div class="col-md-4"><label class="col-form-label" for="{{ $method['provider'] }}-sandbox">{{ $method['title'] }} Sandbox Mode</label></div>
-                                    <div class="col-md-8">
+                                    <div class="col-md-8 d-flex align-items-center">
                                         <div class="custom-control custom-switch">
                                             <input id="{{ $method['provider'] }}-sandbox" type="checkbox" class="custom-control-input" name="{{ $method['sandbox'] }}" value="1" @checked($method['sandboxEnabled'])>
                                             <label class="custom-control-label" for="{{ $method['provider'] }}-sandbox">Sandbox</label>
@@ -65,7 +65,9 @@
                                 </div>
                             @endif
 
-                            <div class="form-group mb-0 text-right"><button type="submit" class="btn btn-sm btn-primary">Save</button></div>
+                            <div class="form-group mb-0 text-right">
+                                <button type="submit" class="btn btn-sm btn-primary  d-flex align-items-center gap-1"> <i class="fas fa-save"></i>Save</button>
+                            </div>
                         </form>
                     </div>
                 </div>

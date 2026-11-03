@@ -10,6 +10,8 @@
         'pageTitle' => $prodName . ' - ' . config('app.name', 'StAutoparts'),
         'metaTitle' => $prodName . ' | ' . config('app.name', 'StAutoparts'),
         'metaDescription' => $prodDesc ?: ('Buy ' . $prodName . ' at ' . config('app.name', 'StAutoparts')),
+        'ogImage' => $product['image'] ?? null,
+        'ogImagePrefix' => 'assets/images/thumbnails',
         'robots' => 'index, follow',
     ])
 @endsection

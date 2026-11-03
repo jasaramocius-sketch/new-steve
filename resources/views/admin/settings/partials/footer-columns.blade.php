@@ -1,41 +1,28 @@
-@extends('admin.layouts.app')
-@include('partials.page-attributes', ['pageId' => 'admin-settings-footer-page', 'pageClass' => 'admin-settings-footer-page'])
-@section('page-title', 'Footer Settings')
-@section('meta_tags')
-    @include('partials.meta-tags', [
-        'pageTitle' => 'Footer Settings - Admin Panel',
-        'robots' => 'noindex, nofollow',
-    ])
-@endsection
-@section('content')
-<div class="container-fluid admin-settings-footer">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold">Footer Columns</h5>
-                </div>
-                <div class="card-body">
-                    <form action="{{ route('admin.settings.footer.update') }}" method="POST" id="footerColsForm">
-                        @csrf
-                        <input type="hidden" name="footer_columns" id="footerColumnsInput" value="{{ $settings['footer_columns'] ?? '[]' }}">
-
-                        <div id="footerColsContainer"></div>
-
-                        <button type="button" class="btn btn-primary steve-btn gap-1 mt-2" id="addFooterColumn">
-                            <i class="fas fa-plus me-1"></i> Add Column
-                        </button>
-
-                        <hr>
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary steve-btn gap-1">
-                                <i class="fas fa-save me-1"></i> Save Columns
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+<div class="card border-0 shadow-sm" id="footer-settings-card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0 fw-bold">Footer Configuration</h5>
+            <small class="text-muted">Manage footer columns, links and social icons.</small>
         </div>
+    </div>
+    <div class="card-body">
+        <form action="{{ route('admin.settings.footer.update') }}" method="POST" id="footerColsForm">
+            @csrf
+            <input type="hidden" name="footer_columns" id="footerColumnsInput" value="{{ $settings['footer_columns'] ?? '[]' }}">
+
+            <div id="footerColsContainer"></div>
+
+            <button type="button" class="btn btn-primary steve-btn gap-1 mt-2" id="addFooterColumn">
+                <i class="fas fa-plus me-1"></i> Add Column
+            </button>
+
+            <hr>
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary steve-btn gap-1">
+                    <i class="fas fa-save me-1"></i> Save Columns
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -234,7 +221,7 @@
                         (type === 'newsletter'
                             ? 'Add your social media links below. They will show under the newsletter form.'
                             : type === 'contact'
-                                ? 'This column shows the footer logo plus the phone, email and address from Header Settings.'
+                                ? 'This column shows the footer logo plus the phone, email and address from General Settings.'
                                 : '') +
                     '</div>' +
                     (type === 'links' ? footerLinksBlock(col) : '') +
@@ -351,7 +338,7 @@
                 initFooterTooltips();
             } else {
                 $note.removeClass('d-none');
-                $note.text('This column shows the footer logo plus the phone, email and address from Header Settings.');
+                $note.text('This column shows the footer logo plus the phone, email and address from General Settings.');
             }
         });
 
@@ -361,4 +348,3 @@
     });
 </script>
 @endpush
-@endsection

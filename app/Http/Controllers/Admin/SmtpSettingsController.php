@@ -18,7 +18,7 @@ class SmtpSettingsController extends Controller
     {
         $settings = Setting::getAllAsArray();
         $driver = $settings['mail_driver'] ?? config('mail.default', 'smtp');
-        if (! in_array($driver, self::DRIVERS, true)) {
+        if (in_array($driver, self::DRIVERS, true) === false) {
             $driver = 'smtp';
         }
 

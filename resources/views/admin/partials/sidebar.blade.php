@@ -14,12 +14,18 @@
             <i class="fas fa-tachometer-alt"></i> Dashboard
         </a>
         @php
-            $productsExpanded = request()->routeIs(
+            // Products parent active
+            $productsActive = request()->routeIs(
                 'admin.products.*',
                 'admin.categories.*',
                 'admin.brands.*',
-                'admin.settings.commission'
-            ) && !request()->routeIs('admin.products.import-form', 'admin.products.stock');
+                'admin.settings.commission*'
+            );
+
+            // Submenu default expanded
+            $productsExpanded = $productsActive;
+
+            // All Products
             $allProductsActive = request()->routeIs('admin.products.*') && !request()->routeIs(
                 'admin.products.import-form',
                 'admin.products.import',
@@ -28,14 +34,25 @@
                 'admin.products.stock',
                 'admin.products.bulk-stock'
             );
-            $productImportActive = request()->routeIs('admin.products.import-form', 'admin.products.import', 'admin.products.download-sample-csv');
-            $productStockActive = request()->routeIs('admin.products.stock', 'admin.products.bulk-stock');
+
+            // Bulk Import
+            $productImportActive = request()->routeIs(
+                'admin.products.import-form',
+                'admin.products.import',
+                'admin.products.download-sample-csv'
+            );
+
+            // Stock Management
+            $productStockActive = request()->routeIs(
+                'admin.products.stock',
+                'admin.products.bulk-stock'
+            );
         @endphp
 
         <ul class="admin-sidebar-drop list-unstyled">
             <li>
                 <a href="#productsSubmenu"
-                class="nav-item sidebar-link {{ $productsExpanded ? 'active' : 'collapsed' }}"
+                class="nav-item sidebar-link {{ $productsActive ? 'active' : '' }} {{ $productsExpanded ? 'expanded' : 'collapsed' }}"
                 data-bs-toggle="collapse"
                 role="button"
                 aria-expanded="{{ $productsExpanded ? 'true' : 'false' }}"
@@ -121,6 +138,7 @@
                 <ul class="collapse list-unstyled submenu {{ $setupConfigExpanded ? 'show' : '' }}" id="setupConfigSubmenu">
                     <li><a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.index') ? 'active' : '' }}">All Settings</a></li>
                     <li><a href="{{ route('admin.settings.header') }}" class="{{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}">General Settings</a></li>
+                    <li><a href="{{ route('admin.settings.seo') }}" class="{{ request()->routeIs('admin.settings.seo*') ? 'active' : '' }}">SEO Settings</a></li>
                     <li><a href="{{ route('admin.settings.features') }}" class="{{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}">Features activation</a></li>
                     <li><a href="{{ route('admin.settings.languages.index') }}" class="{{ request()->routeIs('admin.settings.languages.*') ? 'active' : '' }}">Languages</a></li>
                     <li><a href="{{ route('admin.settings.currency.index') }}" class="{{ request()->routeIs('admin.settings.currency.*') ? 'active' : '' }}">Currency</a></li>
@@ -165,9 +183,6 @@
         </ul>
         <a href="{{ route('admin.home-page.index') }}" class="nav-item {{ request()->routeIs('admin.home-page.*') ? 'active' : '' }}">
             <i class="fas fa-home"></i> Home Page
-        </a>
-        <a href="{{ route('admin.settings.footer') }}" class="nav-item {{ request()->routeIs('admin.settings.footer*') ? 'active' : '' }}">
-            <i class="fas fa-address-book"></i> Footer Settings
         </a>
         <a href="{{ route('admin.api-integrations.index') }}" class="nav-item {{ request()->routeIs('admin.api-integrations*') ? 'active' : '' }}">
             <i class="fas fa-plug"></i> API Integrations

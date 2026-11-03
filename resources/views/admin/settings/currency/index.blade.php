@@ -1,19 +1,18 @@
 @extends('admin.layouts.app')
-
+{{-- Add your custom page ID and classes right here --}}
+@include('partials.page-attributes', ['pageId' => 'admin.currency-settings-page', 'pageClass' => 'admin-currency-settings-page'])
+@section('page-title', 'Currency Settings')
+@section('meta_tags')
+    @include('partials.meta-tags', [
+        'pageTitle' => 'Currency Settings',
+    ])
+@endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <div class="ap-page-header mb-3">
-        <nav class="ap-breadcrumb" aria-label="Breadcrumb">
-            <a href="{{ route('admin.settings.index') }}">Settings</a>
-            <span class="sep" aria-hidden="true">/</span>
-            <span class="current" aria-current="page">Currency</span>
-        </nav>
-        <div class="ap-page-header-row"><h1 class="ap-page-title">Currency</h1></div>
-    </div>
 
-    @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+    <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
-    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif -->
 
     <div class="row mb-3">
         <div class="col-lg-6 mb-3">
@@ -27,7 +26,7 @@
                         <input type="hidden" name="no_of_decimals" value="{{ $settings['no_of_decimals'] }}">
                         <div class="col-md-8 form-group mb-2">
                             <label for="system-default-currency">System Default Currency</label>
-                            <select id="system-default-currency" name="system_default_currency" class="form-control" required>
+                            <select id="system-default-currency" name="system_default_currency" class="form-control form-select" required>
                                 @foreach ($activeCurrencies as $currency)
                                     <option value="{{ $currency->code }}" @selected($settings['system_default_currency'] === $currency->code)>{{ $currency->name }} ({{ $currency->code }})</option>
                                 @endforeach
@@ -42,13 +41,13 @@
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Set Currency Formats</h2></div>
                 <div class="card-body">
-                    <form action="{{ route('admin.settings.currency.settings') }}" method="POST">
+                    <form action="{{ route('admin.settings.currency.settings') }}" method="POST" class="d-flex flex-column gap-sm-2">
                         @csrf
                         <input type="hidden" name="system_default_currency" value="{{ $settings['system_default_currency'] }}">
                         <div class="form-group row align-items-center">
-                            <label class="col-md-4 col-form-label" for="symbol-format">Symbol Format</label>
+                            <label class="col-md-4 m-0 col-form-label" for="symbol-format">Symbol Format</label>
                             <div class="col-md-8">
-                                <select id="symbol-format" name="symbol_format" class="form-control" required>
+                                <select id="symbol-format" name="symbol_format" class="form-control form-select" required>
                                     <option value="1" @selected($settings['symbol_format'] === '1')>[Symbol][Amount]</option>
                                     <option value="2" @selected($settings['symbol_format'] === '2')>[Amount][Symbol]</option>
                                     <option value="3" @selected($settings['symbol_format'] === '3')>[Symbol] [Amount]</option>
@@ -57,18 +56,18 @@
                             </div>
                         </div>
                         <div class="form-group row align-items-center">
-                            <label class="col-md-4 col-form-label" for="decimal-separator">Decimal Separator</label>
+                            <label class="col-md-4 m-0 col-form-label" for="decimal-separator">Decimal Separator</label>
                             <div class="col-md-8">
-                                <select id="decimal-separator" name="decimal_separator" class="form-control" required>
+                                <select id="decimal-separator" name="decimal_separator" class="form-control form-select" required>
                                     <option value="1" @selected($settings['decimal_separator'] === '1')>1,23,456.70</option>
                                     <option value="2" @selected($settings['decimal_separator'] === '2')>1.23.456,70</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-group row align-items-center">
-                            <label class="col-md-4 col-form-label" for="no-of-decimals">No of decimals</label>
+                            <label class="col-md-4 m-0 col-form-label" for="no-of-decimals">No of decimals</label>
                             <div class="col-md-8">
-                                <select id="no-of-decimals" name="no_of_decimals" class="form-control" required>
+                                <select id="no-of-decimals" name="no_of_decimals" class="form-control form-select" required>
                                     @foreach ([0, 1, 2, 3] as $decimals)
                                         <option value="{{ $decimals }}" @selected((int) $settings['no_of_decimals'] === $decimals)>{{ $decimals === 0 ? '12345' : '12345.'.str_repeat('0', $decimals) }}</option>
                                     @endforeach
@@ -89,23 +88,23 @@
                     <h2 class="h6 mb-0">All Currencies</h2>
                     <small class="text-muted">Exchange rates are relative to 1 USD.</small>
                 </div>
-                <div class="col-auto">
+                <div class="col-auto d-flex flex-row gap-2">
                     <form action="{{ route('admin.settings.currency.sync') }}" method="POST" class="d-inline">
                         @csrf
-                        <button type="submit" class="btn btn-sm btn-soft-primary mr-1"><i class="las la-sync" aria-hidden="true"></i> Update rates now</button>
+                        <button type="submit" class="btn btn-primary mr-1"><i class="fas fa-sync" aria-hidden="true"></i> Update rates now</button>
                     </form>
-                    <a href="{{ route('admin.settings.currency.create') }}" class="btn btn-sm btn-primary">Add New Currency</a>
+                    <a href="{{ route('admin.settings.currency.create') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add New Currency</a>
                 </div>
             </div>
         </div>
         <div class="card-header">
             <form action="{{ route('admin.settings.currency.index') }}" method="GET">
                 <div class="row gutters-5 align-items-end">
-                    <div class="col-lg-3 col-md-6 col-8 mb-2">
-                        <label class="fs-12 text-muted mb-1" for="currency-search">Currency name</label>
-                        <input id="currency-search" type="text" class="form-control form-control-sm" name="search" value="{{ $search }}" placeholder="Name or code">
+                    <div class="col-3 col-md-6 col-8 d-flex flex-row align-items-end gap-2">
+                        <label class="col-auto fs-12 text-muted mb-1" for="currency-search">Currency name</label>
+                        <input id="currency-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Name or code">
                     </div>
-                    <div class="col-auto mb-2"><button type="submit" class="btn btn-sm btn-primary">Filter</button></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-primary">Filter</button></div>
                 </div>
             </form>
         </div>
@@ -126,8 +125,12 @@
                                     <button type="submit" class="btn btn-sm {{ $currency->is_active ? 'btn-success' : 'btn-outline-secondary' }}">{{ $currency->is_active ? 'Active' : 'Inactive' }}</button>
                                 </form>
                             </td>
-                            <td class="text-right">
-                                <a class="btn btn-soft-primary btn-icon btn-circle btn-sm" href="{{ route('admin.settings.currency.edit', $currency) }}" title="Edit {{ $currency->name }}" aria-label="Edit {{ $currency->name }}"><i class="las la-edit"></i></a>
+                            <td class="pe-3 table-action-col">
+                                <div class="action-buttons">
+                                    <a href="{{ route('admin.settings.currency.edit', $currency) }}" class="action-btn btn-edit" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit {{ $currency->name }}" aria-label="Edit {{ $currency->name }}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @empty

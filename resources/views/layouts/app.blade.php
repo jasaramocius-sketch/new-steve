@@ -86,8 +86,12 @@
 
     @yield('style')
     @stack('page-builder-css')
+
+    @include('partials.seo-analytics')
 </head>
 <body id="@yield('page-id', 'default-page-id')" class="site-root @yield('page-class', 'default-body-class')">
+
+    @include('partials.seo-analytics-body')
 
     <!-- header area -->
     <header class="header-section position-relative z-3 header-stikcy">
@@ -421,6 +425,7 @@
                                 $subcatRoute = function($parent, $child) { return url('/category/' . $parent . '/' . $child); };
                                 $subchildRoute = function($parent, $child, $subchild) { return url('/category/' . $parent . '/' . $child . '/' . $subchild); };
                             @endphp
+                            @if (count($mobileCategoryTree))
                             @foreach($mobileCategoryTree as $topCat)
                                 @php
                                     $topCatUrl = $catRoute($topCat->slug);
@@ -532,6 +537,9 @@
                                     
                                 </li>
                             @endforeach
+                            @else
+                                <li><a href="{{ route('categories.index') }}">Browse all categories</a></li>
+                            @endif
                         </ul>
                     </div>
                 </div>
@@ -588,7 +596,14 @@
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item dropdown__item" href="{{ route('shop') }}">All Categories</a></li>
                                     @foreach($searchCategoryMenu as $item)
-                                        <li><a class="dropdown-item dropdown__item" href="{{ $item['url'] ?? '/' }}">{{ $item['label'] ?? '' }}</a></li>
+                                        @php
+                                            $menuUrl = $item['url'] ?? '/';
+                                            if (preg_match('#^https?://#i', $menuUrl)) {
+                                                $menuUrl = normalizeAppUrlPath($menuUrl);
+                                            }
+                                            $menuUrl = url($menuUrl);
+                                        @endphp
+                                        <li><a class="dropdown-item dropdown__item" href="{{ $menuUrl }}">{{ $item['label'] ?? '' }}</a></li>
                                     @endforeach
                                 </ul>
                             </div>

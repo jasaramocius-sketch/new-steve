@@ -95,7 +95,7 @@
 
             <div class="category-content">
                 <a href="{{ route('category', $category->slug) }}" class="text-dark">
-                    <h5>{{ $category->name }}</h5>
+                    <p><strong>{{ $category->name }}</strong></p>
                 </a>
 
                 <div class="category-stats">
@@ -162,6 +162,12 @@
     @endforeach
 
 </div>
+
+@if ($categories->hasPages())
+    <div class="d-flex justify-content-center py-4">
+        {{ $categories->withQueryString()->links('vendor.pagination.gs-pagination') }}
+    </div>
+@endif
 
 </div>
 </section>

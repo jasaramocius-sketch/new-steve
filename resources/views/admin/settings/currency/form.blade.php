@@ -1,8 +1,15 @@
 @extends('admin.layouts.app')
-
+{{-- Add your custom page ID and classes right here --}}
+@include('partials.page-attributes', ['pageId' => 'admin.currency-form-page', 'pageClass' => 'admin-currency-form-page'])
+@section('page-title', 'Add New Currency')
+@section('meta_tags')
+    @include('partials.meta-tags', [
+        'pageTitle' => 'Add New Currency',
+    ])
+@endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <div class="ap-page-header mb-3">
+    <!-- <div class="ap-page-header mb-3">
         <nav class="ap-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ route('admin.settings.index') }}">Settings</a>
             <span class="sep" aria-hidden="true">/</span>
@@ -11,7 +18,7 @@
             <span class="current" aria-current="page">{{ $isEditing ? 'Edit Currency' : 'Add New Currency' }}</span>
         </nav>
         <div class="ap-page-header-row"><h1 class="ap-page-title">{{ $isEditing ? 'Edit Currency' : 'Add New Currency' }}</h1></div>
-    </div>
+    </div> -->
 
     <div class="col-lg-6 px-0">
         <div class="card">
@@ -42,8 +49,10 @@
                             <label class="custom-control-label" for="currency-active">Active</label>
                         </div>
                     @endif
-                    <button type="submit" class="btn btn-primary">{{ $isEditing ? 'Update' : 'Save' }}</button>
-                    <a href="{{ route('admin.settings.currency.index') }}" class="btn btn-light">Cancel</a>
+                    <div class="form-group mb-0 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>{{ $isEditing ? 'Update' : 'Save' }}</button>
+                        <a href="{{ route('admin.settings.currency.index') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-times"></i> Cancel</a>
+                    </div>
                 </div>
             </form>
         </div>

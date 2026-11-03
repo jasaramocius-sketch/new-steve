@@ -3,16 +3,23 @@
 if (! function_exists('currency_format')) {
     function currency_format($amount, ?string $currency = null): string
     {
-        $defaultCurrency = cache()->remember('system_default_currency', 3600, fn () => \App\Models\Setting::get('system_default_currency', 'USD'));
+        static $defaultCurrency = null;
+        static $format = null;
+
+        if ($defaultCurrency === null) {
+            $defaultCurrency = cache()->remember('system_default_currency', 3600, fn () => \App\Models\Setting::get('system_default_currency', 'USD'));
+        }
         $currency = $currency ?? session('currency', $defaultCurrency);
         $currencies = config('currencies', []);
         $info = $currencies[$currency] ?? $currencies['USD'];
         $converted = (float) ($amount ?? 0) * (float) ($info['rate'] ?? 1);
-        $format = cache()->remember('currency_format_settings', 3600, fn () => [
-            'symbol_format' => \App\Models\Setting::get('symbol_format', '1'),
-            'decimal_separator' => \App\Models\Setting::get('decimal_separator', '1'),
-            'no_of_decimals' => \App\Models\Setting::get('no_of_decimals', '2'),
-        ]);
+        if ($format === null) {
+            $format = cache()->remember('currency_format_settings', 3600, fn () => [
+                'symbol_format' => \App\Models\Setting::get('symbol_format', '1'),
+                'decimal_separator' => \App\Models\Setting::get('decimal_separator', '1'),
+                'no_of_decimals' => \App\Models\Setting::get('no_of_decimals', '2'),
+            ]);
+        }
         $decimals = max(0, min((int) $format['no_of_decimals'], 3));
         $decimalPoint = $format['decimal_separator'] === '2' ? ',' : '.';
         $thousandsSeparator = $format['decimal_separator'] === '2' ? '.' : ',';

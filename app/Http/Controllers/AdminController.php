@@ -252,61 +252,69 @@ class AdminController extends Controller
         $settingsGroups = [
             [
                 'title' => 'General',
-                'icon' => 'las la-sliders-h',
+                'icon' => 'fas la-sliders-h',
                 'items' => [
-                    ['name' => 'General Settings', 'description' => 'Site name, logo, timezone', 'icon' => 'las la-cog', 'route' => 'admin.settings.header'],
-                    ['name' => 'Features activation', 'description' => 'Turn store features on or off', 'icon' => 'las la-toggle-on', 'route' => 'admin.settings.features'],
-                    ['name' => 'Order Configuration', 'description' => 'Minimum order amount', 'icon' => 'las la-shopping-bag', 'route' => 'admin.settings.order'],
-                    ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'las la-hdd'],
+                    ['name' => 'General Settings', 'description' => 'Header, footer, logos and navigation', 'icon' => 'fas fa-cog', 'route' => 'admin.settings.header'],
+                    ['name' => 'Features activation', 'description' => 'Turn store features on or off', 'icon' => 'fas fa-toggle-on', 'route' => 'admin.settings.features'],
+                    ['name' => 'Order Configuration', 'description' => 'Minimum order amount', 'icon' => 'fas fa-shopping-bag', 'route' => 'admin.settings.order'],
+                    ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'fas fa-hdd'],
+                ],
+            ],
+            [
+                'title' => 'SEO',
+                'icon' => 'fas fa-search',
+                'items' => [
+                    ['name' => 'SEO Settings', 'description' => 'Meta defaults, verification, analytics and robots', 'icon' => 'fas fa-search', 'route' => 'admin.settings.seo'],
+                    ['name' => 'XML Sitemap', 'description' => 'Open /sitemap.xml in a new tab', 'icon' => 'fas fa-sitemap', 'url' => route('sitemap'), 'external' => true],
                 ],
             ],
             [
                 'title' => 'Localization',
-                'icon' => 'las la-globe',
+                'icon' => 'fas fa-globe',
                 'items' => [
-                    ['name' => 'Languages', 'description' => 'Site languages and translations', 'icon' => 'las la-language', 'route' => 'admin.settings.languages.index'],
-                    ['name' => 'Currency', 'description' => 'Currencies and exchange rates', 'icon' => 'las la-coins', 'route' => 'admin.settings.currency.index'],
-                    ['name' => 'Vat & TAX', 'description' => 'Tax rules applied to products', 'icon' => 'las la-percent', 'route' => 'admin.settings.custom'],
+                    ['name' => 'Languages', 'description' => 'Site languages and translations', 'icon' => 'fas fa-language', 'route' => 'admin.settings.languages.index'],
+                    ['name' => 'Currency', 'description' => 'Currencies and exchange rates', 'icon' => 'fas fa-coins', 'route' => 'admin.settings.currency.index'],
+                    ['name' => 'Vat & TAX', 'description' => 'Tax rules applied to products', 'icon' => 'fas fa-percent', 'route' => 'admin.settings.custom'],
                 ],
             ],
             [
                 'title' => 'Payment',
-                'icon' => 'las la-credit-card',
+                'icon' => 'fas fa-credit-card',
                 'items' => [
-                    ['name' => 'Payment Methods', 'description' => 'Gateway keys and credentials', 'icon' => 'las la-credit-card', 'route' => 'admin.settings.payment-methods'],
+                    ['name' => 'Payment Methods', 'description' => 'Gateway keys and credentials', 'icon' => 'fas fa-credit-card', 'route' => 'admin.settings.payment-methods'],
                 ],
             ],
             [
                 'title' => 'Shipping',
-                'icon' => 'las la-truck',
+                'icon' => 'fas fa-truck',
                 'items' => [
-                    ['name' => 'Shipping Configuration', 'description' => 'Shipping methods and costs', 'icon' => 'las la-truck-loading', 'route' => 'admin.api-integrations.index'],
-                    ['name' => 'Pickup point', 'description' => 'Collection locations', 'icon' => 'las la-store', 'route' => 'admin.settings.pickup-points.index'],
-                    ['name' => 'Shipping Countries', 'description' => 'Countries you ship to', 'icon' => 'las la-flag'],
-                    ['name' => 'Shipping States', 'description' => 'States within countries', 'icon' => 'las la-map'],
-                    ['name' => 'Shipping Cities', 'description' => 'Cities within states', 'icon' => 'las la-city'],
-                    ['name' => 'Shipping Zones', 'description' => 'Zone-based shipping', 'icon' => 'las la-map-marked'],
-                    ['name' => 'Shipping Carrier', 'description' => 'Carriers and transit times', 'icon' => 'las la-shipping-fast', 'route' => 'admin.api-integrations.index'],
+                    ['name' => 'Shipping Configuration', 'description' => 'Shipping methods and costs', 'icon' => 'fas fa-truck-loading', 'route' => 'admin.api-integrations.index'],
+                    ['name' => 'Pickup point', 'description' => 'Collection locations', 'icon' => 'fas fa-store', 'route' => 'admin.settings.pickup-points.index'],
+                    ['name' => 'Shipping Countries', 'description' => 'Countries you ship to', 'icon' => 'fas fa-flag'],
+                    ['name' => 'Shipping States', 'description' => 'States within countries', 'icon' => 'fas fa-map'],
+                    ['name' => 'Shipping Cities', 'description' => 'Cities within states', 'icon' => 'fas fa-city'],
+                    ['name' => 'Shipping Zones', 'description' => 'Zone-based shipping', 'icon' => 'fas fa-map-marked'],
+                    ['name' => 'Shipping Carrier', 'description' => 'Carriers and transit times', 'icon' => 'fas fa-shipping-fast', 'route' => 'admin.api-integrations.index'],
                 ],
             ],
             [
                 'title' => 'Email & Social',
-                'icon' => 'las la-envelope',
+                'icon' => 'fas fa-envelope',
                 'items' => [
-                    ['name' => 'SMTP Settings', 'description' => 'Outgoing mail server', 'icon' => 'las la-envelope', 'route' => 'admin.settings.smtp'],
-                    ['name' => 'Social media Logins', 'description' => 'Google and Facebook sign-in', 'icon' => 'las la-users'],
-                    ['name' => 'Facebook Chat', 'description' => 'Live chat widget', 'icon' => 'lab la-facebook'],
-                    ['name' => 'Facebook Comment', 'description' => 'Comments on product pages', 'icon' => 'las la-comments'],
+                    ['name' => 'SMTP Settings', 'description' => 'Outgoing mail server', 'icon' => 'fas fa-envelope', 'route' => 'admin.settings.smtp'],
+                    ['name' => 'Social media Logins', 'description' => 'Google and Facebook sign-in', 'icon' => 'fas fa-users'],
+                    ['name' => 'Facebook Chat', 'description' => 'Live chat widget', 'icon' => 'fab fa-facebook'],
+                    ['name' => 'Facebook Comment', 'description' => 'Comments on product pages', 'icon' => 'fas fa-comments'],
                 ],
             ],
             [
                 'title' => 'Google',
-                'icon' => 'lab la-google',
+                'icon' => 'fab fa-google',
                 'items' => [
-                    ['name' => 'Analytics Tools', 'description' => 'Analytics and pixel tracking', 'icon' => 'las la-chart-line'],
-                    ['name' => 'Google reCAPTCHA', 'description' => 'Spam protection on forms', 'icon' => 'las la-shield-alt'],
-                    ['name' => 'Google Map', 'description' => 'Map API key', 'icon' => 'las la-map-marker'],
-                    ['name' => 'Google Firebase', 'description' => 'Push notification setup', 'icon' => 'las la-fire'],
+                    ['name' => 'Analytics Tools', 'description' => 'Analytics and pixel tracking', 'icon' => 'fas fa-chart-line', 'route' => 'admin.settings.seo'],
+                    ['name' => 'Google reCAPTCHA', 'description' => 'Spam protection on forms', 'icon' => 'fas fa-shield-alt'],
+                    ['name' => 'Google Map', 'description' => 'Map API key', 'icon' => 'fas fa-map-marker'],
+                    ['name' => 'Google Firebase', 'description' => 'Push notification setup', 'icon' => 'fas fa-fire'],
                 ],
             ],
         ];
@@ -354,7 +362,11 @@ class AdminController extends Controller
             Setting::set('webp_frontend', $enabled ? '0' : '1');
         }
 
-        return response()->json(['success' => true, 'enabled' => $enabled]);
+        return response()->json([
+            'success' => true,
+            'enabled' => $enabled,
+            'message' => 'Feature setting saved successfully.',
+        ]);
     }
 
     private function featureActivationGroups(): array
@@ -441,6 +453,91 @@ class AdminController extends Controller
             ->orderBy('title')->get();
 
         return view('admin.settings.header', compact('settings', 'categories', 'pages', 'posts'));
+    }
+
+    public function seoSettings()
+    {
+        $settings = Setting::getAllAsArray();
+        $defaultRobots = renderRobotsTxt();
+
+        if (trim((string) ($settings['seo_robots_txt'] ?? '')) !== '') {
+            $settings['seo_robots_txt'] = renderRobotsTxt($settings['seo_robots_txt']);
+        }
+
+        return view('admin.settings.seo', compact('settings', 'defaultRobots'));
+    }
+
+    public function updateSeoSettings(Request $request)
+    {
+        $request->validate([
+            'seo_site_title' => 'nullable|string|max:255',
+            'seo_title_separator' => 'nullable|string|max:10',
+            'seo_default_meta_title' => 'nullable|string|max:255',
+            'seo_default_meta_description' => 'nullable|string|max:500',
+            'seo_default_meta_keywords' => 'nullable|string|max:500',
+            'seo_twitter_handle' => 'nullable|string|max:100',
+            'seo_google_site_verification' => 'nullable|string|max:255',
+            'seo_bing_site_verification' => 'nullable|string|max:255',
+            'seo_pinterest_verification' => 'nullable|string|max:255',
+            'seo_ga4_measurement_id' => 'nullable|string|max:100',
+            'seo_gtm_container_id' => 'nullable|string|max:100',
+            'seo_facebook_pixel_id' => 'nullable|string|max:100',
+            'seo_robots_txt' => 'nullable|string|max:10000',
+            'seo_default_og_image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:4096',
+        ]);
+
+        if ($request->boolean('seo_indexing_enabled')
+            && preg_match('/^\s*Disallow:\s*\/\s*$/mi', (string) $request->input('seo_robots_txt'))) {
+            return back()
+                ->withErrors(['seo_robots_txt' => 'robots.txt contains "Disallow: /" but search engine indexing is enabled. Remove that line or turn indexing off.'])
+                ->withInput();
+        }
+
+        if ($request->has('seo_robots_txt')) {
+            $robots = trim((string) $request->input('seo_robots_txt', ''));
+            $request->merge([
+                'seo_robots_txt' => $robots === '' ? '' : normalizeRobotsTxtForStorage($robots),
+            ]);
+        }
+
+        $keys = [
+            'seo_site_title',
+            'seo_title_separator',
+            'seo_default_meta_title',
+            'seo_default_meta_description',
+            'seo_default_meta_keywords',
+            'seo_twitter_handle',
+            'seo_google_site_verification',
+            'seo_bing_site_verification',
+            'seo_pinterest_verification',
+            'seo_ga4_measurement_id',
+            'seo_gtm_container_id',
+            'seo_facebook_pixel_id',
+            'seo_robots_txt',
+        ];
+
+        foreach ($keys as $key) {
+            if ($request->has($key)) {
+                Setting::set($key, (string) $request->input($key, ''));
+            }
+        }
+
+        Setting::set('seo_indexing_enabled', $request->boolean('seo_indexing_enabled') ? '1' : '0');
+        Setting::set('seo_sitemap_enabled', $request->boolean('seo_sitemap_enabled') ? '1' : '0');
+
+        if ($request->filled('image_from_manager_seo_default_og_image')) {
+            Setting::set('seo_default_og_image', 'storage/'.ltrim($request->input('image_from_manager_seo_default_og_image'), '/'));
+            Image::markUsed($request->input('image_from_manager_seo_default_og_image'));
+        } elseif ($request->hasFile('seo_default_og_image')) {
+            $filename = saveImageWithWebp($request->file('seo_default_og_image'));
+            Setting::set('seo_default_og_image', $filename);
+        }
+
+        if ($request->boolean('remove_seo_default_og_image')) {
+            Setting::set('seo_default_og_image', '');
+        }
+
+        return redirect()->route('admin.settings.seo')->with('success', 'SEO settings updated successfully.');
     }
 
     public function logs(Request $request)
@@ -840,13 +937,6 @@ class AdminController extends Controller
         return redirect()->route('admin.settings.header')->with('success', 'Header settings updated successfully.');
     }
 
-    public function footerSettings()
-    {
-        $settings = Setting::getAllAsArray();
-
-        return view('admin.settings.footer', compact('settings'));
-    }
-
     public function commissionSettings()
     {
         $commissionPercent = Setting::get('global_commission_percent', 0);
@@ -929,7 +1019,7 @@ class AdminController extends Controller
 
         Setting::set('footer_columns', json_encode($columns));
 
-        return redirect()->route('admin.settings.footer')->with('success', 'Footer settings updated successfully.');
+        return redirect()->route('admin.settings.header')->with('success', 'Footer settings updated successfully.');
     }
 
     public function searchCategorySettings()
@@ -950,7 +1040,6 @@ class AdminController extends Controller
         if (! is_array($selected)) {
             $selected = [];
         }
-        $appBase = rtrim((string) config('app.url'), '/');
         $normalizedSelected = [];
         $seen = [];
         foreach ($selected as $item) {
@@ -958,15 +1047,12 @@ class AdminController extends Controller
                 continue;
             }
             $label = trim((string) ($item['label'] ?? ''));
-            $url = trim((string) ($item['url'] ?? ''));
+            $url = normalizeAppUrlPath((string) ($item['url'] ?? ''));
             $key = mb_strtolower($label);
             if ($label === '' || $url === '' || isset($seen[$key])) {
                 continue;
             }
             $seen[$key] = true;
-            if (preg_match('#^https?://[^/]+(/.*)$#', $url, $m)) {
-                $url = $appBase . $m[1];
-            }
             $normalizedSelected[] = ['label' => $label, 'url' => $url];
         }
         $selected = $normalizedSelected;
@@ -982,7 +1068,6 @@ class AdminController extends Controller
             return back()->with('error', 'Invalid search categories data.');
         }
 
-        $appBase = rtrim((string) config('app.url'), '/');
         $searchCategories = [];
         $seenKeys = [];
         foreach ($items as $item) {
@@ -994,15 +1079,12 @@ class AdminController extends Controller
             if ($label === '' || $url === '') {
                 continue;
             }
-            if (! filter_var($url, FILTER_VALIDATE_URL)) {
+            if (preg_match('#^https?://#i', $url) && ! filter_var($url, FILTER_VALIDATE_URL)) {
                 continue;
             }
-            if (str_starts_with($url, $appBase)) {
-                $normalizedUrl = $url;
-            } elseif (preg_match('#^https?://[^/]+(/.*)$#', $url, $m)) {
-                $normalizedUrl = $appBase . $m[1];
-            } else {
-                $normalizedUrl = $appBase . '/' . ltrim($url, '/');
+            $normalizedUrl = normalizeAppUrlPath($url);
+            if ($normalizedUrl === '') {
+                continue;
             }
             $key = mb_strtolower($label);
             if (isset($seenKeys[$key])) {

@@ -70,7 +70,9 @@
                                 @else
                                     <form action="{{ route('admin.api-integrations.set-default', $integration->id) }}" method="POST" class="d-inline">
                                         @csrf
-                                        <button class="btn btn-sm btn-outline-primary">Set Default</button>
+                                        <button type="submit" class="action-btn btn-set-default" data-bs-toggle="tooltip" data-bs-placement="top" title="Set as default" aria-label="Set as default">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3z"/></svg>
+                                        </button>
                                     </form>
                                 @endif
                             </td>
@@ -90,17 +92,23 @@
                                     <small class="text-muted">Not tested</small>
                                 @endif
                             </td>
-                            <td class="text-end pe-3">
-                                <div class="btn-group">
+                            <td class="pe-3 table-action-col">
+                                <div class="action-buttons">
                                     <form action="{{ route('admin.api-integrations.test', $integration->id) }}" method="POST" class="d-inline">
                                         @csrf
-                                        <button class="btn btn-sm btn-outline-info"><i class="fas fa-plug"></i> Test</button>
+                                        <button type="submit" class="action-btn btn-view-live" data-bs-toggle="tooltip" data-bs-placement="top" title="Test integration" aria-label="Test integration">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v4a6 6 0 0 1-12 0V8z"/></svg>
+                                        </button>
                                     </form>
-                                    <a href="{{ route('admin.api-integrations.edit', $integration->id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Edit</a>
+                                    <a href="{{ route('admin.api-integrations.edit', $integration->id) }}" class="action-btn btn-edit" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit integration" aria-label="Edit integration">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </a>
                                     <form action="{{ route('admin.api-integrations.destroy', $integration->id) }}" method="POST" onsubmit="return confirm('Delete this integration?');" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                        <button type="submit" class="action-btn btn-cancel" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete integration" aria-label="Delete integration">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+                                        </button>
                                     </form>
                                 </div>
                             </td>

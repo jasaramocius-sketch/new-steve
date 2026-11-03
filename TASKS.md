@@ -4978,3 +4978,103 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - `resources/views/checkout/delivery-info.blade.php` — image + name ko `route('product', $item['slug'])` link me wrap kiya; slug missing hone par plain fallback
 
 **Verification:** Blade view compile/cache successful; product link cart page ke same URL pattern (`/product/{slug}`) par jaata hai.
+
+## 352. (2026-11-03): General Settings — Footer Configuration Included
+
+**Problem:** Admin "General Settings" page sirf header configuration dikha raha tha; footer columns manager alag "Footer Settings" page par tha. User ko General Settings me header aur footer dono ki settings chahiye thi.
+
+**Fix:**
+- Footer columns manager ko reusable partial `resources/views/admin/settings/partials/footer-columns.blade.php` me extract kiya.
+- "General Settings" (`admin.settings.header`) page par Header Configuration ke baad **Footer Configuration** card include kiya; dedicated Footer Settings page bhi same partial use karta hai.
+- Page title `Header Settings` → `General Settings`; All Settings hub me General group ke andar "Footer Settings" tile add kiya.
+- Footer form me hidden `return_to` field add kiya, taake General Settings se save karne par wahi page par redirect ho (footer page se save karne par footer page par).
+
+**Files changed:**
+- `resources/views/admin/settings/partials/footer-columns.blade.php` — new shared partial (form + styles + JS)
+- `resources/views/admin/settings/footer.blade.php` — partial include
+- `resources/views/admin/settings/header.blade.php` — title General Settings + Footer Configuration section
+- `app/Http/Controllers/AdminController.php` — General group tile + footer save redirect handling
+
+**Verification:** `php -l` passed, `php artisan view:cache` successful. Authenticated render check: `/admin/settings/header` → 200 with `Footer Configuration`, footer form/JS present, nav menu intact; `/admin/settings/footer` → 200.
+
+## 353. (2026-11-03): Remove Separate Footer Settings Page
+
+**Change:** Footer settings ab General Settings page ka part hain, is liye alag "Footer Settings" page/menu ki zaroorat nahi rahi. Separate entry ko sidebar aur All Settings hub dono jagah se hata diya; dedicated page/route bhi remove kar diya.
+
+**Files changed:**
+- `resources/views/admin/partials/sidebar.blade.php` — top-level "Footer Settings" link removed
+- `app/Http/Controllers/AdminController.php` — All Settings ka Footer Settings tile + unused `footerSettings()` method removed; footer save ab General Settings par redirect karta hai
+- `routes/web.php` — `GET /admin/settings/footer` route removed (POST update route intact)
+- `resources/views/admin/settings/footer.blade.php` — deleted (footer UI shared partial se General Settings me aa chuka hai)
+- `resources/views/admin/settings/partials/footer-columns.blade.php` — `return_to` hidden field removed
+
+**Verification:** `/admin/settings/header` → 200 with Footer Configuration, footer form/JS and nav menu; `/admin/settings` → 200 with no "Footer Settings" tile; sidebar me "Footer Settings" link nahi hai; `admin.settings.footer.update` POST route intact.
+
+## 354. (2026-11-03): SEO Integration & Admin SEO Settings
+
+**Change:** Storefront SEO ko admin-managed banaya. Global SEO settings page add ki gayi (search appearance, verification, analytics, robots/sitemap), meta-tags ka hardcoded `noindex` bug fix kiya, aur analytics/verification tags storefront layout me wire kiye.
+
+**Files changed:**
+- `app/Http/Controllers/AdminController.php` — `seoSettings()` / `updateSeoSettings()` + All Settings me SEO group
+- `resources/views/admin/settings/seo.blade.php` — naya SEO settings page (meta defaults, OG image, Search Console/Bing/Pinterest verification, GA4/GTM/Pixel, robots & sitemap toggles)
+- `routes/web.php` — `admin.settings.seo` GET/POST routes + public `/robots.txt` route
+- `resources/views/admin/partials/sidebar.blade.php` — SEO Settings link
+- `resources/views/partials/meta-tags.blade.php` — per-page `robots` respected; global meta defaults, verification tags, OG/Twitter image and handle; default noindex for private pages
+- `resources/views/layouts/app.blade.php` — SEO analytics partials included in head/body
+- `resources/views/partials/seo-analytics.blade.php` — GA4, GTM, Facebook Pixel head snippets
+- `resources/views/partials/seo-analytics-body.blade.php` — GTM/Pixel noscript fallbacks
+- `app/Http/Controllers/HomeController.php` — dynamic `robots()` + sitemap enable/disable checks
+- `app/helpers.php` — `defaultRobotsTxt()` helper
+- `public/robots.txt` — removed (now served dynamically so admin edits apply)
+
+**Verification:** Admin `/admin/settings/seo` → 200; settings save redirect + persisted values verified; home `/` → `index, follow`; cart/login → `noindex, nofollow`; `/robots.txt` → 200 with dynamic sitemap URL; indexing off → home noindex + robots `Disallow: /`; sitemap off → `/sitemap.xml` 404; `php artisan view:cache` passes.
+
+## 355. (2026-11-03): XML Sitemap Link in Admin
+
+**Change:** SEO settings ke "Robots & Sitemap" section me enabled sitemap ka direct `/sitemap.xml` link add kiya. All Settings hub ke SEO group me bhi "XML Sitemap" tile add kiya jo sitemap new tab me kholta hai. Sitemap setting enabled (`seo_sitemap_enabled=1`) verify kiya.
+
+**Files changed:**
+- `resources/views/admin/settings/seo.blade.php` — sitemap toggle ke neeche clickable sitemap URL
+- `resources/views/admin/settings/index.blade.php` — tiles ko `url` + `external` support (new tab links)
+- `app/Http/Controllers/AdminController.php` — SEO group me "XML Sitemap" tile
+
+**Verification:** `/admin/settings` and `/admin/settings/seo` → 200 with `sitemap.xml` link + `target="_blank"`; `/sitemap.xml` → 200, `application/xml`; `seo_sitemap_enabled=1`.
+
+## 356. (2026-11-03): Sitemap/robots URL Auto-Follows Live Domain
+
+**Problem:** `seo_robots_txt` setting me `Sitemap: http://localhost/new-steve/sitemap.xml` hardcoded save ho gaya tha, is liye site move hone par robots.txt purana domain dikhata. Sitemap XML `<loc>` URLs pehle se request host use karte the, lekin stored robots content portable nahi tha.
+
+**Fix:**
+- Default robots content me sitemap URL ab `{{sitemap}}` placeholder ke roop me store hota hai.
+- `normalizeRobotsTxtForStorage()` save ke waqt localhost/current-host sitemap URL ko placeholder me badalta hai; external sitemap URLs untouched rehte hain.
+- `renderRobotsTxt()` request ke waqt placeholder ko current `url('/sitemap.xml')` se replace karta hai, aur purane localhost/current-host sitemap lines ko bhi current domain par rebase karta hai.
+- Sitemap disabled hone par robots se `Sitemap:` line automatically hat jaati hai.
+- Admin SEO page par note add kiya ke sitemap URL current domain follow karta hai.
+- Existing DB value ko placeholder form me migrate kiya (`seo_robots_txt`).
+
+**Files changed:**
+- `app/helpers.php` — `defaultRobotsTxt()`, `robotsLocalHosts()`, `normalizeRobotsTxtForStorage()`, `renderRobotsTxt()`
+- `app/Http/Controllers/HomeController.php` — `/robots.txt` ab `renderRobotsTxt()` use karta hai
+- `app/Http/Controllers/AdminController.php` — SEO settings load par rendered robots, save par portable normalization
+- `resources/views/admin/settings/seo.blade.php` — auto-domain note
+
+**Verification:** Web-request simulation `http://shop.example.com/robots.txt` → `Sitemap: http://shop.example.com/sitemap.xml`; `https://shop.example.com/sitemap.xml` → sab `<loc>` URLs `https://shop.example.com/...`, `localhost` count 0; `php -l` + `php artisan view:cache` passed.
+
+## 357. (2026-11-03): Search Category Menu URLs Made Domain-Independent
+
+**Problem:** Search bar category dropdown ka `search_category_menu` setting absolute URLs store kar raha tha (`http://localhost/new-steve/new-steve/category/...`), jo live domain par toot jaate aur duplicate base path bhi bana rahe the.
+
+**Fix:**
+- Menu URLs ab app-relative paths (`/category/{slug}`) store hote hain; host/base path render time par `url()` se add hota hai.
+- Admin category picker `route('category', $slug, false)` use karta hai, is liye current host DB me save nahi hota.
+- Legacy absolute URLs ko `normalizeAppUrlPath()` se clean kiya; existing setting ko relative paths me migrate kiya.
+- Storefront dropdown ab `url($path)` se link banata hai.
+
+**Files changed:**
+- `app/helpers.php` — `normalizeAppUrlPath()`
+- `app/Http/Controllers/AdminController.php` — search category settings load/save normalization
+- `resources/views/admin/settings/search-categories.blade.php` — relative `data-url`
+- `resources/views/admin/settings/search-categories-tree.blade.php` — relative `data-url`
+- `resources/views/layouts/app.blade.php` — dropdown links `url()` se render
+
+**Verification:** Migration ke baad `search_category_menu` URLs `/category/...`; `normalizeAppUrlPath()` legacy `/new-steve/new-steve/...` ko `/category/...` banata hai; `url()` live host ke saath full URL deta hai; `php -l` + `php artisan view:cache` passed.

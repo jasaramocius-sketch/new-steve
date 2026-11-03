@@ -104,17 +104,27 @@
                                     <button type="submit" class="btn btn-sm {{ $language->is_active ? 'btn-success' : 'btn-outline-secondary' }}">{{ $language->is_active ? 'Active' : 'Inactive' }}</button>
                                 </form>
                             </td>
-                            <td class="text-right text-nowrap d-flex justify-content-end gap-1">
-                                <a class="btn btn-outline-info steve-btn border-radius-50pr" href="{{ route('admin.settings.languages.translations', $language) }}" title="Translations" aria-label="Translations"><i class="fas fa-language"></i></a>
-                                <a class="btn btn-outline-secondary steve-btn border-radius-50pr" href="{{ route('admin.settings.languages.export', $language) }}" title="Export ARB" aria-label="Export ARB"><i class="fas fa-download"></i></a>
-                                <a class="btn btn-outline-info steve-btn border-radius-50pr" href="{{ route('admin.settings.languages.edit', $language) }}" title="Edit" aria-label="Edit"><i class="fas fa-edit"></i></a>
-                                @if ($language->code !== 'en' && $defaultLanguage !== $language->code)
-                                    <form action="{{ route('admin.settings.languages.destroy', $language) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this language?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-icon btn-circle btn-sm border-radius-50pr" title="Delete" aria-label="Delete"><i class="fas fa-trash"></i></button>
-                                    </form>
-                                @endif
+                            <td class="pe-3 table-action-col">
+                                <div class="action-buttons">
+                                    <a href="{{ route('admin.settings.languages.translations', $language) }}" class="action-btn btn-view-history" data-bs-toggle="tooltip" data-bs-placement="top" title="Translations" aria-label="Translations">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+                                    </a>
+                                    <a href="{{ route('admin.settings.languages.export', $language) }}" class="action-btn btn-restore" data-bs-toggle="tooltip" data-bs-placement="top" title="Export ARB" aria-label="Export ARB">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+                                    </a>
+                                    <a href="{{ route('admin.settings.languages.edit', $language) }}" class="action-btn btn-edit" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit" aria-label="Edit">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </a>
+                                    @if ($language->code !== 'en' && $defaultLanguage !== $language->code)
+                                        <form action="{{ route('admin.settings.languages.destroy', $language) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this language?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="action-btn btn-cancel" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete" aria-label="Delete">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
