@@ -20,7 +20,7 @@
                     <div class="grid-item">
                         @include("partials.product-card", [
                             "product" => $rvProduct,
-                            "cardClass" => "h-100 shadow-sm border overflow-hidden",
+                            "cardClass" => "h-100 shadow-sm overflow-hidden",
                             "titleTag" => "h5",
                             "titleClass" => "mb-2",
                             "priceTag" => "h4",

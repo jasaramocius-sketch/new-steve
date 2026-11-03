@@ -5,14 +5,19 @@ use App\Http\Controllers\Admin\BlogCategoryController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\CurrencySettingsController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\HomePageController;
 use App\Http\Controllers\Admin\ImageController;
+use App\Http\Controllers\Admin\LanguageController as AdminLanguageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\PaymentMethodSettingsController;
+use App\Http\Controllers\Admin\PickupPointController;
 use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SellerController;
+use App\Http\Controllers\Admin\SmtpSettingsController;
 use App\Http\Controllers\Admin\SubscriberController;
 use App\Http\Controllers\Admin\ApiIntegrationController;
 use App\Http\Controllers\AdminAuthController;
@@ -36,6 +41,8 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\WishlistController;
+use App\Models\Language;
+use App\Models\Currency;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +75,8 @@ Route::put('/product/{slug}/review/{reviewId}', [ReviewController::class, 'updat
 Route::delete('/product/{slug}/review/{reviewId}', [ReviewController::class, 'destroy'])->middleware('auth')->name('product.review.delete');
 
 Route::get('/category/{slug}', [ShopController::class, 'category'])->name('category');
+
+Route::get('/brand/{slug}', [ShopController::class, 'brand'])->name('brand');
 
 Route::get('/blog', [BlogController::class, 'index'])->name('blog');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
@@ -447,6 +456,87 @@ Route::prefix('admin')
         Route::post('/home-page/{id}/toggle-status', [HomePageController::class, 'toggleStatus'])
             ->name('admin.home-page.toggle-status');
 
+        Route::get('/settings', [AdminController::class, 'settingsIndex'])
+            ->name('admin.settings.index');
+        Route::get('/settings/languages', [AdminLanguageController::class, 'index'])
+            ->name('admin.settings.languages.index');
+        Route::post('/settings/languages/default', [AdminLanguageController::class, 'updateDefault'])
+            ->name('admin.settings.languages.default');
+        Route::get('/settings/languages/create', [AdminLanguageController::class, 'create'])
+            ->name('admin.settings.languages.create');
+        Route::post('/settings/languages', [AdminLanguageController::class, 'store'])
+            ->name('admin.settings.languages.store');
+        Route::post('/settings/languages/{language}/status', [AdminLanguageController::class, 'toggleStatus'])
+            ->name('admin.settings.languages.status');
+        Route::post('/settings/languages/{language}/rtl', [AdminLanguageController::class, 'toggleRtl'])
+            ->name('admin.settings.languages.rtl');
+        Route::get('/settings/languages/{language}/translations', [AdminLanguageController::class, 'translations'])
+            ->name('admin.settings.languages.translations');
+        Route::put('/settings/languages/{language}/translations', [AdminLanguageController::class, 'updateTranslations'])
+            ->name('admin.settings.languages.translations.update');
+        Route::post('/settings/languages/{language}/app-translations/import', [AdminLanguageController::class, 'importAppTranslations'])
+            ->name('admin.settings.languages.import');
+        Route::get('/settings/languages/{language}/app-translations/export', [AdminLanguageController::class, 'exportAppTranslations'])
+            ->name('admin.settings.languages.export');
+        Route::get('/settings/languages/{language}/edit', [AdminLanguageController::class, 'edit'])
+            ->name('admin.settings.languages.edit');
+        Route::put('/settings/languages/{language}', [AdminLanguageController::class, 'update'])
+            ->name('admin.settings.languages.update');
+        Route::delete('/settings/languages/{language}', [AdminLanguageController::class, 'destroy'])
+            ->name('admin.settings.languages.destroy');
+        Route::get('/settings/currency', [CurrencySettingsController::class, 'index'])
+            ->name('admin.settings.currency.index');
+        Route::post('/settings/currency/settings', [CurrencySettingsController::class, 'updateSettings'])
+            ->name('admin.settings.currency.settings');
+        Route::post('/settings/currency/sync-live-rates', [CurrencySettingsController::class, 'syncRates'])
+            ->name('admin.settings.currency.sync');
+        Route::get('/settings/currency/create', [CurrencySettingsController::class, 'create'])
+            ->name('admin.settings.currency.create');
+        Route::post('/settings/currency', [CurrencySettingsController::class, 'store'])
+            ->name('admin.settings.currency.store');
+        Route::post('/settings/currency/{currency}/status', [CurrencySettingsController::class, 'toggleStatus'])
+            ->name('admin.settings.currency.status');
+        Route::get('/settings/currency/{currency}/edit', [CurrencySettingsController::class, 'edit'])
+            ->name('admin.settings.currency.edit');
+        Route::put('/settings/currency/{currency}', [CurrencySettingsController::class, 'update'])
+            ->name('admin.settings.currency.update');
+        Route::get('/settings/pickup-points', [PickupPointController::class, 'index'])
+            ->name('admin.settings.pickup-points.index');
+        Route::get('/settings/pickup-points/create', [PickupPointController::class, 'create'])
+            ->name('admin.settings.pickup-points.create');
+        Route::post('/settings/pickup-points', [PickupPointController::class, 'store'])
+            ->name('admin.settings.pickup-points.store');
+        Route::post('/settings/pickup-points/{pickupPoint}/status', [PickupPointController::class, 'toggleStatus'])
+            ->name('admin.settings.pickup-points.status');
+        Route::get('/settings/pickup-points/{pickupPoint}/edit', [PickupPointController::class, 'edit'])
+            ->name('admin.settings.pickup-points.edit');
+        Route::put('/settings/pickup-points/{pickupPoint}', [PickupPointController::class, 'update'])
+            ->name('admin.settings.pickup-points.update');
+        Route::delete('/settings/pickup-points/{pickupPoint}', [PickupPointController::class, 'destroy'])
+            ->name('admin.settings.pickup-points.destroy');
+        Route::get('/settings/smtp', [SmtpSettingsController::class, 'index'])
+            ->name('admin.settings.smtp');
+        Route::post('/settings/smtp', [SmtpSettingsController::class, 'update'])
+            ->name('admin.settings.smtp.update');
+        Route::post('/settings/smtp/test', [SmtpSettingsController::class, 'test'])
+            ->name('admin.settings.smtp.test');
+        Route::get('/settings/payment-methods', [PaymentMethodSettingsController::class, 'index'])
+            ->name('admin.settings.payment-methods');
+        Route::post('/settings/payment-methods/{provider}', [PaymentMethodSettingsController::class, 'update'])
+            ->name('admin.settings.payment-methods.update');
+        Route::get('/settings/order', [AdminController::class, 'orderSettings'])
+            ->name('admin.settings.order');
+        Route::post('/settings/order', [AdminController::class, 'updateOrderSettings'])
+            ->name('admin.settings.order.update');
+        Route::get('/settings/features', [AdminController::class, 'featureSettings'])
+            ->name('admin.settings.features');
+        Route::post('/settings/features', [AdminController::class, 'updateFeatureSetting'])
+            ->name('admin.settings.features.update');
+        Route::get('/settings/custom', [AdminController::class, 'customSettings'])
+            ->name('admin.settings.custom');
+        Route::post('/settings/custom', [AdminController::class, 'updateCustomSettings'])
+            ->name('admin.settings.custom.update');
+
         Route::get('/settings/header', [AdminController::class, 'headerSettings'])
             ->name('admin.settings.header');
         Route::post('/settings/header', [AdminController::class, 'updateHeaderSettings'])
@@ -744,7 +834,7 @@ Route::middleware(['auth', 'nocache'])->group(function () {
 });
 
 Route::get('/language/{locale}', function ($locale) {
-    if (array_key_exists($locale, config('languages', []))) {
+    if (Language::where('code', $locale)->where('is_active', true)->exists()) {
         session(['locale' => $locale]);
     }
 
@@ -756,7 +846,9 @@ Route::get('/convert/{amount}/{from}/{to}', [CurrencyController::class, 'convert
     ->name('currency.convert');
 
 Route::get('/currency/{currency}', function ($currency) {
-    session(['currency' => $currency]);
+    if (Currency::where('code', strtoupper($currency))->where('is_active', true)->exists()) {
+        session(['currency' => strtoupper($currency)]);
+    }
 
     return back();
 })->name('currency.change');

@@ -119,3 +119,21 @@ commission history save in DB
 
 
 kiya user order cancell kr skta he
+
+
+
+
+Cart page add product details page link : Product name and image both. - Done
+SubCategories URL set Done
+Product without main image 404 set & search result "No products found"
+Brand URL fix /new-steve/search?brand=autolite to /new-steve/brand/autolite
+
+
+/new-steve/checkout/payment
+/autoparts/checkout/payment_select
+
+
+
+http://192.168.130.37/autoparts/product/cast-aluminum-standard-rotation-w-seal-41017 - Brand: ZW (line_code)
+http://192.168.130.54/new-steve/product/cast-aluminum-standard-rotation-w-seal-41017 - Brand: Gates (name)
+

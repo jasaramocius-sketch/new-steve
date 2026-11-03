@@ -25,7 +25,6 @@
 
 <div class="d-grid wishlist-page-products">    
     @forelse($wishlist as $item)
-    <div class="wishlist-page-products-items">
         @php
             $product = $item->product ?? $item;
             $wishlistId = isset($item->id) ? $item->id : null;
@@ -37,7 +36,6 @@
             'showRemoveWishlistIcon' => true,
             'colClass' => 'col-lg-4 col-md-6 mb-4',
         ])
-    </div>
     @empty
     </div>
         <div class="col-12">

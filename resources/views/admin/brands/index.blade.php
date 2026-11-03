@@ -34,9 +34,9 @@
                     'placeholder' => 'Search brands...'
                 ])
             </div>
-            <div class="text-muted small">
+            <!-- <div class="text-muted small">
                 Showing {{ $brands->firstItem() }}-{{ $brands->lastItem() }} of {{ $brands->total() }}
-            </div>
+            </div> -->
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">

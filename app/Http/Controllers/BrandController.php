@@ -14,7 +14,11 @@ class BrandController extends Controller
         $search = $request->get('search', '');
         $sort = $request->get('sort', 'latest');
 
-        $brandsQuery = Brand::withCount(['products' => fn ($q) => $q->where('status', true)]);
+        $brandsQuery = Brand::withCount(['products' => fn ($q) => $q->where('status', true)])
+            ->whereNotNull('name')
+            ->where('name', '<>', '')
+            ->whereNotNull('slug')
+            ->where('slug', '<>', '');
 
         if ($search !== '') {
             $brandsQuery->where('name', 'like', "%{$search}%");

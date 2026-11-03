@@ -4870,3 +4870,111 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - `app/Http/Controllers/AdminController.php` — records global commission changes transactionally
 
 **Verification:** Migration applied successfully; a temporary insert was verified and rolled back.
+## 344. (2026-11-02): Storefront Listings — `images_json` No Longer Counts As Main Image
+
+**Problem:** `Fast Orange® Antibacterial Foaming Hand Wash 7.5OZ` (product `358613`) ka `main_image` legacy bare filename (`95105_001.jpg`) hai, lekin `images_json` me valid S3 gallery image hai. `Product::scopeHasUsableImage()` `images_json` ko bhi match karta tha, is liye product shop/category listings me aa raha tha — jabke card par placeholder render hota tha.
+
+**Fix:** `scopeHasUsableImage()` ab sirf `main_image` (S3 source bucket ya own `uploads/...`) ko visibility ke liye consider karta hai. `images_json` gallery ke liye reserved hai; wo main image nahi ban sakta.
+
+**Impact:** Storefront listings se 253 aise products hide hue jo sirf `images_json` image ke bharose the (`493,932` → `493,679` active products). Category counts/CategoryTree same scope use karte hain, is liye wahan bhi automatically reflect hua.
+
+**Files changed:**
+- `app/Models/Product.php` — removed `images_json` match from `scopeHasUsableImage()`
+
+**Verification:** Product `358613` ab `hasUsableImage()` query me `false` hai; `php artisan cache:clear` chalaya gaya taake cached category counts refresh hon.
+
+## 345. (2026-11-02): No Main Image — Product Page 404 + Sitemap Exclusion
+
+**Change:** Products jinke paas usable `main_image` nahi hai, unki product detail URL ab 404 return karti hai aur wo `sitemap.xml` me bhi list nahi hoti.
+
+**Files changed:**
+- `app/Http/Controllers/ProductController.php` — `show()` me `hasUsableImage()` scope + PHP-level guard (404)
+- `app/Http/Controllers/ShopController.php` — unused `product()` method me same guard, consistency ke liye
+- `app/Http/Controllers/HomeController.php` — `sitemap()` ki product query par `hasUsableImage()`
+
+**Verification:**
+- `Fast Orange® Antibacterial Foaming Hand Wash 7.5OZ` (`358613`): `/product/fast-orange-...-95105` → **404**
+- Valid-image product (`breather-screw-valve-radiator-001-10-23148`) → **200**
+- Sitemap query me product `358613` included nahi hai
+- `SourceS3ImageUrlTest`: 5 passed
+
+## 346. (2026-11-02): Cart Page — Product Image/Name Link
+
+**Change:** Cart page ke har item ka image aur product name ab product detail page ka link hai. Cart item array me `slug` add kiya (add + refresh), taake old sessions me bhi refresh par link mil jaye. Agar slug missing ho (deleted product) to plain text fallback render hota hai.
+
+**Files changed:**
+- `resources/views/cart/index.blade.php` — image/name wrapped in product links with fallback
+- `app/Http/Controllers/CartController.php` — `slug` stored in cart items and refreshed from DB
+
+**Verification:** `php artisan view:cache` successful; PHP syntax check passed.
+
+## 347. (2026-11-02): Footer Copyright `/` Link — Subdirectory Base Path Fix
+
+**Problem:** Footer copyright setting me `<a href="/">` tha. Browser me leading `/` domain root hota hai, is liye link `http://localhost/` par ja raha tha instead of `http://localhost/new-steve/`.
+
+**Fix:** `app/helpers.php` me `prefixAppBasePathInHtml()` add kiya — stored HTML ke root-relative `href`/`src`/`action` values me app ka base path prefix karta hai. Already-prefixed paths aur external URLs untouched rehte hain. Footer copyright rendering me ye helper apply kiya.
+
+**Files changed:**
+- `app/helpers.php` — `prefixAppBasePathInHtml()`
+- `resources/views/layouts/app.blade.php` — footer copyright output par helper applied
+
+**Verification:** `href="/"` ab `href="/new-steve/"` render hota hai (browser me `http://localhost/new-steve/`); `/shop` -> `/new-steve/shop`; external URLs unchanged.
+
+## 348. (2026-11-02): Brand Pages — Clean `/brand/{slug}` URLs
+
+**Change:** Brand links ab `/search?brand=autolite` ki jagah `/brand/autolite` use karte hain. Naya public route `GET /brand/{slug}` (`brand`) add kiya jo us brand ke products ko same shop listing UI (filters, sort, pagination, vehicle filter) ke saath dikhata hai.
+
+**Files changed:**
+- `routes/web.php` — `Route::get('/brand/{slug}', [ShopController::class, 'brand'])->name('brand')`
+- `app/Http/Controllers/ShopController.php` — `brand()` method + `filterProducts()` route-brand support; `currentBrand` view ko pass
+- `resources/views/shop/index.blade.php` — brand title, breadcrumb (`Home > Brands > Brand`), selected brand filter + canonical clear URL
+- `resources/views/brands/index.blade.php` — brand card links new route par
+- `resources/views/home/index.blade.php` — home brand links new route par
+- `resources/views/product/show.blade.php` — product detail "Brand" ab brand page link
+- `app/Http/Controllers/HomeController.php` — sitemap me active brands add
+
+**Behavior:**
+- `/brand/autolite` → 200, sirf Autolite products (24 per page)
+- `/brand/autolite?brand=bbr` → 302 `/brand/bbr` (URL canonical)
+- `/brand/autolite?brand=` → 302 `/search` (filter clear)
+- Missing brand → 404
+- `/search?brand=autolite` old URL abhi bhi kaam karta hai
+
+**Verification:** Brand page 200; 24/24 product cards Autolite brand ke; title `Autolite - StAutoparts`; breadcrumb correct; blade cache successful.
+
+## 349. (2026-11-02): Brand URL Generation — Guard Empty Brand Slugs
+
+**Problem:** `/brands` page 500 (`UrlGenerationException: Missing required parameter for [Route: brand] [Missing parameter: slug]`) kyunki `brands` table me 94 rows ka `slug` empty hai. `route('brand', ['slug' => ''])` required parameter missing throw karta hai.
+
+**Fix:**
+- `BrandController@brands()` — public brands list se empty `name`/`slug` rows exclude
+- `HomeController@index()` — home "Top Brands" query bhi sirf valid `name` + `slug` brands leti hai
+- `resources/views/brands/index.blade.php` — link generation par `filled($brand->slug)` guard + `/brands` fallback
+- `resources/views/home/index.blade.php` — same guard
+
+**Verification:** `http://192.168.130.54/new-steve/brands` → **200** (pehle 500), home → **200**, brand links valid slugs ke saath (`/brand/us-speedo`, `/brand/gates`, etc.).
+
+
+## 350. (2026-11-02): Admin Payment Methods — Provider Credentials
+
+**Change:** Added a Payment Methods settings page with credential cards for the providers in the supplied reference: PayPal, Stripe, MercadoPago, bKash, Nagad, SSLCommerz, Aamarpay, Iyzico, Instamojo, PayStack, PayHere, N-Genius, VoguePay, RazorPay, Authorize.Net, and Payku. Secret values are encrypted before storage and never rendered back into form inputs; blank secret fields preserve the saved value. Sandbox toggles and provider-specific fields are included where applicable.
+
+**Files changed:**
+- `app/Http/Controllers/Admin/PaymentMethodSettingsController.php` — provider field definitions, validation, encrypted credential persistence
+- `resources/views/admin/settings/payment-methods.blade.php` — credential management UI
+- `routes/web.php` — payment-method page and provider update routes
+- `app/Http/Controllers/AdminController.php` — All Settings tile links to Payment Methods
+- `resources/views/admin/partials/sidebar.blade.php` — sidebar link points to Payment Methods settings
+
+**Behavior note:** This page stores gateway credentials; it does not add payment processing SDKs. Checkout continues to use its existing COD/card/PayPal flow, and other listed gateways require separate checkout integrations before they can accept payments.
+
+**Verification:** PHP syntax, registered routes, Blade compilation, and server-side rendering of all 16 provider cards passed. Storefront returned HTTP 200; the admin page redirects unauthenticated users to login.
+
+## 351. (2026-11-03): Checkout Delivery Info — Product Image/Name Link
+
+**Change:** Checkout ke delivery-info step me cart items ka image aur product name ab product detail page par link karte hain, bilkul cart page (#346) ki tarah. Cart array me pehle se `slug` available hai (`CartController@refreshCartPrices()`), is liye controller change ki zaroorat nahi padi.
+
+**Files changed:**
+- `resources/views/checkout/delivery-info.blade.php` — image + name ko `route('product', $item['slug'])` link me wrap kiya; slug missing hone par plain fallback
+
+**Verification:** Blade view compile/cache successful; product link cart page ke same URL pattern (`/product/{slug}`) par jaata hai.

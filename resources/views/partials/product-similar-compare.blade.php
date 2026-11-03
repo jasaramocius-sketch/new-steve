@@ -4,7 +4,8 @@
 @endphp
 
 @if($all->count() > 1)
-<div class="gs-similar-compare-area mt-5">
+<section class="gs-similar-compare-area mt-5">
+    <div class="container">
     <div class="title pb-20">
         <h3 style="font-weight: 600;">Similar Products To Compare</h3>
         <p class="text-muted">Compare this part with alternatives from other brands</p>
@@ -139,4 +140,5 @@
         </table>
     </div>
 </div>
+</section>
 @endif

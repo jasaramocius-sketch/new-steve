@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}" dir="{{ \App\Models\Language::where('code', app()->getLocale())->value('rtl') ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,10 +92,13 @@
     <!-- header area -->
     <header class="header-section position-relative z-3 header-stikcy">
         @php
-            $languages = config('languages', ['en' => ['name' => 'English', 'flag' => 'us'], 'hi' => ['name' => 'Hindi', 'flag' => 'in']]);
-            $currentLocale = session('locale', config('app.locale', 'en'));
+            $languageRecords = \App\Models\Language::where('is_active', true)->orderBy('name')->get();
+            $languages = $languageRecords->isNotEmpty()
+                ? $languageRecords->mapWithKeys(fn ($language) => [$language->code => ['name' => $language->name, 'flag' => config('languages.'.$language->code.'.flag', $language->code)]])->all()
+                : config('languages', ['en' => ['name' => 'English', 'flag' => 'us'], 'hi' => ['name' => 'Hindi', 'flag' => 'in']]);
+            $currentLocale = session('locale', \App\Models\Setting::get('default_language', config('app.locale', 'en')));
             $currencies = config('currencies', ['USD' => ['symbol' => '$', 'name' => 'USD'], 'INR' => ['symbol' => '₹', 'name' => 'INR']]);
-            $currentCurrency = session('currency', 'USD');
+            $currentCurrency = session('currency', \App\Models\Setting::get('system_default_currency', 'USD'));
             $megaCategories = \App\Models\Category::has('children')->with(['children' => function ($q) { $q->orderBy('name'); }])->orderBy('name')->take(5)->get();
         @endphp
         <div class="info-bar d-none d-md-block">
@@ -637,7 +640,7 @@
             <div class="container">
                 <div class="row">
                     <div class="col-12 text-center py-1">
-                        <p class="mb-0 text-secondary">{!! str_replace([':year', 'current_year'], current_year(), \App\Models\Setting::get('footer_copyright', 'COPYRIGHT &copy; :year. All Rights Reserved By STautoparts')) !!}</p>
+                        <p class="mb-0 text-secondary">{!! prefixAppBasePathInHtml(str_replace([':year', 'current_year'], current_year(), \App\Models\Setting::get('footer_copyright', 'COPYRIGHT &copy; :year. All Rights Reserved By STautoparts'))) !!}</p>
                     </div>
                 </div>
             </div>

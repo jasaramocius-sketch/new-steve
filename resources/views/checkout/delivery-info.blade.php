@@ -29,6 +29,18 @@
                   @foreach($cart as $item)
                   <li class="list-group-item px-0 px-md-3">
                     <div class="d-flex align-items-center delivery-info-page-products">
+                      @php($productUrl = !empty($item['slug']) ? route('product', $item['slug']) : null)
+                      @if($productUrl)
+                      <a href="{{ $productUrl }}" class="mr-2 mr-md-3 flex-shrink-0 d-inline-block">
+                        {!! imgTag(
+                          storedPath($item['image'], 'assets/images/thumbnails'),
+                          $item['name'],
+                          'img-fit size-60px',
+                          ''
+                        ) !!}
+                      </a>
+                      <a href="{{ $productUrl }}" class="fs-14 fw-400 text-dark text-decoration-none"><h5 class="mb-0">{{ $item['name'] }}</h5></a>
+                      @else
                       <span class="mr-2 mr-md-3 flex-shrink-0">
                         {!! imgTag(
                           storedPath($item['image'], 'assets/images/thumbnails'),
@@ -38,9 +50,9 @@
                         ) !!}
                       </span>
                       <span class="fs-14 fw-400 text-dark">
-                        {{ $item['name'] }}
-                        <br>
+                        <h5 class="mb-0">{{ $item['name'] }}</h5>
                       </span>
+                      @endif
                     </div>
                   </li>
                   @endforeach
@@ -61,6 +73,26 @@
                           </span>
                         </label>
                       </div>
+                      @if($pickupEnabled)
+                      <div class="col-6">
+                        <label class="aiz-megabox d-block bg-white mb-0">
+                          <input type="radio" name="shipping_method" value="pickup" class="d-none">
+                          <span class="d-flex aiz-megabox-elem rounded-0" style="padding: 0.75rem 1.2rem;">
+                            <span class="aiz-rounded-check flex-shrink-0 mt-1"></span>
+                            <span class="flex-grow-1 pl-3 fw-600">Pickup point</span>
+                          </span>
+                        </label>
+                      </div>
+                      <div class="col-12 mt-3 pickup-point-selection" id="pickup-point-selection" hidden>
+                        <label for="pickup-point-id" class="fs-14 fw-600">Choose a pickup point</label>
+                        <select id="pickup-point-id" name="pickup_point_id" class="form-control">
+                          <option value="">Select pickup point</option>
+                          @foreach ($pickupPoints as $pickupPoint)
+                            <option value="{{ $pickupPoint->id }}">{{ $pickupPoint->name }} — {{ $pickupPoint->location }} ({{ $pickupPoint->contact }})</option>
+                          @endforeach
+                        </select>
+                      </div>
+                      @endif
                     </div>
                     </div>
                   </div>
@@ -83,4 +115,23 @@
   </div>
 </section>
 
+@endsection
+
+@section('scripts')
+<script>
+const pickupMethodInputs = document.querySelectorAll('input[name="shipping_method"]');
+const pickupPointSelection = document.getElementById('pickup-point-selection');
+const pickupPointSelect = document.getElementById('pickup-point-id');
+
+function updatePickupPointVisibility() {
+  if (!pickupPointSelection || !pickupPointSelect) return;
+  const pickupSelected = document.querySelector('input[name="shipping_method"]:checked')?.value === 'pickup';
+  pickupPointSelection.hidden = !pickupSelected;
+  pickupPointSelect.required = pickupSelected;
+  if (!pickupSelected) pickupPointSelect.value = '';
+}
+
+pickupMethodInputs.forEach((input) => input.addEventListener('change', updatePickupPointVisibility));
+updatePickupPointVisibility();
+</script>
 @endsection

@@ -30,6 +30,18 @@
               <li class="list-group-item px-0 px-lg-3 cart-item" data-id="{{ $key }}" data-stock="{{ $item['stock'] ?? 0 }}">
                 <div class="row gutters-5 align-items-center cart-summary-item-group">
                   <div class="col-lg-5 d-flex align-items-center cart-summary-item mb-2 mb-lg-0">
+                    @php($productUrl = !empty($item['slug']) ? route('product', $item['slug']) : null)
+                    @if($productUrl)
+                    <a href="{{ $productUrl }}" class="mr-2 ml-0 flex-shrink-0 d-inline-block">
+                      {!! imgTag(
+                        storedPath($item['image'], 'assets/images/thumbnails'),
+                        $item['name'],
+                        'img-fit size-60px',
+                        ''
+                      ) !!}
+                    </a>
+                    <a href="{{ $productUrl }}" class="fs-14 link-hover text-reset text-decoration-none"><h5>{{ $item['name'] }}</h5></a>
+                    @else
                     <span class="mr-2 ml-0 flex-shrink-0">
                       {!! imgTag(
                         storedPath($item['image'], 'assets/images/thumbnails'),
@@ -38,7 +50,8 @@
                         ''
                       ) !!}
                     </span>
-                    <span class="fs-14 opacity-60">{{ $item['name'] }}</span>
+                    <a href="{{ $productUrl }}" class="fs-14 link-hover text-reset text-decoration-none"><h5>{{ $item['name'] }}</h5></a>
+                    @endif
                   </div>
                   <div class="col-4 col-lg cart-summary-item">
                     <span class="opacity-60 fs-12 d-block d-lg-none">Price</span>
@@ -79,7 +92,7 @@
             <span class="fw-600 fs-17 total-cart-price-sub total-cart-price-val">{{ currency_format($total) }}</span>
           </div>
 
-          @if(!empty($couponData))
+          @if($couponEnabled && !empty($couponData))
           <div class="px-3 mb-3 d-flex justify-content-between align-items-center bg-success-subtle border border-success-subtle rounded p-2">
             <div class="fs-14">
               <i class="las la-tag text-success me-1"></i>
@@ -95,13 +108,24 @@
             <span class="text-success fw-600 fs-14">Coupon Discount</span>
             <span class="text-success fw-600 fs-14">-{{ currency_format($couponDiscount) }}</span>
           </div>
+          @endif
+
+          <div class="px-3 py-2 border-top d-flex justify-content-between">
+            <span class="opacity-60 fs-15">Tax ({{ $taxRate }}%)</span>
+            <span class="fw-600 fs-17">{{ currency_format($tax) }}</span>
+          </div>
           <div class="px-3 py-2 mb-4 border-top d-flex justify-content-between">
             <span class="opacity-60 fs-15 fw-700">Total</span>
-            <span class="fw-700 fs-17">{{ currency_format($total - $couponDiscount) }}</span>
+            <span class="fw-700 fs-17">{{ currency_format($grandTotal) }}</span>
+          </div>
+
+          @if($minimumOrderAmountEnabled && $minimumOrderRemaining > 0)
+          <div class="mx-3 mb-3 alert alert-warning" role="status">
+            Add {{ currency_format($minimumOrderRemaining) }} to meet the minimum order amount of {{ currency_format($minimumOrderAmount) }}.
           </div>
           @endif
 
-          @if(empty($couponData))
+          @if($couponEnabled && empty($couponData))
           <div class="px-3 mb-4">
             <form action="{{ route('cart.coupon.apply') }}" method="POST" class="d-flex gap-2">
               @csrf
@@ -116,9 +140,11 @@
                 <i class="fas fa-arrow-left"></i>
                 Return to shop
               </a>
-              <a href="{{ route('checkout') }}" class="btn btn-primary steve-btn">
-                Continue to checkout
-              </a>
+              @if(!$minimumOrderAmountEnabled || $minimumOrderRemaining <= 0)
+                <a href="{{ route('checkout') }}" class="btn btn-primary steve-btn">Continue to checkout</a>
+              @else
+                <button type="button" class="btn btn-primary steve-btn" disabled>Continue to checkout</button>
+              @endif
           </div>
         </div>
         @else

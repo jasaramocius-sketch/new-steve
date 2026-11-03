@@ -41,6 +41,10 @@ class ShopController extends Controller
         $minPrice = $request->get('min_price', '');
         $maxPrice = $request->get('max_price', '');
         $brand = $request->get('brand', '');
+        $routeBrand = $request->attributes->get('currentBrand');
+        if ($routeBrand instanceof Brand) {
+            $brand = $routeBrand->slug;
+        }
         $year = $request->get('year', '');
         $make = $request->get('make', '');
         $model = $request->get('model', '');
@@ -53,7 +57,8 @@ class ShopController extends Controller
             });
         }
 
-        $currency = session('currency', 'USD');
+        $defaultCurrency = cache()->remember('system_default_currency', 3600, fn () => \App\Models\Setting::get('system_default_currency', 'USD'));
+        $currency = session('currency', $defaultCurrency);
         $rate = config('currencies.'.$currency.'.rate', 1);
 
         if ($applyPriceFilter) {
@@ -160,7 +165,8 @@ class ShopController extends Controller
     {
         $categoryTree = \App\Services\CategoryTree::tree();
 
-        $currency = session('currency', 'USD');
+        $defaultCurrency = cache()->remember('system_default_currency', 3600, fn () => \App\Models\Setting::get('system_default_currency', 'USD'));
+        $currency = session('currency', $defaultCurrency);
 
         $priceRange = Cache::remember('catalog.price_range_v2', now()->addDay(), function () {
             $expr = $this->buyerPriceExpression();
@@ -231,12 +237,43 @@ class ShopController extends Controller
         $this->filterProducts($request, $productsQuery, true);
         $products = $productsQuery->paginate(24)->onEachSide(1)->withQueryString();
 
+        $currentBrand = $request->attributes->get('currentBrand');
+
         return view('shop.index', array_merge(
             $vehicleData,
-            compact('products'),
+            compact('products', 'currentBrand'),
             $this->getSharedData($request, $baseQuery),
             ['page' => Page::where('slug', 'shop')->where('status', true)->first()]
         ));
+    }
+
+    public function brand(Request $request, $slug)
+    {
+        $brand = Brand::where('slug', $slug)->firstOrFail();
+
+        // Keep the URL canonical: /brand/{slug} is the source of truth. If an
+        // old ?brand= filter is present, redirect to the matching brand page.
+        if ($request->has('brand')) {
+            $queryBrand = trim((string) $request->get('brand'));
+            $query = $request->query();
+            unset($query['brand'], $query['page']);
+
+            if ($queryBrand === '') {
+                return redirect()->route('shop', $query);
+            }
+
+            if ($queryBrand !== (string) $brand->slug) {
+                $target = Brand::where('slug', $queryBrand)->first();
+
+                return $target
+                    ? redirect()->route('brand', ['slug' => $target->slug] + $query)
+                    : redirect()->route('shop', ['brand' => $queryBrand] + $query);
+            }
+        }
+
+        $request->attributes->set('currentBrand', $brand);
+
+        return $this->index($request);
     }
 
     public function vehicleYears()
@@ -397,7 +434,11 @@ class ShopController extends Controller
 
     public function product($slug)
     {
-        $product = Product::where('slug', $slug)->firstOrFail();
+        $product = Product::where('slug', $slug)->where('status', true)->hasUsableImage()->firstOrFail();
+
+        if (! $product->hasUsableImage()) {
+            abort(404);
+        }
 
         $productFitments = ProductVehicle::where('product_id', $product->id)
             ->whereNotNull('year')

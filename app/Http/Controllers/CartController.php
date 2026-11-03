@@ -10,7 +10,9 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Page;
+use App\Models\PickupPoint;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,8 +28,15 @@ class CartController extends Controller
         $cartItems = $cart;
         $couponData = $this->recomputeCoupon($cart) ?? [];
         $couponDiscount = $couponData['discount'] ?? 0;
+        $couponEnabled = Setting::get('coupon_system', '1') === '1';
+        $minimumOrderAmountEnabled = Setting::get('minimum_order_amount_check', '0') === '1';
+        $minimumOrderAmount = (float) Setting::get('minimum_order_amount', 0);
+        $minimumOrderRemaining = $minimumOrderAmountEnabled ? max($minimumOrderAmount - $total, 0) : 0;
 
-        return view('cart.index', compact('cart', 'total', 'cartItems', 'page', 'couponData', 'couponDiscount'));
+        $taxRate = (float) (Setting::where('key', 'tax_rate')->value('value') ?? 0);
+        $tax = round($total * ($taxRate / 100), 2);
+        $grandTotal = $total - $couponDiscount + $tax;
+        return view('cart.index', compact('cart', 'total', 'cartItems', 'page', 'couponData', 'couponDiscount', 'couponEnabled', 'minimumOrderAmountEnabled', 'minimumOrderAmount', 'minimumOrderRemaining', 'tax', 'grandTotal', 'taxRate'));
     }
 
     public function add(Request $request)
@@ -66,6 +75,7 @@ class CartController extends Controller
             $cart[$id] = [
                 'id' => $id,
                 'name' => $product->name,
+                'slug' => $product->slug,
                 'price' => buyerPrice($product->price, $product),
                 'image' => storedImageUrl($product->image, 'assets/images/thumbnails'),
                 'qty' => $qty,
@@ -186,6 +196,10 @@ class CartController extends Controller
 
     public function applyCoupon(Request $request)
     {
+        if (Setting::get('coupon_system', '1') !== '1') {
+            return back()->with('error', 'Coupons are currently disabled.');
+        }
+
         $request->validate(['coupon_code' => 'required|string|max:50']);
         $code = strtoupper(trim($request->coupon_code));
         $coupon = Coupon::where('code', $code)->first();
@@ -232,6 +246,12 @@ class CartController extends Controller
      */
     private function recomputeCoupon(array $cart): ?array
     {
+        if (Setting::get('coupon_system', '1') !== '1') {
+            session()->forget('coupon');
+
+            return null;
+        }
+
         if (session()->missing('coupon')) {
             return null;
         }
@@ -287,6 +307,7 @@ class CartController extends Controller
 
                 'id' => $product->id,
                 'name' => $product->name,
+                'slug' => $product->slug,
                 'price' => buyerPrice($product->price, $product),
                 'image' => $product->image,
                 'qty' => 1,
@@ -315,6 +336,9 @@ class CartController extends Controller
         $cart = $this->refreshCartPrices();
         if (count($cart) === 0) {
             return redirect()->route('cart')->with('error', 'Your cart is empty.');
+        }
+        if (! $this->minimumOrderAmountIsMet($cart)) {
+            return $this->minimumOrderAmountRedirect();
         }
 
         // Guests enter their delivery details directly on the checkout page.
@@ -412,19 +436,32 @@ class CartController extends Controller
         if (count($cart) === 0) {
             return redirect()->route('cart')->with('error', 'Your cart is empty.');
         }
+        if (! $this->minimumOrderAmountIsMet($cart)) {
+            return $this->minimumOrderAmountRedirect();
+        }
         $billing = session('billing_info');
         if (! $billing) {
             return redirect()->route('checkout');
         }
         $total = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
+        $pickupPoints = PickupPoint::where('is_open', true)->orderBy('name')->get();
+        $pickupEnabled = Setting::get('pickup_point', '1') === '1' && $pickupPoints->isNotEmpty();
 
-        return view('checkout.delivery-info', compact('cart', 'total', 'billing'));
+        return view('checkout.delivery-info', compact('cart', 'total', 'billing', 'pickupEnabled', 'pickupPoints'));
     }
 
     public function deliveryInfoSubmit(Request $request)
     {
+        $allowedShippingMethods = ['free'];
+        if (Setting::get('pickup_point', '1') === '1' && PickupPoint::where('is_open', true)->exists()) {
+            $allowedShippingMethods[] = 'pickup';
+        }
+
         $request->validate([
-            'shipping_method' => 'required|in:free,pickup',
+            'shipping_method' => 'required|in:'.implode(',', $allowedShippingMethods),
+            'pickup_point_id' => $request->input('shipping_method') === 'pickup'
+                ? 'required|integer|exists:pickup_points,id'
+                : 'nullable',
         ]);
 
         $cart = $this->refreshCartPrices();
@@ -434,13 +471,19 @@ class CartController extends Controller
 
         $shippingCosts = ['free' => 0, 'pickup' => 0];
         $shippingCost = $shippingCosts[$request->shipping_method];
+        $shippingInfo = [
+            'method' => $request->shipping_method,
+            'cost' => $shippingCost,
+        ];
+        if ($request->shipping_method === 'pickup') {
+            $pickupPoint = PickupPoint::whereKey($request->input('pickup_point_id'))->where('is_open', true)->first();
+            if (! $pickupPoint) {
+                return back()->withInput()->withErrors(['pickup_point_id' => 'Choose an open pickup point.']);
+            }
+            $shippingInfo['pickup_point_id'] = $pickupPoint->id;
+        }
 
-        session([
-            'shipping_info' => [
-                'method' => $request->shipping_method,
-                'cost' => $shippingCost,
-            ],
-        ]);
+        session(['shipping_info' => $shippingInfo]);
 
         return redirect()->route('checkout.payment');
     }
@@ -451,6 +494,9 @@ class CartController extends Controller
         if (count($cart) === 0) {
             return redirect()->route('cart')->with('error', 'Your cart is empty.');
         }
+        if (! $this->minimumOrderAmountIsMet($cart)) {
+            return $this->minimumOrderAmountRedirect();
+        }
         $billing = session('billing_info');
         if (! $billing) {
             return redirect()->route('checkout');
@@ -459,20 +505,38 @@ class CartController extends Controller
         if (! $shipping) {
             return redirect()->route('checkout.delivery-info');
         }
+        if (($shipping['method'] ?? null) === 'pickup') {
+            $pickupDetails = $this->activePickupPointDetails($shipping);
+            if (! $pickupDetails) {
+                session()->forget('shipping_info');
+
+                return redirect()->route('checkout.delivery-info')->with('error', 'Pickup is currently unavailable. Choose home delivery.');
+            }
+            $shipping['pickup_point'] = $pickupDetails;
+            session(['shipping_info' => $shipping]);
+        }
         $total = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
         $shippingCost = $shipping['cost'];
         $couponData = $this->recomputeCoupon($cart) ?? [];
         $couponDiscount = $couponData['discount'] ?? 0;
-        $grandTotal = max($total + $shippingCost - $couponDiscount, 0);
+        $taxRate = (float) (Setting::where('key', 'tax_rate')->value('value') ?? 0);
+        $tax = round($total * ($taxRate / 100), 2);
+        $grandTotal = max($total + $shippingCost - $couponDiscount + $tax, 0);
         $shippingMethod = $shipping['method'];
+        $paymentMethods = $this->enabledCheckoutPaymentMethods();
 
-        return view('checkout.payment', compact('cart', 'total', 'shippingCost', 'grandTotal', 'shippingMethod', 'couponData', 'couponDiscount'));
+        return view('checkout.payment', compact('cart', 'total', 'shippingCost', 'grandTotal', 'shippingMethod', 'couponData', 'couponDiscount', 'taxRate', 'tax', 'paymentMethods'));
     }
 
     public function paymentSubmit(Request $request)
     {
+        $paymentMethods = $this->enabledCheckoutPaymentMethods();
+        if (empty($paymentMethods)) {
+            return back()->with('error', 'No payment methods are currently available. Contact the store administrator.');
+        }
+
         $request->validate([
-            'payment_method' => 'required|in:cod,card,paypal',
+            'payment_method' => 'required|in:'.implode(',', array_keys($paymentMethods)),
         ]);
 
         $paymentDetails = [];
@@ -492,6 +556,9 @@ class CartController extends Controller
         if (count($cart) === 0) {
             return redirect()->route('cart')->with('error', 'Your cart is empty.');
         }
+        if (! $this->minimumOrderAmountIsMet($cart)) {
+            return $this->minimumOrderAmountRedirect();
+        }
 
         $billing = session('billing_info');
         $shipping = session('shipping_info');
@@ -499,12 +566,24 @@ class CartController extends Controller
         if (! $billing || ! $shipping) {
             return redirect()->route('checkout');
         }
+        if (($shipping['method'] ?? null) === 'pickup') {
+            $pickupDetails = $this->activePickupPointDetails($shipping);
+            if (! $pickupDetails) {
+                session()->forget('shipping_info');
+
+                return redirect()->route('checkout.delivery-info')->with('error', 'Pickup is currently unavailable. Choose home delivery.');
+            }
+            $shipping['pickup_point'] = $pickupDetails;
+            session(['shipping_info' => $shipping]);
+        }
 
         $total = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
         $shippingCost = $shipping['cost'] ?? 0;
         $couponData = $this->recomputeCoupon($cart) ?? [];
         $couponDiscount = $couponData['discount'] ?? 0;
-        $grandTotal = max($total + $shippingCost - $couponDiscount, 0);
+        $taxRate = (float) (Setting::where('key', 'tax_rate')->value('value') ?? 0);
+        $tax = round($total * ($taxRate / 100), 2);
+        $grandTotal = max($total + $shippingCost - $couponDiscount + $tax, 0);
 
         // Stock availability check against the database (source of truth)
         $productIds = array_map('intval', array_keys($cart));
@@ -521,8 +600,13 @@ class CartController extends Controller
             }
         }
 
+        $shippingDetails = $billing;
+        if (($shipping['method'] ?? null) === 'pickup' && ! empty($shipping['pickup_point'])) {
+            $shippingDetails['pickup_point'] = $shipping['pickup_point'];
+        }
+
         // Save to database
-        $dbOrder = DB::transaction(function () use ($request, $cart, $billing, $shipping, $grandTotal, $shippingCost, $paymentDetails, $couponData, $couponDiscount, $total, $products) {
+        $dbOrder = DB::transaction(function () use ($request, $cart, $shippingDetails, $shipping, $grandTotal, $shippingCost, $tax, $paymentDetails, $couponData, $couponDiscount, $total, $products) {
 
             $orderNumber = 'ORD'.strtoupper(uniqid());
 
@@ -537,11 +621,11 @@ class CartController extends Controller
                 'payment_details' => $paymentDetails,
                 'delivery_type' => $shipping['method'] ?? 'free',
                 'shipping_fee' => $shippingCost,
-                'tax' => 0,
+                'tax' => $tax,
                 'coupon_code' => $couponData['code'] ?? null,
                 'coupon_discount' => $couponDiscount,
                 'additional_info' => $request->input('additional_info'),
-                'shipping_details' => json_encode($billing),
+                'shipping_details' => json_encode($shippingDetails),
             ]);
 
             $dbOrder->recordStatusChange('pending', 'Order placed');
@@ -671,6 +755,55 @@ class CartController extends Controller
         return view('checkout.order-confirmed', compact('order'));
     }
 
+    private function minimumOrderAmountIsMet(array $cart): bool
+    {
+        if (Setting::get('minimum_order_amount_check', '0') !== '1') {
+            return true;
+        }
+
+        $minimumAmount = (float) Setting::get('minimum_order_amount', 0);
+        $subtotal = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
+
+        return $subtotal >= $minimumAmount;
+    }
+
+    private function activePickupPointDetails(array $shipping): ?array
+    {
+        if (Setting::get('pickup_point', '1') !== '1') {
+            return null;
+        }
+
+        $pickupPoint = PickupPoint::whereKey($shipping['pickup_point_id'] ?? 0)
+            ->where('is_open', true)
+            ->first();
+
+        return $pickupPoint?->only(['id', 'name', 'manager', 'location', 'contact']);
+    }
+
+    private function minimumOrderAmountRedirect()
+    {
+        $minimumAmount = (float) Setting::get('minimum_order_amount', 0);
+
+        return redirect()->route('cart')->with('error', 'Cart subtotal must be at least '.currency_format($minimumAmount).' to continue.');
+    }
+
+    private function enabledCheckoutPaymentMethods(): array
+    {
+        $methods = [];
+
+        if (Setting::get('stripe_payment', '1') === '1') {
+            $methods['card'] = ['label' => 'Stripe', 'icon' => 'las la-credit-card'];
+        }
+        if (Setting::get('cash_payment', '1') === '1') {
+            $methods['cod'] = ['label' => 'Cash on Delivery', 'icon' => 'las la-money-bill-wave'];
+        }
+        if (Setting::get('paypal_payment', '0') === '1') {
+            $methods['paypal'] = ['label' => 'PayPal', 'icon' => 'lab la-paypal'];
+        }
+
+        return $methods;
+    }
+
     private function refreshCartPrices(): array
     {
         $cart = session('cart', []);
@@ -678,7 +811,7 @@ class CartController extends Controller
             return [];
         }
 
-        $products = Product::whereIn('id', array_keys($cart))->get(['id', 'name', 'cost', 'main_image', 'vendor_stock'])->keyBy('id');
+        $products = Product::whereIn('id', array_keys($cart))->get(['id', 'name', 'slug', 'cost', 'main_image', 'vendor_stock'])->keyBy('id');
         foreach ($cart as $id => $item) {
             $product = $products->get((int) $id);
             if (! $product) {
@@ -686,6 +819,7 @@ class CartController extends Controller
             }
 
             $cart[$id]['name'] = $product->name;
+            $cart[$id]['slug'] = $product->slug;
             $cart[$id]['price'] = buyerPrice($product->price, $product);
             $cart[$id]['image'] = storedImageUrl($product->image, 'assets/images/thumbnails');
             $cart[$id]['stock'] = (int) $product->stock;

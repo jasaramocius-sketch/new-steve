@@ -178,10 +178,12 @@ class Product extends Model
             'https://'.$bucket.'.s3.%amazonaws.com/%',
         ];
 
+        // Only `main_image` decides storefront visibility. `images_json` may
+        // contain gallery images, but a product without a usable main image
+        // must not appear in listings (it would render the placeholder).
         return $query->where(function ($q) use ($s3Patterns) {
             foreach ($s3Patterns as $pattern) {
-                $q->orWhere('main_image', 'like', $pattern)
-                    ->orWhere('images_json', 'like', '%'.$pattern.'%');
+                $q->orWhere('main_image', 'like', $pattern);
             }
 
             // Images uploaded through this app's own media manager.

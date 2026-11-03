@@ -49,7 +49,7 @@ class SourceS3ImageUrlTest extends TestCase
         $this->assertSame($url, storedImageUrl($url));
     }
 
-    public function test_product_image_uses_an_aws_gallery_image_instead_of_a_local_path(): void
+    public function test_product_image_is_empty_when_only_a_gallery_image_exists(): void
     {
         config(['filesystems.disks.source_images.bucket' => 'autoparts-hub']);
         $product = new Product;
@@ -60,7 +60,10 @@ class SourceS3ImageUrlTest extends TestCase
             ]),
         ]);
 
-        $this->assertSame('s3://autoparts-hub/steveautoparts/images/brand/part_Fro.jpg', $product->image);
+        // Gallery images in `images_json` must not substitute a missing/invalid
+        // main image: the product has no usable image and stays hidden.
+        $this->assertNull($product->image);
+        $this->assertFalse($product->hasUsableImage());
     }
 
     public function test_product_image_is_empty_when_only_a_local_image_exists(): void

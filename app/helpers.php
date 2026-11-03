@@ -302,3 +302,37 @@ if (! function_exists('normalizeStoredUrl')) {
         return rtrim(url('/'), '/') . $path;
     }
 }
+
+if (! function_exists('prefixAppBasePathInHtml')) {
+    /**
+     * Rewrite root-relative href/src/action values in stored HTML so they point
+     * at the app's subdirectory (e.g. "/" -> "/new-steve/") instead of the
+     * domain root. External URLs and paths already containing the base path are
+     * left untouched.
+     */
+    function prefixAppBasePathInHtml(?string $html): string
+    {
+        if (! $html) {
+            return '';
+        }
+
+        $basePath = rtrim((string) parse_url((string) config('app.url'), PHP_URL_PATH), '/');
+        if ($basePath === '' || $basePath === '/') {
+            return $html;
+        }
+
+        return preg_replace_callback(
+            '/\b(href|src|action)=(["\'])\/(?!\/)([^"\']*)\2/i',
+            function ($matches) use ($basePath) {
+                $path = '/'.ltrim($matches[3], '/');
+
+                if ($path === $basePath || str_starts_with($path, $basePath.'/')) {
+                    return $matches[0];
+                }
+
+                return $matches[1].'='.$matches[2].$basePath.$path.$matches[2];
+            },
+            $html
+        );
+    }
+}

@@ -238,7 +238,13 @@ class HomeController extends Controller
         if (! empty($selectedBrandIds) && is_array($selectedBrandIds)) {
             $selectedBrandIds = array_filter(array_map('intval', $selectedBrandIds));
             if (! empty($selectedBrandIds)) {
-                $brandsQuery = Brand::whereIn('id', $selectedBrandIds)
+                $brandsQuery = Brand::query()
+                    ->where('status', true)
+                    ->whereNotNull('name')
+                    ->where('name', '<>', '')
+                    ->whereNotNull('slug')
+                    ->where('slug', '<>', '')
+                    ->whereIn('id', $selectedBrandIds)
                     ->orderByRaw('FIELD(id, '.implode(',', $selectedBrandIds).')');
             }
         } elseif ((int) $brandsLimit > 0) {
@@ -409,6 +415,16 @@ class HomeController extends Controller
         return view('pages.support-policy');
     }
 
+    public function sitemapIndex()
+    {
+        $base = url('/');
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\\n";
+        $xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\\n";
+        $xml .= '  <sitemap><loc>'.$base.'/sitemap.xml</loc></sitemap>'."\\n";
+        $xml .= '</sitemapindex>';
+        return response($xml, 200)->header('Content-Type', 'application/xml');
+    }
+
     public function sitemap()
     {
         $base = url('/');
@@ -454,10 +470,16 @@ class HomeController extends Controller
                         array_unshift($segments, $current->slug);
                         $current = $current->parent_id ? ($categoryMap[$current->parent_id] ?? null) : null;
                     }
-                    $write($base.'/category/'.implode('/', $segments), optional($category->updated_at)->toAtomString(), 'weekly', 0.6);
+                    $write($base.'/category/'.$category->slug, optional($category->updated_at)->toAtomString(), 'weekly', 0.6);
                 });
 
-            Product::where('status', true)->select('slug', 'updated_at')->orderBy('id')->cursor()
+            Brand::where('status', true)->whereNotNull('slug')->where('slug', '<>', '')
+                ->select('slug', 'updated_at')->orderBy('id')->cursor()
+                ->each(function ($brand) use ($write, $base) {
+                    $write($base.'/brand/'.$brand->slug, optional($brand->updated_at)->toAtomString(), 'weekly', 0.7);
+                });
+
+            Product::where('status', true)->hasUsableImage()->select('slug', 'updated_at')->orderBy('id')->limit(1000)->cursor()
                 ->each(function ($product) use ($write, $base) {
                     $write($base.'/product/'.$product->slug, optional($product->updated_at)->toAtomString(), 'daily', 0.9);
                 });

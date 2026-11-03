@@ -206,7 +206,18 @@ class ProductController extends Controller
 
     public function show($slug)
     {
-        $product = Product::with(['galleryImages', 'category.parent', 'brand', 'seller' => fn ($q) => $q->withCount('products')])->where('slug', $slug)->where('status', true)->firstOrFail();
+        $product = Product::with(['galleryImages', 'category.parent', 'brand', 'seller' => fn ($q) => $q->withCount('products')])
+            ->where('slug', $slug)
+            ->where('status', true)
+            ->hasUsableImage()
+            ->firstOrFail();
+
+        // Products without a real main image are not part of the storefront.
+        // Return 404 so search engines drop any previously indexed URL.
+        if (! $product->hasUsableImage()) {
+            abort(404);
+        }
+
         $related = Product::with('category')->where('status', true)->hasUsableImage()->where('id', '!=', $product->id)->take(4)->get();
 
         // "Similar Products To Compare" — same part, other brands (Moglix-style).

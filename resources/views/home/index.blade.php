@@ -509,7 +509,7 @@
         <div class="gs-brands row justify-content-center">
             @foreach($brands as $brand)
             <div class="col-lg-4 col-md-6 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
-                <a href="{{ $brand->website ?: route('shop', ['brand' => $brand->slug]) }}">
+                <a href="{{ $brand->website ?: (filled($brand->slug) ? route('brand', ['slug' => $brand->slug]) : route('brands')) }}">
                     <div class="single-brands">
                         {!! imgTag(storedPath($brand->image, 'assets/images/brands'), $brand->name) !!}
                     </div>

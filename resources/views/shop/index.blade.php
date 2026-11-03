@@ -7,7 +7,7 @@
 @endpush
 {{-- Add your custom page ID and classes right here --}}
 @include('partials.page-attributes', ['pageId' => 'shop-page', 'pageClass' => 'shop-page'])
-@php $shopTitle = isset($pageTitle) ? $pageTitle : (isset($currentChildcategory) ? $currentChildcategory->name : (isset($currentSubcategory) ? $currentSubcategory->name : (isset($currentCategory) ? $currentCategory->name : 'Shop'))); $shopMeta = (isset($page) && $page->meta_title) ? $page->meta_title : null; $shopDesc = (isset($page) && $page->meta_description) ? $page->meta_description : null; @endphp
+@php $shopTitle = isset($pageTitle) ? $pageTitle : (!empty($currentBrand) ? $currentBrand->name : (isset($currentChildcategory) ? $currentChildcategory->name : (isset($currentSubcategory) ? $currentSubcategory->name : (isset($currentCategory) ? $currentCategory->name : 'Shop')))); $shopMeta = (isset($page) && $page->meta_title) ? $page->meta_title : null; $shopDesc = (isset($page) && $page->meta_description) ? $page->meta_description : null; @endphp
 @section('meta_tags')
     @include('partials.meta-tags', [
         'pageTitle' => $shopMeta ?: ($shopTitle . ' - StAutoparts'),
@@ -112,6 +112,8 @@
       <h2 class="breadcrumb-title">
         @if(isset($pageTitle))
           {{ $pageTitle }}
+        @elseif(!empty($currentBrand))
+          {{ $currentBrand->name }}
         @elseif(isset($currentChildcategory))
           {{ $currentChildcategory->name }}
         @elseif(isset($currentSubcategory))
@@ -125,38 +127,43 @@
       <ul class="bread-menu">
         <li><a href="{{ route('home') }}">Home</a></li>
 
-        @if(isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory))
-            <li><a href="{{ route('shop') }}">Shop</a></li>
+        @if(!empty($currentBrand))
+            <li><a href="{{ route('brands') }}">Brands</a></li>
+            <li style="color: var(--primary);">{{ $currentBrand->name }}</li>
         @else
-            <li style="color: var(--primary);">Shop</li>
-        @endif
-
-        @if(isset($currentCategory))
-            @if(isset($currentSubcategory) || isset($currentChildcategory))
-                <li>
-                    <a href="{{ route('category', ['slug' => $currentCategory->slug]) }}">
-                        {{ $currentCategory->name }}
-                    </a>
-                </li>
+            @if(isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory))
+                <li><a href="{{ route('shop') }}">Shop</a></li>
             @else
-                <li style="color: var(--primary);">{{ $currentCategory->name }}</li>
+                <li style="color: var(--primary);">Shop</li>
             @endif
-        @endif
 
-        @if(isset($currentSubcategory))
+            @if(isset($currentCategory))
+                @if(isset($currentSubcategory) || isset($currentChildcategory))
+                    <li>
+                        <a href="{{ route('category', ['slug' => $currentCategory->slug]) }}">
+                            {{ $currentCategory->name }}
+                        </a>
+                    </li>
+                @else
+                    <li style="color: var(--primary);">{{ $currentCategory->name }}</li>
+                @endif
+            @endif
+
+            @if(isset($currentSubcategory))
+                @if(isset($currentChildcategory))
+                    <li>
+                        <a href="{{ route('category', ['slug' => $currentSubcategory->slug]) }}">
+                            {{ $currentSubcategory->name }}
+                        </a>
+                    </li>
+                @else
+                    <li style="color: var(--primary);">{{ $currentSubcategory->name }}</li>
+                @endif
+            @endif
+
             @if(isset($currentChildcategory))
-                <li>
-                    <a href="{{ route('category', ['slug' => $currentSubcategory->slug]) }}">
-                        {{ $currentSubcategory->name }}
-                    </a>
-                </li>
-            @else
-                <li style="color: var(--primary);">{{ $currentSubcategory->name }}</li>
+                <li style="color: var(--primary);">{{ $currentChildcategory->name }}</li>
             @endif
-        @endif
-
-        @if(isset($currentChildcategory))
-            <li style="color: var(--primary);">{{ $currentChildcategory->name }}</li>
         @endif
       </ul>
     </div>
@@ -583,7 +590,7 @@
                     <option value="" {{ request()->filled('brand') ? '' : 'selected' }}>All Brands</option>
                     @foreach($brands as $brand)
                       @php $brandFilterValue = filled($brand->slug) ? $brand->slug : (string) $brand->id; @endphp
-                      <option value="{{ $brandFilterValue }}" {{ (string) request('brand') === (string) $brandFilterValue ? 'selected' : '' }}>{{ $brand->name }}</option>
+                      <option value="{{ $brandFilterValue }}" {{ (string) (!empty($currentBrand) ? $currentBrand->slug : request('brand')) === (string) $brandFilterValue ? 'selected' : '' }}>{{ $brand->name }}</option>
                     @endforeach
                   </select>
                 </form>
@@ -617,11 +624,16 @@
           $sortVal = request('sort');
           $hasSortFilter = !empty($sortVal) && $sortVal !== 'default';
           $activeSortLabel = $hasSortFilter ? ($sortLabels[$sortVal] ?? $sortVal) : null;
-          $brandVal = request('brand');
+          $brandVal = !empty($currentBrand) ? $currentBrand->slug : request('brand');
           $hasBrandFilter = !empty($brandVal);
-          $activeBrand = $hasBrandFilter
-              ? ($brands->firstWhere('slug', $brandVal)?->name ?? $brands->firstWhere('id', $brandVal)?->name ?? $brandVal)
-              : null;
+          $activeBrand = !empty($currentBrand)
+              ? $currentBrand->name
+              : ($hasBrandFilter
+                  ? ($brands->firstWhere('slug', $brandVal)?->name ?? $brands->firstWhere('id', $brandVal)?->name ?? $brandVal)
+                  : null);
+          $brandClearUrl = !empty($currentBrand)
+              ? route('shop', request()->except(['brand', 'page']))
+              : request()->fullUrlWithQuery(['brand' => null, 'page' => null]);
           $hasSearchFilter = request()->filled('search');
           $hasPriceParams = request()->filled('min_price') || request()->filled('max_price');
           $minPriceVal = (float) request('min_price', 0);
@@ -659,7 +671,7 @@
               <span class="filter-chip">
                 <span class="filter-chip-label">Brand:</span>
                 <span class="filter-chip-value">{{ $activeBrand }}</span>
-                <a href="{{ request()->fullUrlWithQuery(['brand' => null, 'page' => null]) }}" class="filter-chip-clear" data-bs-toggle="tooltip" data-bs-placement="top" title="Remove brand filter">
+                <a href="{{ $brandClearUrl }}" class="filter-chip-clear" data-bs-toggle="tooltip" data-bs-placement="top" title="Remove brand filter">
                   <i class="las la-times"></i>
                 </a>
               </span>

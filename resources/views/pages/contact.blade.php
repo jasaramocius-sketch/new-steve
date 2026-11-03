@@ -63,7 +63,7 @@
                         </div>
                         <div class="mb-4 d-flex gap-2 ">
                             <div class="">
-                            <i class="fas fa-phone-alt me-2 w-fit"></i>
+                            <i class="fas fa-phone me-2 w-fit"></i>
                             </div>
                             <div class="">
                             <strong>Phone</strong></br>

@@ -50,7 +50,7 @@
                 {!! imgTag(storedPath(\App\Models\Setting::get('footer_logo') ?? '1730281141Whitepng.png', 'assets/images'), 'logo', 'logo mb-3', 'width="60" height="63"') !!}
             </a>
             <a class="wow-replaced d-block mb-2 text-white" data-wow-delay=".1s" href="tel:{{ \App\Models\Setting::get('header_phone', '+1 (234) 567-8901') }}">
-                <i class="fas fa-phone-alt me-2"></i> {{ \App\Models\Setting::get('header_phone', '00 000 000 000') }}
+                <i class="fas fa-phone me-2"></i> {{ \App\Models\Setting::get('header_phone', '00 000 000 000') }}
             </a>
             <a class="wow-replaced d-block mb-2 text-white" data-wow-delay=".2s" href="mailto:{{ \App\Models\Setting::get('header_email', 'help@steveautoparts.com') }}">
                 <i class="fas fa-envelope me-2"></i> {{ \App\Models\Setting::get('header_email', 'help@steveautoparts.com') }}

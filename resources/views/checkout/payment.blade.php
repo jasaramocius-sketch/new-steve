@@ -44,29 +44,23 @@
 
                 <div class="card-body text-center px-4 pt-0">
                   <div class="row gutters-10">
+                    @forelse($paymentMethods as $method => $paymentOption)
                     <div class="col-6 col-xl-4 col-md-4 w-33">
-                      <label class="aiz-megabox d-block mb-3" onclick="document.getElementById('pm_card').checked=true;toggleCardForm();">
-                        <input value="card" type="radio" name="payment_method" id="pm_card" class="payment-radio">
+                      <label class="aiz-megabox d-block mb-3" onclick="document.getElementById('pm_{{ $method }}').checked=true;toggleCardForm();">
+                        <input value="{{ $method }}" type="radio" name="payment_method" id="pm_{{ $method }}" class="payment-radio" @checked($method === 'cod' || ($loop->first && !array_key_exists('cod', $paymentMethods)))>
                         <span class="d-block aiz-megabox-elem rounded-0 p-3">
-                          <i class="las la-credit-card la-3x d-block mb-2 text-primary"></i>
+                          <i class="{{ $paymentOption['icon'] }} la-3x d-block mb-2 text-primary"></i>
                           <span class="d-block text-center">
-                            <span class="d-block fw-600 fs-15">Stripe</span>
+                            <span class="d-block fw-600 fs-15">{{ $paymentOption['label'] }}</span>
                           </span>
                         </span>
                       </label>
                     </div>
-
-                    <div class="col-6 col-xl-4 col-md-4 w-33">
-                      <label class="aiz-megabox d-block mb-3" onclick="document.getElementById('pm_cod').checked=true;toggleCardForm();">
-                        <input value="cod" type="radio" name="payment_method" id="pm_cod" checked class="payment-radio">
-                        <span class="d-block aiz-megabox-elem rounded-0 p-3">
-                          <i class="las la-money-bill-wave la-3x d-block mb-2 text-primary"></i>
-                          <span class="d-block text-center">
-                            <span class="d-block fw-600 fs-15">Cash on Delivery</span>
-                          </span>
-                        </span>
-                      </label>
+                    @empty
+                    <div class="col-12">
+                      <div class="alert alert-warning mb-0">No payment methods are currently available.</div>
                     </div>
+                    @endforelse
                   </div>
 
                   <div id="card-details" class="mt-4 text-left" style="display:none;">
@@ -154,9 +148,9 @@
                       </td>
                     </tr>
                     <tr class="cart-shipping">
-                      <th class="pl-0 fs-14 pb-2 text-dark fw-600">Tax</th>
+                      <th class="pl-0 fs-14 pb-2 text-dark fw-600">Tax ({{ $taxRate }}%)</th>
                       <td class="text-right pr-0 fs-14 pb-2 fw-600 text-primary">
-                        <span class="fw-600">{{ currency_format(0) }}</span>
+                        <span class="fw-600">{{ currency_format($tax) }}</span>
                       </td>
                     </tr>
                     <tr class="cart-shipping">
@@ -165,6 +159,16 @@
                         <span class="fw-600">{{ currency_format($shippingCost) }}</span>
                       </td>
                     </tr>
+                    @if($shippingMethod === 'pickup' && session('shipping_info.pickup_point'))
+                    @php($pickupPoint = session('shipping_info.pickup_point'))
+                    <tr class="cart-shipping">
+                      <th class="pl-0 fs-14 pb-2 text-dark fw-600">Pickup Point</th>
+                      <td class="text-right pr-0 fs-14 pb-2 text-primary">
+                        <strong>{{ $pickupPoint['name'] }}</strong><br>
+                        <small>{{ $pickupPoint['location'] }} · {{ $pickupPoint['contact'] }}</small>
+                      </td>
+                    </tr>
+                    @endif
                     @if(!empty($couponData))
                     <tr class="cart-coupon">
                       <th class="pl-0 fs-14 pb-2 text-success fw-600">

@@ -1,21 +1,22 @@
-# Return Request Rules Verification Plan
+# Sitemap like Yoast SEO
 
-## Current behavior
-- `ReturnController::create()` excludes `rejected` and `refunded` requests from `$existing`, so rejected quantities are restored.
-- Only `pending`/`approved` requests reduce `available_qty` per product.
-- `store()` validates submitted qty against remaining qty per product.
-- `ReturnRequest` rows are never deleted; history remains.
+## Goal
+Improve `/sitemap.xml` to include categories, products, blogs, brands in a structured sitemap (Yoast-style index optional).
 
-## Rules
-1. Rejected request ke baad user dobara request kar sakta hai — already supported because rejected rows are excluded.
-2. Ek order item par ek samay mein sirf ek active return request — enforced via pending/approved qty aggregation.
-3. Purani rejected requests history mein available — rows retained and shown in `user.returns.index`.
-4. Per-product eligibility maintained — qty calculated per `product_id`.
+## Current state
+`HomeController::sitemap()` already streams urlset with home, shop, categories, brands, blogs, products.
+
+## Plan
+1. Verify categories are included (currently yes via Category loop).
+2. Add `lastmod` for categories/products/blogs (already for some).
+3. Add image sitemap entries? Optional.
+4. Ensure route `/sitemap.xml` exists and cached.
+
+## Implementation
+- Review `routes/web.php` for sitemap route.
+- Update sitemap() to include category URLs with lastmod.
+- Add sitemap index if needed (optional).
 
 ## Validation
-- Test scenario: order with 3 products, return 1 product, verify other 2 remain fully returnable.
-- Test rejected return frees quantity.
-- Test pending blocks duplicate active request.
-
-## Open questions
-- None. Implementation already aligns; only add automated feature tests if desired.
+- `GET /sitemap.xml` returns valid XML.
+- Contains category and product URLs.

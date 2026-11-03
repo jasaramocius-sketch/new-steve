@@ -90,7 +90,7 @@
                                             <i class="fas fa-map-pin-alt me-2 w-fit"></i>
                                             <p class="mb-1">{{ $address->zip_code }}</p></div> -->
                                             <div class="d-flex align-items-center gap-2">
-                                            <i class="fas fa-phone-alt me-2 w-fit"></i>
+                                            <i class="fas fa-phone me-2 w-fit"></i>
                                             <p class="mb-0 text-muted w-fit">{{ $address->phone }}</p>
                                             </div>
                                             @if($address->set_default)

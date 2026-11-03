@@ -221,6 +221,214 @@ class AdminController extends Controller
         return response()->json($fiveMinIntervals);
     }
 
+    public function customSettings()
+    {
+        $settings = Setting::getAllAsArray();
+        return view('admin.settings.custom', compact('settings'));
+    }
+
+    public function orderSettings()
+    {
+        $settings = Setting::getAllAsArray();
+
+        return view('admin.settings.order', compact('settings'));
+    }
+
+    public function updateOrderSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'minimum_order_amount_check' => 'required|boolean',
+            'minimum_order_amount' => 'required|numeric|min:0|max:10000000',
+        ]);
+
+        Setting::set('minimum_order_amount_check', $request->boolean('minimum_order_amount_check') ? '1' : '0');
+        Setting::set('minimum_order_amount', number_format((float) $validated['minimum_order_amount'], 2, '.', ''));
+
+        return redirect()->route('admin.settings.order')->with('success', 'Minimum order settings updated.');
+    }
+
+    public function settingsIndex()
+    {
+        $settingsGroups = [
+            [
+                'title' => 'General',
+                'icon' => 'las la-sliders-h',
+                'items' => [
+                    ['name' => 'General Settings', 'description' => 'Site name, logo, timezone', 'icon' => 'las la-cog', 'route' => 'admin.settings.header'],
+                    ['name' => 'Features activation', 'description' => 'Turn store features on or off', 'icon' => 'las la-toggle-on', 'route' => 'admin.settings.features'],
+                    ['name' => 'Order Configuration', 'description' => 'Minimum order amount', 'icon' => 'las la-shopping-bag', 'route' => 'admin.settings.order'],
+                    ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'las la-hdd'],
+                ],
+            ],
+            [
+                'title' => 'Localization',
+                'icon' => 'las la-globe',
+                'items' => [
+                    ['name' => 'Languages', 'description' => 'Site languages and translations', 'icon' => 'las la-language', 'route' => 'admin.settings.languages.index'],
+                    ['name' => 'Currency', 'description' => 'Currencies and exchange rates', 'icon' => 'las la-coins', 'route' => 'admin.settings.currency.index'],
+                    ['name' => 'Vat & TAX', 'description' => 'Tax rules applied to products', 'icon' => 'las la-percent', 'route' => 'admin.settings.custom'],
+                ],
+            ],
+            [
+                'title' => 'Payment',
+                'icon' => 'las la-credit-card',
+                'items' => [
+                    ['name' => 'Payment Methods', 'description' => 'Gateway keys and credentials', 'icon' => 'las la-credit-card', 'route' => 'admin.settings.payment-methods'],
+                ],
+            ],
+            [
+                'title' => 'Shipping',
+                'icon' => 'las la-truck',
+                'items' => [
+                    ['name' => 'Shipping Configuration', 'description' => 'Shipping methods and costs', 'icon' => 'las la-truck-loading', 'route' => 'admin.api-integrations.index'],
+                    ['name' => 'Pickup point', 'description' => 'Collection locations', 'icon' => 'las la-store', 'route' => 'admin.settings.pickup-points.index'],
+                    ['name' => 'Shipping Countries', 'description' => 'Countries you ship to', 'icon' => 'las la-flag'],
+                    ['name' => 'Shipping States', 'description' => 'States within countries', 'icon' => 'las la-map'],
+                    ['name' => 'Shipping Cities', 'description' => 'Cities within states', 'icon' => 'las la-city'],
+                    ['name' => 'Shipping Zones', 'description' => 'Zone-based shipping', 'icon' => 'las la-map-marked'],
+                    ['name' => 'Shipping Carrier', 'description' => 'Carriers and transit times', 'icon' => 'las la-shipping-fast', 'route' => 'admin.api-integrations.index'],
+                ],
+            ],
+            [
+                'title' => 'Email & Social',
+                'icon' => 'las la-envelope',
+                'items' => [
+                    ['name' => 'SMTP Settings', 'description' => 'Outgoing mail server', 'icon' => 'las la-envelope', 'route' => 'admin.settings.smtp'],
+                    ['name' => 'Social media Logins', 'description' => 'Google and Facebook sign-in', 'icon' => 'las la-users'],
+                    ['name' => 'Facebook Chat', 'description' => 'Live chat widget', 'icon' => 'lab la-facebook'],
+                    ['name' => 'Facebook Comment', 'description' => 'Comments on product pages', 'icon' => 'las la-comments'],
+                ],
+            ],
+            [
+                'title' => 'Google',
+                'icon' => 'lab la-google',
+                'items' => [
+                    ['name' => 'Analytics Tools', 'description' => 'Analytics and pixel tracking', 'icon' => 'las la-chart-line'],
+                    ['name' => 'Google reCAPTCHA', 'description' => 'Spam protection on forms', 'icon' => 'las la-shield-alt'],
+                    ['name' => 'Google Map', 'description' => 'Map API key', 'icon' => 'las la-map-marker'],
+                    ['name' => 'Google Firebase', 'description' => 'Push notification setup', 'icon' => 'las la-fire'],
+                ],
+            ],
+        ];
+
+        return view('admin.settings.index', compact('settingsGroups'));
+    }
+
+    public function featureSettings()
+    {
+        $settingsGroups = $this->featureActivationGroups();
+        $storedSettings = Setting::getAllAsArray();
+
+        foreach ($settingsGroups as &$group) {
+            foreach ($group['items'] as &$item) {
+                $storedValue = $storedSettings[$item['key']] ?? ($item['default'] ? '1' : '0');
+                $item['enabled'] = filter_var($storedValue, FILTER_VALIDATE_BOOLEAN);
+            }
+            unset($item);
+        }
+        unset($group);
+
+        return view('admin.settings.features', compact('settingsGroups'));
+    }
+
+    public function updateFeatureSetting(Request $request)
+    {
+        $validated = $request->validate([
+            'key' => 'required|string',
+            'enabled' => 'required|boolean',
+        ]);
+
+        $allowedKeys = [];
+        foreach ($this->featureActivationGroups() as $group) {
+            $allowedKeys = array_merge($allowedKeys, array_column($group['items'], 'key'));
+        }
+
+        if (! in_array($validated['key'], $allowedKeys, true)) {
+            return response()->json(['message' => 'Unknown feature setting.'], 422);
+        }
+
+        $enabled = $request->boolean('enabled');
+        Setting::set($validated['key'], $enabled ? '1' : '0');
+
+        if ($validated['key'] === 'disable_image_optimization') {
+            Setting::set('webp_frontend', $enabled ? '0' : '1');
+        }
+
+        return response()->json(['success' => true, 'enabled' => $enabled]);
+    }
+
+    private function featureActivationGroups(): array
+    {
+        return [
+            [
+                'title' => 'System',
+                'items' => [
+                    ['key' => 'FORCE_HTTPS', 'label' => 'HTTPS Activation', 'default' => false],
+                    ['key' => 'maintenance_mode', 'label' => 'Maintenance Mode Activation', 'default' => false],
+                    ['key' => 'disable_image_optimization', 'label' => 'Disable image encoding?', 'default' => false],
+                ],
+            ],
+            [
+                'title' => 'Business Related',
+                'items' => [
+                    ['key' => 'vendor_system_activation', 'label' => 'Vendor System Activation', 'default' => false],
+                    ['key' => 'classified_product', 'label' => 'Classified Product', 'default' => true],
+                    ['key' => 'wallet_system', 'label' => 'Wallet System Activation', 'default' => false],
+                    ['key' => 'coupon_system', 'label' => 'Coupon System Activation', 'default' => true],
+                    ['key' => 'pickup_point', 'label' => 'Pickup Point Activation', 'default' => true],
+                    ['key' => 'conversation_system', 'label' => 'Conversation Activation', 'default' => true],
+                    ['key' => 'product_manage_by_admin', 'label' => 'Seller Product Manage By Admin', 'default' => false, 'description' => 'When enabled, COD for seller products is managed by the admin.'],
+                    ['key' => 'product_approve_by_admin', 'label' => 'Admin Approval On Seller Product', 'default' => false, 'description' => 'Seller products require admin approval.'],
+                    ['key' => 'email_verification', 'label' => 'Email Verification', 'default' => false, 'configure' => 'admin.settings.smtp', 'configureLabel' => 'Configure SMTP'],
+                    ['key' => 'product_query_activation', 'label' => 'Product Query Activation', 'default' => false],
+                ],
+            ],
+            [
+                'title' => 'Payment Related',
+                'items' => [
+                    ['key' => 'paypal_payment', 'label' => 'PayPal Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'stripe_payment', 'label' => 'Stripe Payment Activation', 'default' => true, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'mercadopago_payment', 'label' => 'MercadoPago Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'sslcommerz_payment', 'label' => 'SSlCommerz Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'instamojo_payment', 'label' => 'Instamojo Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'razorpay', 'label' => 'Razor Pay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'paystack', 'label' => 'PayStack Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'voguepay', 'label' => 'VoguePay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'payhere', 'label' => 'Payhere Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'ngenius', 'label' => 'Ngenius Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'iyzico', 'label' => 'Iyzico Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'bkash', 'label' => 'Bkash Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'nagad', 'label' => 'Nagad Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'proxypay', 'label' => 'Proxy Pay Activation', 'default' => true, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'aamarpay', 'label' => 'Amarpay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'authorizenet', 'label' => 'Authorize Net Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'payku', 'label' => 'Payku Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
+                    ['key' => 'cash_payment', 'label' => 'Cash Payment Activation', 'default' => true],
+                ],
+            ],
+            [
+                'title' => 'Social Media Login',
+                'items' => [
+                    ['key' => 'facebook_login', 'label' => 'Facebook login', 'default' => false],
+                    ['key' => 'google_login', 'label' => 'Google login', 'default' => false],
+                    ['key' => 'twitter_login', 'label' => 'Twitter login', 'default' => false],
+                    ['key' => 'apple_login', 'label' => 'Apple login', 'default' => false],
+                ],
+            ],
+        ];
+    }
+
+    public function updateCustomSettings(Request $request)
+    {
+        $request->validate([
+            'tax_rate' => 'required|numeric|min:0|max:100',
+        ]);
+        foreach ($request->except('_token') as $key => $value) {
+            Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+        }
+        return redirect()->route('admin.settings.custom')->with('success', 'Custom settings updated.');
+    }
+
     public function headerSettings()
     {
         $settings = Setting::getAllAsArray();
