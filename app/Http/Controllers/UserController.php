@@ -113,11 +113,12 @@ class UserController extends Controller
                 'max:255',
                 Rule::unique('users')->ignore($user->id),
             ],
-            'phone' => 'required|string|max:255|regex:/^[0-9+\-\s()]+$/',
-            'address' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:255|regex:/^[0-9+\-\s()]+$/',
+            'address' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
-            'country' => 'required|string|max:255',
+            'country' => 'nullable|string|max:255',
+            'postal_code' => 'nullable|string|max:20',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ];
 
@@ -147,13 +148,13 @@ class UserController extends Controller
             'name' => $request->full_name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'address' => $request->address,
-            'city' => $request->city,
-            'state' => $request->state,
-            'country' => $request->country,
+            'address' => $request->input('address'),
+            'city' => $request->input('city'),
+            'state' => $request->input('state'),
+            'country' => $request->input('country'),
             'avatar' => $user->avatar,
             'password' => $user->password,
-            'postal_code' => $request->postal_code,
+            'postal_code' => $request->input('postal_code'),
         ]);
 
         return back()->with('success', 'Profile updated successfully.');

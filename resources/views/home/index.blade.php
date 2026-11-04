@@ -38,7 +38,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-12 col-md-6 col-lg-6">
-                    <div class="hero-content" style="position:relative; z-index:1;">
+                    <div class="hero-content">
                         @if($heroSection->subtitle)
                             <h6 class="subtitle wow-replaced" style="color:var(--hov-primary)">{{ $heroSection->subtitle }}</h6>
                         @endif
@@ -46,9 +46,9 @@
                             <h1 class="title wow-replaced" data-wow-delay=".1s" style="color:#090909; font-weight: 800;">{{ $heroSection->title }}</h1>
                         @endif
                         @if($heroSection->description)
-                            <p class="des wow-replaced" data-wow-delay=".2s" style="color:#000000">
+                            <div class="des wow-replaced text-align-start" data-wow-delay=".2s" style="color:#000000">
                                 {!! $heroSection->description !!}
-                            </p>
+                            </div>
                         @endif
                         @if($heroSection->button_text && $heroSection->button_url)
                             <a class="template-btn hero-shop-now-btn steve-btn wow-replaced" data-wow-delay=".3s" href="{{ $heroSection->button_url }}">
@@ -59,6 +59,34 @@
                 </div>
             </div>
         </div>
+    </div>
+    <div class="container-home-vehicle-filter d-flex justify-content-center">
+            <div class="home-vehicle-filter">
+                <!-- Vehicle Widget -->
+                <form id="home-vehicle-filter-form" action="{{ route('shop') }}" method="GET" class="d-flex flex-column gap-2" style="">
+                    @if($years->isNotEmpty())
+                    <select name="year" class="form-select filter-select" id="home-filter-year">
+                        <option value="">All Years</option>
+                        @foreach($years as $year)
+                            <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
+                        @endforeach
+                    </select>
+                    @endif
+                    <select name="make" class="form-select filter-select" id="home-filter-make">
+                        <option value="">All Makes</option>
+                        @foreach($makes as $make)
+                            <option value="{{ $make }}" {{ request('make') == $make ? 'selected' : '' }}>{{ $make }}</option>
+                        @endforeach
+                    </select>
+                    <select name="model" class="form-select filter-select" id="home-filter-model">
+                        <option value="">All Models</option>
+                        @foreach($models as $model)
+                            <option value="{{ $model }}" {{ request('model') == $model ? 'selected' : '' }}>{{ $model }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="btn btn-sm text-white steve-btn"><i class="las la-search mr-1"></i>Find My Parts</button>
+                </form>
+            </div>
     </div>
 </section>
 @endif
@@ -315,58 +343,29 @@
 <!-- Featured Product Section Completed -->
 @endif
 
+@if(count($services) > 0)
 <!-- Service Section -->
 <section class="gs-service-section px-4 bg-light-white">
     <div class="container section-with-padding">
         <div class="row service-row">
+            @foreach($services as $service)
             <div class="col-lg-3 col-md-6 col-sm-12 services-area wow-removed">
                 <div class="single-service d-flex flex-lg-column flex-xl-row text-lg-center text-xl-start">
                     <div class="icon-wrapper">
-                        {!! imgTag('assets/images/services/1667473770badgepng.png', 'service') !!}
+                        {!! imgTag(storedPath($service['image'] ?? null, 'assets/images/services'), $service['title'] ?? 'service') !!}
                     </div>
                     <div class="service-content">
-                        <h3 class="service-title">Manage Quality</h3>
-                        <p class="service-desc">Best Quality Guarantee</p>
+                        <h3 class="service-title">{{ $service['title'] ?? '' }}</h3>
+                        <p class="service-desc">{{ $service['description'] ?? '' }}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 col-sm-12 services-area wow-removed">
-                <div class="single-service d-flex flex-lg-column flex-xl-row text-lg-center text-xl-start">
-                    <div class="icon-wrapper">
-                        {!! imgTag('assets/images/services/1667473742carts1png.png', 'service') !!}
-                    </div>
-                    <div class="service-content">
-                        <h3 class="service-title">Win $100 To Shop</h3>
-                        <p class="service-desc">Enter Now</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 col-sm-12 services-area wow-removed">
-                <div class="single-service d-flex flex-lg-column flex-xl-row text-lg-center text-xl-start">
-                    <div class="icon-wrapper">
-                        {!! imgTag('assets/images/services/1667473728customer-service-agentpng.png', 'service') !!}
-                    </div>
-                    <div class="service-content">
-                        <h3 class="service-title">Best Online Support</h3>
-                        <p class="service-desc">Hour: 10:00AM - 5:00PM</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 col-sm-12 services-area wow-removed">
-                <div class="single-service d-flex flex-lg-column flex-xl-row text-lg-center text-xl-start">
-                    <div class="icon-wrapper">
-                        {!! imgTag('assets/images/services/1667473683money-bagpng.png', 'service') !!}
-                    </div>
-                    <div class="service-content">
-                        <h3 class="service-title">Money Back Guarantee</h3>
-                        <p class="service-desc">With A 30 Days</p>
-                    </div>
-                </div>
-            </div>
+            @endforeach
         </div>
     </div>
 </section>
 <!-- Service Section Completed -->
+@endif
 
 @if($sections->has('best_selling'))
 <!-- Best Selling Section -->
@@ -411,7 +410,7 @@
         @endphp
 
         <div class="justify-content-center">
-            <div class="col-12 d-flex column flex-lg-row flex-xl-row latest-post-title-row-first pb-20">
+            <div class="col-12 d-flex column flex-lg-row flex-xl-row flex-sm-column latest-post-title-row-first pb-20">
                 <div class="gs-title-box">
                     <h2 class="title wow-replaced">{{ $sections->get('latest_post')?->title ??  'Latest Post' }}</h2>
                     <p class="des mb-0 wow-replaced" data-wow-delay=".1s">{!! $sections->get('latest_post')?->description ??  'Stay updated with our latest maintenance guides, tips, and insights from professional automotive mechanics.' !!}</p>
@@ -419,18 +418,22 @@
 
                 
                 <div class="align-items-start flex-lg-column flex-xl-column latest-post-nav">
-                    <div class="flex-column" data-wow-delay=".2s">
+                    @if($showAsSlider)
+                    <div class="slider-nav d-flex gap-2">
+                        <button class="latest-posts-prev steve-btn"><i class="fas fa-chevron-left"></i></button>
                         <a href="{{ route('blog') }}" class="a-tag-hover-color">
                             {{ $sections->get('latest_post')?->button_text ??  'View More' }}
                             <i class="fas fa-arrow-right ms-1"></i> 
                         </a>
-                    </div>
-                    @if($showAsSlider)
-                    <div class="slider-nav d-flex gap-2">
-                        <button class="latest-posts-prev steve-btn"><i class="fas fa-chevron-left"></i></button>
                         <button class="latest-posts-next steve-btn"><i class="fas fa-chevron-right"></i></button>
                     </div>
                     @endif
+                    <!-- <div class="flex-column" data-wow-delay=".2s">
+                        <a href="{{ route('blog') }}" class="a-tag-hover-color">
+                            {{ $sections->get('latest_post')?->button_text ??  'View More' }}
+                            <i class="fas fa-arrow-right ms-1"></i> 
+                        </a>
+                    </div> -->
                 </div>
             </div>
         </div>
@@ -506,7 +509,7 @@
         <div class="gs-brands row justify-content-center">
             @foreach($brands as $brand)
             <div class="col-lg-4 col-md-6 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
-                <a href="{{ $brand->website ?: route('shop', ['brand' => $brand->slug]) }}">
+                <a href="{{ $brand->website ?: (filled($brand->slug) ? route('brand', ['slug' => $brand->slug]) : route('brands')) }}">
                     <div class="single-brands">
                         {!! imgTag(storedPath($brand->image, 'assets/images/brands'), $brand->name) !!}
                     </div>
@@ -519,23 +522,92 @@
 <!-- Top Brands Section Completed -->
 @endif
 
-@if($sections->has('partners_heading'))
+<!-- Buy With Confidence Section -->
+@if($sections->has('buy_with_confidence'))
+@php
+    $buyConfidenceSection = $sections->get('buy_with_confidence');
+    $buyConfidenceExtra = $buyConfidenceSection?->extra_data ?? [];
+    $buyConfidenceItems = $buyConfidenceSection?->extra_data['items'] ?? [
+        ['icon' => 'las la-box', 'title' => 'Fitment Guarantee', 'description' => 'Enter your VIN or vehicle specs and we show only parts that fit. Wrong part? We cover return shipping.'],
+        ['icon' => 'las la-shipping-fast', 'title' => 'Fast Shipping', 'description' => '5 distribution centers coast-to-coast. Most orders arrive in 1–3 business days. Free over $99.'],
+        ['icon' => 'las la-undo-alt', 'title' => '30-Day Returns', 'description' => 'Parts don’t fit or change your mind? Return within 30 days. No restocking fee on most items.'],
+        ['icon' => 'las la-wrench', 'title' => 'Mechanic Tested', 'description' => 'Every brand we carry is vetted by ASE-certified technicians. No junk, no knock-offs, no surprises.'],
+    ];
+@endphp
+<section class="gs-buy-confidence-section">
+    <div class="container section-with-padding">
+        <div class="row pb-20 justify-content-center">
+            <div class="col-lg-8 text-center">
+                <div class="gs-title-box text-center">
+                    <h2 class="title wow-replaced">{{ $buyConfidenceSection?->title ?? 'Buy With Confidence' }}</h2>
+                    <p class="des mb-0 wow-replaced" data-wow-delay=".1s">{!! $buyConfidenceSection?->description ?? '40 years of getting it right. Here’s how we make sure you get the right part, every time.' !!}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            @foreach($buyConfidenceItems as $index => $item)
+            @php $icon = $item['icon'] ?? 'las la-box'; $title = $item['title'] ?? ''; $description = $item['description'] ?? ''; @endphp
+            <div class="col-md-6 col-xl-3 wow-replaced" data-wow-delay=".{{ ($index + 1) / 10 }}s">
+                <div class="buy-confidence-card" style="height:100%; background:#fff; border:1px solid #ece8e2; padding:28px 22px; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,.04);">
+                    <i class="{{ $icon }} text-primary d-block mb-3" style="font-size:36px;" aria-hidden="true"></i>
+                    <h4 style="font-size: 1.15rem; font-weight:700; margin-bottom:10px;">{{ $title }}</h4>
+                    <p style="margin:0; color:#5d5d5d; line-height:1.7; font-size:0.95rem;">{{ $description }}</p>
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        <div class="row mt-5 justify-content-center py-4 mx-0" style="background: #f8f8f8; border-radius: 12px;">
+            <div class="col d-flex align-items-center justify-content-between flex-column flex-md-row gap-2">
+                <p class="col d-flex gap-2 flex-column flex-md-row" style="margin:0; font-size:1rem; color:#333; line-height:1.7;">
+                    <i class="las la-search text-primary mr-2" style="font-size:26px;" aria-hidden="true"></i><strong>{{ $buyConfidenceExtra['hotline_heading'] ?? 'Not sure what fits?' }}</strong> {{ $buyConfidenceExtra['hotline_description'] ?? 'Call our parts hotline with your VIN and a real mechanic will match you. We read the diagrams so you don’t have to.' }}
+                </p>
+                <div class="">
+                    <a href="{{ $buyConfidenceSection?->button_url ?? 'tel:1800555' }}" class="template-btn steve-btn w-100 wow-replaced" style="font-weight:700; font-size:1.15rem; color: #fff; text-decoration:none;">{{ $buyConfidenceSection?->button_text ?? '1-800-555-AUTO' }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+@endif
+<!-- Buy With Confidence Section Completed -->
+
 <!-- Partner Section -->
+@if($sections->has('partners_heading'))
 <section class="gs-partner-section" {!! $sections->get('partners_heading')?->bgStyle() !!}>
     <div class="container section-with-padding">
         <div class="row pb-20 justify-content-center">
-            <div class="col-lg-7">
-                <div class="gs-title-box text-center">
+            <div class="col">
+                <div class="gs-title-box">
                     <h2 class="title wow-replaced">{{ $sections->get('partners_heading')?->title ??  'Our Partners' }}</h2>
                     <p class="des mb-0 wow-replaced" data-wow-delay=".1s">{!! $sections->get('partners_heading')?->description ??  'We collaborate with world-class manufacturers to provide the highest-grade auto parts and accessories.' !!}</p>
                 </div>
             </div>
         </div>
         <div class="gs-partnerss row justify-content-center">
+            @php
+                $partners = $sections->get('partners_heading')?->extra_data['partners'] ?? [];
+            @endphp
+            @forelse($partners as $partner)
+            @if(!empty($partner['image']))
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
+                @if(!empty($partner['url']))
+                <a href="{{ $partner['url'] }}" target="_blank" rel="noopener">
+                @endif
+                <div class="single-partner">
+                    {!! imgTag($partner['image'], $partner['name'] ?? 'partner') !!}
+                </div>
+                @if(!empty($partner['url']))
+                </a>
+                @endif
+            </div>
+            @endif
+            @empty
             <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
                 <div class="single-partner">
                     {!! imgTag('assets/images/partner/1571289583p1.jpg', 'partner') !!}
-                </div>                
+                </div>
             </div>
             <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
                 <div class="single-partner">
@@ -592,11 +664,12 @@
                     {!! imgTag('assets/images/partner/1571289675p13.jpg', 'partner') !!}
                 </div>
             </div>
+            @endforelse
         </div>
     </div>
 </section>
-<!-- Partner Section Completed -->
 @endif
+<!-- Partner Section Completed -->
 
 @endsection
 
@@ -623,6 +696,60 @@
     }
 
     $(document).ready(function() {
+        (function() {
+            var yearEl = document.getElementById('home-filter-year');
+            var makeEl = document.getElementById('home-filter-make');
+            var modelEl = document.getElementById('home-filter-model');
+            if (!yearEl && !makeEl && !modelEl) return;
+            var makesUrl = @json(route('vehicles.makes'));
+            var modelsUrl = @json(route('vehicles.models'));
+            function label(el, word) { el.innerHTML = '<option value="">All ' + word + '</option>'; }
+            function populateSelect(el, values, selected) {
+                if (!el) return;
+                var word = el.name.charAt(0).toUpperCase() + el.name.slice(1) + 's';
+                label(el, word);
+                values.forEach(function(v) {
+                    var opt = document.createElement('option');
+                    opt.value = v; opt.textContent = v;
+                    if (v == selected) opt.selected = true;
+                    el.appendChild(opt);
+                });
+            }
+            function loadMakes(year, selected, cb) {
+                if (!makeEl) { if (cb) cb(); return; }
+                fetch(makesUrl + (year ? '?year=' + encodeURIComponent(year) : ''))
+                    .then(function(r){return r.json();})
+                    .then(function(makes){ populateSelect(makeEl, makes, selected); if(cb) cb(); })
+                    .catch(function(){ if(cb) cb(); });
+            }
+            function loadModels(year, make, selected) {
+                if (!modelEl) return;
+                var url = modelsUrl + '?';
+                if (year) url += 'year=' + encodeURIComponent(year) + '&';
+                if (make) url += 'make=' + encodeURIComponent(make);
+                fetch(url).then(function(r){return r.json();}).then(function(models){ populateSelect(modelEl, models, selected); }).catch(function(){});
+            }
+            if (yearEl) {
+                yearEl.addEventListener('change', function() {
+                    if (makeEl) makeEl.value = '';
+                    if (modelEl) modelEl.value = '';
+                    loadMakes(yearEl.value, '', function(){ loadModels(yearEl.value, '', ''); });
+                });
+            }
+            if (makeEl) {
+                makeEl.addEventListener('change', function() {
+                    if (modelEl) modelEl.value = '';
+                    loadModels(yearEl ? yearEl.value : '', makeEl.value, '');
+                });
+            }
+            var form = document.getElementById('home-vehicle-filter-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    var hasValue = (yearEl && yearEl.value) || (makeEl && makeEl.value) || (modelEl && modelEl.value);
+                    if (!hasValue) { e.preventDefault(); }
+                });
+            }
+        })();
         if ($('.home-cate-slider').length) {
             var cateSwiper = new Swiper('.home-cate-slider', {
                 slidesPerView: 6,

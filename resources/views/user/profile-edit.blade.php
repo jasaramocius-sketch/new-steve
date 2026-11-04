@@ -70,7 +70,8 @@
                         'zipName' => 'postal_code',
                         'withFullName' => true,
                         'withPhone' => true,
-                        'withDefault' => true,
+                        'withDefault' => false,
+                        'required' => ['full_name'],
                     ])
 
                     <div class="row g-3 mt-1">

@@ -16,7 +16,7 @@
   $shipping = max(($order['total'] ?? 0) - $subtotal + $couponDiscount, 0);
   $paymentLabels = [
     'cod' => 'Cash on Delivery',
-    'card' => 'Credit / Debit Card',
+    'card' => 'Stripe',
     'paypal' => 'Paypal',
   ];
   $paymentMethod = $paymentLabels[$order['payment_method'] ?? 'cod'] ?? ($order['payment_method'] ?? 'Cash on Delivery');
@@ -151,7 +151,7 @@
                           <span>{{ currency_format(0) }}</span>
                         </td>
                       </tr>
-@php $couponCode = $order['coupon_code'] ?? null; @endphp
+                        @php $couponCode = $order['coupon_code'] ?? null; @endphp
                       <tr>
                         <th class="border-top-0 py-2">Coupon Discount @if(!empty($couponCode))<br><small class="text-muted fw-normal">{{ $couponCode }}</small>@endif</th>
                         <td class="text-right border-top-0 pr-0 py-2">
@@ -168,7 +168,7 @@
                   </table>
                 </div>
               </div><div class="text-center mt-4">
-          <a href="{{ route('home') }}" class="btn btn-primary steve-btn fs-14 fw-700 px-4">
+          <a href="{{ route('shop') }}" class="btn btn-primary steve-btn fs-14 fw-700 px-4">
             Continue Shopping <i class="las la-arrow-right"></i>
           </a>
         </div>

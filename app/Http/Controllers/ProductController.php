@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\NotificationHelper;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\CommissionHistory;
 use App\Models\Contact;
 use App\Models\Image;
 use App\Models\Product;
@@ -157,7 +158,7 @@ class ProductController extends Controller
             $query->where('seller_id', $request->query('seller_id'));
         }
 
-        if ($request->filled('product_type') && $request->query('product_type') !== 'all') {
+        if ($request->filled('product_type') && $request->query('product_type') !== 'all' && \Illuminate\Support\Facades\Schema::hasColumn('products', 'product_type')) {
             $query->where('product_type', $request->query('product_type'));
         }
 
@@ -205,14 +206,26 @@ class ProductController extends Controller
 
     public function show($slug)
     {
-        $product = Product::with(['galleryImages', 'category.parent', 'seller' => fn ($q) => $q->withCount('products')])->where('slug', $slug)->where('status', true)->firstOrFail();
-        $related = Product::with('category')->where('status', true)->where('id', '!=', $product->id)->take(4)->get();
+        $product = Product::with(['galleryImages', 'category.parent', 'brand', 'seller' => fn ($q) => $q->withCount('products')])
+            ->where('slug', $slug)
+            ->where('status', true)
+            ->hasUsableImage()
+            ->firstOrFail();
+
+        // Products without a real main image are not part of the storefront.
+        // Return 404 so search engines drop any previously indexed URL.
+        if (! $product->hasUsableImage()) {
+            abort(404);
+        }
+
+        $related = Product::with('category')->where('status', true)->hasUsableImage()->where('id', '!=', $product->id)->take(4)->get();
 
         // "Similar Products To Compare" — same part, other brands (Moglix-style).
         $similar = collect();
-        $similarLimit = 3;
+        $similarLimit = 2;
         $similarBase = Product::with('brand', 'category')
             ->where('status', true)
+            ->hasUsableImage()
             ->where('id', '!=', $product->id);
 
         if (! empty($product->category_id) && ! empty($product->year) && ! empty($product->make) && ! empty($product->model)) {
@@ -308,6 +321,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
+            'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
@@ -328,6 +342,7 @@ class ProductController extends Controller
 
         $data = $request->only(['name', 'description', 'price', 'old_price', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
         $data['featured'] = $request->boolean('featured');
+        $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
             (string) ($data['description'] ?? ''),
             (string) ($data['policy_text'] ?? '')
@@ -339,10 +354,10 @@ class ProductController extends Controller
         $data['slug'] = Str::slug($request->name).'-'.time();
         $data['sku'] = $data['sku'] ?: Product::generateSku((string) $request->name);
 
-        if ($request->filled('image_from_manager')) {
-            $data['image'] = 'storage/'.ltrim($request->image_from_manager, '/');
-        } elseif ($request->hasFile('image')) {
-            $data['image'] = saveImageWithWebp($request->file('image'));
+        if ($request->hasFile('image')) {
+            $data['main_image'] = saveImageWithWebp($request->file('image'));
+        } elseif ($request->filled('image_from_manager')) {
+            $data['main_image'] = 'storage/'.ltrim($request->image_from_manager, '/');
         }
 
         $product = Product::create($data);
@@ -398,6 +413,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
+            'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
@@ -418,6 +434,7 @@ class ProductController extends Controller
 
         $data = $request->only(['name', 'description', 'price', 'old_price', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
         $data['featured'] = $request->boolean('featured');
+        $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
             (string) ($data['description'] ?? ''),
             (string) ($data['policy_text'] ?? '')
@@ -427,10 +444,10 @@ class ProductController extends Controller
         $data['specifications'] = $this->parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
 
-        if ($request->filled('image_from_manager')) {
-            $data['image'] = 'storage/'.ltrim($request->image_from_manager, '/');
-        } elseif ($request->hasFile('image')) {
-            $data['image'] = saveImageWithWebp($request->file('image'));
+        if ($request->hasFile('image')) {
+            $data['main_image'] = saveImageWithWebp($request->file('image'));
+        } elseif ($request->filled('image_from_manager')) {
+            $data['main_image'] = 'storage/'.ltrim($request->image_from_manager, '/');
         }
 
         $product->update($data);
@@ -541,6 +558,46 @@ class ProductController extends Controller
         $product->save();
 
         return back()->with('success', 'Product featured status updated successfully.');
+    }
+
+    /**
+     * Update the per-product commission from the All Products table.
+     * An empty value clears the override and falls back to the global commission.
+     */
+    public function updateCommission(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $validated = $request->validate([
+            'commission' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $oldCommission = $product->commission === null
+            ? null
+            : number_format((float) $product->commission, 2, '.', '');
+        $newCommission = $request->filled('commission')
+            ? number_format((float) $validated['commission'], 2, '.', '')
+            : null;
+
+        DB::transaction(function () use ($product, $oldCommission, $newCommission) {
+            $product->commission = $newCommission;
+            $product->save();
+
+            if ($oldCommission !== $newCommission) {
+                CommissionHistory::recordChange('product', (int) $product->id, $oldCommission, $newCommission);
+            }
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'commission' => $product->commission,
+                'effective' => $product->effectiveCommissionPercent(),
+                'total_price' => currency_format(buyerPrice($product->price, $product)),
+            ]);
+        }
+
+        return back()->with('success', 'Product commission updated successfully.');
     }
 
     public function duplicate($id)
@@ -953,65 +1010,71 @@ class ProductController extends Controller
     {
         $headers = ['id', 'name', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
 
-        $products = Product::with('category', 'brand', 'seller', 'galleryImages')->get();
-
-        $callback = function () use ($headers, $products) {
+        $callback = function () use ($headers) {
+            set_time_limit(0);
             $handle = fopen('php://output', 'w');
             fputcsv($handle, $headers);
 
-            foreach ($products as $p) {
-                $galleryUrls = $p->galleryImages->map(function ($img) {
-                    return $img->url ? url($img->url) : '';
-                })->filter()->values()->implode('|');
+            Product::with('category', 'brand', 'seller', 'galleryImages')
+                ->chunkById(500, function ($products) use ($handle) {
+                    foreach ($products as $p) {
+                        $galleryUrls = $p->galleryImages->map(function ($img) {
+                            return $img->url ? url($img->url) : '';
+                        })->filter()->values()->implode('|');
 
-                $features = is_array($p->features) ? implode("\n", array_filter($p->features)) : '';
+                        $features = is_array($p->features) ? implode("\n", array_filter($p->features)) : '';
 
-                $specsLines = [];
-                foreach ((array) $p->specifications as $spec) {
-                    $label = trim($spec['label'] ?? '');
-                    $value = trim($spec['value'] ?? '');
-                    $specsLines[] = ($label !== '' && $value !== '') ? $label.'::'.$value : ($label ?: $value);
-                }
-                $specs = implode("\n", array_filter($specsLines));
+                        $specsLines = [];
+                        foreach ((array) $p->specifications as $spec) {
+                            $label = trim($spec['label'] ?? '');
+                            $value = trim($spec['value'] ?? '');
+                            $specsLines[] = ($label !== '' && $value !== '') ? $label.'::'.$value : ($label ?: $value);
+                        }
+                        $specs = implode("\n", array_filter($specsLines));
 
-                $reviewsData = is_array($p->reviews_data) && $p->reviews_data ? json_encode($p->reviews_data) : '';
+                        $reviewsData = is_array($p->reviews_data) && $p->reviews_data ? json_encode($p->reviews_data) : '';
 
-                fputcsv($handle, [
-                    $p->id,
-                    $p->name,
-                    $p->sku ?? '',
-                    $p->price,
-                    $p->old_price ?? '',
-                    $p->category->name ?? '',
-                    $p->stock ?? 0,
-                    $p->description ?? '',
-                    $p->badge ?? '',
-                    $p->product_type ?? 'none',
-                    $p->status ? '1' : '0',
-                    $p->featured ? '1' : '0',
-                    $p->image ? url(storedPath($p->image, 'assets/images/thumbnails')) : '',
-                    $p->brand->name ?? '',
-                    $p->seller->name ?? '',
-                    $p->year ?? '',
-                    $p->make ?? '',
-                    $p->model ?? '',
-                    $galleryUrls,
-                    $p->policy_text ?? '',
-                    $features,
-                    $specs,
-                    $reviewsData,
-                    $p->tab_label_1 ?? '',
-                    $p->tab_label_2 ?? '',
-                    $p->tab_label_3 ?? '',
-                ]);
-            }
+                        fputcsv($handle, [
+                            $p->id,
+                            $p->name,
+                            $p->sku ?? '',
+                            $p->price,
+                            $p->old_price ?? '',
+                            $p->category->name ?? '',
+                            $p->stock ?? 0,
+                            $p->description ?? '',
+                            $p->badge ?? '',
+                            $p->product_type ?? 'none',
+                            $p->status ? '1' : '0',
+                            $p->featured ? '1' : '0',
+                            $p->image ? url(storedPath($p->image, 'assets/images/thumbnails')) : '',
+                            $p->brand->name ?? '',
+                            $p->seller->name ?? '',
+                            $p->year ?? '',
+                            $p->make ?? '',
+                            $p->model ?? '',
+                            $galleryUrls,
+                            $p->policy_text ?? '',
+                            $features,
+                            $specs,
+                            $reviewsData,
+                            $p->tab_label_1 ?? '',
+                            $p->tab_label_2 ?? '',
+                            $p->tab_label_3 ?? '',
+                        ]);
+                    }
+
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+                });
 
             fclose($handle);
         };
 
-        return response()->stream($callback, 200, [
+        return response()->streamDownload($callback, 'products-export-'.date('Y-m-d').'.csv', [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="products-export-'.date('Y-m-d').'.csv"',
         ]);
     }
 

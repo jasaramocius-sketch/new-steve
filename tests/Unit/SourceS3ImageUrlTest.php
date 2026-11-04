@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -46,5 +47,52 @@ class SourceS3ImageUrlTest extends TestCase
         $url = 'https://images.example.com/product.jpg';
 
         $this->assertSame($url, storedImageUrl($url));
+    }
+
+    public function test_product_image_is_empty_when_only_a_gallery_image_exists(): void
+    {
+        config(['filesystems.disks.source_images.bucket' => 'autoparts-hub']);
+        $product = new Product;
+        $product->setRawAttributes([
+            'main_image' => 'uploads/local-product.jpg',
+            'images_json' => json_encode([
+                ['file' => 's3://autoparts-hub/steveautoparts/images/brand/part_Fro.jpg'],
+            ]),
+        ]);
+
+        // Gallery images in `images_json` must not substitute a missing/invalid
+        // main image: the product has no usable image and stays hidden.
+        $this->assertNull($product->image);
+        $this->assertFalse($product->hasUsableImage());
+    }
+
+    public function test_product_image_is_empty_when_only_a_local_image_exists(): void
+    {
+        config(['filesystems.disks.source_images.bucket' => 'autoparts-hub']);
+        $product = new Product;
+        $product->setRawAttributes(['main_image' => 'uploads/local-product.jpg']);
+
+        $this->assertNull($product->image);
+    }
+
+    public function test_catalog_scope_excludes_products_without_a_real_image(): void
+    {
+        $valid = new Product;
+        $valid->setRawAttributes([
+            'main_image' => 's3://autoparts-hub/steveautoparts/images/brand/part_Fro.jpg',
+            'images_json' => json_encode([
+                ['file' => 's3://autoparts-hub/steveautoparts/images/brand/part_Fro.jpg'],
+            ]),
+        ]);
+
+        $placeholder = new Product;
+        $placeholder->setRawAttributes(['main_image' => 'assets/images/placeholder.png']);
+
+        $empty = new Product;
+        $empty->setRawAttributes(['main_image' => '']);
+
+        $this->assertTrue($valid->hasUsableImage());
+        $this->assertFalse($placeholder->hasUsableImage());
+        $this->assertFalse($empty->hasUsableImage());
     }
 }

@@ -65,3 +65,88 @@ kiya form submit hone pr thank you page pr redirect ho skta he
 
 
 aiz-carousel product-gallery-thumb slick-initialized slick-slider 
+
+fa-solid fa-circle-check
+
+
+
+Home : 
+<!-- Banner "Shop Now" button top space add -->
+<!-- Swiper button disable to cursor change. -->
+<!-- Latest Post view more and navigation button check. -->
+<!-- Top partner hide -->
+Product : 
+<!-- Error : Product Review submit -->
+<!-- Product list page : Sidebar category spacing add and default open.  -->
+<!-- SKU / Part #    -->  Part number   (Only part number) -->
+<!-- Compare product page action button line -->
+<!-- Compare product add : Part number, Category, Brand.   -->
+<!-- Compare product description wrong get.  -->
+
+
+
+<!-- Header hide language option. -->
+My return check.
+<!-- Followed seller ??   View seller details not get. -->
+<!-- Review table missing -->
+<!-- Page scroll up to top header show. -->
+<!-- Wishlist delete : load -->
+<!-- Product list : Clear all filter option add.   Brand disable show -->
+<!-- Home banner : add year, make, model filter -->
+<!-- My profile : Phone, country, state, city, Address and zip code optional set. -->
+
+script.js?v=1793358037:252 Error updating cart: ReferenceError: Cannot access 't' before initialization
+    at script.js?v=1793358037:239:32
+(anonymous) @ script.js?v=1793358037:252
+Promise.catch
+(anonymous) @ script.js?v=1793358037:251
+script.js?v=1793358037:252 Error updating cart: ReferenceError: Cannot access 't' before initialization
+    at script.js?v=1793358037:239:32
+(anonymous) @ script.js?v=1793358037:252
+Promise.catch
+(anonymous) @ script.js?v=1793358037:251
+script.js?v=1793358037:252 Error updating cart: ReferenceError: Cannot access 't' before initialization
+    at script.js?v=1793358037:239:32
+(anonymous) @ script.js?v=1793358037:252
+Promise.catch
+(anonymous) @ script.js?v=1793358037:251
+
+
+
+Cart page Qty issue solved
+Home page hero banner vehicle filter form design fixed
+commission history save in DB
+
+
+kiya user order cancell kr skta he
+
+
+
+
+Cart page add product details page link : Product name and image both. - Done
+SubCategories URL set Done
+Product without main image 404 set & search result "No products found"
+Brand URL fix /new-steve/search?brand=autolite to /new-steve/brand/autolite
+
+
+/new-steve/checkout/payment
+/autoparts/checkout/payment_select
+
+
+
+http://192.168.130.37/autoparts/product/cast-aluminum-standard-rotation-w-seal-41017 - Brand: ZW (line_code)
+http://192.168.130.54/new-steve/product/cast-aluminum-standard-rotation-w-seal-41017 - Brand: Gates (name)
+
+
+
+Sitemap.xml set
+SEO Integration & Admin SEO Settings
+
+
+
+Pickup Points select form issue
+
+
+Shop page Vehicle filter style set same as home page hero section Vehicle filter
+Categories page load issue sloved
+Test Stripe payment is working

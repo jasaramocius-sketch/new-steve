@@ -17,7 +17,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap">
+        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2">
             <div class="d-flex align-items-center gap-2">
                 <span class="text-muted small">Show</span>
                 <select class="form-select w-auto" onchange="window.location.href=this.value">
@@ -27,9 +27,16 @@
                 </select>
                 <span class="text-muted small">per page</span>
             </div>
-            <div class="text-muted small">
-                Showing {{ $brands->firstItem() }}-{{ $brands->lastItem() }} of {{ $brands->total() }}
+
+            <div class="nav-item search-form ms-lg-auto">
+                @include('admin.partials.search-form', [
+                    'route' => route('admin.brands.index'),
+                    'placeholder' => 'Search brands...'
+                ])
             </div>
+            <!-- <div class="text-muted small">
+                Showing {{ $brands->firstItem() }}-{{ $brands->lastItem() }} of {{ $brands->total() }}
+            </div> -->
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">

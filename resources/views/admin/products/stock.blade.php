@@ -15,24 +15,24 @@
 @endphp
 
 <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-    <h4 class="fw-bold mb-0">Stock Management</h4>
+    <div></div>
     <div class="d-flex gap-2">
         <span class="badge bg-danger align-self-center">Out of Stock: {{ $outCount }}</span>
         <span class="badge bg-warning text-dark align-self-center">Low (1-{{ max($threshold, 1) }}): {{ $lowTotal }}</span>
-        <a href="{{ route('admin.products.index', ['stock_filter' => 'out_of_stock']) }}" class="btn btn-outline-secondary steve-btn"><i class="fas fa-box"></i> All Products</a>
+        <a href="{{ route('admin.products.index', ['stock_filter' => 'out_of_stock']) }}" class="btn btn-outline-secondary steve-btn gap-1"><i class="fas fa-box"></i> All Products</a>
     </div>
 </div>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2">
-            <form method="GET" action="{{ route('admin.products.stock') }}" class="d-flex align-items-center gap-2 flex-wrap">
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="Search name or SKU..." style="min-width:200px;">
-                <select name="stock_filter" class="form-select form-select-sm w-auto">
+            <form method="GET" action="{{ route('admin.products.stock') }}" class="d-flex align-items-center gap-2 flex-nowrap">
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control h-40px" placeholder="Search name or SKU..." style="min-width:200px;">
+                <select name="stock_filter" class="form-select form-select-sm w-auto h-40px">
                     <option value="low" {{ request('stock_filter', 'low') === 'low' ? 'selected' : '' }}>Low stock</option>
                     <option value="out_of_stock" {{ request('stock_filter') === 'out_of_stock' ? 'selected' : '' }}>Out of stock</option>
                 </select>
-                <select name="threshold" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                <select name="threshold" class="form-select form-select-sm w-auto h-40px" onchange="this.form.submit()">
                     @foreach([3, 5, 10, 20] as $t)
                         <option value="{{ $t }}" {{ $threshold === $t ? 'selected' : '' }}>Show ≤ {{ $t }}</option>
                     @endforeach
@@ -48,7 +48,7 @@
             @csrf
             <div class="mb-2 px-2">
                 <div class="d-flex align-items-center gap-2">
-                    <select name="mode" class="form-select form-select-sm w-auto" id="stockMode">
+                    <select name="mode" class="form-select form-select-sm w-auto h-40px" id="stockMode">
                         <option value="add">Add to current stock</option>
                         <option value="set">Set exact stock</option>
                     </select>
@@ -87,7 +87,7 @@
                                 <span class="fw-bold {{ $product->stock <= 0 ? 'text-danger' : 'text-warning' }}">{{ $product->stock }}</span>
                             </td>
                             <td style="min-width:110px;">
-                                <input type="number" name="editable_qty[]" class="form-control form-control-sm editable-qty" min="0" value="{{ max($product->stock, 0) }}">
+                                <input type="number" name="editable_qty[]" class="form-control editable-qty" min="0" value="{{ max($product->stock, 0) }}">
                             </td>
                         </tr>
                         @empty
@@ -110,7 +110,7 @@
 
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var selectAll = document.getElementById('selectAll');
@@ -168,4 +168,4 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-@endsection
+@endpush

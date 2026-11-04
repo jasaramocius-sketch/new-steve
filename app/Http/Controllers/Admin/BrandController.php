@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Image;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class BrandController extends Controller
@@ -16,7 +17,16 @@ class BrandController extends Controller
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 10;
 
-        $brands = Brand::orderBy($sortBy, $sortDir)->paginate($perPage);
+        $brands = Brand::query()
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = trim((string) $request->input('search'));
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('slug', 'like', '%'.$search.'%');
+                });
+            })
+            ->orderBy($sortBy, $sortDir)
+            ->paginate($perPage);
         $brands->appends($request->query())->onEachSide(1);
 
         return view('admin.brands.index', compact('brands', 'sortBy', 'sortDir'));
@@ -41,9 +51,9 @@ class BrandController extends Controller
         $data['status'] = $request->boolean('status');
 
         if ($request->filled('image_from_manager')) {
-            $data['image'] = 'storage/'.ltrim($request->image_from_manager, '/');
+            $data['logo'] = 'storage/'.ltrim($request->image_from_manager, '/');
         } elseif ($request->hasFile('image')) {
-            $data['image'] = saveImageWithWebp($request->file('image'));
+            $data['logo'] = saveImageWithWebp($request->file('image'));
         }
 
         $brand = Brand::create($data);
@@ -51,6 +61,8 @@ class BrandController extends Controller
         if ($request->filled('image_from_manager')) {
             Image::markUsed($request->image_from_manager, $brand);
         }
+
+        Cache::forget('catalog.brands');
 
         return redirect()->route('admin.brands.index')->with('success', 'Brand created successfully.');
     }
@@ -78,12 +90,15 @@ class BrandController extends Controller
         $data['status'] = $request->boolean('status');
 
         if ($request->filled('image_from_manager')) {
-            $data['image'] = 'storage/'.ltrim($request->image_from_manager, '/');
+            $data['logo'] = 'storage/'.ltrim($request->image_from_manager, '/');
         } elseif ($request->hasFile('image')) {
-            $data['image'] = saveImageWithWebp($request->file('image'));
+            $data['logo'] = saveImageWithWebp($request->file('image'));
         }
 
         $brand->update($data);
+
+        Cache::forget('brand.aws_image.'.$brand->id);
+        Cache::forget('catalog.brands');
 
         if ($request->filled('image_from_manager')) {
             Image::markUsed($request->image_from_manager, $brand);
@@ -97,6 +112,7 @@ class BrandController extends Controller
         $brand = Brand::findOrFail($id);
         $brand->status = ! $brand->status;
         $brand->save();
+        Cache::forget('catalog.brands');
 
         return back()->with('success', 'Brand status updated successfully.');
     }
@@ -105,6 +121,7 @@ class BrandController extends Controller
     {
         $brand = Brand::findOrFail($id);
         $brand->delete();
+        Cache::forget('catalog.brands');
 
         return redirect()->route('admin.brands.index')->with('success', 'Brand deleted successfully.');
     }

@@ -13,27 +13,78 @@
         <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
             <i class="fas fa-tachometer-alt"></i> Dashboard
         </a>
+        @php
+            // Products parent active
+            $productsActive = request()->routeIs(
+                'admin.products.*',
+                'admin.categories.*',
+                'admin.brands.*',
+                'admin.settings.commission*'
+            );
+
+            // Submenu default expanded
+            $productsExpanded = $productsActive;
+
+            // All Products
+            $allProductsActive = request()->routeIs('admin.products.*') && !request()->routeIs(
+                'admin.products.import-form',
+                'admin.products.import',
+                'admin.products.download-sample-csv',
+                'admin.products.export-csv',
+                'admin.products.stock',
+                'admin.products.bulk-stock'
+            );
+
+            // Bulk Import
+            $productImportActive = request()->routeIs(
+                'admin.products.import-form',
+                'admin.products.import',
+                'admin.products.download-sample-csv'
+            );
+
+            // Stock Management
+            $productStockActive = request()->routeIs(
+                'admin.products.stock',
+                'admin.products.bulk-stock'
+            );
+        @endphp
+
+        <ul class="admin-sidebar-drop list-unstyled">
+            <li>
+                <a href="#productsSubmenu"
+                class="nav-item sidebar-link {{ $productsActive ? 'active' : '' }} {{ $productsExpanded ? 'expanded' : 'collapsed' }}"
+                data-bs-toggle="collapse"
+                role="button"
+                aria-expanded="{{ $productsExpanded ? 'true' : 'false' }}"
+                aria-controls="productsSubmenu">
+                    <i class="fas fa-box"></i>
+                    Products
+                    <i class="fas fa-chevron-down submenu-arrow"></i>
+                </a>
+
+                <ul class="collapse list-unstyled submenu {{ $productsExpanded ? 'show' : '' }}"
+                    id="productsSubmenu">
+
+                    <li><a href="{{ route('admin.products.index') }}" class="{{ $allProductsActive ? 'active' : '' }}">All Products</a></li>
+                    <li><a href="{{ route('admin.products.import-form') }}" class="{{ $productImportActive ? 'active' : '' }}">Bulk Import</a></li>
+                    <li><a href="{{ route('admin.products.export-csv') }}" class="{{ request()->routeIs('admin.products.export-csv') ? 'active' : '' }}">Bulk Export</a></li>
+                    <li><a href="{{ route('admin.categories.index') }}" class="{{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">Categories</a></li>
+                    <li><a href="{{ route('admin.brands.index') }}" class="{{ request()->routeIs('admin.brands.*') ? 'active' : '' }}">Brands</a></li>
+                    <li><a href="{{ route('admin.products.stock') }}" class="{{ $productStockActive ? 'active' : '' }}">Stock Management</a></li>
+                    <li><a href="{{ route('admin.settings.commission') }}" class="{{ request()->routeIs('admin.settings.commission*') ? 'active' : '' }}">Commission</a></li>
+
+                </ul>
+            </li>
+        </ul>
         <a href="{{ route('admin.orders.index') }}" class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
             <i class="fas fa-shopping-cart"></i> Orders
         </a>
         <a href="{{ route('admin.returns.index') }}" class="nav-item {{ request()->routeIs('admin.returns.*') ? 'active' : '' }}">
             <i class="fas fa-undo"></i> Returns
         </a>
-        <a href="{{ route('admin.products.index') }}" class="nav-item {{ request()->routeIs('admin.products.*') && !request()->routeIs('admin.products.import-form') && !request()->routeIs('admin.products.stock') ? 'active' : '' }}">
-            <i class="fas fa-box"></i> Products
-        </a>
-        <a href="{{ route('admin.products.stock') }}" class="nav-item {{ request()->routeIs('admin.products.stock') ? 'active' : '' }}">
-            <i class="fas fa-warehouse"></i> Stock Management
-        </a>
         <!-- <a href="{{ route('admin.products.import-form') }}" class="nav-item nav-item-sub {{ request()->routeIs('admin.products.import-form') ? 'active' : '' }}">
-            <i class="fas fa-upload"></i> Import Products -->
-        </a>
-        <a href="{{ route('admin.categories.index') }}" class="nav-item {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
-            <i class="fas fa-list"></i> Categories
-        </a>
-        <a href="{{ route('admin.brands.index') }}" class="nav-item {{ request()->routeIs('admin.brands.*') ? 'active' : '' }}">
-            <i class="fas fa-tag"></i> Brands
-        </a>
+            <i class="fas fa-upload"></i> Import Products 
+        </a>-->
         <a href="{{ route('admin.sellers.index') }}" class="nav-item {{ request()->routeIs('admin.sellers.*') ? 'active' : '' }}">
             <i class="fas fa-store"></i> Sellers
         </a>
@@ -68,17 +119,73 @@
         </a>
 
         <div class="nav-section">Settings</div>
+        @php
+            $setupConfigExpanded = request()->routeIs('admin.settings.*', 'admin.api-integrations.*', 'admin.home-page.*');
+        @endphp
+        <ul class="admin-sidebar-drop list-unstyled">
+            <li>
+                <a href="#setupConfigSubmenu"
+                class="nav-item sidebar-link {{ $setupConfigExpanded ? 'active' : 'collapsed' }}"
+                data-bs-toggle="collapse"
+                role="button"
+                aria-expanded="{{ $setupConfigExpanded ? 'true' : 'false' }}"
+                aria-controls="setupConfigSubmenu">
+                    <i class="fas fa-cogs"></i>
+                    Setup &amp; Configurations
+                    <i class="fas fa-chevron-down submenu-arrow"></i>
+                </a>
+
+                <ul class="collapse list-unstyled submenu {{ $setupConfigExpanded ? 'show' : '' }}" id="setupConfigSubmenu">
+                    <li><a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.index') ? 'active' : '' }}">All Settings</a></li>
+                    <li><a href="{{ route('admin.settings.header') }}" class="{{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}">General Settings</a></li>
+                    <li><a href="{{ route('admin.settings.seo') }}" class="{{ request()->routeIs('admin.settings.seo*') ? 'active' : '' }}">SEO Settings</a></li>
+                    <li><a href="{{ route('admin.settings.features') }}" class="{{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}">Features activation</a></li>
+                    <li><a href="{{ route('admin.settings.languages.index') }}" class="{{ request()->routeIs('admin.settings.languages.*') ? 'active' : '' }}">Languages</a></li>
+                    <li><a href="{{ route('admin.settings.currency.index') }}" class="{{ request()->routeIs('admin.settings.currency.*') ? 'active' : '' }}">Currency</a></li>
+                    <li><a href="{{ route('admin.settings.custom') }}" class="{{ request()->routeIs('admin.settings.custom*') ? 'active' : '' }}">Vat &amp; TAX</a></li>
+                    <li><a href="{{ route('admin.settings.pickup-points.index') }}" class="{{ request()->routeIs('admin.settings.pickup-points.*') ? 'active' : '' }}">Pickup point</a></li>
+                    <li><a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'active' : '' }}">SMTP Settings</a></li>
+                    <li><a href="{{ route('admin.settings.payment-methods') }}" class="{{ request()->routeIs('admin.settings.payment-methods*') ? 'active' : '' }}">Payment Methods</a></li>
+                    <li><a href="{{ route('admin.settings.order') }}" class="{{ request()->routeIs('admin.settings.order*') ? 'active' : '' }}">Order Configuration</a></li>
+                    <!-- <li><span class="text-muted" aria-disabled="true">File System &amp; Cache Configuration</span></li>
+                    <li>
+                        <span class="text-muted" aria-disabled="true">Social media Logins</span>
+                        <ul class="list-unstyled">
+                            <li><span class="text-muted" aria-disabled="true">Facebook</span>
+                                <ul class="list-unstyled">
+                                    <li><span class="text-muted" aria-disabled="true">Facebook Chat</span></li>
+                                    <li><span class="text-muted" aria-disabled="true">Facebook Comment</span></li>
+                                </ul>
+                            </li>
+                            <li><span class="text-muted" aria-disabled="true">Google</span>
+                                <ul class="list-unstyled">
+                                    <li><span class="text-muted" aria-disabled="true">Analytics Tools</span></li>
+                                    <li><span class="text-muted" aria-disabled="true">Google reCAPTCHA</span></li>
+                                    <li><span class="text-muted" aria-disabled="true">Google Map</span></li>
+                                    <li><span class="text-muted" aria-disabled="true">Google Firebase</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <span class="text-muted" aria-disabled="true">Shipping</span>
+                        <ul class="list-unstyled">
+                            <li><a href="{{ route('admin.api-integrations.index') }}">Shipping Configuration</a></li>
+                            <li><span class="text-muted" aria-disabled="true">Shipping Countries</span></li>
+                            <li><span class="text-muted" aria-disabled="true">Shipping States</span></li>
+                            <li><span class="text-muted" aria-disabled="true">Shipping Cities</span></li>
+                            <li><span class="text-muted" aria-disabled="true">Shipping Zones</span></li>
+                            <li><a href="{{ route('admin.api-integrations.index') }}">Shipping Carrier</a></li>
+                        </ul>
+                    </li> -->
+                </ul>
+            </li>
+        </ul>
         <a href="{{ route('admin.home-page.index') }}" class="nav-item {{ request()->routeIs('admin.home-page.*') ? 'active' : '' }}">
             <i class="fas fa-home"></i> Home Page
         </a>
-        <a href="{{ route('admin.settings.header') }}" class="nav-item {{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}">
-            <i class="fas fa-sliders-h"></i> Header Settings
-        </a>
-        <a href="{{ route('admin.settings.commission') }}" class="nav-item {{ request()->routeIs('admin.settings.commission*') ? 'active' : '' }}">
-            <i class="fas fa-percent"></i> Commission
-        </a>
-        <a href="{{ route('admin.settings.footer') }}" class="nav-item {{ request()->routeIs('admin.settings.footer*') ? 'active' : '' }}">
-            <i class="fas fa-address-book"></i> Footer Settings
+        <a href="{{ route('admin.api-integrations.index') }}" class="nav-item {{ request()->routeIs('admin.api-integrations*') ? 'active' : '' }}">
+            <i class="fas fa-plug"></i> API Integrations
         </a>
         <a href="{{ route('admin.settings.search-categories') }}" class="nav-item {{ request()->routeIs('admin.settings.search-categories*') ? 'active' : '' }}">
             <i class="fas fa-list-ul"></i> Search Categories
@@ -209,6 +316,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 opacity: 0;
                 max-width: 0;
             }
+            .admin-sidebar.icon-collapsed .admin-sidebar-drop .submenu{
+                opacity: 0;
+                max-width: 0;
+                max-height: 0;
+            }
 
             .admin-sidebar .nav-section {
                 position: relative;
@@ -321,5 +433,23 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebar.classList.add('icon-collapsed');
         document.body.classList.add('icon-collapsed-body');
     }
+});
+
+document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (link) {
+    const target = document.querySelector(link.getAttribute('href'));
+
+    if (!target) return;
+
+    const syncParentState = function () {
+        const isExpanded = target.classList.contains('show');
+        link.classList.toggle('active', isExpanded);
+        link.classList.toggle('expanded', isExpanded);
+        link.classList.toggle('collapsed', !isExpanded);
+        link.setAttribute('aria-expanded', String(isExpanded));
+    };
+
+    syncParentState();
+    target.addEventListener('shown.bs.collapse', syncParentState);
+    target.addEventListener('hidden.bs.collapse', syncParentState);
 });
 </script>

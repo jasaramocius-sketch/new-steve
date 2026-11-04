@@ -64,9 +64,10 @@
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="category-card">
             <div class="category-image">
-                <a href="{{ route('shop', ['brand' => $brand->slug]) }}">
+                @php $brandUrl = filled($brand->slug) ? route('brand', ['slug' => $brand->slug]) : route('brands'); @endphp
+                <a href="{{ $brandUrl }}">
                     @if($brand->image)
-                        {!! imgTag(storedPath($brand->image, 'assets/images/brands'), $brand->name, '', 'style="width:100%;height:200px;object-fit:cover;"') !!}
+                        {!! imgTag(storedPath($brand->image, 'assets/images/brands'), $brand->name, '', 'style="width:100%;height:200px;object-fit:contain;"') !!}
                     @else
                         <div style="width:100%;height:200px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;">
                             <i class="fas fa-tag fa-3x text-muted"></i>
@@ -75,7 +76,7 @@
                 </a>
             </div>
             <div class="category-content">
-                <a href="{{ route('shop', ['brand' => $brand->slug]) }}" class="text-dark">
+                <a href="{{ $brandUrl }}" class="text-dark">
                     <h5>{{ $brand->name }}</h5>
                 </a>
                 <div class="category-stats">

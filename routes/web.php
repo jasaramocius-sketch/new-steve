@@ -5,15 +5,21 @@ use App\Http\Controllers\Admin\BlogCategoryController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\CurrencySettingsController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\HomePageController;
 use App\Http\Controllers\Admin\ImageController;
+use App\Http\Controllers\Admin\LanguageController as AdminLanguageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\PaymentMethodSettingsController;
+use App\Http\Controllers\Admin\PickupPointController;
 use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SellerController;
+use App\Http\Controllers\Admin\SmtpSettingsController;
 use App\Http\Controllers\Admin\SubscriberController;
+use App\Http\Controllers\Admin\ApiIntegrationController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
@@ -35,6 +41,8 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\WishlistController;
+use App\Models\Language;
+use App\Models\Currency;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -49,10 +57,29 @@ Route::get('/currency', [CurrencyController::class, 'rates']);
 Route::get('/address/states', [LocationController::class, 'states'])->name('location.states');
 Route::get('/address/cities', [LocationController::class, 'cities'])->name('location.cities');
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/sitemap.xml', [HomeController::class, 'sitemap'])->name('sitemap');
+Route::get('/sitemap.xml', [HomeController::class, 'sitemapIndex'])->name('sitemap');
+$sitemapTypes = [
+    'page' => 'pages',
+    'product' => 'products',
+    'blogs' => 'blogs',
+    'brands' => 'brands',
+    'categories' => 'categories',
+    'blog-categories' => 'blog-categories',
+    'blog-tags' => 'blog-tags',
+];
+foreach ($sitemapTypes as $sitemapSlug => $sitemapType) {
+    Route::get('/'.$sitemapSlug.'-sitemap.xml', function () use ($sitemapType) {
+        return app(HomeController::class)->sitemapSection($sitemapType);
+    });
+    Route::get('/'.$sitemapSlug.'-sitemap{page}.xml', function (int $page) use ($sitemapType) {
+        return app(HomeController::class)->sitemapSection($sitemapType, $page);
+    })->whereNumber('page');
+}
+Route::get('/robots.txt', [HomeController::class, 'robots'])->name('robots');
 
-Route::get('/shop', [ShopController::class, 'index'])->name('shop');
-Route::post('/shop/clear-vehicle', [ShopController::class, 'clearVehicleFilter'])->middleware('auth')->name('shop.clear-vehicle');
+Route::get('/search', [ShopController::class, 'index'])->name('shop');
+Route::post('/search/clear-vehicle', [ShopController::class, 'clearVehicleFilter'])->middleware('auth')->name('shop.clear-vehicle');
+Route::post('/search/clear-filters', [ShopController::class, 'clearAllFilters'])->name('shop.clear-filters');
 Route::get('/api/vehicles/years', [ShopController::class, 'vehicleYears'])->name('vehicles.years');
 Route::get('/api/vehicles/makes', [ShopController::class, 'vehicleMakes'])->name('vehicles.makes');
 Route::get('/api/vehicles/models', [ShopController::class, 'vehicleModels'])->name('vehicles.models');
@@ -66,6 +93,8 @@ Route::put('/product/{slug}/review/{reviewId}', [ReviewController::class, 'updat
 Route::delete('/product/{slug}/review/{reviewId}', [ReviewController::class, 'destroy'])->middleware('auth')->name('product.review.delete');
 
 Route::get('/category/{slug}', [ShopController::class, 'category'])->name('category');
+
+Route::get('/brand/{slug}', [ShopController::class, 'brand'])->name('brand');
 
 Route::get('/blog', [BlogController::class, 'index'])->name('blog');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
@@ -107,6 +136,12 @@ Route::post('/checkout/delivery-info', [CartController::class, 'deliveryInfoSubm
 Route::get('/checkout/payment', [CartController::class, 'payment'])->middleware(['nocache'])->name('checkout.payment');
 
 Route::post('/checkout/payment', [CartController::class, 'paymentSubmit'])->middleware(['nocache'])->name('checkout.payment.submit');
+
+Route::get('/checkout/stripe/success', [CartController::class, 'stripeSuccess'])->middleware(['nocache'])->name('checkout.stripe.success');
+
+Route::get('/checkout/stripe/cancel', [CartController::class, 'stripeCancel'])->middleware(['nocache'])->name('checkout.stripe.cancel');
+
+Route::post('/checkout/stripe/webhook', [CartController::class, 'stripeWebhook'])->name('checkout.stripe.webhook');
 
 Route::get('/checkout/order-confirmed', [CartController::class, 'orderConfirmed'])->middleware(['nocache'])->name('checkout.confirmed');
 
@@ -152,8 +187,8 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/register', [AuthController::class, 'registerForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+Route::get('/registration', [AuthController::class, 'registerForm'])->name('register');
+Route::post('/registration', [AuthController::class, 'register'])->name('register.post');
 
 Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->middleware('throttle:5,1')->name('password.email');
@@ -234,13 +269,13 @@ Route::prefix('admin')
         Route::post('/products', [ProductController::class, 'store'])
             ->name('admin.products.store');
 
-        Route::get('/products/import', [ProductController::class, 'importForm'])
+        Route::get('/product-bulk-upload', [ProductController::class, 'importForm'])
             ->name('admin.products.import-form');
-        Route::post('/products/import', [ProductController::class, 'import'])
+        Route::post('/product-bulk-upload', [ProductController::class, 'import'])
             ->name('admin.products.import');
-        Route::get('/products/import/sample', [ProductController::class, 'downloadSampleCsv'])
+        Route::get('/product-bulk-upload/index', [ProductController::class, 'downloadSampleCsv'])
             ->name('admin.products.download-sample-csv');
-        Route::get('/products/export/csv', [ProductController::class, 'exportCsv'])
+        Route::get('/product-bulk-export/csv', [ProductController::class, 'exportCsv'])
             ->name('admin.products.export-csv');
 
         Route::get('/products/stock', [ProductController::class, 'stockIndex'])
@@ -264,6 +299,8 @@ Route::prefix('admin')
             ->name('admin.products.toggle-status');
         Route::post('/products/{id}/toggle-featured', [ProductController::class, 'toggleFeatured'])
             ->name('admin.products.toggle-featured');
+        Route::post('/products/{id}/commission', [ProductController::class, 'updateCommission'])
+            ->name('admin.products.commission');
         Route::post('/products/{id}/duplicate', [ProductController::class, 'duplicate'])
             ->name('admin.products.duplicate');
 
@@ -295,6 +332,19 @@ Route::prefix('admin')
         Route::get('/orders/export/csv', [AdminOrderController::class, 'exportCsv'])->name('admin.orders.export-csv');
         Route::post('/orders/{id}/email-customer', [AdminOrderController::class, 'emailCustomer'])->name('admin.orders.email-customer');
         Route::get('/orders/{id}/invoice', [AdminOrderController::class, 'invoice'])->name('admin.orders.invoice');
+        Route::post('/orders/{id}/ship-api', [AdminOrderController::class, 'shipViaApi'])->name('admin.orders.ship-api');
+
+        // API Integrations
+        Route::get('/api-integrations', [ApiIntegrationController::class, 'index'])->name('admin.api-integrations.index');
+        Route::get('/api-integrations/create', [ApiIntegrationController::class, 'create'])->name('admin.api-integrations.create');
+        Route::post('/api-integrations', [ApiIntegrationController::class, 'store'])->name('admin.api-integrations.store');
+        Route::get('/api-integrations/{apiIntegration}/edit', [ApiIntegrationController::class, 'edit'])->name('admin.api-integrations.edit');
+        Route::put('/api-integrations/{apiIntegration}', [ApiIntegrationController::class, 'update'])->name('admin.api-integrations.update');
+        Route::delete('/api-integrations/{apiIntegration}', [ApiIntegrationController::class, 'destroy'])->name('admin.api-integrations.destroy');
+        Route::post('/api-integrations/{apiIntegration}/toggle', [ApiIntegrationController::class, 'toggle'])->name('admin.api-integrations.toggle');
+        Route::post('/api-integrations/{apiIntegration}/set-default', [ApiIntegrationController::class, 'setDefault'])->name('admin.api-integrations.set-default');
+        Route::post('/api-integrations/{apiIntegration}/test', [ApiIntegrationController::class, 'test'])->name('admin.api-integrations.test');
+        Route::get('/api-integrations/get-provider-fields', [ApiIntegrationController::class, 'getProviderFields'])->name('admin.api-integrations.get-provider-fields');
         Route::get('/brands', [BrandController::class, 'index'])
             ->name('admin.brands.index');
         Route::get('/brands/create', [BrandController::class, 'create'])
@@ -419,6 +469,8 @@ Route::prefix('admin')
 
         Route::get('/home-page', [HomePageController::class, 'index'])
             ->name('admin.home-page.index');
+        Route::get('/home-page/product-search', [HomePageController::class, 'searchProducts'])
+            ->name('admin.home-page.product-search');
         Route::get('/home-page/{id}/edit', [HomePageController::class, 'edit'])
             ->name('admin.home-page.edit');
         Route::put('/home-page/{id}', [HomePageController::class, 'update'])
@@ -428,16 +480,99 @@ Route::prefix('admin')
         Route::post('/home-page/{id}/toggle-status', [HomePageController::class, 'toggleStatus'])
             ->name('admin.home-page.toggle-status');
 
+        Route::get('/settings', [AdminController::class, 'settingsIndex'])
+            ->name('admin.settings.index');
+        Route::get('/settings/languages', [AdminLanguageController::class, 'index'])
+            ->name('admin.settings.languages.index');
+        Route::post('/settings/languages/default', [AdminLanguageController::class, 'updateDefault'])
+            ->name('admin.settings.languages.default');
+        Route::get('/settings/languages/create', [AdminLanguageController::class, 'create'])
+            ->name('admin.settings.languages.create');
+        Route::post('/settings/languages', [AdminLanguageController::class, 'store'])
+            ->name('admin.settings.languages.store');
+        Route::post('/settings/languages/{language}/status', [AdminLanguageController::class, 'toggleStatus'])
+            ->name('admin.settings.languages.status');
+        Route::post('/settings/languages/{language}/rtl', [AdminLanguageController::class, 'toggleRtl'])
+            ->name('admin.settings.languages.rtl');
+        Route::get('/settings/languages/{language}/translations', [AdminLanguageController::class, 'translations'])
+            ->name('admin.settings.languages.translations');
+        Route::put('/settings/languages/{language}/translations', [AdminLanguageController::class, 'updateTranslations'])
+            ->name('admin.settings.languages.translations.update');
+        Route::post('/settings/languages/{language}/app-translations/import', [AdminLanguageController::class, 'importAppTranslations'])
+            ->name('admin.settings.languages.import');
+        Route::get('/settings/languages/{language}/app-translations/export', [AdminLanguageController::class, 'exportAppTranslations'])
+            ->name('admin.settings.languages.export');
+        Route::get('/settings/languages/{language}/edit', [AdminLanguageController::class, 'edit'])
+            ->name('admin.settings.languages.edit');
+        Route::put('/settings/languages/{language}', [AdminLanguageController::class, 'update'])
+            ->name('admin.settings.languages.update');
+        Route::delete('/settings/languages/{language}', [AdminLanguageController::class, 'destroy'])
+            ->name('admin.settings.languages.destroy');
+        Route::get('/settings/currency', [CurrencySettingsController::class, 'index'])
+            ->name('admin.settings.currency.index');
+        Route::post('/settings/currency/settings', [CurrencySettingsController::class, 'updateSettings'])
+            ->name('admin.settings.currency.settings');
+        Route::post('/settings/currency/sync-live-rates', [CurrencySettingsController::class, 'syncRates'])
+            ->name('admin.settings.currency.sync');
+        Route::get('/settings/currency/create', [CurrencySettingsController::class, 'create'])
+            ->name('admin.settings.currency.create');
+        Route::post('/settings/currency', [CurrencySettingsController::class, 'store'])
+            ->name('admin.settings.currency.store');
+        Route::post('/settings/currency/{currency}/status', [CurrencySettingsController::class, 'toggleStatus'])
+            ->name('admin.settings.currency.status');
+        Route::get('/settings/currency/{currency}/edit', [CurrencySettingsController::class, 'edit'])
+            ->name('admin.settings.currency.edit');
+        Route::put('/settings/currency/{currency}', [CurrencySettingsController::class, 'update'])
+            ->name('admin.settings.currency.update');
+        Route::get('/settings/pickup-points', [PickupPointController::class, 'index'])
+            ->name('admin.settings.pickup-points.index');
+        Route::get('/settings/pickup-points/create', [PickupPointController::class, 'create'])
+            ->name('admin.settings.pickup-points.create');
+        Route::post('/settings/pickup-points', [PickupPointController::class, 'store'])
+            ->name('admin.settings.pickup-points.store');
+        Route::post('/settings/pickup-points/{pickupPoint}/status', [PickupPointController::class, 'toggleStatus'])
+            ->name('admin.settings.pickup-points.status');
+        Route::get('/settings/pickup-points/{pickupPoint}/edit', [PickupPointController::class, 'edit'])
+            ->name('admin.settings.pickup-points.edit');
+        Route::put('/settings/pickup-points/{pickupPoint}', [PickupPointController::class, 'update'])
+            ->name('admin.settings.pickup-points.update');
+        Route::delete('/settings/pickup-points/{pickupPoint}', [PickupPointController::class, 'destroy'])
+            ->name('admin.settings.pickup-points.destroy');
+        Route::get('/settings/smtp', [SmtpSettingsController::class, 'index'])
+            ->name('admin.settings.smtp');
+        Route::post('/settings/smtp', [SmtpSettingsController::class, 'update'])
+            ->name('admin.settings.smtp.update');
+        Route::post('/settings/smtp/test', [SmtpSettingsController::class, 'test'])
+            ->name('admin.settings.smtp.test');
+        Route::get('/settings/payment-methods', [PaymentMethodSettingsController::class, 'index'])
+            ->name('admin.settings.payment-methods');
+        Route::post('/settings/payment-methods/{provider}', [PaymentMethodSettingsController::class, 'update'])
+            ->name('admin.settings.payment-methods.update');
+        Route::get('/settings/order', [AdminController::class, 'orderSettings'])
+            ->name('admin.settings.order');
+        Route::post('/settings/order', [AdminController::class, 'updateOrderSettings'])
+            ->name('admin.settings.order.update');
+        Route::get('/settings/features', [AdminController::class, 'featureSettings'])
+            ->name('admin.settings.features');
+        Route::post('/settings/features', [AdminController::class, 'updateFeatureSetting'])
+            ->name('admin.settings.features.update');
+        Route::get('/settings/custom', [AdminController::class, 'customSettings'])
+            ->name('admin.settings.custom');
+        Route::post('/settings/custom', [AdminController::class, 'updateCustomSettings'])
+            ->name('admin.settings.custom.update');
+
         Route::get('/settings/header', [AdminController::class, 'headerSettings'])
             ->name('admin.settings.header');
         Route::post('/settings/header', [AdminController::class, 'updateHeaderSettings'])
             ->name('admin.settings.header.update');
+        Route::get('/settings/seo', [AdminController::class, 'seoSettings'])
+            ->name('admin.settings.seo');
+        Route::post('/settings/seo', [AdminController::class, 'updateSeoSettings'])
+            ->name('admin.settings.seo.update');
         Route::get('/settings/commission', [AdminController::class, 'commissionSettings'])
             ->name('admin.settings.commission');
         Route::post('/settings/commission', [AdminController::class, 'updateCommissionSettings'])
             ->name('admin.settings.commission.update');
-        Route::get('/settings/footer', [AdminController::class, 'footerSettings'])
-            ->name('admin.settings.footer');
         Route::post('/settings/footer', [AdminController::class, 'updateFooterSettings'])
             ->name('admin.settings.footer.update');
         Route::get('/settings/search-categories', [AdminController::class, 'searchCategorySettings'])
@@ -656,7 +791,7 @@ Route::get('/category', function () {
     return redirect('/categories');
 });
 Route::get('/customer_products', [ShopController::class, 'customerProducts'])->name('customer.products');
-Route::get('/category/{parent}/{child}/{subchild?}', [ShopController::class, 'subcategory'])->name('subcategory');
+Route::get('/category/{parent}/{child}/{subchild?}', [ShopController::class, 'categoryByPath'])->name('subcategory');
 Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
 Route::get('/privacy-policy', [HomeController::class, 'privacy'])->name('privacy.policy');
@@ -725,7 +860,7 @@ Route::middleware(['auth', 'nocache'])->group(function () {
 });
 
 Route::get('/language/{locale}', function ($locale) {
-    if (array_key_exists($locale, config('languages', []))) {
+    if (Language::where('code', $locale)->where('is_active', true)->exists()) {
         session(['locale' => $locale]);
     }
 
@@ -737,7 +872,9 @@ Route::get('/convert/{amount}/{from}/{to}', [CurrencyController::class, 'convert
     ->name('currency.convert');
 
 Route::get('/currency/{currency}', function ($currency) {
-    session(['currency' => $currency]);
+    if (Currency::where('code', strtoupper($currency))->where('is_active', true)->exists()) {
+        session(['currency' => strtoupper($currency)]);
+    }
 
     return back();
 })->name('currency.change');
@@ -747,3 +884,6 @@ Route::get('/contact-us', [ContactController::class, 'index'])
 
 Route::post('/contact-us', [ContactController::class, 'store'])
     ->name('contact.store');
+
+Route::get('/contact/thank-you', [ContactController::class, 'thankYou'])
+    ->name('contact.thank-you');

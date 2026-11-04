@@ -38,10 +38,10 @@
           <form action="{{ route('register.post') }}" method="POST">
             @csrf
             <div class="form-group">
-              <label for="name">Name</label>
+              <label for="name">Name  <span class="text-danger">*</span></label>
               <input type="text" name="name" class="form-control" id="name" placeholder="Enter your full name" value="{{ old('name') }}" required>
 
-              <label for="email">Email Address</label>
+              <label for="email">Email Address <span class="text-danger">*</span></label>
               <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email" value="{{ old('email') }}" required>
             
                 <label for="create-password">Password</label>

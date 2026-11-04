@@ -6,6 +6,8 @@
         'pageTitle' => $page->meta_title ?: $page->title,
         'metaTitle' => $page->meta_title,
         'metaDescription' => $page->meta_description,
+        'ogImage' => $page->image ?? null,
+        'ogImagePrefix' => 'assets/images/pages',
         'robots' => 'index, follow',
     ])
 @endsection

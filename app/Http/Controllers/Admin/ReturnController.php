@@ -47,7 +47,11 @@ class ReturnController extends Controller
             'admin_note' => $request->input('admin_note') ?: null,
         ];
 
-        if ($request->filled('refund_amount')) {
+        // Rejected return → no refund happens, so refund amount must be cleared.
+        // Approved/Refunded → refund amount may be set (defaulted to order total in UI).
+        if ($request->status === 'rejected') {
+            $update['refund_amount'] = null;
+        } elseif ($request->filled('refund_amount')) {
             $update['refund_amount'] = $request->refund_amount;
         }
 

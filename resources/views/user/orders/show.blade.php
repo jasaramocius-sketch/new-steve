@@ -26,7 +26,7 @@
 }
 
 .user-order-details-page .order-page-header {
-    margin-bottom: 28px;
+    margin-bottom: 24px;
 }
 
 .user-order-details-page .order-back-btn {
@@ -60,7 +60,7 @@
     justify-content: space-between;
     gap: 20px;
     padding: 24px;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
     background: #fff;
     border: 1px solid var(--order-border);
     border-radius: 12px;
@@ -108,7 +108,7 @@
 
 .user-order-details-page .order-status-card {
     padding: 28px 24px 22px;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     background: #fff;
     border: 1px solid var(--order-border);
     border-radius: 12px;
@@ -338,7 +338,7 @@
 }
 
 .user-order-details-page .order-items-section {
-    margin-top: 32px;
+    margin-top: 24px;
     padding: 24px;
     background: #fff;
     border: 1px solid var(--order-border);
@@ -422,8 +422,8 @@
     justify-content: center;
     flex: 0 0 auto;
     border-radius: 8px;
-    background: #f8fafc;
-    color: var(--order-primary);
+    background: var(--order-primary);
+    color: #f8fafc;
     font-size: 12px;
     font-weight: 700;
 }
@@ -668,7 +668,7 @@
 </div>
 
 @if(count($order->getStatusHistory()) > 1)
-<div class="order-status-card mt-4">
+<div class="order-status-card">
     <h4 class="order-status-title">Status History</h4>
     @include('partials.order-status-timeline', ['order' => $order])
 </div>
@@ -769,10 +769,10 @@
             <div class="order-payment-list">
                 <div class="order-payment-row">
                     <span>Payment Status</span>
-                    @if($currentStatus == 'delivered')
+                    @if(($order->payment_status ?? 'unpaid') === 'paid')
                         <span class="badge badge--success"><i class="fas fa-check me-1"></i> Paid</span>
-                    @elseif($currentStatus == 'cancelled')
-                        <span class="badge badge--danger"><i class="fas fa-times me-1"></i> Cancelled</span>
+                    @elseif(($order->payment_status ?? '') === 'refunded')
+                        <span class="badge badge--secondary"><i class="fas fa-undo me-1"></i> Refunded</span>
                     @else
                         <span class="badge badge--warning"><i class="fas fa-clock me-1"></i> Unpaid</span>
                     @endif
@@ -956,7 +956,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold fs-14">Your Review <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="orderReviewText" rows="4" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
+                    <textarea class="form-control textarea-control" id="orderReviewText" rows="4" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold fs-14">Review Images</label>

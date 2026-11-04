@@ -21,9 +21,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
     <div class=""></div>
     <div class="d-flex gap-2 flex-wrap admin-product-page-important-btn">
-        <a href="{{ route('admin.products.import-form') }}" class="btn btn-outline-primary product-import-export-btn steve-btn"><i class="fas fa-upload"></i> Import</a>
-        <a href="{{ route('admin.products.export-csv') }}" class="btn btn-outline-secondary product-import-export-btn"><i class="fas fa-download"></i> Export CSV</a>
-        <a href="{{ route('admin.products.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Product</a>
+        <a href="{{ route('admin.products.import-form') }}" class="btn btn-outline-primary product-import-export-btn steve-btn gap-1"><i class="fas fa-upload"></i> Import</a>
+        <a href="{{ route('admin.products.export-csv') }}" class="btn btn-outline-secondary product-import-export-btn gap-1"><i class="fas fa-download"></i> Export CSV</a>
+        <a href="{{ route('admin.products.create') }}" class="btn btn-primary gap-1"><i class="fas fa-plus"></i> Add Product</a>
     </div>
 </div>
 
@@ -49,14 +49,14 @@
 {{-- Filter bar --}}
 <div class="card border-0 shadow-sm mb-3 admin-product-index-filter-bar">
     <div class="card-body py-3">
-        <form action="{{ route('admin.products.index') }}" method="GET" class="row g-2 align-items-end">
+        <form action="{{ route('admin.products.index') }}" method="GET" class="row d-grid grid-auto-flow-column g-2 align-items-end">
             @if(request()->has('trashed'))
                 <input type="hidden" name="trashed" value="1">
             @endif
             @if(request()->filled('search'))
                 <input type="hidden" name="search" value="{{ request('search') }}">
             @endif
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Category</label>
                 <select name="category_id" class="form-select">
                     <option value="">All Categories</option>
@@ -65,7 +65,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Brand</label>
                 <select name="brand_id" class="form-select">
                     <option value="">All Brands</option>
@@ -74,7 +74,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Seller</label>
                 <select name="seller_id" class="form-select">
                     <option value="">All Sellers</option>
@@ -83,7 +83,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Section</label>
                 <select name="product_type" class="form-select">
                     <option value="all" {{ request('product_type') === 'all' ? 'selected' : '' }}>All Sections</option>
@@ -92,7 +92,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Stock</label>
                 <select name="stock_filter" class="form-select">
                     <option value="all" {{ request('stock_filter') === 'all' ? 'selected' : '' }}>Any Stock</option>
@@ -100,7 +100,7 @@
                     <option value="out_of_stock" {{ request('stock_filter') === 'out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Status</label>
                 <select name="status" class="form-select">
                     <option value="">Any Status</option>
@@ -108,7 +108,7 @@
                     <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Inactive</option>
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-lg-2">
+            <div class="admin-product-index-filter-item">
                 <label class="form-label small text-muted mb-1">Featured</label>
                 <select name="featured" class="form-select">
                     <option value="">Any</option>
@@ -116,10 +116,10 @@
                     <option value="0" {{ request('featured') === '0' ? 'selected' : '' }}>Not Featured</option>
                 </select>
             </div>
-            <div class="col-12 col-md-auto d-flex gap-2 flex-wrap">
-                <button type="submit" class="btn btn-primary btn-sm steve-btn"><i class="fas fa-filter me-1"></i> Filter</button>
+            <div class="admin-product-index-filter-item d-flex gap-2 flex-wrap">
+                <button type="submit" class="btn btn-primary steve-btn"><i class="fas fa-filter me-1"></i> Filter</button>
                 @if($hasActiveFilters)
-                    <a href="{{ route('admin.products.index', request()->has('trashed') ? ['trashed' => 1] : []) }}" class="btn btn-outline-danger btn-sm steve-btn"><i class="fas fa-times me-1"></i> Clear Filters</a>
+                    <a href="{{ route('admin.products.index', request()->has('trashed') ? ['trashed' => 1] : []) }}" class="btn btn-outline-danger steve-btn"><i class="fas fa-times"></i></a>
                 @endif
             </div>
         </form>
@@ -168,7 +168,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-3">
+                        <th class="">
                             <input type="checkbox" class="form-check-input m-0 bulk-select-all" aria-label="Select all on this page">
                         </th>
                         <th>No.</th>
@@ -176,25 +176,18 @@
                         <th><a href="{{ sortUrl('name', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">
                             Name {!! sortIndicator('name', $sortBy, $sortDir) !!}
                         </a></th>
-                        <th><a href="{{ sortUrl('sku', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">
-                            SKU {!! sortIndicator('sku', $sortBy, $sortDir) !!}
-                        </a></th>
                         <th>Category</th>
                         <th>Seller</th>
                         <th><a href="{{ sortUrl('price', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">
                             Price {!! sortIndicator('price', $sortBy, $sortDir) !!}
                         </a></th>
-                        <th>Old Price</th>
+                        <th>Commission</th>
+                        <th>Total Price</th>
                         <th><a href="{{ sortUrl('stock', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">
                             Stock {!! sortIndicator('stock', $sortBy, $sortDir) !!}
                         </a></th>
-                        <th>Badge</th>
-                        <th>Section</th>
                         <th><a href="{{ sortUrl('rating', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">
                             Rating {!! sortIndicator('rating', $sortBy, $sortDir) !!}
-                        </a></th>
-                        <th><a href="{{ sortUrl('featured', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">
-                            Featured {!! sortIndicator('featured', $sortBy, $sortDir) !!}
                         </a></th>
                         <th><a href="{{ sortUrl('status', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">
                             Status {!! sortIndicator('status', $sortBy, $sortDir) !!}
@@ -205,45 +198,50 @@
                 <tbody>
                     @forelse($products as $product)
                     <tr>
-                        <td class="ps-3">
+                        <td class="">
                             <input type="checkbox" class="form-check-input m-0 bulk-select-row" value="{{ $product->id }}" aria-label="Select product {{ $product->name }}">
                         </td>
                         <td>{{ $products->firstItem() + $loop->index }}</td>
                         <td>
-                            <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="50" height="50" class="admin-image-thumb">
+                            <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="50" height="50" class="admin-image-thumb" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                         </td>
-                        <td class="admin-product-name"><a href="{{ route('product', $product->slug) }}" target="_blank">{{ Str::words($product->name, 3, '...') }}</a></td>
-                        <td><code>{{ $product->sku ?: '—' }}</code></td>
+                        <td class="admin-product-name">
+                            <a href="{{ route('product', $product->slug) }}" target="_blank">{{ Str::words($product->name, 3, '...') }}</a>
+                            <div class="small text-muted"><code>#{{ $product->sku ?: '—' }}</code></div>
+                        </td>
                         <td>{{ $product->category->name ??  'N/A' }}</td>
                         <td>{{ $product->seller->name ?? 'N/A' }}</td>
                         <td>{{ currency_format($product->price) }}</td>
-                        <td>@if($product->old_price) {{ currency_format($product->old_price) }} @else - @endif</td>
+                        <td>
+                            @if(request()->has('trashed'))
+                                <span class="text-muted">-</span>
+                            @else
+                                @php
+                                    $globalCommissionLabel = rtrim(rtrim(number_format(globalCommissionPercent(), 2, '.', ''), '0'), '.');
+                                    $productCommissionLabel = $product->commission !== null
+                                        ? rtrim(rtrim(number_format((float) $product->commission, 2, '.', ''), '0'), '.')
+                                        : '';
+                                @endphp
+                                <div class="input-group input-group-sm admin-commission-cell" style="width:80px;">
+                                    <input type="number" step="0.01" min="0" max="100"
+                                           class="form-control js-product-commission no-spinner"
+                                           value="{{ $productCommissionLabel }}"
+                                           data-default="{{ $productCommissionLabel }}"
+                                           data-url="{{ route('admin.products.commission', $product->id) }}"
+                                           placeholder="{{ $globalCommissionLabel }}"
+                                           title="Empty = global commission ({{ $globalCommissionLabel }}%)"
+                                           aria-label="Commission percent for {{ $product->name }}">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            @endif
+                        </td>
+                        <td class="text-nowrap js-product-total">{{ currency_format(buyerPrice($product->price, $product)) }}</td>
                         <td>{{ $product->stock ?? 0 }}</td>
-                        <td>@if($product->badge) <span class="badge bg-light text-warning border border-warning-subtle">{{ $product->badge }}</span> @else - @endif</td>
-                        <td><span class="badge bg-light text-info border border-info-subtle">{{ str_replace('_', ' ', ucfirst($product->product_type ?? 'none')) }}</span></td>
                         <td>
                             @if($product->rating)
                                 <span class="text-warning"><i class="fas fa-star me-1"></i>{{ number_format($product->rating, 1) }}</span>
                             @else
                                 -
-                            @endif
-                        </td>
-                        <td>
-                            @if(!request()->has('trashed'))
-                                <form action="{{ route('admin.products.toggle-featured', $product->id) }}" method="POST" class="d-inline featured-status-btn">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm border-0 p-0 steve-btn">
-                                        <span class="badge admin-clickable {{ $product->featured ? 'bg-warning text-dark' : 'bg-secondary' }}">
-                                            @if($product->featured)
-                                                <i class="fa-solid fa-star"><span class="visually-hidden">Featured</span></i> Yes
-                                            @else
-                                                <i class="fa-regular fa-star"><span class="visually-hidden">Not featured</span></i> No
-                                            @endif
-                                        </span>
-                                    </button>
-                                </form>
-                            @else
-                                <span class="badge bg-secondary">-</span>
                             @endif
                         </td>
                         <td>
@@ -288,7 +286,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="16" class="text-center py-4 text-muted">{{ request()->has('trashed') ? 'Trash is empty.' : 'No products found.' }}</td>
+                        <td colspan="13" class="text-center py-4 text-muted">{{ request()->has('trashed') ? 'Trash is empty.' : 'No products found.' }}</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -397,6 +395,74 @@
             });
         }
         refresh();
+    })();
+</script>
+<script>
+    (function () {
+        function csrfToken() {
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute('content') : '';
+        }
+
+        function notify(type, message) {
+            if (window.toastr && typeof toastr[type] === 'function') {
+                toastr[type](message);
+            } else {
+                alert(message);
+            }
+        }
+
+        document.addEventListener('change', function (e) {
+            var input = e.target.closest ? e.target.closest('.js-product-commission') : null;
+            if (!input) return;
+
+            var raw = input.value.trim();
+            if (raw !== '' && (isNaN(raw) || Number(raw) < 0 || Number(raw) > 100)) {
+                notify('error', 'Commission must be a number between 0 and 100.');
+                input.value = input.getAttribute('data-default') || '';
+                return;
+            }
+
+            input.disabled = true;
+            fetch(input.getAttribute('data-url'), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ commission: raw === '' ? null : Number(raw) })
+            })
+            .then(function (r) {
+                return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+            })
+            .then(function (res) {
+                input.disabled = false;
+                if (!res.ok || !res.data.success) {
+                    var message = (res.data && res.data.message) || 'Could not update commission.';
+                    if (res.data && res.data.errors && res.data.errors.commission) {
+                        message = res.data.errors.commission[0];
+                    }
+                    notify('error', message);
+                    input.value = input.getAttribute('data-default') || '';
+                    return;
+                }
+                input.value = res.data.commission === null ? '' : Number(res.data.commission);
+                input.setAttribute('data-default', input.value);
+                var row = input.closest('tr');
+                var totalCell = row ? row.querySelector('.js-product-total') : null;
+                if (totalCell && res.data.total_price) {
+                    totalCell.textContent = res.data.total_price;
+                }
+                notify('success', 'Commission updated.');
+            })
+            .catch(function () {
+                input.disabled = false;
+                notify('error', 'Could not update commission.');
+                input.value = input.getAttribute('data-default') || '';
+            });
+        });
     })();
 </script>
 @endpush

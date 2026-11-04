@@ -140,27 +140,27 @@
                         </td>
                         <td class="table-action-col">
                             <div class="action-buttons revision-action-buttons">
-                            <a href="{{ route('admin.revisions.detail', $rev->id) }}" class="btn btn-outline-info" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="View Details">
-                                <i class="fas fa-code-branch"></i>
+                            <a href="{{ route('admin.revisions.detail', $rev->id) }}" class="action-btn btn-view-history" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="View Details" aria-label="View Details">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                             </a>
                             @if(!empty($trashed))
                                 <form action="{{ route('admin.revisions.restore', $rev->id) }}" method="POST" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Restore revision" title="Restore revision">
-                                        <i class="fas fa-undo"></i>
+                                    <button type="submit" class="action-btn btn-restore" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Restore revision" aria-label="Restore revision">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                                     </button>
                                 </form>
                                 <form action="{{ route('admin.revisions.force-delete', $rev->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Permanently delete this revision from trash? This cannot be undone.')">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete permanently" title="Permanently delete">
-                                        <i class="fas fa-trash"></i>
+                                    <button type="submit" class="action-btn btn-cancel" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete permanently" aria-label="Delete permanently">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                     </button>
                                 </form>
                             @else
                                 <form action="{{ route('admin.revisions.destroy', $rev->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this revision? It will move to trash and auto-delete after 15 days.')">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete revision">
-                                        <i class="fas fa-trash"></i>
+                                    <button type="submit" class="action-btn btn-cancel" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete revision" aria-label="Delete revision">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                     </button>
                                 </form>
                             @endif

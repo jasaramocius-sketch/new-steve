@@ -36,7 +36,7 @@
                         <label class="form-label">Content</label>
                         <textarea id="editor"
                             name="details"
-                            class="form-control texteditor @error('details') is-invalid @enderror"
+                            class="form-control textarea-control texteditor @error('details') is-invalid @enderror"
                             rows="15">{{ old('details') }}</textarea>
                         @error('details')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -57,7 +57,7 @@
                                 <div class="mb-3">
                                     <label class="form-label">Status</label>
                                     <select name="status"
-                                        class="form-control @error('status') is-invalid @enderror">
+                                        class="form-control @error('status') is-invalid @enderror form-select">
                                         <option value="draft"
                                             {{ old('status') === 'draft' ? 'selected' : '' }}>
                                             Draft
@@ -144,7 +144,7 @@
                                     class="d-none mb-2">
                                 </div>
                                 <button type="button"
-                                    class="btn btn-sm btn-outline-primary"
+                                    class="btn btn-outline-primary"
                                     onclick="impOpen_blog_image()">
                                     <i class="fas fa-images me-1"></i>
                                     Browse Image Manager
@@ -155,28 +155,28 @@
                                     </div>
                                 @enderror
                             </div>
-                        </div>
-                        {{-- Image URL --}}
-                        <div class="card border shadow-none mb-3">
-                            <div class="card-header bg-white">
-                                <h6 class="mb-0">Image URL</h6>
-                            </div>
-                            <div class="card-body">
-                                <input type="url"
-                                    name="image_url"
-                                    class="form-control @error('image_url') is-invalid @enderror"
-                                    value="{{ old('image_url') }}"
-                                    placeholder="https://example.com/image.jpg">
-                                @error('image_url')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                                <small class="text-muted">
-                                    Provide a URL only if no image is selected.
-                                </small>
-                            </div>
-                        </div>             
+                            {{-- Image URL --}}
+                            <div class="card border shadow-none mb-3">
+                                <div class="card-header bg-white">
+                                    <h6 class="mb-0">Image URL</h6>
+                                </div>
+                                <div class="card-body">
+                                    <input type="url"
+                                        name="image_url"
+                                        class="form-control @error('image_url') is-invalid @enderror"
+                                        value="{{ old('image_url') }}"
+                                        placeholder="https://example.com/image.jpg">
+                                    @error('image_url')
+                                        <div class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                    <small class="text-muted">
+                                        Provide a URL only if no image is selected.
+                                    </small>
+                                </div>
+                            </div>                          
+                        </div>           
                     </div>
                 </div>
             </div>

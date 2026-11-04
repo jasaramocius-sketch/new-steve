@@ -40,9 +40,11 @@
                             <small class="text-muted ms-2">Current Image</small>
                         </div>
                     @endif
+                    <input type="file" name="image" class="form-control mt-2 @error('image') is-invalid @enderror" accept="image/jpeg,image/png,image/webp">
+                    @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     <input type="hidden" name="image_from_manager" id="image_from_manager_brand_image">
                     <div id="impPreview_brand_image" class="d-none mt-2"></div>
-                    <button type="button" class="btn btn-sm btn-outline-primary mt-10" onclick="impOpen_brand_image()">
+                    <button type="button" class="btn btn-outline-primary mt-10" onclick="impOpen_brand_image()">
                         <i class="fas fa-images me-1"></i> Browse Image Manager
                     </button>
                 </div>
@@ -57,7 +59,7 @@
 
                 <div class="col-md-12">
                     <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control texteditor @error('description') is-invalid @enderror" rows="4">{{ old('description', $brand->description) }}</textarea>
+                    <textarea name="description" class="form-control textarea-control texteditor @error('description') is-invalid @enderror" rows="4">{{ old('description', $brand->description) }}</textarea>
                     @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
             </div>

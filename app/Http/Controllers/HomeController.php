@@ -10,10 +10,26 @@ use App\Models\Faq;
 use App\Models\HomePageSection;
 use App\Models\Page;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\Tag;
-
+use App\Services\VehicleCatalog;
+ 
 class HomeController extends Controller
 {
+    private const SITEMAP_CHUNK_SIZE = 1000;
+
+    private const SITEMAP_TYPES = [
+        'page' => 'pages',
+        'product' => 'products',
+        'blogs' => 'blogs',
+        'brands' => 'brands',
+        'categories' => 'categories',
+        'blog-categories' => 'blog-categories',
+        'blog-tags' => 'blog-tags',
+    ];
+
+    public function __construct(private VehicleCatalog $vehicleCatalog) {}
+
     private function formatCategoryName(string $slug): string
     {
         $names = [
@@ -34,7 +50,9 @@ class HomeController extends Controller
         $selectedIds = $categorySection?->extra_data['category_ids'] ?? [];
         $selectedIds = is_array($selectedIds) ? array_values(array_filter(array_map('intval', $selectedIds))) : [];
 
-        $counts = Product::statusCountsByCategoryId();
+        $counts = \Illuminate\Support\Facades\Cache::remember('home.category_counts', 3600, function () {
+            return Product::statusCountsByCategoryId();
+        });
 
         $query = Category::whereNull('parent_id');
 
@@ -58,7 +76,9 @@ class HomeController extends Controller
                     'image' => $category->getDisplayImagePath(),
                     'count' => $count,
                 ];
-            });
+            })
+            ->filter(fn ($category) => $category['image'] !== 'assets/images/placeholder.png' && $category['count'] > 0)
+            ->values();
     }
 
     private function getCategoryImage(string $slug): string
@@ -83,7 +103,16 @@ class HomeController extends Controller
 
     private function getFeaturedProducts()
     {
-        return Product::where('status', true)->latest()->take(8)->get();
+        return $this->filterProductsWithImages(
+            Product::where('status', true)->hasUsableImage()->latest()->take(8)->get()
+        );
+    }
+
+    private function filterProductsWithImages($products)
+    {
+        return $products
+            ->filter(fn (Product $product) => filled($product->image))
+            ->values();
     }
 
     private function randomProducts(int $take = 8)
@@ -95,12 +124,16 @@ class HomeController extends Controller
         }
 
         $products = Product::where('status', true)
+            ->hasUsableImage()
             ->where('id', '>=', random_int(1, $maxId))
             ->take($take)
             ->get();
+        $products = $this->filterProductsWithImages($products);
 
         if ($products->isEmpty()) {
-            $products = Product::where('status', true)->latest()->take($take)->get();
+            $products = $this->filterProductsWithImages(
+                Product::where('status', true)->hasUsableImage()->latest()->take($take)->get()
+            );
         }
 
         return $products;
@@ -130,6 +163,28 @@ class HomeController extends Controller
                 ->keyBy('section_name');
         }
 
+        if (! HomePageSection::where('section_name', 'buy_with_confidence')->exists()) {
+            HomePageSection::create([
+                'section_name' => 'buy_with_confidence',
+                'title' => 'Buy With Confidence',
+                'description' => '40 years of getting it right. Here’s how we make sure you get the right part, every time.',
+                'button_text' => '1-800-555-AUTO',
+                'button_url' => 'tel:1800555',
+                'order' => 1000,
+                'status' => true,
+                'extra_data' => ['items' => [
+                    ['icon' => 'fa-solid fa-circle-check', 'title' => 'Fitment Guarantee', 'description' => 'Enter your VIN or vehicle specs and we show only parts that fit. Wrong part? We cover return shipping.'],
+                    ['icon' => 'fa-solid fa-truck-fast', 'title' => 'Fast Shipping', 'description' => '5 distribution centers coast-to-coast. Most orders arrive in 1–3 business days. Free over $99.'],
+                    ['icon' => 'fa-solid fa-rotate-left', 'title' => '30-Day Returns', 'description' => 'Parts don’t fit or change your mind? Return within 30 days. No restocking fee on most items.'],
+                    ['icon' => 'fa-solid fa-user-gear', 'title' => 'Mechanic Tested', 'description' => 'Every brand we carry is vetted by ASE-certified technicians. No junk, no knock-offs, no surprises.'],
+                ]],
+            ]);
+            $sections = HomePageSection::where('status', true)
+                ->orderBy('order')
+                ->get()
+                ->keyBy('section_name');
+        }
+
         $exploreSection = $sections->get('explore_products');
         $exploreTabs = $this->buildExploreTabs($exploreSection);
 
@@ -149,6 +204,21 @@ class HomeController extends Controller
         }
 
         $bestSelling = $this->randomProducts(8);
+
+        $servicesSection = HomePageSection::where('section_name', 'services')->first();
+        if ($servicesSection) {
+            $services = $servicesSection->status
+                ? ($servicesSection->extra_data['services'] ?? config('homepage.services', []))
+                : [];
+        } else {
+            $services = Setting::get('homepage_services');
+            if (is_string($services)) {
+                $services = json_decode($services, true);
+            }
+            if (! is_array($services) || count($services) !== count(config('homepage.services', []))) {
+                $services = config('homepage.services', []);
+            }
+        }
 
         $latestPostSection = $sections->get('latest_post');
         $latestPostLimit = (int) ($latestPostSection?->extra_data['posts_count'] ?? 2);
@@ -180,7 +250,13 @@ class HomeController extends Controller
         if (! empty($selectedBrandIds) && is_array($selectedBrandIds)) {
             $selectedBrandIds = array_filter(array_map('intval', $selectedBrandIds));
             if (! empty($selectedBrandIds)) {
-                $brandsQuery = Brand::whereIn('id', $selectedBrandIds)
+                $brandsQuery = Brand::query()
+                    ->where('status', true)
+                    ->whereNotNull('name')
+                    ->where('name', '<>', '')
+                    ->whereNotNull('slug')
+                    ->where('slug', '<>', '')
+                    ->whereIn('id', $selectedBrandIds)
                     ->orderByRaw('FIELD(id, '.implode(',', $selectedBrandIds).')');
             }
         } elseif ((int) $brandsLimit > 0) {
@@ -189,7 +265,11 @@ class HomeController extends Controller
 
         $brands = $brandsQuery->get();
 
-        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'brands') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
+        $years = $this->vehicleCatalog->years();
+        $makes = collect();
+        $models = collect();
+
+        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
     }
 
     private function buildExploreTabs($section): array
@@ -222,18 +302,22 @@ class HomeController extends Controller
 
             if (! empty($ids)) {
                 $products = Product::where('status', true)
+                    ->hasUsableImage()
                     ->whereIn('id', $ids)
                     ->latest()
                     ->take(8)
                     ->get();
             } elseif ($sectionKey) {
                 $products = Product::where('status', true)
+                    ->hasUsableImage()
                     ->latest()
                     ->take(8)
                     ->get();
             } else {
                 continue;
             }
+
+            $products = $this->filterProductsWithImages($products);
 
             if ($products->isEmpty()) {
                 $products = $this->randomProducts(8);
@@ -248,7 +332,7 @@ class HomeController extends Controller
         if (empty($result)) {
             $result[] = [
                 'label' => 'New Arrivals',
-                'products' => Product::where('status', true)->latest()->take(8)->get(),
+                'products' => $this->getFeaturedProducts(),
             ];
         }
 
@@ -343,76 +427,170 @@ class HomeController extends Controller
         return view('pages.support-policy');
     }
 
-    public function sitemap()
+    public function robots()
     {
-        $base = url('/');
+        if (Setting::get('seo_indexing_enabled', '1') === '0') {
+            return response("User-agent: *\nDisallow: /", 200)
+                ->header('Content-Type', 'text/plain; charset=UTF-8');
+        }
 
-        return response()->stream(function () use ($base) {
+        return response(renderRobotsTxt(Setting::get('seo_robots_txt')), 200)
+            ->header('Content-Type', 'text/plain; charset=UTF-8');
+    }
+
+    public function sitemapIndex()
+    {
+        if (Setting::get('seo_sitemap_enabled', '1') === '0') {
+            abort(404);
+        }
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $xml .= '<?xml-stylesheet type="text/xsl" href="'.$this->xmlEscape(url('/sitemap.xsl')).'"?>'."\n";
+        $xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+
+        foreach (self::SITEMAP_TYPES as $slug => $type) {
+            $count = $this->sitemapCount($type);
+            if ($count === 0) {
+                continue;
+            }
+
+            $pageCount = max(1, (int) ceil($count / self::SITEMAP_CHUNK_SIZE));
+            $lastmod = $this->sitemapLastmod($type);
+            for ($page = 1; $page <= $pageCount; $page++) {
+                $suffix = $page === 1 ? '' : (string) $page;
+                $location = url('/'.$slug.'-sitemap'.$suffix.'.xml');
+                $xml .= "  <sitemap>\n";
+                $xml .= '    <loc>'.$this->xmlEscape($location)."</loc>\n";
+                if ($lastmod) {
+                    $xml .= '    <lastmod>'.$this->xmlEscape($lastmod)."</lastmod>\n";
+                }
+                $xml .= "  </sitemap>\n";
+            }
+        }
+
+        $xml .= '</sitemapindex>';
+
+        return response($xml, 200)->header('Content-Type', 'application/xml; charset=UTF-8');
+    }
+
+    public function sitemapSection(string $type, int $page = 1)
+    {
+        if (Setting::get('seo_sitemap_enabled', '1') === '0') {
+            abort(404);
+        }
+        abort_unless(in_array($type, self::SITEMAP_TYPES, true) && $page > 0, 404);
+
+        $base = url('/');
+        $entries = $this->sitemapEntries($type, $page, rtrim($base, '/'));
+        $stylesheet = $this->xmlEscape(url('/sitemap.xsl'));
+
+        return response()->stream(function () use ($entries, $stylesheet) {
             $out = fopen('php://output', 'w');
 
-            $write = function (string $loc, $lastmod = null, string $changefreq = 'weekly', float $priority = 0.5) use ($out) {
+            fwrite($out, '<?xml version="1.0" encoding="UTF-8"?>' . "\n");
+            fwrite($out, '<?xml-stylesheet type="text/xsl" href="'.$stylesheet.'"?>' . "\n");
+            fwrite($out, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n");
+            foreach ($entries as $entry) {
                 fwrite($out, "  <url>\n");
-                fwrite($out, '    <loc>'.e($loc)."</loc>\n");
-                if ($lastmod) {
-                    fwrite($out, '    <lastmod>'.$lastmod."</lastmod>\n");
+                fwrite($out, '    <loc>'.$this->xmlEscape($entry['loc'])."</loc>\n");
+                if (! empty($entry['lastmod'])) {
+                    fwrite($out, '    <lastmod>'.$this->xmlEscape($entry['lastmod'])."</lastmod>\n");
                 }
-                fwrite($out, '    <changefreq>'.$changefreq."</changefreq>\n");
-                fwrite($out, '    <priority>'.number_format($priority, 1)."</priority>\n");
                 fwrite($out, "  </url>\n");
-            };
-
-            fwrite($out, '<?xml version="1.0" encoding="UTF-8"?>'."\n");
-            fwrite($out, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n");
-
-            $write($base, null, 'daily', 1.0);
-            $write($base.'/shop', null, 'daily', 0.9);
-            $write($base.'/categories', null, 'weekly', 0.7);
-            $write($base.'/brands', null, 'weekly', 0.6);
-            $write($base.'/blog', null, 'daily', 0.8);
-            $write($base.'/about-us', null, 'monthly', 0.4);
-            $write($base.'/contact-us', null, 'monthly', 0.4);
-            $write($base.'/faq', null, 'monthly', 0.3);
-            $write($base.'/privacy', null, 'monthly', 0.2);
-            $write($base.'/terms', null, 'monthly', 0.2);
-            $write($base.'/return-policy', null, 'monthly', 0.2);
-            $write($base.'/support-policy', null, 'monthly', 0.2);
-
-            $categoryMap = Category::select('id', 'slug', 'parent_id')->get()->keyBy('id');
-
-            Category::select('id', 'slug', 'parent_id', 'updated_at')->orderBy('id')->cursor()
-                ->each(function ($category) use ($write, $categoryMap, $base) {
-                    $segments = [];
-                    $current = $category;
-                    $guard = 0;
-                    while ($current && $guard++ < 5) {
-                        array_unshift($segments, $current->slug);
-                        $current = $current->parent_id ? ($categoryMap[$current->parent_id] ?? null) : null;
-                    }
-                    $write($base.'/category/'.implode('/', $segments), optional($category->updated_at)->toAtomString(), 'weekly', 0.6);
-                });
-
-            Product::where('status', true)->select('slug', 'updated_at')->orderBy('id')->cursor()
-                ->each(function ($product) use ($write, $base) {
-                    $write($base.'/product/'.$product->slug, optional($product->updated_at)->toAtomString(), 'daily', 0.9);
-                });
-
-            Blog::accessible()->select('slug', 'updated_at')->orderBy('id')->cursor()
-                ->each(function ($blog) use ($write, $base) {
-                    $write($base.'/blog/'.$blog->slug, optional($blog->updated_at)->toAtomString(), 'weekly', 0.8);
-                });
-
-            BlogCategory::withCount(['blogs' => fn ($q) => $q->accessible()])->get()
-                ->filter(fn ($c) => $c->blogs_count > 0)
-                ->each(function ($category) use ($write, $base) {
-                    $write($base.'/blog/category/'.$category->slug, optional($category->updated_at)->toAtomString(), 'weekly', 0.6);
-                });
-
-            Tag::whereHas('blogs', fn ($q) => $q->accessible())->get()->each(function ($tag) use ($write, $base) {
-                $write($base.'/blog/tag/'.$tag->slug, null, 'weekly', 0.4);
-            });
+            }
 
             fwrite($out, "</urlset>\n");
             fclose($out);
         }, 200, ['Content-Type' => 'application/xml']);
+    }
+
+    private function sitemapQuery(string $type)
+    {
+        return match ($type) {
+            'pages' => Page::where('status', true)
+                ->whereNotNull('slug')->where('slug', '<>', '')
+                ->whereNotIn('slug', ['terms-conditions', 'privacy-policy', 'return-policy', 'support-policy']),
+            'products' => Product::where('status', true)->hasUsableImage()->whereNotNull('slug')->where('slug', '<>', ''),
+            'blogs' => Blog::accessible()->whereNotNull('slug')->where('slug', '<>', ''),
+            'brands' => Brand::where('status', true)->whereNotNull('slug')->where('slug', '<>', ''),
+            'categories' => Category::whereNotNull('slug')->where('slug', '<>', ''),
+            'blog-categories' => BlogCategory::where('status', true)
+                ->whereNotNull('slug')->where('slug', '<>', '')
+                ->whereHas('blogs', fn ($query) => $query->accessible()),
+            'blog-tags' => Tag::whereNotNull('slug')->where('slug', '<>', '')
+                ->whereHas('blogs', fn ($query) => $query->accessible()),
+            default => abort(404),
+        };
+    }
+
+    private function sitemapCount(string $type): int
+    {
+        $count = (int) $this->sitemapQuery($type)->count();
+
+        return $type === 'pages' ? $count + count($this->staticSitemapUrls()) : $count;
+    }
+
+    private function sitemapLastmod(string $type): ?string
+    {
+        $updatedAt = $this->sitemapQuery($type)->max('updated_at');
+
+        return $updatedAt ? \Illuminate\Support\Carbon::parse($updatedAt)->toAtomString() : null;
+    }
+
+    private function sitemapEntries(string $type, int $page, string $base): array
+    {
+        $offset = ($page - 1) * self::SITEMAP_CHUNK_SIZE;
+        $entries = [];
+        $pageQuery = $this->sitemapQuery($type);
+
+        if ($type === 'pages') {
+            $staticUrls = $this->staticSitemapUrls();
+            $staticEntries = array_slice($staticUrls, $offset, self::SITEMAP_CHUNK_SIZE);
+            foreach ($staticEntries as $path) {
+                $entries[] = ['loc' => $base.$path, 'lastmod' => null];
+            }
+            $offset = max(0, $offset - count($staticUrls));
+            $limit = self::SITEMAP_CHUNK_SIZE - count($staticEntries);
+        } else {
+            $limit = self::SITEMAP_CHUNK_SIZE;
+        }
+
+        if ($limit > 0) {
+            $pageQuery->select(['slug', 'updated_at'])
+                ->orderBy('id')
+                ->offset($offset)
+                ->limit($limit)
+                ->get()
+                ->each(function ($record) use (&$entries, $type, $base) {
+                    $path = match ($type) {
+                        'pages' => '/page/'.$record->slug,
+                        'products' => '/product/'.$record->slug,
+                        'blogs' => '/blog/'.$record->slug,
+                        'brands' => '/brand/'.$record->slug,
+                        'categories' => '/category/'.$record->slug,
+                        'blog-categories' => '/blog/category/'.$record->slug,
+                        'blog-tags' => '/blog/tag/'.$record->slug,
+                    };
+                    $entries[] = [
+                        'loc' => $base.$path,
+                        'lastmod' => $record->updated_at?->toAtomString(),
+                    ];
+                });
+        }
+
+        return $entries;
+    }
+
+    private function staticSitemapUrls(): array
+    {
+        return [
+            '/', '/search', '/categories', '/brands', '/blog', '/about-us', '/contact-us',
+            '/faq', '/privacy', '/terms', '/return-policy', '/support-policy',
+        ];
+    }
+
+    private function xmlEscape(string $value): string
+    {
+        return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
     }
 }

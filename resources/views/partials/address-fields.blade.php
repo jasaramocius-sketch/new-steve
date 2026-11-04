@@ -121,7 +121,7 @@
         <textarea
     name="address"
     id="{{ $p }}_address"
-    class="form-control @error('address') is-invalid @enderror"
+    class="form-control textarea-control @error('address') is-invalid @enderror"
     rows="3"
     placeholder="123 Street Name"
     @if($req('address')) required @endif

@@ -16,7 +16,7 @@
         $pYear  = $product['year'] ?? null;
         $pMake  = $product['make'] ?? null;
         $pModel = $product['model'] ?? null;
-        $pPrice = is_numeric($product['price'] ?? null) ? number_format(buyerPrice($product['price']), 2) : null;
+        $pPrice = is_numeric($product['price'] ?? null) ? number_format(buyerPrice($product['price'], $product), 2) : null;
 
         $identifiers = array_filter([$pYear, $pMake, $pModel]);
         $fitment = implode(' / ', $identifiers);

@@ -42,7 +42,7 @@
 
                 <div class="col-md-12">
                     <label class="form-label">Answer *</label>
-                    <textarea name="answer" class="form-control texteditor @error('answer') is-invalid @enderror" rows="6" required>{{ old('answer', $faq->answer) }}</textarea>
+                    <textarea name="answer" class="form-control textarea-control texteditor @error('answer') is-invalid @enderror" rows="6" required>{{ old('answer', $faq->answer) }}</textarea>
                     @error('answer') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
             </div>

@@ -293,7 +293,7 @@ class DashboardController extends Controller
             ? $sellerModel->products()->where('status', true)->count()
             : $followedSeller->products;
         $products = $sellerModel
-            ? $sellerModel->products()->where('status', true)->orderBy('id')->limit(4)->get(['id', 'name', 'slug', 'price', 'image'])
+            ? $sellerModel->products()->where('status', true)->orderBy('id')->limit(4)->get(['id', 'name', 'slug', 'cost', 'commission', 'image'])
             : collect();
 
         $seller = [
@@ -310,7 +310,7 @@ class DashboardController extends Controller
                 'id' => $p->id,
                 'name' => $p->name,
                 'slug' => $p->slug,
-                'price' => currency_format(buyerPrice($p->price)),
+                'price' => currency_format(buyerPrice($p->price, $p)),
                 'image' => storedImageUrl($p->image, 'assets/images/thumbnails'),
             ])->values(),
         ];
@@ -335,7 +335,7 @@ class DashboardController extends Controller
 
         $total = $query ? $query->count() : 0;
         $products = $query
-            ? $query->orderBy('id')->skip($offset)->take($limit)->get(['id', 'name', 'slug', 'price', 'image'])
+            ? $query->orderBy('id')->skip($offset)->take($limit)->get(['id', 'name', 'slug', 'cost', 'commission', 'image'])
             : collect();
 
         return response()->json([
@@ -344,7 +344,7 @@ class DashboardController extends Controller
                 'id' => $p->id,
                 'name' => $p->name,
                 'slug' => $p->slug,
-                'price' => currency_format(buyerPrice($p->price)),
+                'price' => currency_format(buyerPrice($p->price, $p)),
                 'image' => storedImageUrl($p->image, 'assets/images/thumbnails'),
             ])->values(),
             'has_more' => ($offset + $products->count()) < $total,

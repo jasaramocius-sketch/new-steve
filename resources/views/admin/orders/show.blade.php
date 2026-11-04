@@ -43,8 +43,8 @@
         <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
             <!-- <a href="{{ route('admin.orders.index') }}" class="text-decoration-none text-muted"><i class="fas fa-arrow-left me-1"></i> Back</a> -->
             <h4 class="mb-0 fw-bold">Order #{{ $order->order_number }}</h4>
-            <span class="badge {{ $orderBadge }}">{{ ucfirst($order->status) }}</span>
-            <span class="badge {{ $paymentBadge }}">{{ ucfirst($order->payment_status ?? 'unpaid') }}</span>
+            <span class="badge {{ $orderBadge }}">Order: {{ ucfirst($order->status) }}</span>
+            <span class="badge {{ $paymentBadge }}">Payment: {{ ucfirst($order->payment_status ?? 'unpaid') }}</span>
         </div>
         <small class="text-muted">Placed on {{ $order->created_at->format('M d, Y \a\t h:i A') }}</small>
     </div>
@@ -207,8 +207,12 @@
                             <input type="text" name="tracking_carrier" class="form-control" value="{{ $order->tracking_carrier }}" placeholder="e.g. DHL / FedEx / USPS">
                         </div>
                     </div>
-                    <div class="mt-3">
+                    <div class="order-detail-actions mt-3">
                         <button type="submit" class="btn btn-primary steve-btn gap-1"><i class="fas fa-sync"></i> Update</button>
+                        <form action="{{ route('admin.orders.ship-api', $order->id) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-success gap-1" onclick="return confirm('Create shipment via configured courier API and auto-generate tracking number?')"><i class="fas fa-shipping-fast"></i> Ship via API</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -285,6 +289,10 @@
                 </div>
                 <div class="card-body">
                     <div class="small">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Payment Status</span>
+                            <span class="badge {{ $paymentBadge }}">{{ ucfirst($order->payment_status ?? 'unpaid') }}</span>
+                        </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Method</span>
                             <span class="fw-medium">{{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A')) }}</span>

@@ -1,11 +1,11 @@
 @php
-    $similarItems = $similar ?? collect();
-    if (!is_array($similarItems)) { $similarItems = collect($similarItems); }
-    $all = collect([$current])->merge($similarItems);
+    $similarItems = collect($similar ?? [])->take(2);
+    $all = collect([$current])->merge($similarItems)->take(3);
 @endphp
 
 @if($all->count() > 1)
-<div class="gs-similar-compare-area mt-5">
+<section class="gs-similar-compare-area mt-5">
+    <div class="container">
     <div class="title pb-20">
         <h3 style="font-weight: 600;">Similar Products To Compare</h3>
         <p class="text-muted">Compare this part with alternatives from other brands</p>
@@ -13,7 +13,7 @@
     <div class="table-responsive bg-white border">
         <table class="table table-bordered align-middle text-center compare-similar-table mb-0">
             <tr>
-                <th class="compare-row-label" width="10%" style="vertical-align: middle;">Product</th>
+                <th class="compare-row-label" width="10%" style="vertical-align: middle;"></th>
                 @foreach($all as $p)
                 <td class="similar-col p-0">
                     <div class="compare-product-image-wrapper">
@@ -21,9 +21,6 @@
                             {!! imgTag(storedPath($p->image, 'assets/images/thumbnails'), '', 'img-fluid mb-2', 'style="height:100%; width:100%; object-fit:cover;"') !!}
                         </a>
                     </div>
-                    <a href="{{ route('product', $p->slug) }}" class="d-block text-decoration-none small fw-semibold p-10">
-                        {{ $p->name }}
-                    </a>
                     @if($p->id === $product['id'])
                         <span class="badge bg-primary-subtle text-white border border-primary-subtle mt-1">Current Product</span>
                     @endif
@@ -31,10 +28,29 @@
                 @endforeach
             </tr>
             <tr>
+                <th class="compare-row-label">Product</th>
+                @foreach($all as $p)
+                    <td class="similar-col"  style="text-transform: uppercase;">
+                        <a href="{{ route('product', $p->slug) }}" class="d-block text-decoration-none small fw-semibold p-10">
+                        {{ $p->name }}
+                    </a>
+                    </td>
+                @endforeach
+            </tr>
+            <tr>
                 <th class="compare-row-label">Brand</th>
                 @foreach($all as $p)
-                    <td class="similar-col">
+                    <td class="similar-col"  style="text-transform: uppercase;">
                         {{ $p->brand->name ?? '—' }}
+                    </td>
+                @endforeach
+            </tr>
+
+            <tr>
+                <th class="compare-row-label">Category</th>
+                @foreach($all as $p)
+                    <td class="similar-col"  style="text-transform: uppercase;">
+                        {{ $p->category->name ?? '—' }}
                     </td>
                 @endforeach
             </tr>
@@ -42,9 +58,9 @@
                 <th class="compare-row-label">Price</th>
                 @foreach($all as $p)
                     <td class="similar-col fw-bold text-danger">
-                        {{ currency_format(buyerPrice($p->price)) }}
+                        {{ currency_format(buyerPrice($p->price, $p)) }}
                         @if($p->old_price)
-                            <div><del class="text-muted small">{{ currency_format(buyerPrice($p->old_price)) }}</del></div>
+                            <div><del class="text-muted small">{{ currency_format(buyerPrice($p->old_price, $p)) }}</del></div>
                         @endif
                     </td>
                 @endforeach
@@ -68,11 +84,11 @@
                 @endforeach
             </tr>
             <tr>
-                <th class="compare-row-label">Fitment / Vehicle</th>
+                <th class="compare-row-label">Part Number</th>
                 @foreach($all as $p)
                     <td class="similar-col">
-                        @if($p->year || $p->make || $p->model)
-                            {{ $p->year ?? '' }}{{ $p->make || $p->model ? ' / ' : '' }}{{ $p->make ?? '' }}{{ $p->model ? ' / ' : '' }}{{ $p->model ?? '' }}
+                        @if($p->part_number)
+                            {{ $p->part_number }}
                         @else
                             <span class="text-muted">Universal</span>
                         @endif
@@ -95,7 +111,7 @@
                 <th class="compare-row-label">Description</th>
                 @foreach($all as $p)
                     <td class="similar-col small text-muted" style="max-width:260px;">
-                        {{ \Illuminate\Support\Str::limit(strip_tags(html_entity_decode((string) $p->description)), 90) }}
+                        {{ \Illuminate\Support\Str::limit(strip_tags(html_entity_decode((string) $p->overview)), 90) }}
                     </td>
                 @endforeach
             </tr>
@@ -109,12 +125,12 @@
                                     @csrf
                                     <input type="hidden" name="product_id" value="{{ $p->id }}">
                                     <input type="hidden" name="product_name" value="{{ $p->name }}">
-                                    <input type="hidden" name="product_price" value="{{ buyerPrice($p->price) }}">
+                                    <input type="hidden" name="product_price" value="{{ buyerPrice($p->price, $p) }}">
                                     <input type="hidden" name="product_image" value="{{ storedImageUrl($p->image, 'assets/images/thumbnails') }}">
                                     <button type="submit" class="btn btn-danger btn-sm steve-btn w-100">Add to Cart</button>
                                 </form>
                             @else
-                                <span class="text-muted small">Out of Stock</span>
+                                <!-- <span class="text-muted small">Out of Stock</span> -->
                             @endif
                             <a href="{{ route('product', $p->slug) }}" class="btn btn-outline-secondary btn-sm steve-btn">View Details</a>
                         </div>
@@ -124,4 +140,5 @@
         </table>
     </div>
 </div>
+</section>
 @endif

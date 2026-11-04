@@ -65,9 +65,9 @@
                             <input type="hidden" name="search" value="{{ request('search') }}">
                             <input type="hidden" name="page" value="">
                             <select class="form-select" name="sort" onchange="this.form.submit()">
-                                <option value="latest" {{ request('sort') == 'latest' ? 'selected' : '' }}>Latest</option>
-                                <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
-                                <option value="name" {{ request('sort') == 'name' ? 'selected' : '' }}>Name A-Z</option>
+                                <option value="name" {{ request('sort', 'name') == 'name' ? 'selected' : '' }}>Name A-Z</option>
+                                <option value="latest" {{ request('sort', 'name') == 'latest' ? 'selected' : '' }}>Latest</option>
+                                <option value="oldest" {{ request('sort', 'name') == 'oldest' ? 'selected' : '' }}>Oldest</option>
                             </select>
                         </form>
                     </div>
@@ -95,7 +95,7 @@
 
             <div class="category-content">
                 <a href="{{ route('category', $category->slug) }}" class="text-dark">
-                    <h5>{{ $category->name }}</h5>
+                    <p><strong>{{ $category->name }}</strong></p>
                 </a>
 
                 <div class="category-stats">
@@ -115,7 +115,7 @@
                         <ul class="list-unstyled mb-0" style="font-size:13px;">
                             @foreach($category->children->take(3) as $child)
                                 <li class="mb-1 d-flex align-items-center">
-                                    <a href="{{ route('subcategory', ['parent' => $category->slug, 'child' => $child->slug]) }}" class="text-decoration-none d-flex align-items-center gap-2 subcategory-link" style="color:#1f0300;">
+                                    <a href="{{ route('category', ['slug' => $child->slug]) }}" class="text-decoration-none d-flex align-items-center gap-2 subcategory-link" style="color:#1f0300;">
                                         {!! imgTag($child->getDisplayImagePath(), $child->name, 'subcategory-thumb-img') !!}
                                         <span>{{ $child->name }}</span>
                                     </a>
@@ -144,9 +144,9 @@
                         <span class="category-product-info">
                             <span class="category-product-name">{{ $previewProduct->name }}</span>
                             <span class="category-product-price">
-                                {{ currency_format(buyerPrice($previewProduct->price)) }}
+                                {{ currency_format(buyerPrice($previewProduct->price, $previewProduct)) }}
                                 @if(!empty($previewProduct->old_price) && $previewProduct->old_price > $previewProduct->price)
-                                <del class="category-product-old-price">{{ currency_format(buyerPrice($previewProduct->old_price)) }}</del>
+                                <del class="category-product-old-price">{{ currency_format(buyerPrice($previewProduct->old_price, $previewProduct)) }}</del>
                                 @endif
                             </span>
                         </span>
@@ -162,6 +162,12 @@
     @endforeach
 
 </div>
+
+@if ($categories->hasPages())
+    <div class="d-flex justify-content-center py-4">
+        {{ $categories->withQueryString()->links('vendor.pagination.gs-pagination') }}
+    </div>
+@endif
 
 </div>
 </section>

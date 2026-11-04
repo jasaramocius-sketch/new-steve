@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Traits\Revisable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Category extends Model
 {
@@ -19,6 +18,9 @@ class Category extends Model
         'slug',
         'parent_id',
         'level',
+        'banner',
+        'icon',
+        'cover_image',
     ];
 
     public function parent()
@@ -86,7 +88,14 @@ class Category extends Model
 
     public function getImageAttribute()
     {
-        return $this->attributes['image'] ?? null;
+        $image = trim((string) ($this->attributes['banner'] ?? ''));
+        return $image !== '' ? $image : null;
+    }
+
+    public function setImageAttribute($value): void
+    {
+        $this->attributes['banner'] = $value;
+        $this->attributes['cover_image'] = $value;
     }
 
     public function getStatusAttribute()
@@ -101,30 +110,15 @@ class Category extends Model
 
     public function getDisplayImagePath(): string
     {
-        $storedImage = trim((string) ($this->attributes['image'] ?? ''));
+        $storedImage = trim((string) ($this->image ?? ''));
         if ($storedImage !== '') {
             $candidate = storedPath($storedImage, 'assets/images/categories');
-            $checkPath = str_starts_with($candidate, 'uploads/') ? 'storage/'.$candidate : $candidate;
-            if (file_exists(public_path($checkPath))) {
+            if (preg_match('#^https?://#i', $candidate)) {
                 return $candidate;
             }
-        }
 
-        $fallbacks = [
-            'engine-parts' => '1730804224silver-device-with-white-cover-that-says-word-it-minpng.png',
-            'body-exterior' => '173080421331792401shockabsorber2-minpng.png',
-            'interior-parts' => '1730804204oval-shaped-car-mirror-minpng.png',
-            'electrical-lighting' => '1730804142c1b1489eb0545231cf0bfa44a827e2ae-minpng.png',
-            'brakes-brake-parts' => '173080413017369231014177a5f-cedb-407a-8a1d-a6aa0f40249d-minpng.png',
-            'transmission-drivetrain' => '1730804110engineering-concept-project-heating-house-thermostatic-valve-copper-fitting-project-minpng.png',
-            'suspension-steering' => '1730804093huelpful-steering-wheel-isolated-white-background-minpng.png',
-        ];
-
-        $slug = Str::slug((string) ($this->slug ?: $this->name));
-        $fallback = $fallbacks[$slug] ?? null;
-        if ($fallback) {
-            $candidate = 'assets/images/categories/'.$fallback;
-            if (file_exists(public_path($candidate))) {
+            $checkPath = str_starts_with($candidate, 'uploads/') ? 'storage/'.$candidate : $candidate;
+            if (file_exists(public_path($checkPath))) {
                 return $candidate;
             }
         }
@@ -143,6 +137,10 @@ class Category extends Model
      */
     public function getTotalProductsCountAttribute(): int
     {
+        if (array_key_exists('total_products_count', $this->attributes)) {
+            return (int) $this->attributes['total_products_count'];
+        }
+
         $count = $this->products_count ?? 0;
         if ($this->relationLoaded('children')) {
             foreach ($this->children as $child) {

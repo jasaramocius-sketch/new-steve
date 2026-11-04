@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\OrderConfirmationMail;
 use App\Mail\OrderStatusChangedMail;
 use App\Models\Order;
+use App\Services\Couriers\CourierManager;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -148,6 +149,35 @@ class OrderController extends Controller
         }
 
         return redirect()->route('admin.orders.show', $id)->with('success', $message);
+    }
+
+    public function shipViaApi($id)
+    {
+        $order = Order::with('items.product')->findOrFail($id);
+
+        try {
+            $manager = app(CourierManager::class);
+            $result = $manager->ship($order);
+
+            if (!$result['success']) {
+                return back()->with('error', $result['message'] ?? 'Failed to create shipment via API.');
+            }
+
+            $order->refresh();
+            NotificationHelper::orderStatusChanged($order, 'pending');
+
+            if ($order->user_id && $order->user?->email) {
+                try {
+                    Mail::to($order->user->email)->send(new OrderStatusChangedMail($order, 'pending'));
+                } catch (\Throwable $e) {
+                    // ignore mail errors
+                }
+            }
+
+            return back()->with('success', 'Shipment created via API. Tracking: ' . ($result['awb'] ?? 'N/A') . ' (' . ($result['carrier'] ?? '') . ')');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Error: ' . $e->getMessage());
+        }
     }
 
     public function invoice($id)

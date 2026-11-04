@@ -7,7 +7,7 @@
 @endpush
 {{-- Add your custom page ID and classes right here --}}
 @include('partials.page-attributes', ['pageId' => 'shop-page', 'pageClass' => 'shop-page'])
-@php $shopTitle = isset($pageTitle) ? $pageTitle : (isset($currentChildcategory) ? $currentChildcategory->name : (isset($currentSubcategory) ? $currentSubcategory->name : (isset($currentCategory) ? $currentCategory->name : 'Shop'))); $shopMeta = (isset($page) && $page->meta_title) ? $page->meta_title : null; $shopDesc = (isset($page) && $page->meta_description) ? $page->meta_description : null; @endphp
+@php $shopTitle = isset($pageTitle) ? $pageTitle : (!empty($currentBrand) ? $currentBrand->name : (isset($currentChildcategory) ? $currentChildcategory->name : (isset($currentSubcategory) ? $currentSubcategory->name : (isset($currentCategory) ? $currentCategory->name : 'Shop')))); $shopMeta = (isset($page) && $page->meta_title) ? $page->meta_title : null; $shopDesc = (isset($page) && $page->meta_description) ? $page->meta_description : null; @endphp
 @section('meta_tags')
     @include('partials.meta-tags', [
         'pageTitle' => $shopMeta ?: ($shopTitle . ' - StAutoparts'),
@@ -63,6 +63,12 @@
     font-weight: 600;
     color: #6b7280;
   }
+  
+  .active-filter-chips form.ms-auto .btn:hover {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: var(--primary) !important;
+  }
   .filter-chip {
     display: inline-flex;
     align-items: center;
@@ -106,6 +112,8 @@
       <h2 class="breadcrumb-title">
         @if(isset($pageTitle))
           {{ $pageTitle }}
+        @elseif(!empty($currentBrand))
+          {{ $currentBrand->name }}
         @elseif(isset($currentChildcategory))
           {{ $currentChildcategory->name }}
         @elseif(isset($currentSubcategory))
@@ -119,41 +127,43 @@
       <ul class="bread-menu">
         <li><a href="{{ route('home') }}">Home</a></li>
 
-        @if(isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory))
-            <li><a href="{{ route('shop') }}">Shop</a></li>
+        @if(!empty($currentBrand))
+            <li><a href="{{ route('brands') }}">Brands</a></li>
+            <li style="color: var(--primary);">{{ $currentBrand->name }}</li>
         @else
-            <li style="color: var(--primary);">Shop</li>
-        @endif
-
-        @if(isset($currentCategory))
-            @if(isset($currentSubcategory) || isset($currentChildcategory))
-                <li>
-                    <a href="{{ route('category', ['slug' => $currentCategory->slug]) }}">
-                        {{ $currentCategory->name }}
-                    </a>
-                </li>
+            @if(isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory))
+                <li><a href="{{ route('shop') }}">Shop</a></li>
             @else
-                <li style="color: var(--primary);">{{ $currentCategory->name }}</li>
+                <li style="color: var(--primary);">Shop</li>
             @endif
-        @endif
 
-        @if(isset($currentSubcategory))
+            @if(isset($currentCategory))
+                @if(isset($currentSubcategory) || isset($currentChildcategory))
+                    <li>
+                        <a href="{{ route('category', ['slug' => $currentCategory->slug]) }}">
+                            {{ $currentCategory->name }}
+                        </a>
+                    </li>
+                @else
+                    <li style="color: var(--primary);">{{ $currentCategory->name }}</li>
+                @endif
+            @endif
+
+            @if(isset($currentSubcategory))
+                @if(isset($currentChildcategory))
+                    <li>
+                        <a href="{{ route('category', ['slug' => $currentSubcategory->slug]) }}">
+                            {{ $currentSubcategory->name }}
+                        </a>
+                    </li>
+                @else
+                    <li style="color: var(--primary);">{{ $currentSubcategory->name }}</li>
+                @endif
+            @endif
+
             @if(isset($currentChildcategory))
-                <li>
-                    <a href="{{ route('subcategory', [
-                        'parent' => $currentCategory->slug,
-                        'child' => $currentSubcategory->slug
-                    ]) }}">
-                        {{ $currentSubcategory->name }}
-                    </a>
-                </li>
-            @else
-                <li style="color: var(--primary);">{{ $currentSubcategory->name }}</li>
+                <li style="color: var(--primary);">{{ $currentChildcategory->name }}</li>
             @endif
-        @endif
-
-        @if(isset($currentChildcategory))
-            <li style="color: var(--primary);">{{ $currentChildcategory->name }}</li>
         @endif
       </ul>
     </div>
@@ -185,8 +195,17 @@
           </div>
 
           <!-- Categories Widget -->
+          @php
+            $isCategoryPage = isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory);
+          @endphp
           <div class="single-product-widget shadow-sm rounded border">
-            <h5 class="widget-title">Categories</h5>
+            <h5 class="widget-title">
+              <button type="button" class="widget-collapse-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#sidebarCategoriesCollapse" aria-expanded="false" aria-controls="sidebarCategoriesCollapse">
+                <span>Categories</span>
+                <i class="fa-solid fa-chevron-down widget-collapse-icon" aria-hidden="true"></i>
+              </button>
+            </h5>
+            <div class="collapse show" id="sidebarCategoriesCollapse">
             <div class="product-cat-widget">
               <ul class="list-unstyled mb-0 gap-1 d-flex flex-column">
                 @if(isset($currentCategory))
@@ -232,7 +251,7 @@
                           <li class="mb-2 gap-1 d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-center gap-3">
                               @if($subCat->descendant_count > 0 || $isSubActive)
-                                <a href="{{ route('subcategory', ['parent' => $topCat->slug, 'child' => $subCat->slug]) }}" class="text-decoration-none flex-grow-1 primary-a-tag-text-hover" style="color: {{ $isSubActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $isSubActive ? '600' : '400' }};">
+                                <a href="{{ route('category', ['slug' => $subCat->slug]) }}" class="text-decoration-none flex-grow-1 primary-a-tag-text-hover" style="color: {{ $isSubActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $isSubActive ? '600' : '400' }};">
                                   {{ $subCat->name }}
                                   <span class="text-muted" style="font-size: 12px; font-weight: 400;">({{ $subCat->descendant_count }})</span>
                                 </a>
@@ -258,7 +277,7 @@
                                   @endphp
                                   <li class="my-1 gap-1 d-flex flex-column">
                                     @if($childCat->descendant_count > 0 || $isChildActive)
-                                      <a href="{{ route('subcategory', ['parent' => $topCat->slug, 'child' => $subCat->slug, 'subchild' => $childCat->slug]) }}" class="text-decoration-none a-tag-text-hover" style="color: {{ $isChildActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $isChildActive ? '600' : '400' }};">
+                                      <a href="{{ route('category', ['slug' => $childCat->slug]) }}" class="text-decoration-none a-tag-text-hover" style="color: {{ $isChildActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $isChildActive ? '600' : '400' }};">
                                         {{ $childCat->name }}
                                         <span class="text-muted" style="font-size: 12px; font-weight: 400;">({{ $childCat->descendant_count }})</span>
                                       </a>
@@ -281,11 +300,17 @@
                 @endforeach
               </ul>
             </div>
+            </div>
           </div>
 
           <!-- Price Filter Widget -->
           <div class="single-product-widget shadow-sm rounded border">
-            <h5 class="widget-title">Price Range</h5>
+            <h5 class="widget-title">Price Range
+              <!-- <button type="button" class="widget-collapse-toggle" data-bs-toggle="collapse" data-bs-target="#sidebarPriceCollapse" aria-expanded="false" aria-controls="sidebarPriceCollapse">
+                <span>Price Range</span>
+                <i class="fa-solid fa-chevron-down widget-collapse-icon" aria-hidden="true"></i>
+              </button> -->
+            </h5>
             <form id="price-filter-form" action="{{ url()->current() }}" method="GET">
               @foreach(request()->except(['min_price', 'max_price', 'page']) as $name => $value)
                 @if(is_array($value))
@@ -306,7 +331,7 @@
                 @endphp
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <span class="text-muted" style="font-size: 14px;">Range:</span>
-                  <span id="price-range-label" style="font-weight: 600; color: #1f0300;">{{ currency_format($sliderMin) }} - {{ currency_format($sliderMax) }}</span>
+                  <span id="price-range-label" style="font-weight: 600; color: #1f0300;">{{ $currencySymbol }}{{ number_format($sliderMin, 2) }} - {{ $currencySymbol }}{{ number_format($sliderMax, 2) }}</span>
                 </div>
                 <input type="hidden" id="price-min" name="min_price" value="{{ request('min_price', $sliderMin) }}">
                 <input type="hidden" id="price-max" name="max_price" value="{{ request('max_price', $sliderMax) }}">
@@ -321,11 +346,20 @@
                 </div>
               </div>
             </form>
+            <div class="collapse" id="sidebarPriceCollapse">
+            
+            </div>
           </div>
 
           <!-- Vehicle Filter Widgets (Year, Make, Model) -->
           <div class="single-product-widget shadow-sm rounded border mb-4">
-            <h5 class="widget-title mb-4">Vehicle</h5>
+            <h5 class="widget-title mb-4">
+              <button type="button" class="widget-collapse-toggle" data-bs-toggle="collapse" data-bs-target="#sidebarVehicleCollapse" aria-expanded="true" aria-controls="sidebarVehicleCollapse">
+                <span>Vehicle</span>
+                <i class="fa-solid fa-chevron-down widget-collapse-icon" aria-hidden="true"></i>
+              </button>
+            </h5>
+            <div class="collapse show" id="sidebarVehicleCollapse">
             <form id="vehicle-filter-form" action="{{ url()->current() }}" class="d-flex flex-column gap-2" method="GET" class="vehicle-filter-form">
             @foreach(request()->except(['brand', 'year', 'make', 'model', 'page']) as $name => $value)
               @if(is_array($value))
@@ -346,14 +380,14 @@
                 </select>
               @endif
                 <span class="shop-page-widget-title">Make</span>
-                <select name="make" class="form-select filter-select" id="filter-make">
+                <select name="make" class="form-select filter-select" id="filter-make" @disabled(!request()->filled('year'))>
                   <option value="">All Makes</option>
                   @foreach($makes as $make)
                     <option value="{{ $make }}" {{ request('make') == $make ? 'selected' : '' }}>{{ $make }}</option>
                   @endforeach
                 </select>
                 <span class="shop-page-widget-title">Model</span>
-                <select name="model" class="form-select filter-select" id="filter-model">
+                <select name="model" class="form-select filter-select" id="filter-model" @disabled(!request()->filled('year') || !request()->filled('make'))>
                   <option value="">All Models</option>
                   @foreach($models as $model)
                     <option value="{{ $model }}" {{ request('model') == $model ? 'selected' : '' }}>{{ $model }}</option>
@@ -397,6 +431,7 @@
             @endif
             </div> -->
           </form>
+          </div>
 
           </div>
           <script>
@@ -424,6 +459,9 @@
                 if (v == selected) opt.selected = true;
                 el.appendChild(opt);
               });
+              if (window.jQuery && jQuery.fn.niceSelect && el.nextElementSibling && el.nextElementSibling.classList.contains('nice-select')) {
+                jQuery(el).niceSelect('update');
+              }
             }
 
             function loadMakes(year, selected, cb) {
@@ -449,6 +487,24 @@
             }
 
             var vehicleApplyBtn = document.getElementById('apply-vehicle-filter');
+            function syncVehicleControls() {
+              var yearSelected = Boolean(yearEl && yearEl.value);
+              var makeSelected = Boolean(makeEl && makeEl.value);
+              setControlDisabled(makeEl, !yearSelected);
+              setControlDisabled(modelEl, !yearSelected || !makeSelected);
+            }
+
+            function setControlDisabled(select, disabled) {
+              if (!select) return;
+              select.disabled = disabled;
+              var customSelect = select.nextElementSibling;
+              if (customSelect && customSelect.classList.contains('nice-select')) {
+                customSelect.classList.toggle('disabled', disabled);
+                customSelect.tabIndex = disabled ? -1 : 0;
+                if (disabled) customSelect.classList.remove('open');
+              }
+            }
+
             function toggleVehicleApply() {
               if (!vehicleApplyBtn) return;
               var hasValue = (yearEl && yearEl.value) || (makeEl && makeEl.value) || (modelEl && modelEl.value);
@@ -460,13 +516,18 @@
               yearEl.addEventListener('change', function() {
                 if (makeEl) makeEl.value = '';
                 if (modelEl) modelEl.value = '';
-                loadMakes(yearEl.value, '', function() { loadModels(yearEl.value, '', ''); });
+                syncVehicleControls();
+                loadMakes(yearEl.value, '', function() {
+                  syncVehicleControls();
+                  loadModels(yearEl.value, '', '');
+                });
                 toggleVehicleApply();
               });
             }
             if (makeEl) {
               makeEl.addEventListener('change', function() {
                 if (modelEl) modelEl.value = '';
+                syncVehicleControls();
                 loadModels(yearEl ? yearEl.value : '', makeEl.value, '');
                 toggleVehicleApply();
               });
@@ -474,6 +535,7 @@
             if (modelEl) {
               modelEl.addEventListener('change', toggleVehicleApply);
             }
+            syncVehicleControls();
             toggleVehicleApply();
           })();
           </script>
@@ -531,7 +593,7 @@
             <div class="d-flex align-items-center gap-3 flex-wrap filter-sort-brand-wrapper w-84 w-77">
               <div class="d-flex align-items-center gap-2 filter-sort-wrapper">
                 <h5 class="mb-0" style="font-size: 14px; font-weight: 500;">Sort by</h5>
-                <select class="form-select" style="/*width:180px;*/ border:1px solid #c7c0bf; border-radius:4px;" id="sort-select">
+                <select class="form-select" style="/*width:180px;*/" id="sort-select">
                   <option value="default" {{ request('sort') == 'default' ? 'selected' : '' }}>Newest</option>
                   <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
                   <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Price: Low to High</option>
@@ -551,10 +613,11 @@
                       <input type="hidden" name="{{ $name }}" value="{{ $value }}">
                     @endif
                   @endforeach
-                  <select name="brand" class="form-select" style="/*width:180px;*/ border:1px solid #c7c0bf; border-radius:4px;">
-                    <option value="">All Brands</option>
+                  <select name="brand" class="form-select" style="width:180px;">
+                    <option value="" {{ request()->filled('brand') ? '' : 'selected' }}>All Brands</option>
                     @foreach($brands as $brand)
-                      <option value="{{ $brand->slug }}" {{ request('brand') == $brand->slug ? 'selected' : '' }}>{{ $brand->name }}</option>
+                      @php $brandFilterValue = filled($brand->slug) ? $brand->slug : (string) $brand->id; @endphp
+                      <option value="{{ $brandFilterValue }}" {{ (string) (!empty($currentBrand) ? $currentBrand->slug : request('brand')) === (string) $brandFilterValue ? 'selected' : '' }}>{{ $brand->name }}</option>
                     @endforeach
                   </select>
                 </form>
@@ -565,7 +628,7 @@
                     <h5 class="mb-0" style="font-size: 14px; font-weight: 500;">Vehicle</h5>
                     <form id="vehicle-nav-filter-form" method="POST">
                       @csrf
-                      <select id="vehicle-nav-select" class="form-select" style="border:1px solid #c7c0bf; border-radius:4px;">
+                      <select id="vehicle-nav-select" class="form-select">
                         <option value="">All Vehicles</option>
                         @foreach($userVehicles as $vehicle)
                           <option value="{{ $vehicle->id }}" {{ (isset($selectedVehicle) && $selectedVehicle && $selectedVehicle->id == $vehicle->id) ? 'selected' : '' }}>
@@ -588,11 +651,16 @@
           $sortVal = request('sort');
           $hasSortFilter = !empty($sortVal) && $sortVal !== 'default';
           $activeSortLabel = $hasSortFilter ? ($sortLabels[$sortVal] ?? $sortVal) : null;
-          $brandVal = request('brand');
+          $brandVal = !empty($currentBrand) ? $currentBrand->slug : request('brand');
           $hasBrandFilter = !empty($brandVal);
-          $activeBrand = $hasBrandFilter
-              ? ($brands->firstWhere('slug', $brandVal)?->name ?? $brands->firstWhere('id', $brandVal)?->name ?? $brandVal)
-              : null;
+          $activeBrand = !empty($currentBrand)
+              ? $currentBrand->name
+              : ($hasBrandFilter
+                  ? ($brands->firstWhere('slug', $brandVal)?->name ?? $brands->firstWhere('id', $brandVal)?->name ?? $brandVal)
+                  : null);
+          $brandClearUrl = !empty($currentBrand)
+              ? route('shop', request()->except(['brand', 'page']))
+              : request()->fullUrlWithQuery(['brand' => null, 'page' => null]);
           $hasSearchFilter = request()->filled('search');
           $hasPriceParams = request()->filled('min_price') || request()->filled('max_price');
           $minPriceVal = (float) request('min_price', 0);
@@ -630,7 +698,7 @@
               <span class="filter-chip">
                 <span class="filter-chip-label">Brand:</span>
                 <span class="filter-chip-value">{{ $activeBrand }}</span>
-                <a href="{{ request()->fullUrlWithQuery(['brand' => null, 'page' => null]) }}" class="filter-chip-clear" data-bs-toggle="tooltip" data-bs-placement="top" title="Remove brand filter">
+                <a href="{{ $brandClearUrl }}" class="filter-chip-clear" data-bs-toggle="tooltip" data-bs-placement="top" title="Remove brand filter">
                   <i class="las la-times"></i>
                 </a>
               </span>
@@ -689,6 +757,12 @@
                 </form>
               </span>
             @endif
+
+            <form method="POST" action="{{ route('shop.clear-filters') }}" class="ms-auto">
+              @csrf
+              <input type="hidden" name="return_path" value="{{ '/'.request()->path() }}">
+              <button type="submit" class="btn p-0 text-decoration-underline">Clear all</button>
+            </form>
           </div>
         @endif
 
@@ -785,19 +859,33 @@ $(document).ready(function() {
     var minPrice = minPriceRaw === '' ? sliderMinVal : (parseInt(minPriceRaw) || sliderMinVal);
     var maxPrice = parseInt("{{ request('max_price', 0) }}") || sliderMaxVal;
 
-    $("#price-slider").slider({
-        range: true, min: sliderMinVal, max: sliderMaxVal,
-        values: [minPrice, maxPrice],
-        slide: function(event, ui) {
-            $("#price-min").val(ui.values[0]);
-            $("#price-max").val(ui.values[1]);
-            $("#price-range-label").text(priceSymbol + ui.values[0].toLocaleString() + " - " + priceSymbol + ui.values[1].toLocaleString());
-        },
-        change: function(event, ui) {
-            togglePriceApply();
-        }
-    });
+    function priceSliderOptions(values) {
+        return {
+            range: true, min: sliderMinVal, max: sliderMaxVal,
+            values: values || [minPrice, maxPrice],
+            slide: function(event, ui) {
+                $("#price-min").val(ui.values[0]);
+                $("#price-max").val(ui.values[1]);
+                $("#price-range-label").text(priceSymbol + ui.values[0].toLocaleString() + " - " + priceSymbol + ui.values[1].toLocaleString());
+            },
+            change: function(event, ui) {
+                togglePriceApply();
+            }
+        };
+    }
+
+    $("#price-slider").slider(priceSliderOptions());
     $("#price-range-label").text(priceSymbol + $("#price-slider").slider("values", 0).toLocaleString() + " - " + priceSymbol + $("#price-slider").slider("values", 1).toLocaleString());
+
+    // The widget is collapsed by default, so the slider initializes while its
+    // container is hidden and width/handle calculations may be incorrect.
+    // Reinitialize it with the current values when the panel expands.
+    $(document).on('shown.bs.collapse', '#sidebarPriceCollapse', function () {
+        var $slider = $("#price-slider");
+        if (!$slider.hasClass('ui-slider')) return;
+        var current = $slider.slider('values');
+        $slider.slider('destroy').slider(priceSliderOptions(current));
+    });
 
     function isDefaultPriceRange() {
         var v = $("#price-slider").slider("values");

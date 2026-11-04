@@ -7,7 +7,7 @@ use App\Models\Product;
 
 class CategoryTree
 {
-    public const CACHE_KEY = 'front_category_tree_v1';
+    public const CACHE_KEY = 'front_category_tree_v2';
 
     /**
      * Build (and cache) the full nested category tree as lightweight objects.
@@ -27,12 +27,19 @@ class CategoryTree
         }
 
         $json = cache()->remember(self::CACHE_KEY, 21600, function () {
-            $productCounts = Product::where('status', true)
-                ->selectRaw('category_id, COUNT(*) as count')
-                ->groupBy('category_id')
-                ->pluck('count', 'category_id');
+            // Aggregate in SQL instead of hydrating every product. The catalogue
+            // has ~750k rows; loading Eloquent models here exhausted the 512M
+            // PHP memory limit and made every page 500 whenever the cache was cold.
+            // This uses the same "usable image" rule as the shop listing, so the
+            // category counts now match what shoppers actually see.
+            $productCounts = Product::statusCountsByCategoryId()->all();
 
-            $rows = Category::query()->get(['id', 'name', 'slug', 'parent_id']);
+            // A-Z (case-insensitive) at every level: children are appended to
+            // the tree in query order, so this also sorts subcategories.
+            $rows = Category::query()
+                ->orderByRaw('LOWER(name) ASC')
+                ->orderBy('id')
+                ->get(['id', 'name', 'slug', 'parent_id']);
 
             $childrenMap = [];
             $nodes = [];
@@ -49,11 +56,13 @@ class CategoryTree
 
             $build = function ($id) use (&$build, &$childrenMap, &$nodes) {
                 $total = $nodes[$id]['descendant_count'];
+                $children = [];
                 foreach ($childrenMap[$id] ?? [] as $childId) {
                     $child = $build($childId);
                     $total += $child['descendant_count'];
-                    $nodes[$id]['children'][] = $child;
+                    $children[] = $child;
                 }
+                $nodes[$id]['children'] = $children;
                 $nodes[$id]['descendant_count'] = $total;
 
                 return $nodes[$id];

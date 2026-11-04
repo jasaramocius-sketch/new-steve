@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Image;
 use App\Models\Page;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CategoryController extends Controller
 {
@@ -69,16 +72,9 @@ class CategoryController extends Controller
     {
         $page = Page::where('slug', 'categories')->first();
         $search = $request->get('search', '');
-        $sort = $request->get('sort', 'latest');
+        $sort = $request->get('sort', 'name');
 
-        $topCategories = Category::topLevel()
-            ->withCount(['products' => fn ($q) => $q->where('status', true)])
-            ->with(['children' => function ($q) {
-                $q->withCount(['products' => fn ($q2) => $q2->where('status', true)])
-                    ->with(['children' => function ($q2) {
-                        $q2->withCount(['products' => fn ($q3) => $q3->where('status', true)]);
-                    }]);
-            }]);
+        $topCategories = Category::topLevel()->with('children.children');
 
         if ($search !== '') {
             $topCategories->where(function ($q) use ($search) {
@@ -86,22 +82,68 @@ class CategoryController extends Controller
             });
         }
 
-        $topCategories = $topCategories->get();
+        $categories = $topCategories->get();
+        $categoryRows = Category::query()->get(['id', 'parent_id']);
+        $childIdsByParent = $categoryRows
+            ->groupBy(fn ($category) => $category->parent_id ?? 0)
+            ->map(fn ($children) => $children->pluck('id')->all())
+            ->all();
+        $descendantIdsByRoot = [];
+        $allCategoryIds = [];
+        foreach ($categories as $category) {
+            $descendantIds = [];
+            $stack = [(int) $category->id];
+            while ($stack !== []) {
+                $categoryId = array_pop($stack);
+                $descendantIds[] = $categoryId;
+                foreach ($childIdsByParent[$categoryId] ?? [] as $childId) {
+                    $stack[] = (int) $childId;
+                }
+            }
+            $descendantIdsByRoot[(int) $category->id] = $descendantIds;
+            $allCategoryIds = array_merge($allCategoryIds, $descendantIds);
+        }
 
-        $categories = $topCategories;
-
-        $categories = $categories->map(function ($category) {
-            $descIds = $category->getAllDescendantIds();
-            $category->total_products_count = Product::whereIn('category_id', $descIds)
+        $productCountsByCategory = empty($allCategoryIds)
+            ? collect()
+            : Product::query()
+                ->whereIn('category_id', $allCategoryIds)
                 ->where('status', true)
-                ->count();
-            $category->preview_products = Product::whereIn('category_id', $descIds)
-                ->where('status', true)
-                ->latest()
-                ->take(3)
-                ->get();
+                ->hasUsableImage()
+                ->selectRaw('category_id, COUNT(*) as aggregate')
+                ->groupBy('category_id')
+                ->pluck('aggregate', 'category_id');
 
-            return $category;
+        $subtreeProductCount = function (int $categoryId) use ($childIdsByParent, $productCountsByCategory): int {
+            $count = 0;
+            $stack = [$categoryId];
+
+            while ($stack !== []) {
+                $currentId = array_pop($stack);
+                $count += (int) $productCountsByCategory->get($currentId, 0);
+                foreach ($childIdsByParent[$currentId] ?? [] as $childId) {
+                    $stack[] = (int) $childId;
+                }
+            }
+
+            return $count;
+        };
+
+        foreach ($categories as $category) {
+            $category->total_products_count = $subtreeProductCount((int) $category->id);
+
+            foreach ($category->children as $child) {
+                $child->total_products_count = $subtreeProductCount((int) $child->id);
+            }
+        }
+
+        $categories = $categories->filter(function ($category) {
+            $imageValue = trim((string) ($category->image ?? $category->banner ?? ''));
+            $hasImage = $imageValue !== '' && $category->getDisplayImagePath() !== 'assets/images/placeholder.png';
+            $hasProducts = (int) ($category->total_products_count ?? 0) > 0;
+            $hasSubcategories = $category->children && $category->children->count() > 0;
+
+            return $hasImage && ($hasProducts || $hasSubcategories);
         });
 
         if ($sort === 'name') {
@@ -110,6 +152,27 @@ class CategoryController extends Controller
             $categories = $categories->sortBy('created_at')->values();
         } else {
             $categories = $categories->sortByDesc('created_at')->values();
+        }
+
+        $perPage = 24;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $totalCategories = $categories->count();
+        $categories = new LengthAwarePaginator(
+            $categories->forPage($currentPage, $perPage)->values(),
+            $totalCategories,
+            $perPage,
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
+        foreach ($categories as $category) {
+            $category->preview_products = Product::query()
+                ->whereIn('category_id', $descendantIdsByRoot[(int) $category->id])
+                ->where('status', true)
+                ->hasUsableImage()
+                ->latest()
+                ->take(3)
+                ->get(['id', 'category_id', 'slug', 'name', 'main_image', 'cost', 'commission']);
         }
 
         return view('categories.index', compact('categories', 'page'));
@@ -131,6 +194,8 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image_url' => 'nullable|url',
         ]);
 
         $category = new Category;
@@ -138,7 +203,12 @@ class CategoryController extends Controller
         $category->slug = Str::slug($request->name);
         $category->parent_id = $request->filled('parent_id') ? $request->parent_id : null;
         $category->level = $this->resolveLevel($category->parent_id);
+        $category->image = $this->resolveImage($request);
         $category->save();
+
+        if ($request->filled('image_from_manager')) {
+            Image::markUsed($request->image_from_manager, $category);
+        }
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Category created successfully.');
@@ -165,6 +235,8 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image_url' => 'nullable|url',
         ]);
 
         $category = Category::findOrFail($id);
@@ -172,7 +244,16 @@ class CategoryController extends Controller
         $category->slug = Str::slug($request->name);
         $category->parent_id = $request->filled('parent_id') ? $request->parent_id : null;
         $category->level = $this->resolveLevel($category->parent_id);
+
+        if ($image = $this->resolveImage($request)) {
+            $category->image = $image;
+        }
+
         $category->save();
+
+        if ($request->filled('image_from_manager')) {
+            Image::markUsed($request->image_from_manager, $category);
+        }
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Category updated successfully');
@@ -185,6 +266,31 @@ class CategoryController extends Controller
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Category deleted successfully');
+    }
+
+    private function resolveImage(Request $request): ?string
+    {
+        if ($request->filled('image_from_manager')) {
+            return 'storage/'.ltrim($request->image_from_manager, '/');
+        }
+
+        if ($request->hasFile('image')) {
+            return saveImageWithWebp($request->file('image'));
+        }
+
+        if ($request->filled('image_url')) {
+            $path = saveImageFromUrlWithWebp($request->input('image_url'));
+
+            if ($path === null) {
+                throw ValidationException::withMessages([
+                    'image_url' => 'Could not download image from the provided URL.',
+                ]);
+            }
+
+            return $path;
+        }
+
+        return null;
     }
 
     private function resolveLevel(?int $parentId): int

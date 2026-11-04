@@ -43,7 +43,7 @@
             @endif
 
             <div class="form-group">
-              <label for="email">Email Address</label>
+              <label for="email">Email Address <span class="text-danger">*</span></label>
               <input type="email" name="email" class="form-control" value="" id="email" placeholder="Enter your email" required>
               
               <label for="create-password">Password</label>

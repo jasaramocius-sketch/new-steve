@@ -12,7 +12,7 @@
     <input type="hidden" name="remove_section_image" id="remove_page_image" value="0">
     <div id="impPreview_page" class="d-none mt-2"></div>
     <div class="d-flex gap-2 mt-1">
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('remove_page_image').value='0'; impOpen_page()">
+        <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_page_image').value='0'; impOpen_page()">
             <i class="fas fa-images me-1"></i> Browse Image Manager
         </button>
         <button type="button" id="clear_btn_page" data-preview="impPreview_page" data-current=".page-image-current" class="btn btn-sm btn-outline-danger {{ (isset($page) && $page->image) ? '' : 'd-none' }}" onclick="clearPickerImage('image_from_manager_page','impPreview_page','.page-image-current','remove_page_image')">

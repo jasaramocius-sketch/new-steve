@@ -117,11 +117,11 @@
                 @method('PUT')
                 <div class="mb-2">
                     <label class="form-label small fw-semibold mb-1">Subject</label>
-                    <input type="text" name="subject" class="form-control form-control-sm" value="{{ old('subject', $inquiry->subject) }}" required>
+                    <input type="text" name="subject" class="form-control" value="{{ old('subject', $inquiry->subject) }}" required>
                 </div>
                 <div class="mb-2">
                     <label class="form-label small fw-semibold mb-1">Message</label>
-                    <textarea name="message" rows="4" class="form-control form-control-sm" maxlength="2000" required>{{ old('message', trim($messageBody)) }}</textarea>
+                    <textarea name="message" rows="4" class="form-control textarea-control" maxlength="2000" required>{{ old('message', trim($messageBody)) }}</textarea>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-sm btn-primary steve-btn"><i class="fas fa-save me-1"></i>Save</button>

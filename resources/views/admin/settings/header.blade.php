@@ -1,9 +1,9 @@
 @extends('admin.layouts.app')
 @include('partials.page-attributes', ['pageId' => 'admin-settings-header-page', 'pageClass' => 'admin-settings-header-page'])
-@section('page-title', 'Header Settings')
+@section('page-title', 'General Settings')
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Header Settings - Admin Panel',
+        'pageTitle' => 'General Settings - Admin Panel',
         'robots' => 'noindex, nofollow',
     ])
 @endsection
@@ -30,7 +30,7 @@
                                         </div>
                                         <input type="hidden" name="image_from_manager_header_logo" id="image_from_manager_header_logo">
                                         <div id="impPreview_header_logo" class="d-none mt-2"></div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_header_logo()">
+                                        <button type="button" class="btn btn-outline-primary" onclick="impOpen_header_logo()">
                                             <i class="fas fa-images me-1"></i> Browse Image Manager
                                         </button>
                                     </div>
@@ -44,7 +44,7 @@
                                         </div>
                                         <input type="hidden" name="image_from_manager_header_favicon" id="image_from_manager_header_favicon">
                                         <div id="impPreview_header_favicon" class="d-none mt-2"></div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_header_favicon()">
+                                        <button type="button" class="btn btn-outline-primary" onclick="impOpen_header_favicon()">
                                             <i class="fas fa-images me-1"></i> Browse Image Manager
                                         </button>
                                     </div>
@@ -61,7 +61,7 @@
                                         </div>
                                         <input type="hidden" name="image_from_manager_mobile_logo" id="image_from_manager_mobile_logo">
                                         <div id="impPreview_mobile_logo" class="d-none mt-2"></div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_mobile_logo()">
+                                        <button type="button" class="btn btn-outline-primary" onclick="impOpen_mobile_logo()">
                                             <i class="fas fa-images me-1"></i> Browse Image Manager
                                         </button>
                                     </div>
@@ -75,7 +75,7 @@
                                         </div>
                                         <input type="hidden" name="image_from_manager_footer_logo" id="image_from_manager_footer_logo">
                                         <div id="impPreview_footer_logo" class="d-none mt-2"></div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_footer_logo()">
+                                        <button type="button" class="btn btn-outline-primary" onclick="impOpen_footer_logo()">
                                             <i class="fas fa-images me-1"></i> Browse Image Manager
                                         </button>
                                     </div>
@@ -97,7 +97,7 @@
                                         <input type="hidden" name="remove_admin_header_bg" id="remove_admin_header_bg" value="0">
                                         <div id="impPreview_admin_header_bg" class="d-none mt-2"></div>
                                         <div class="d-flex gap-2 mt-1">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('remove_admin_header_bg').value='0'; impOpen_admin_header_bg()">
+                                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_admin_header_bg').value='0'; impOpen_admin_header_bg()">
                                                 <i class="fas fa-images me-1"></i> Browse Image Manager
                                             </button>
                                             <button type="button" id="clear_btn_admin_header_bg" data-preview="impPreview_admin_header_bg" data-current=".admin-header-bg-current" class="btn btn-sm btn-outline-danger {{ !empty($settings['admin_header_bg']) ? '' : 'd-none' }}" onclick="clearPickerImage('image_from_manager_admin_header_bg','impPreview_admin_header_bg','.admin-header-bg-current','remove_admin_header_bg')">
@@ -173,6 +173,15 @@
                     </form>
                 </div>
             </div>
+        </div>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- FOOTER CONFIGURATION                                         --}}
+    {{-- ============================================================ --}}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            @include('admin.settings.partials.footer-columns')
         </div>
     </div>
 

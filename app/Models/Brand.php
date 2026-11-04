@@ -31,7 +31,33 @@ class Brand extends Model
 
     public function getImageAttribute()
     {
-        return $this->attributes['logo'] ?? null;
+        $logo = trim((string) ($this->attributes['logo'] ?? ''));
+
+        if ($logo !== '') {
+            if (str_starts_with($logo, 'storage/')) {
+                return $logo;
+            }
+
+            if (str_starts_with($logo, 'uploads/')) {
+                return $logo;
+            }
+
+            if (preg_match('#^https?://#i', $logo)) {
+                return $logo;
+            }
+
+            if (str_starts_with($logo, 's3://')) {
+                return $logo;
+            }
+
+            if (function_exists('isSourceS3ImageReference') && isSourceS3ImageReference($logo)) {
+                return $logo;
+            }
+
+            return $logo;
+        }
+
+        return null;
     }
 
     public function getStatusAttribute()

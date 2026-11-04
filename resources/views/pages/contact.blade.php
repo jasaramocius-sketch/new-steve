@@ -37,7 +37,7 @@
                             <input type="email" name="email" class="form-control mb-3" placeholder="Email Address" required>
                             <input type="tel" name="phone" class="form-control mb-3" inputmode="numeric" placeholder="Phone" required>
                             <input type="text" name="subject" class="form-control mb-3" placeholder="Subject" required>
-                            <textarea name="message" class="form-control texteditor mb-3" rows="5" placeholder="Message" required></textarea>
+                            <textarea name="message" class="form-control textarea-control texteditor mb-3" rows="5" placeholder="Message" required></textarea>
                             <button type="submit" class="btn btn-primary steve-btn">
                                 Submit
                             </button>
@@ -63,7 +63,7 @@
                         </div>
                         <div class="mb-4 d-flex gap-2 ">
                             <div class="">
-                            <i class="fas fa-phone-alt me-2 w-fit"></i>
+                            <i class="fas fa-phone me-2 w-fit"></i>
                             </div>
                             <div class="">
                             <strong>Phone</strong></br>

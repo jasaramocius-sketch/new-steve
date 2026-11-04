@@ -33,7 +33,6 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
             'throw' => false,
             'report' => false,
         ],
@@ -41,7 +40,11 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            // Kept as a plain path so Laravel can register the /storage/{path}
+            // fallback route. Without it the "local" disk would claim /storage
+            // and answer every upload request with a 403.
+            'url' => '/storage',
+            'serve' => true,
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -62,12 +65,12 @@ return [
 
         'source_images' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'token' => env('AWS_SESSION_TOKEN'),
-            'region' => env('AWS_IMAGE_REGION', 'us-east-1'),
-            'bucket' => env('AWS_IMAGE_BUCKET', 'autoparts-hub'),
-            'url' => env('AWS_IMAGE_URL'),
+            'key' => env('AWS_HUB_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('AWS_HUB_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'token' => env('AWS_HUB_SESSION_TOKEN', env('AWS_SESSION_TOKEN')),
+            'region' => env('AWS_HUB_REGION', env('AWS_IMAGE_REGION', 'us-east-1')),
+            'bucket' => env('AWS_HUB_BUCKET', env('AWS_IMAGE_BUCKET', 'autoparts-hub')),
+            'url' => env('AWS_HUB_URL', env('AWS_IMAGE_URL')),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,

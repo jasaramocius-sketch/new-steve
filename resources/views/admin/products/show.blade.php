@@ -52,7 +52,7 @@
             </div>
             <div class="card-body">
                 @if($product->image)
-                    <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" alt="{{ $product->name }}" class="img-fluid rounded admin-product-image">
+                    <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" alt="{{ $product->name }}" class="img-fluid rounded admin-product-image" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                 @else
                     <div class="text-muted text-center py-5"><i class="fas fa-image fa-3x mb-2"></i><br>No image uploaded</div>
                 @endif
@@ -62,7 +62,7 @@
                     <h6 class="mb-2">Gallery Images</h6>
                     <div class="d-flex flex-wrap gap-2">
                         @foreach($product->galleryImages as $img)
-                            <img src="{{ $img->thumb_url }}" alt="Gallery" class="rounded admin-gallery-image">
+                            <img src="{{ $img->thumb_url }}" alt="Gallery" class="rounded admin-gallery-image" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                         @endforeach
                     </div>
                 @endif

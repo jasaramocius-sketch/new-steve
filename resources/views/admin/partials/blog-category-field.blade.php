@@ -85,7 +85,7 @@
                     type="text"
                     name="new_category"
                     value="{{ old('new_category') }}"
-                    class="form-control form-control-sm @error('new_category') is-invalid @enderror"
+                    class="form-control @error('new_category') is-invalid @enderror"
                     placeholder="e.g. Suspension"
                     autocomplete="off"
                 >
@@ -93,7 +93,7 @@
 
             <div class="col-md-6">
                 <label class="form-label small mb-1">Parent Category</label>
-                <select name="new_category_parent_id" class="form-control form-control-sm">
+                <select name="new_category_parent_id" class="form-control">
                     <option value="">— Top Level —</option>
                     @foreach($blogCategories as $cat)
                         <option value="{{ $cat->id }}"

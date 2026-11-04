@@ -59,9 +59,62 @@ $(document).ready((function() {
     t.removeClass("active"), e.removeClass("active")
   }));
   const o = $(".header-top");
-  $(window).on("scroll", (function() {
-    $(this).scrollTop() > 65 ? o.addClass("sticky") : o.removeClass("sticky")
-  }));
+  const headerSection = $(".header-section");
+  const infoBar = headerSection.find(".info-bar");
+  let lastScrollPosition = $(window).scrollTop();
+  let scrollFrameScheduled = false;
+  $(window).on("scroll", function() {
+    if (scrollFrameScheduled) return;
+
+    scrollFrameScheduled = true;
+    window.requestAnimationFrame(function() {
+      const currentScrollPosition = window.scrollY;
+
+      if (currentScrollPosition <= 0) {
+        o.addClass("header-return-to-flow");
+        o.removeClass("sticky");
+        headerSection.removeClass("header-scrolled info-row-visible");
+        if (headerSection.length) {
+          headerSection[0].style.removeProperty("--header-placeholder-height");
+          headerSection[0].style.removeProperty("--info-bar-height");
+        }
+        window.requestAnimationFrame(function() {
+          o.removeClass("header-return-to-flow");
+        });
+        lastScrollPosition = currentScrollPosition;
+        scrollFrameScheduled = false;
+        return;
+      }
+
+      if (window.innerWidth >= 768 && headerSection.length) {
+        const isHeaderAlreadyScrolled = headerSection.hasClass("header-scrolled");
+        if (currentScrollPosition <= 65 && !isHeaderAlreadyScrolled) {
+          lastScrollPosition = currentScrollPosition;
+          scrollFrameScheduled = false;
+          return;
+        }
+
+        if (!headerSection.hasClass("header-scrolled")) {
+          headerSection[0].style.setProperty("--header-placeholder-height", `${headerSection.outerHeight()}px`);
+          headerSection[0].style.setProperty("--info-bar-height", `${infoBar.outerHeight()}px`);
+          headerSection.addClass("header-scrolled");
+        }
+
+        const scrollDelta = currentScrollPosition - lastScrollPosition;
+        if (Math.abs(scrollDelta) >= 8) {
+          headerSection.toggleClass("info-row-visible", scrollDelta < 0);
+          lastScrollPosition = currentScrollPosition;
+        }
+      } else {
+        headerSection.removeClass("header-scrolled info-row-visible");
+        lastScrollPosition = currentScrollPosition;
+        currentScrollPosition > 65 ? o.addClass("sticky") : o.removeClass("sticky");
+      }
+
+      if (window.innerWidth >= 768) o.addClass("sticky");
+      scrollFrameScheduled = false;
+    });
+  });
   const a = $("#searchIcon"),
     n = $("#searchBar");
   a.on("click", (function() {
@@ -155,7 +208,28 @@ $(document).ready((function() {
   })), $(window).on("resize", (function() {
     $(".nicEdit-panelContain").parent().width("100%"), $(".nicEdit-panelContain").parent().next().width("99.6%")
   }))
-})), document.addEventListener("DOMContentLoaded", (function() {})), document.querySelectorAll(".change-qty").forEach((e => {
+})), document.addEventListener("DOMContentLoaded", (function() {})), (() => {
+  const syncCartQtyButtons = (cartItem, quantity, stock) => {
+    const incBtn = cartItem.querySelector('.change-qty[data-action="increase"]');
+    if (incBtn) {
+      incBtn.disabled = stock > 0 && quantity >= stock;
+      incBtn.classList.toggle('disabled', incBtn.disabled);
+    }
+
+    const decBtn = cartItem.querySelector('.change-qty[data-action="decrease"]');
+    if (decBtn) {
+      decBtn.disabled = quantity <= 1;
+      decBtn.classList.toggle('disabled', decBtn.disabled);
+    }
+  };
+
+  document.querySelectorAll(".cart-item").forEach((cartItem) => {
+    const quantity = parseInt(cartItem.querySelector('.qty-input')?.value, 10) || 1;
+    const stock = parseInt(cartItem.getAttribute('data-stock'), 10) || 0;
+    syncCartQtyButtons(cartItem, quantity, stock);
+  });
+
+  document.querySelectorAll(".change-qty").forEach((e => {
   e.addEventListener("click", (function() {
     const e = this.getAttribute("data-action"),
       t = this.closest(".cart-item");
@@ -182,9 +256,12 @@ $(document).ready((function() {
       })
     }).then((e => e.json())).then((e => {
       if (e.success) {
-        a.value = n;
-        const t = document.getElementById(`prc${o}`);
-        t && (t.textContent = e.itemSubtotal);
+        a.value = e.qty ?? n;
+        const stock = Number.isFinite(Number(e.stock)) ? Number(e.stock) : (parseInt(t.getAttribute('data-stock')) || 0);
+        t.setAttribute('data-stock', stock);
+        syncCartQtyButtons(t, e.qty ?? n, stock);
+        const priceEl = document.getElementById(`prc${o}`);
+        priceEl && (priceEl.textContent = e.itemSubtotal);
         const s = document.querySelector(".total-cart-price-sub");
         s && (s.textContent = e.cartTotal);
         const i = document.querySelector(".total-cart-price-val");
@@ -194,7 +271,8 @@ $(document).ready((function() {
       console.error("Error updating cart:", e), "undefined" != typeof toastr && toastr.error("An error occurred while updating the cart.")
     }))
   }))
-})), $(document).ready((function() {
+  }));
+})(), $(document).ready((function() {
   observeSwiperAutoplayGlobal(new Swiper(".featured-products.product-cards-slider", {
     slidesPerView: 4,
     spaceBetween: 24,
@@ -332,8 +410,44 @@ $(document).ready((function() {
   t.length && doWishlistAjax(t)
 })), $(document).on("click", ".remove-wishlist-btn", (function(e) {
   e.preventDefault();
-  var t = $(this).closest("form");
-  t.length && t.submit()
+  var button = $(this);
+  var form = button.closest("form");
+  if (!form.length) return;
+  button.prop("disabled", true);
+  $.ajax({
+    url: form.attr("action"),
+    type: "POST",
+    data: form.serialize(),
+    headers: { Accept: "application/json" },
+    success: function(response) {
+      if (!response.success) {
+        button.prop("disabled", false);
+        toastr.error(response.message || "Could not remove this product.");
+        return;
+      }
+      var count = response.count || 0;
+      $(".wishlist-count").text(count);
+      $("#wishlist-count").text(count);
+      $(".wishlist-badge").toggle(count > 0);
+      var card = button.closest(".wishlist-page-products-items");
+      card.fadeOut(150, function() {
+        $(this).remove();
+        if ($(".wishlist-page-products-items").length === 0) {
+          $(".wishlist-page-products").html('<div class="col-12"><div class="alert alert-info">No products in wishlist.</div></div>');
+          $("#wishlist-clear-all-form").remove();
+        }
+      });
+      toastr.success(response.message || "Product removed from wishlist.");
+    },
+    error: function(xhr) {
+      button.prop("disabled", false);
+      if (xhr.status === 401) {
+        window.location = appUrl("/login");
+        return;
+      }
+      toastr.error(xhr.responseJSON?.message || "Could not remove this product.");
+    }
+  });
 })), document.addEventListener("error", (function(e) {
   var t = e.target;
   "IMG" === t.tagName && (t.hasAttribute("data-fallback") || (t.setAttribute("data-fallback", "1"), t.src = window.PLACEHOLDER_IMG || appUrl("/assets/images/placeholder.png")))
@@ -418,3 +532,47 @@ $(document).ready((function() {
     $(this).attr("href") == e && ($(this).addClass("active"), $(this).closest(".single-menu").find("h5 a").addClass("active"), $(this).closest(".has-megamenu").addClass("active").children(".menu-item-with-icon").find(".nav-link").addClass("active"))
   }))
 }));
+
+$(document).ready(function () {
+
+    const yearSelect = $('#home-filter-year');
+    const makeSelect = $('#home-filter-make');
+    const modelSelect = $('#home-filter-model');
+
+    // Initial state
+    makeSelect.prop('disabled', !yearSelect.val());
+    modelSelect.prop('disabled', true);
+
+    // Year change
+    yearSelect.on('change', function () {
+
+        const year = $(this).val();
+
+        makeSelect.prop('disabled', !year);
+        modelSelect.prop('disabled', true);
+
+        makeSelect.val('');
+        modelSelect.val('');
+
+        modelSelect.html('<option value="">All Models</option>');
+
+        if (year) {
+            // Yahan aapka existing AJAX Make loading code chalega
+        }
+    });
+
+    // Make change
+    makeSelect.on('change', function () {
+
+        const make = $(this).val();
+
+        modelSelect.prop('disabled', !make);
+        modelSelect.val('');
+
+        if (!make) {
+            modelSelect.html('<option value="">All Models</option>');
+        }
+    });
+
+});
+

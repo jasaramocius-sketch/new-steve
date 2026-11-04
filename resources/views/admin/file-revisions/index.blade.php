@@ -60,9 +60,9 @@
                                 @csrf
                                 <div>
                                     <label class="form-label small">Keep last (per file)</label>
-                                    <input type="number" name="keep_per_file" value="50" min="5" max="500" class="form-control form-control-sm" style="width:120px;">
+                                    <input type="number" name="keep_per_file" value="50" min="5" max="500" class="form-control" style="width:120px;">
                                 </div>
-                                <button type="submit" class="btn btn-warning btn-sm"><i class="fas fa-filter me-1"></i> Apply Limit</button>
+                                <button type="submit" class="btn btn-warning"><i class="fas fa-filter me-1"></i> Apply Limit</button>
                             </form>
                         </div>
                     </div>
@@ -77,9 +77,9 @@
                                 @csrf
                                 <div>
                                     <label class="form-label small">Older than (days)</label>
-                                    <input type="number" name="older_than_days" value="90" min="1" max="3650" class="form-control form-control-sm" style="width:120px;">
+                                    <input type="number" name="older_than_days" value="90" min="1" max="3650" class="form-control" style="width:120px;">
                                 </div>
-                                <button type="submit" class="btn btn-warning btn-sm"><i class="fas fa-compress-alt me-1"></i> Truncate Diffs</button>
+                                <button type="submit" class="btn btn-warning"><i class="fas fa-compress-alt me-1"></i> Truncate Diffs</button>
                             </form>
                         </div>
                     </div>
@@ -162,33 +162,33 @@
                             @endif
                         </td>
                         <td class="table-action-col">
-                            <div class="d-flex gap-1 action-buttons revision-action-buttons">
-                                <a href="{{ route('admin.file-revisions.diff', $rev->id) }}" class="btn btn-outline-info steve-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="View Diff">
-                                    <i class="fas fa-code-branch"></i>
+                            <div class="action-buttons revision-action-buttons">
+                                <a href="{{ route('admin.file-revisions.diff', $rev->id) }}" class="action-btn btn-view-history" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="View Diff" aria-label="View Diff">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
                                 </a>
                                 @if($rev->backup_path)
-                                    <a href="{{ route('admin.file-revisions.download', $rev->id) }}" class="btn btn-outline-secondary steve-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Download backup">
-                                        <i class="fas fa-download"></i>
+                                    <a href="{{ route('admin.file-revisions.download', $rev->id) }}" class="action-btn btn-invoice" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Download backup" aria-label="Download backup">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                     </a>
                                 @endif
                                 @if(!empty($trashed))
                                     <form action="{{ route('admin.file-revisions.restore', $rev->id) }}" method="POST" class="d-inline">
                                         @csrf
-                                        <button type="submit" class="btn btn-outline-primary steve-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Restore revision">
-                                            <i class="fas fa-undo"></i>
+                                        <button type="submit" class="action-btn btn-restore" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Restore revision" aria-label="Restore revision">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                                         </button>
                                     </form>
                                     <form action="{{ route('admin.file-revisions.force-delete', $rev->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Permanently delete this file revision{{ $rev->backup_path ? ' and its backup file' : '' }} from trash? This cannot be undone.')">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger steve-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete permanently">
-                                            <i class="fas fa-trash"></i>
+                                        <button type="submit" class="action-btn btn-cancel" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete permanently" aria-label="Delete permanently">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                         </button>
                                     </form>
                                 @else
                                 <form action="{{ route('admin.file-revisions.destroy', $rev->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this file revision? It will move to trash (backup preserved) and auto-delete after 15 days.')">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger steve-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete revision">
-                                        <i class="fas fa-trash"></i>
+                                    <button type="submit" class="action-btn btn-cancel" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete revision" aria-label="Delete revision">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                     </button>
                                 </form>
                                 @endif

@@ -9,9 +9,6 @@
 @endsection
 
 @section('content')
- <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="fw-bold mb-0">Return Requests</h4>
-</div>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
@@ -71,10 +68,8 @@
                             <span class="badge rounded-pill {{ $badgeClass }}">{{ ucfirst($return->status) }}</span>
                         </td>
                         <td>
-                            <div class="d-flex gap-2">
-                                <a href="{{ route('admin.returns.show', $return->id) }}" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
+                            <div class="action-buttons">
+                                <a href="{{ route('admin.returns.show', $return->id) }}" class="action-btn btn-view" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="View returns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
                             </div>
                         </td>
                     </tr>

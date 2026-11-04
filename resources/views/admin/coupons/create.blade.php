@@ -27,7 +27,7 @@
 
                 <div class="col-md-4">
                     <label class="form-label">Type</label>
-                    <select name="type" class="form-control @error('type') is-invalid @enderror">
+                    <select name="type" class="form-control @error('type') is-invalid @enderror form-select">
                         <option value="fixed" {{ old('type') === 'fixed' ? 'selected' : '' }}>Fixed ($)</option>
                         <option value="percentage" {{ old('type') === 'percentage' ? 'selected' : '' }}>Percentage (%)</option>
                     </select>

@@ -230,7 +230,7 @@
           </div>
           <div class="form-group mb-3">
             <label class="form-label fw-600 fs-14 text-dark">Comment *</label>
-            <textarea class="form-control rounded-0" id="reviewModalText" rows="3" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
+            <textarea class="form-control textarea-control rounded-0" id="reviewModalText" rows="3" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
           </div>
           <div class="form-group mb-3">
             <label class="form-label fw-600 fs-14 text-dark">Review Images</label>

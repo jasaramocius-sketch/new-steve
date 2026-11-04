@@ -18,6 +18,22 @@ class ShopController extends Controller
 {
     public function __construct(private VehicleCatalog $vehicleCatalog) {}
 
+    /**
+     * SQL expression for the buyer-facing price (cost + product/global commission).
+     *
+     * The storefront displays prices through `buyerPrice()` (cost + commission),
+     * so price filters and sorting must use this same expression. Otherwise, a
+     * product costing $172.99 plus 10% commission would appear when max_price = 172.
+     */
+    private function buyerPriceExpression(): string
+    {
+        $global = max(0, min(100, (float) globalCommissionPercent()));
+        $global = number_format($global, 2, '.', '');
+
+        // Clamp to 0–100 as in the model; use the global rate when product commission is null.
+        return '(cost * (1 + (LEAST(GREATEST(COALESCE(commission, '.$global.'), 0), 100) / 100)))';
+    }
+
     private function filterProducts(Request $request, $query, bool $applyPriceFilter = true)
     {
         $search = $request->get('search', '');
@@ -25,6 +41,10 @@ class ShopController extends Controller
         $minPrice = $request->get('min_price', '');
         $maxPrice = $request->get('max_price', '');
         $brand = $request->get('brand', '');
+        $routeBrand = $request->attributes->get('currentBrand');
+        if ($routeBrand instanceof Brand) {
+            $brand = $routeBrand->slug;
+        }
         $year = $request->get('year', '');
         $make = $request->get('make', '');
         $model = $request->get('model', '');
@@ -37,18 +57,19 @@ class ShopController extends Controller
             });
         }
 
-        $currency = session('currency', 'USD');
+        $defaultCurrency = cache()->remember('system_default_currency', 3600, fn () => \App\Models\Setting::get('system_default_currency', 'USD'));
+        $currency = session('currency', $defaultCurrency);
         $rate = config('currencies.'.$currency.'.rate', 1);
 
         if ($applyPriceFilter) {
             if ($minPrice !== '') {
-                $query->where('cost', '>=', (float) $minPrice / $rate);
+                $query->whereRaw($this->buyerPriceExpression().' >= ?', [(float) $minPrice / $rate]);
             }
 
             if ($maxPrice !== '') {
                 // Add 0.999999 to cover decimal prices up to the selected max integer (e.g. max_price = 4 covers 4.42)
                 $effectiveMax = (float) $maxPrice + 0.999999;
-                $query->where('cost', '<=', $effectiveMax / $rate);
+                $query->whereRaw($this->buyerPriceExpression().' <= ?', [$effectiveMax / $rate]);
             }
         }
 
@@ -80,9 +101,9 @@ class ShopController extends Controller
         }
 
         if ($sort === 'price_asc') {
-            $query->orderBy('cost', 'asc');
+            $query->orderByRaw($this->buyerPriceExpression().' asc');
         } elseif ($sort === 'price_desc') {
-            $query->orderBy('cost', 'desc');
+            $query->orderByRaw($this->buyerPriceExpression().' desc');
         } elseif ($sort === 'name_asc') {
             $query->orderBy('name', 'asc');
         } elseif ($sort === 'oldest') {
@@ -144,12 +165,15 @@ class ShopController extends Controller
     {
         $categoryTree = \App\Services\CategoryTree::tree();
 
-        $currency = session('currency', 'USD');
+        $defaultCurrency = cache()->remember('system_default_currency', 3600, fn () => \App\Models\Setting::get('system_default_currency', 'USD'));
+        $currency = session('currency', $defaultCurrency);
 
-        $priceRange = Cache::remember('catalog.price_range', now()->addDay(), function () {
+        $priceRange = Cache::remember('catalog.price_range_v2', now()->addDay(), function () {
+            $expr = $this->buyerPriceExpression();
+
             $row = DB::table('products')
                 ->where('status', true)
-                ->selectRaw('MAX(cost) as max_price, MIN(cost) as min_price')
+                ->selectRaw('MAX('.$expr.') as max_price, MIN('.$expr.') as min_price')
                 ->first();
 
             return [
@@ -160,6 +184,8 @@ class ShopController extends Controller
 
         $brands = Cache::remember('catalog.brands', now()->addDay(), function () {
             return DB::table('brands')
+                ->whereNotNull('name')
+                ->where('name', '<>', '')
                 ->whereExists(function ($q) {
                     $q->select(DB::raw(1))
                         ->from('products')
@@ -202,7 +228,7 @@ class ShopController extends Controller
 
     public function index(Request $request)
     {
-        $productsQuery = Product::where('status', true);
+        $productsQuery = Product::where('status', true)->hasUsableImage();
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery, true);
 
         $baseQuery = clone $productsQuery;
@@ -211,12 +237,43 @@ class ShopController extends Controller
         $this->filterProducts($request, $productsQuery, true);
         $products = $productsQuery->paginate(24)->onEachSide(1)->withQueryString();
 
+        $currentBrand = $request->attributes->get('currentBrand');
+
         return view('shop.index', array_merge(
             $vehicleData,
-            compact('products'),
+            compact('products', 'currentBrand'),
             $this->getSharedData($request, $baseQuery),
             ['page' => Page::where('slug', 'shop')->where('status', true)->first()]
         ));
+    }
+
+    public function brand(Request $request, $slug)
+    {
+        $brand = Brand::where('slug', $slug)->firstOrFail();
+
+        // Keep the URL canonical: /brand/{slug} is the source of truth. If an
+        // old ?brand= filter is present, redirect to the matching brand page.
+        if ($request->has('brand')) {
+            $queryBrand = trim((string) $request->get('brand'));
+            $query = $request->query();
+            unset($query['brand'], $query['page']);
+
+            if ($queryBrand === '') {
+                return redirect()->route('shop', $query);
+            }
+
+            if ($queryBrand !== (string) $brand->slug) {
+                $target = Brand::where('slug', $queryBrand)->first();
+
+                return $target
+                    ? redirect()->route('brand', ['slug' => $target->slug] + $query)
+                    : redirect()->route('shop', ['brand' => $queryBrand] + $query);
+            }
+        }
+
+        $request->attributes->set('currentBrand', $brand);
+
+        return $this->index($request);
     }
 
     public function vehicleYears()
@@ -255,9 +312,23 @@ class ShopController extends Controller
         return redirect($path.(! empty($query) ? '?'.http_build_query($query) : ''));
     }
 
+    public function clearAllFilters(Request $request)
+    {
+        session(['shop_vehicle_cleared' => true]);
+
+        $returnPath = (string) $request->input('return_path', '/search');
+        if (! str_starts_with($returnPath, '/')
+            || str_starts_with($returnPath, '//')
+            || ($returnPath !== '/search' && ! str_starts_with($returnPath, '/category/'))) {
+            $returnPath = '/search';
+        }
+
+        return redirect($returnPath);
+    }
+
     public function customerProducts(Request $request)
     {
-        $productsQuery = Product::where('status', true);
+        $productsQuery = Product::where('status', true)->hasUsableImage();
 
         $baseQuery = clone $productsQuery;
         $this->filterProducts($request, $baseQuery, false);
@@ -302,7 +373,7 @@ class ShopController extends Controller
 
         $categoryIds = $category->getAllDescendantIds();
 
-        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true);
+        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
 
         $baseQuery = clone $productsQuery;
@@ -319,24 +390,28 @@ class ShopController extends Controller
         ));
     }
 
-    public function subcategory(Request $request, $parent, $child, $subchild = null)
+    public function categoryByPath(Request $request, $parent, $child, $subchild = null)
     {
         $parentCat = Category::where('slug', $parent)->firstOrFail();
         $childCat = Category::where('slug', $child)->where('parent_id', $parentCat->id)->firstOrFail();
 
-        $currentCategory = $parentCat;
-        $currentSubcategory = $childCat;
-        $currentChildcategory = null;
-
         if ($subchild) {
-            $subchildCat = Category::where('slug', $subchild)->where('parent_id', $childCat->id)->firstOrFail();
-            $categoryIds = $subchildCat->getAllDescendantIds();
-            $currentChildcategory = $subchildCat;
+            $category = Category::where('slug', $subchild)->where('parent_id', $childCat->id)->firstOrFail();
         } else {
-            $categoryIds = $childCat->getAllDescendantIds();
+            $category = $childCat;
         }
 
-        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true);
+        $currentCategory = $parentCat;
+        $currentSubcategory = $childCat;
+        $currentChildcategory = $subchild ? $category : null;
+
+        if (!$subchild) {
+            $currentChildcategory = null;
+        }
+
+        $categoryIds = $category->getAllDescendantIds();
+
+        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
 
         $baseQuery = clone $productsQuery;
@@ -352,9 +427,18 @@ class ShopController extends Controller
         ));
     }
 
+    public function subcategory(Request $request, $parent, $child, $subchild = null)
+    {
+        return $this->categoryByPath($request, $parent, $child, $subchild);
+    }
+
     public function product($slug)
     {
-        $product = Product::where('slug', $slug)->firstOrFail();
+        $product = Product::where('slug', $slug)->where('status', true)->hasUsableImage()->firstOrFail();
+
+        if (! $product->hasUsableImage()) {
+            abort(404);
+        }
 
         $productFitments = ProductVehicle::where('product_id', $product->id)
             ->whereNotNull('year')
@@ -394,6 +478,7 @@ class ShopController extends Controller
         }
 
         $products = Product::where('status', true)
+            ->hasUsableImage()
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('part_number', 'like', "%{$query}%");
@@ -406,7 +491,7 @@ class ShopController extends Controller
             return [
                 'name' => $product->name,
                 'slug' => $product->slug,
-                'price' => currency_format(buyerPrice($product->price)),
+                'price' => currency_format(buyerPrice($product->price, $product)),
                 'old_price' => null,
                 'image' => storedImageUrl($product->image, 'assets/images/thumbnails'),
                 'category' => $product->category->name ?? '',

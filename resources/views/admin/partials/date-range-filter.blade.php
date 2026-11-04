@@ -20,9 +20,9 @@
         <input type="hidden" name="sort_dir" value="{{ request('sort_dir') }}">
     @endif
     <span class="text-muted small">From</span>
-    <input type="date" name="date_from" value="{{ $dateFrom }}" max="{{ $dateTo ?: '' }}" class="form-control form-control-sm w-auto" onchange="if(this.value){var to=this.form.date_to;to.min=this.value;if(to.value && to.value < this.value){to.value=this.value;}if(to.value){this.form.submit();}}else{this.form.date_to.min='';}">
+    <input type="date" name="date_from" value="{{ $dateFrom }}" max="{{ $dateTo ?: '' }}" class="form-control w-auto" onchange="if(this.value){var to=this.form.date_to;to.min=this.value;if(to.value && to.value < this.value){to.value=this.value;}if(to.value){this.form.submit();}}else{this.form.date_to.min='';}">
     <span class="text-muted small">To</span>
-    <input type="date" name="date_to" value="{{ $dateTo }}" min="{{ $dateFrom ?: '' }}" class="form-control form-control-sm w-auto" onchange="if(this.value){var from=this.form.date_from;from.max=this.value;if(from.value && this.value < from.value){from.value=this.value;}if(from.value){this.form.submit();}}else{this.form.date_from.max='';}">
+    <input type="date" name="date_to" value="{{ $dateTo }}" min="{{ $dateFrom ?: '' }}" class="form-control w-auto" onchange="if(this.value){var from=this.form.date_from;from.max=this.value;if(from.value && this.value < from.value){from.value=this.value;}if(from.value){this.form.submit();}}else{this.form.date_from.max='';}">
     @if(request()->has('date_from') || request()->has('date_to'))
         <a href="{{ $clearUrl }}" class="btn btn-sm date-range-filter-clear btn-outline-danger" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Clear filter"><i class="fas fa-times"></i></a>
     @endif

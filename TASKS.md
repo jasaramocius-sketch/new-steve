@@ -4411,3 +4411,670 @@ php artisan tinker --execute="dump(array_slice(json_decode(DB::table('settings')
 **Follow-up (optional):** page still renders ~8.2 MB / ~21,300 checkboxes (~20s CLI, faster without Xdebug) — next optimization is limiting the tree to top-level + second-level categories instead of the full 21,300.
 
 
+
+## 318. FollowedSeller Product Relationship & Nav Menu Active State Fixes (Oct 26 2026)
+
+**Problem:**
+1. FollowedSeller relationship (`seller.products`) triggered SQL error: `products` table lacks a `seller_id` column, causing "Column not found" on queries trying to filter by `products.seller_id`.
+2. Nav menu active state incorrectly highlighted items due to simple `url()` concatenation; pages like `/page/home` did not map to their canonical routes (e.g., `/`); `$activeCategoryUrls` not populated for product pages, so mega‑menu categories/subcategories never highlighted.
+
+**Solution:**
+1. Added missing `seller_id` column to `products` table (nullable foreign key → `sellers.id`) – a lightweight `ALTER TABLE` preserves all existing data and restores the `Seller::products` relationship.
+2. Created `canonicalMenuUrl()` helper (in `app/helpers.php`):
+   * Normalizes stored links (menu/banner/button) into front‑end URLs.
+   * Handles page‑builder live URL maps: maps `/page/home`, `/page/blog`, etc., to their canonical route names (via `page-builder.live_url_map`).
+   * Applied this helper everywhere URLs are rendered in nav menus (desktop, mobile, mega‑menu) and replaced old `url()` calls.
+3. Updated nav‑menu views:
+   * `resources/views/partials/nav-menu.blade.php`
+   * `resources/views/layouts/app.blade.php` (desktop + mobile)
+   * All menu partial renders now use `$menuUrl = $url === '#' ? '' : canonicalMenuUrl($url);`
+   * `$activeCategoryUrls` now populated for product pages (via `ProductController::show()` loading `category->parent` chain and sharing via `view()->share()`).
+   * Mega‑menu child/subchild links check against `$activeCategoryUrls` for proper active highlighting.
+4. Adjusted FollowedSeller controller:
+   * `DashboardController::followedSellers()` removed eager loading of `seller.products` (no longer needed for list display – followedSeller fields `products`, `rating`, `followers` are used instead).
+   * `getSellerDetails()` and `getSellerProducts()` still use the now‑functional `Seller::products()` relationship (which leverages the new `seller_id` column).
+5. Updated admin product forms:
+   * Admin create/edit pages include seller dropdown; `seller_id` column now exists, so form submission works.
+   * Admin filters on product index now correctly filter by seller.
+
+**Files changed/created:**
+- `database/migrations/2026_08_11_000001_add_seller_id_to_products_table.php` – re‑applied (or manual `ALTER TABLE`)
+- `app/helpers.php` – new `canonicalMenuUrl()` function
+- `app/Models/Seller.php` – unchanged (relationship remains `hasMany(Product)`)
+- `app/Http/Controllers/DashboardController.php` – `followedSellers()`, `getSellerDetails()`, `getSellerProducts()` updated
+- `app/Http/Controllers/ProductController.php` – `create()` / `store()` / `edit()` / `update()` handle new `seller_id` from request
+- `resources/views/user/followed-sellers.blade.php` – now uses FollowedSeller fields for stats, no longer relies on `seller->products` (fallback preserved)
+- `resources/views/admin/products/index.blade.php`, `create.blade.php`, `edit.blade.php` – seller select dropdowns (populated from `Seller` model)
+- `resources/views/layouts/app.blade.php` – nav menu (desktop/mobile) URLs switched to `canonicalMenuUrl()`
+- `resources/views/partials/nav-menu.blade.php` – similar
+- `routes/web.php` – no changes; `/shop` redirect and `/terms-and-conditions` redirect already applied
+
+**Verification:**
+- `/user/followed-seller` loads 200, shows seller stats from FollowedSeller fields, no SQL errors.
+- Nav menu active state verified on home (`Home` active), blog (`Blog` active), product pages (category chain highlighted), and all other pages.
+- Admin product create/edit form renders seller dropdown, product save succeeds with seller_id.
+- `/shop` redirect works (301 → `/search` preserving query) and nav menu highlights “Products” when on `/shop?q=...`.
+- All previously broken links (category menu, terms, etc.) now correctly resolve; home link crawl shows 0 non‑200.
+- Product page mega‑menu correctly highlights current category chain.
+
+**Impact:**
+- Fixes a blocking bug for users trying to follow sellers and eliminates SQL errors.
+- Improves navigation clarity and SEO friendliness after page‑builder URL changes.
+- Maintains backward compatibility: existing products remain without a seller (`seller_id` NULL), and existing admin queries continue to work.
+
+**Next steps (optional):**
+- Populate `seller_id` where appropriate (e.g., for products that have a vendor).
+- Consider lightweight admin optimization for the search‑categories tree (already noted in task #317).
+- Run full test suite (if environment can install `pdo_sqlite`).
+
+## 319. (2026-10-26): Stock Management — Select All Checkbox Fix
+
+**Problem:** The Stock Management page's header checkbox did not select product rows because its JavaScript handler was not included in the admin layout output.
+
+**Root cause:** `resources/views/admin/products/stock.blade.php` declared its script with `@section('scripts')`, while `resources/views/admin/layouts/app.blade.php` renders scripts using `@stack('scripts')`.
+
+**Fix:** Changed the stock view script block to `@push('scripts')` / `@endpush`, so the existing select-all and toggle-all handlers load with the page.
+
+**Verification:** Blade diagnostics report no errors. Select-all controls target the current page's `.row-check` product checkboxes.
+
+## 320. (2026-10-27): Products Without Usable Image — Excluded From All Storefront Listings
+
+**Problem:** `products` table (761k rows) me bahut se products aise hain jinke paas usable image nahi hai — `main_image` khaali, ya placeholder/dummy/no-image/default file. Ye products category cards, category product counts, shop/search listings, brand pages, nav mega-menu counts aur home page sections me show ho rahe the → broken/placeholder images aur inflated product counts.
+
+**Solution:** Ek reusable "usable image" filter add kiya aur usse har storefront listing/count me apply kiya:
+
+1. `Product::scopeHasUsableImage()` — SQL-level filter:
+   * `main_image` non-empty **aur** `placeholder` / `dummy` / `no-image` / `default` keywords nahi
+   * **ya** `images_json` non-empty (`<> ''`, `<> '[]'`) aur usme bhi ye keywords nahi
+2. `Product::hasUsableImage()` — PHP-level check (basename keyword check + local file existence / S3 / `http(s)` URL).
+3. Filter apply kiya gaya:
+   * `CategoryController::showCategories()` — 3-level `withCount`, `total_products_count` (descendants) aur `preview_products`
+   * `ShopController` — `index()`, `customerProducts()`, category + child/sub-child listings, `suggestions()`
+   * `Product::statusCountsByCategoryId()` — category-wise counts (covering index scan)
+   * `CategoryTree::tree()` — cached nav mega-menu / sidebar counts
+   * `HomeController::filterProductsWithImages()` — featured / random / home sections
+
+**Impact — "Accessories and Fluids" (category `id=1`, measured 2026-10-27):**
+
+| Metric | Count |
+|---|---|
+| Active products (category + all descendants) | **1,430** |
+| With usable image | **1,057** |
+| Excluded (no usable image) | **373** |
+
+Note: `category_id = 1` par direct products **0** hain — saare products descendants me hain, isliye page/count 1,057 dikhata hai (1,430 − 373).
+
+**Files changed:**
+- `app/Models/Product.php` — `hasUsableImage()`, `scopeHasUsableImage()`, `statusCountsByCategoryId()` me filter
+- `app/Http/Controllers/CategoryController.php` — counts + preview products
+- `app/Http/Controllers/ShopController.php` — shop/search/category/brand listings + suggestions
+- `app/Services/CategoryTree.php` — cached tree counts
+- `app/Http/Controllers/HomeController.php` — `filterProductsWithImages()`
+- `resources/views/categories/index.blade.php`, `resources/views/shop/index.blade.php`, `resources/views/home/index.blade.php` — counts/preview display
+
+**File Revisions (per `file_revisions` table):**
+
+| File | Event | Rev | Timestamp |
+|---|---|---|---|
+| `app/Models/Product.php` | updated | 14379 | 2026-10-23 07:31:45 |
+| `resources/views/categories/index.blade.php` | updated | 14390 | 2026-10-23 07:32:55 |
+| `app/Http/Controllers/HomeController.php` | updated | 14453 | 2026-10-23 10:58:25 |
+| `resources/views/shop/index.blade.php` | updated | 14490 | 2026-10-23 13:34:34 |
+| `app/Http/Controllers/ShopController.php` | updated | 14491 | 2026-10-23 13:34:44 |
+| `app/Http/Controllers/CategoryController.php` | updated | 13567 | 2026-09-15 06:09:21 (last recorded; later edits not captured) |
+| `app/Services/CategoryTree.php` | — | — | no revision record |
+
+**Note:** File Revisions watcher last entry **2026-10-23 13:34:44** (rev 14491) hai — uske baad watcher band tha, isliye Oct 26 (commit `d42c741`) ke changes File Revisions me record nahi hue. Watcher dobara start karne ke liye: `sudo systemctl restart file-watcher` (ya `node file-watcher.mjs`), phir missing snapshots ke liye `php artisan file:audit --init` ke baad `php artisan file:audit`.
+
+**Verification:**
+- SQL (subtree CTE) se cross-check: 1,430 active vs 1,057 usable-image products — code ke scope se match.
+- Category cards / product grids me placeholder images wale products nahi aate.
+- Category counts, shop filters aur mega-menu counts consistent (same scope use hota hai).
+- `php -l` clean on all touched PHP files.
+
+## 321. (2026-10-27): Shop Sidebar + Mobile Menu Categories — A-Z Ordering
+
+**Problem:** Products page (`/shop` → `/search`) ke sidebar me categories DB insertion order me aa rahi thi — A-Z nahi. Same tree mobile menu ke "Categories" tab me bhi use hota hai (`mobileCategoryTree`), isliye wahan bhi order random tha.
+
+**Solution:**
+- `app/Services/CategoryTree.php` — tree build se pehle query me `orderByRaw('LOWER(name) ASC')->orderBy('id')` add kiya. Children `$childrenMap` me query order me append hote hain, isliye **har level** (top → sub → child) A-Z sort ho jata hai. `LOWER()` use kiya taaki collation par depend na kare (`utf8mb4_unicode_ci` case-insensitive hai, phir bhi deterministic).
+- Cache key `front_category_tree_v1` → **`front_category_tree_v2`** — purana 6-hour cached tree automatically invalid, manual `cache:clear` ki zarurat nahi. Purana `v1` key `cache()->forget()` se hata diya.
+- Admin me category save/delete par pehle se hi `CategoryTree::flush()` chalta hai (`AppServiceProvider`), isliye naya key bhi auto-refresh hoga.
+
+**Files changed:**
+- `app/Services/CategoryTree.php` — A-Z `orderBy` + cache key bump
+
+**File Revisions:** is change ka koi record nahi — watcher ka last entry **2026-10-23 13:34:44 (rev 14491)** hai aur uske baad band hai. Start karne ke liye: `sudo systemctl restart file-watcher`, phir `php artisan file:audit`.
+
+**Verification:**
+- `php -l app/Services/CategoryTree.php` → no syntax errors.
+- Tinker (`CategoryTree::tree()`): top-level = `Accessories and Fluids | Air and Fuel Delivery | Air Brake Hose Label | Belts and Cooling | Body | Brake | Driveline and Axles | Electrical, Charging and Starting | …` (25 tops, A-Z).
+- Children of "Accessories and Fluids" = `Adhesives | Appearance Products | Books | Brackets, Flanges and Hangers | Cleaning Products | Clothing | Control Cables | …` (A-Z).
+- HTTP check `GET /new-steve/search` → 200; sidebar ka first category "Accessories and Fluids" aur uske children A-Z order me render ho rahe hain.
+
+## 322. (2026-10-27): Shop Sidebar — Collapsible Widgets (Categories / Price Range / Vehicle)
+
+**Problem:** Products page ke sidebar me teeno widgets (Categories, Price Range, Vehicle) hamesha expanded rehte the. Categories list bahut lambi hone se sidebar scroll bada ho jata tha aur Price/Vehicle tak pahunchne ke liye kaafi scroll karna padta tha.
+
+**Solution:** Har widget ke heading ko Bootstrap 5 collapse toggle bana diya (default **closed / collapsed**):
+
+- Heading ke andar native `<button type="button" class="widget-collapse-toggle">` (keyboard-accessible) + right side chevron icon (`fa-chevron-down`) jo expanded state me 180° rotate hota hai.
+- Body `<div class="collapse" id="sidebar…Collapse">` me wrap kiya (`show` class nahi → page load par closed):
+  * `#sidebarCategoriesCollapse` — Categories widget
+  * `#sidebarPriceCollapse` — Price Range form
+  * `#sidebarVehicleCollapse` — Vehicle form
+- `aria-expanded="false"` / `aria-controls` attributes add kiye (expanded hone par Bootstrap khud `true` kar deta hai).
+- CSS (`custom.css`): toggle button reset (full width, flex, transparent), chevron transition, hover/focus-visible states, aur `:has(+ .collapse:not(.show))` se collapsed heading ka extra bottom margin hata diya.
+- **Price slider fix:** panel default collapsed hone se jQuery UI slider hidden container me init hota tha (width 0 → handle drag galat). Isliye slider options ko `priceSliderOptions(values)` function me extract kiya aur `shown.bs.collapse` par slider ko current values ke saath `destroy` + re-init karte hain — sirf pehli baar expand hone par sahi width milti hai.
+
+**Files changed:**
+- `resources/views/shop/index.blade.php` — 3 widget headers + collapse wrappers (default closed) + slider re-init handler
+- `public/assets/front/css/custom.css` — `.widget-collapse-toggle` styles
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `php artisan view:cache` → "Blade templates cached successfully" (syntax OK).
+- `GET /new-steve/search` → **200**; HTML me teeno panels `class="collapse"` (bina `show`) + `aria-expanded="false"` render ho rahe hain — yaani default closed. `collapse show` panels ki count = **0**.
+- `bootstrap.bundle.min.js` page par load ho raha hai, isliye `data-bs-toggle="collapse"` data-api kaam karega.
+- Price panel expand → `shown.bs.collapse` handler slider ko visible width ke saath re-init karta hai (values preserve).
+- Nested category `+/-` toggles (jo pehle se collapse use karte hain) outer collapse ke andar bhi intact hain.
+
+## 323. (2026-10-27): Searchable Selects — Options Zyada Hon To Search Box
+
+**Problem:** Jin `<select>` forms me options bahut zyada hain (admin product form ka Category select ~21,000 options, Brand ~300+, shop page ka Brand 305, Year 125), unme native dropdown se option dhoondhna practically impossible tha. Aage options badhne wale selects bhi cover karne the.
+
+**Solution:** Naya reusable vanilla-JS enhancer `searchable-select.js` — koi library nahi, koi markup change nahi:
+
+- **Threshold-based:** sirf wahi `select.form-select` enhance hote hain jinke options `>= 10` hon (default). Per-select override: `data-searchable-min="N"`; skip: `data-searchable="off"`.
+- **Native `<select>` DOM me hi rehta hai** (off-screen, `display:none` nahi) — is liye form submit, HTML5 `required` validation, aur existing saare change handlers (jQuery included: brand auto-submit, sort, vehicle form) bilkul waise hi kaam karte hain.
+- **UI:** trigger (theme ka `.form-select` look + existing chevron) → click par panel with search input + filtered list. Panel `document.body` me `position:fixed` append hota hai, is liye `table-responsive`/modal/off-canvas me clip nahi hota; viewport ke hisaab se neeche/upar khulta hai.
+- **Keyboard:** Enter / Space / ArrowDown se open, ArrowUp-Down se navigate, Enter se select, Esc se close, Tab se close. Open hone par currently selected option highlight hota hai.
+- **Dynamic options:** per-select `MutationObserver` (options add/remove, disabled/required change) + document-level observer (jo select pehle threshold se chhota tha aur baad me bada ho gaya — e.g. AJAX se aane wale makes/models) → khud enhance/refresh ho jata hai.
+- **Performance:** ek waqt me max **200 rows** render hote hain + footer hint ("Showing first 200 of N matches — type to narrow down"). Empty search par 200 rows + type karte hi poore 21k options par filter (21,400 options: open ~0ms, filter ~0ms measured).
+- **A11y:** `role="combobox"` + `aria-expanded` / `aria-controls` / `aria-activedescendant`, list `role="listbox"`, options `role="option"` + `aria-selected`; disabled select par `aria-disabled` + `tabindex="-1"`. Required select invalid hone par panel khul kar focus control par aa jata hai.
+- `.nice-select` / address fields ke `.address-suggest` widgets ko chhoda nahi (unka apna searchable implementation already hai).
+
+**Files changed:**
+- `public/assets/front/js/searchable-select.js` — naya enhancer (vanilla JS, ~430 lines)
+- `public/assets/front/css/searchable-select.css` — naya stylesheet (panel, search input, list, group/empty/footer states)
+- `resources/views/layouts/app.blade.php` — CSS + JS include (form-select.js ke baad)
+- `resources/views/admin/layouts/app.blade.php` — CSS + JS include (form-select.js ke baad)
+- `TASKS.md` — ye entry
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `node --check public/assets/front/js/searchable-select.js` → OK; `php artisan view:cache` → "Blade templates cached successfully".
+- `GET /new-steve/search` → **200**; dono assets include ho rahe hain. Rendered DOM (headless Chrome) me **2 selects enhance** hue: Brand (305 options, `min-width:180px` inline style se) aur Year (125 options) — `ss-control` + `ss-panel` present.
+- **E2E (headless Chrome, real page):** Vehicle panel expand → Year search "2021" → 1 row → select → `value=2021`, label `2021`. Brand search "555" → 1 row → select → existing auto-submit chala → URL `…/search?brand=555`.
+- **Unit-ish (headless Chrome):** 12-option select — filter `ap` → 4 rows (Apple/Apricot/Grape/Pineapple), click → `value=apple`, `FormData` me value, label update, panel close, `change` sirf value badalne par; keyboard ArrowDown+Enter → `mango`; Esc → close; disabled select → `tabindex="-1"`, no open.
+- **Dynamic:** 2-option select pehle enhance nahi hua, 12 options add hone par automatically enhance ho gaya.
+- **Perf:** 21,401-option select — open 0ms (200 rows rendered), filter "Item 21000" → 1 match, footer hint visible.
+- **Fallback:** `nice-select`/address-fields selects untouched (unka apna search UI), aur `select` without search needs native hi rehta hai.
+
+## 324. (2026-10-27): Price Filter — Displayed Price (Commission Included) Par Lagao
+
+**Problem:** `?min_price=0&max_price=172` par `Rad / Cond Fan Assy. $190.29` list ho raha tha.
+
+**Root cause:** Filter DB ki base `cost` par lag raha tha, lekin card par price `buyerPrice($p->price, $p)` se dikhti hai = `cost * (1 + commission/100)` (global commission **10%**, product-level override ho to wo).
+
+- Product `295342` (`rad-cond-fan-assy-75638`): `cost = 172.99`, commission = NULL → displayed `$190.29`.
+- Filter condition `cost <= 172 + 0.999999` → `172.99 <= 172.999999` ✅ pass → product list ho gaya, jabki customer ko `$190.29` dikh raha tha.
+- Isi tarah `sort=price_asc/desc` bhi `cost` par tha (per-product commission alag hone par displayed order galat), aur slider bounds `MAX(cost)/MIN(cost)` se ban rahe the (displayed range se kam).
+- Bonus bug: slider label `currency_format($sliderMin)` — `$sliderMin` pehle hi `* $rate` tha, is liye non-USD currency me **double conversion** ho rahi thi.
+
+**Fix:** Naya private helper `buyerPriceExpression()` (ShopController) — bilkul `buyerPrice()` jaisa SQL expression:
+
+```sql
+(cost * (1 + (LEAST(GREATEST(COALESCE(commission, 10.00), 0), 100) / 100)))
+```
+
+- `min_price` / `max_price` ab isi expression par `whereRaw` (currency conversion pehle jaisa: `price / rate`).
+- `sort=price_asc|price_desc` ab displayed price par.
+- Price slider range (`catalog.price_range` → **`catalog.price_range_v2`**, cache auto-invalidate) ab displayed price ka `MIN/MAX`.
+- Slider label ab `{{ $currencySymbol }}{{ number_format($sliderMin, 2) }}` (double conversion khatam).
+
+**Files changed:**
+- `app/Http/Controllers/ShopController.php` — `buyerPriceExpression()`, filter + sort + price range
+- `resources/views/shop/index.blade.php` — slider label
+- `TASKS.md` — ye entry
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `?min_price=0&max_price=172&sort=price_desc` → **200**; `rad-cond-fan-assy-75638` (cost 172.99) aur `rad-cond-fan-assy-76170` (cost 263.01) dono page par **absent**; listing ki max displayed price **$173.00** (172.99 range ka rounding), pehle $190.29/$289.31 aa rahe the.
+- Tinker: filter se `total = 463,552`, `max_displayed_in_result = 173.00`, `min = 0.07`; dono bad products excluded.
+- `?min_price=100&max_price=172&sort=price_asc` → 24 cards sab `$100.00` (DB me cost 90.91 × 1.1 = 100.00 wale 24 products — data sahi).
+- Slider: `#price-slider-max = 105727` (buyer-price max 105,727 × rate), label `$0.00 - $105,727.00`.
+- Performance (no regression): buyer-price filter `3.87s` vs purana cost filter `4.01s`; slider range scan `2.54s` (1 din cache).
+- Note: `max_price` ka purana `+0.999999` fudge baraqar hai — yaani max 172 par 172.99 tak (displayed $173.00) include hota hai. Strict `<= 172.00` chahiye to `+0.999999` hata dena hoga.
+
+## 325. (2026-10-28): User Return — Qty to Return Validation (Client-Side)
+
+**Problem:** Request Return page (`user.returns.create`) par sabhi "Qty to Return" inputs default `0` hote the. User agar sab 0 chhod kar Submit click karta tha to server validation (`items.*.qty => min:1`) fail hoti thi, page reload hota tha, aur koi inline error nahi dikhta tha — sirf server-side error aata tha jo achhi tarah se visible nahi tha.
+
+**Fix:** Client-side validation add kiya taaki page reload na ho aur turant error dikhe:
+
+- Qty inputs par class `return-qty` + `data-index` add kiya.
+- Naya error div `#return-qty-error` (`d-none` by default): *"Please select at least one item with quantity greater than 0."`
+- `@error('items')` block add kiya taaki server-side validation error bhi inline dikhe (pehle sirf `reason` ka error dikhta tha).
+- Inline JS (`DOMContentLoaded`-safe IIFE):
+  - Form submit par check karta hai ki koi bhi qty `> 0` hai ya nahi.
+  - Agar sab `0` hain → `e.preventDefault()` + `e.stopPropagation()` (page reload nahi hota), error box show karta hai, sab `0` inputs par `is-invalid` class lagata hai (Bootstrap red border), pehle input par focus set karta hai.
+  - Agar koi qty `> 0` hai → error box hide, highlights clear.
+  - Har qty input par `input` listener: agar user kisi input me value `> 0` daalta hai to uska `is-invalid` hat jata hai aur agar koi bhi `> 0` ho to error box hide ho jata hai.
+
+**Files changed:**
+- `resources/views/user/returns/create.blade.php` — qty input class/data-index, `@error('items')`, `#return-qty-error`, inline JS
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `php artisan view:cache` → "Blade templates cached successfully" (syntax OK).
+- Form action selector `form[action*="/returns/"]` store route `/user/returns/{orderId}` se match karta hai.
+- Server-side backup validation `items.*.qty => required|integer|min:1` intact `ReturnController@store` me.
+- Note: Page me login hona zaroori hai (`auth` middleware), isliye direct HTTP test login ke bina possible nahi.
+
+## 326. (2026-10-28): Admin Return Request — Prevent Accidental Approve on Save
+
+**Problem:** Admin "Process Request" page (`admin.returns.show`) ka Decision select me koi empty/placeholder option nahi tha. Jab return request ka status `pending` hota hai, to koi bhi option (`approved`/`rejected`/`refunded`) match nahi karta, is liye koi option `selected` nahi hota. Browser form submit karte waqt **pehla option (`Approve`)** default submit kar deta hai — agar admin koi change kiye bina "Save Decision" click karta to return request galt se approve ho jati thi.
+
+**Fix:** Decision select me pehle ek disabled placeholder option add kiya:
+
+```html
+<option value="" disabled {{ $return->status === 'pending' ? 'selected' : '' }}>Select Decision...</option>
+```
+
+- `pending` status par placeholder `selected` hota hai — admin ko faura decision choose karna padta hai.
+- Disabled option ki value submit nahi hoti, is liye bina select kiye submit par server validation (`status => required|in:approved,rejected,refunded`) fail hoti hai.
+- `approved`/`rejected`/`refunded` status par wohi option `selected` rehta hai (current decision dikhta hai, change karna padega).
+- `@error('status')` block add kiya taaki server validation error inline dikhe.
+
+**Files changed:**
+- `resources/views/admin/returns/show.blade.php` — Decision select placeholder + `@error('status')`
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `php artisan view:cache` → "Blade templates cached successfully".
+- Server-side validation intact: `ReturnController@update` me `'status' => 'required|in:approved,rejected,refunded'` — empty value reject ho jati hai.
+- Note: Page admin-only (`auth` + admin middleware), direct HTTP test login ke bina possible nahi.
+
+## 327. (2026-10-28): Admin Return — Refund Amount Should Not Show on Reject
+
+**Problem:** Admin "Process Request" page (`admin.returns.show`) par jab return request reject ki jati thi, tab bhi "Refund amount" me amount dikhta rehta tha (kyunki controller `refund_amount` input ki value save kar leta tha chahe status `rejected` ho). Ye inconsistent hai — reject par koi refund nahi hota, to amount dikhana galat hai.
+
+**Decision:** Reject karne par "Refund amount" **amount nahi dikhna chahiye** — ye sirf `approved` / `refunded` status par show hona chahiye. Reject par `refund_amount = null` ho aur UI me `—` dikhe.
+
+**Fix:**
+1. **Controller** (`app/Http/Controllers/Admin/ReturnController.php`): `update()` me — agar status `rejected` ho to `refund_amount = null` set kiya jata hai; `approved`/`refunded` par input value save hoti hai.
+2. **View** (`resources/views/admin/returns/show.blade.php`):
+   - Decision select me pehle se hi disabled placeholder (`Select Decision...`) add ho chuka hai (Task #326).
+   - Refund amount input par `data-decision` + `refund-amount-input` class add ki; `pending`/`rejected` status par input `disabled` rehta hai.
+   - Inline JS: decision change hone par `rejected` select karne se refund input disable + clear ho jata hai; `approved`/`refunded` select karne se enable ho jata hai (default order total load hota hai agar empty ho).
+   - Return Details display card pehle se null par `—` dikhata hai, is liye controller se null set karne par UI sahi dikhega.
+
+**Files changed:**
+- `app/Http/Controllers/Admin/ReturnController.php` — refund_amount null on reject
+- `resources/views/admin/returns/show.blade.php` — refund input disabled state + JS toggle
+- `TASKS.md` — ye entry
+
+**File Revisions:** koi record nahi — watcher last entry **2026-10-23 13:34:44 (rev 14491)** ke baad band hai. (`sudo systemctl restart file-watcher` → `php artisan file:audit`)
+
+**Verification:**
+- `php artisan view:cache` → "Blade templates cached successfully"
+- `php -l app/Http/Controllers/Admin/ReturnController.php` → No syntax errors
+- Server-side validation intact: `'refund_amount' => 'nullable|numeric|min:0'`, reject par null override hota hai
+- Stock restore sirf `refunded` status par (pehle se intact)
+- Note: Page admin-only, direct HTTP test login ke bina possible nahi.
+
+## 328. (2026-10-28): Admin Panel - Generic API Integrations + Courier Auto-Shipment
+
+**Goal:** Admin panel mein "Courier/API Integration Configuration" system banana taaki bina code edit kiye koi bhi API (Courier, Payment, SMS, WhatsAP, Email, Other) configure kiya ja sake. Saath hi courier APIs (Shiprocket/Delhivery/Pickrr/Custom) se tracking number/carrier auto-generate karke order ship ho sake.
+
+**DB / Model:**
+- Migration: `2026_10_28_105100_create_api_integrations_table.php`
+  - `type` enum(courier,payment,sms,email,whatsapp,other), `provider`, `name`, `base_url`, `auth_type`, `credentials` (longText encrypted), `endpoints` (JSON), `config` (JSON), `description`, `is_active`, `is_default`, `priority`, `last_tested_at`, `last_test_result`
+- Model: `app/Models/ApiIntegration.php`
+  - Credentials auto-encrypt/decrypt via `Crypt`, JSON cast helpers, `getDefaultCourier()`, `getActiveCourier()`
+
+**Admin Controller / Routes:**
+- Controller: `app/Http/Controllers/Admin/ApiIntegrationController.php` (CRUD, toggle, setDefault, test, getProviderFields)
+- Routes (admin): `GET/POST/PUT/DELETE /admin/api-integrations/*`, `POST /admin/api-integrations/{id}/toggle`, `POST /admin/api-integrations/{id}/set-default`, `POST /admin/api-integrations/{id}/test`, `GET /admin/api-integrations/get-provider-fields`
+- Sidebar: `resources/views/admin/partials/sidebar.blade.php` -> Settings mein `API Integrations` link add
+
+**Admin Views:**
+- `resources/views/admin/api-integrations/index.blade.php` (list, status/default/test actions)
+- `resources/views/admin/api-integrations/create.blade.php` (type/provider dynamic, credentials dynamic)
+- `resources/views/admin/api-integrations/edit.blade.php` (update + test result)
+
+**Courier Automation Structure:**
+- Contract: `app/Contracts/CourierInterface.php` (authenticate, createShipment, getTracking, cancelShipment, getCouriers)
+- Manager: `app/Services/Couriers/CourierManager.php` (default/active courier resolve)
+- Services: `ShiprocketService`, `DelhiveryService`, `PickrrService`, `CustomCourierService`
+- Admin Order: `app/Http/Controllers/Admin/OrderController.php` -> `shipViaApi($id)`, route `POST /admin/orders/{id}/ship-api`, button `Ship via API` in `resources/views/admin/orders/show.blade.php`
+  - API se shipment create hone par `tracking_number`, `tracking_carrier` auto-save, status `shipped`, `recordStatusChange('shipped')`, mail/notification trigger
+
+**Supported Providers (configurable):**
+- Courier: shiprocket, delhivery, pickrr, nimbuspost, clickpost, ecomexpress, custom
+- Payment: razorpay, stripe, payu, cashfree, ccavenue, custom
+- SMS: msg91, textlocal, twilio, fast2sms, custom
+- WhatsApp: meta, interakt, wati, gupshup, custom
+- Email: smtp, mailgun, sendgrid, brevo, custom
+- Other: custom
+
+**Verification:**
+- `php artisan migrate --force` -> `2026_10_28_105100_create_api_integrations_table` DONE
+- `php artisan view:cache` DONE
+- `php -l` on controllers/services passed
+- Routes registered: `admin.api-integrations.*`, `admin.orders.ship-api`
+
+**Notes:**
+- Credentials Laravel Crypt se encrypt hote hain
+- Generic system (future mein aur APIs add ho sakti hain)
+- Agar koi active default courier nahi hai to `Ship via API` error show karega
+- Custom API ke liye base_url + endpoints configure karke use kiya ja sakta hai
+
+- [x] Vehicle widget added to home page hero banner (year/make/model filter) with dynamic makes/models JS.
+
+## 329. (2026-10-28): Page Builder Merged in Website (Already Integrated)
+- Package already integrated in `new-steve` via composer path repo (`../laravel-page-builder`) as `stevestore/laravel-page-builder`.
+- Registered via `SteveStore\PageBuilder\PageBuilderServiceProvider` in `bootstrap/providers.php`.
+- Models `App\Models\Page` & `App\Models\Blog` use `SteveStore\PageBuilder\Traits\HasBlocks`.
+- Routes active: `admin/page-builder/*` (`page-builder.*`), views published/assets loaded.
+- Admin sidebar has "Page Builder" link; admin pages layout supports page builder UI.
+- Config: `config/page-builder.php` published/merged. Assets published to `public/vendor/page-builder/`.
+- Migration `2026_07_16_000000_add_content_blocks_to_tables.php` adds `content_blocks` JSON to `pages`/`blogs` if missing.
+- Frontend rendering uses `<x-page-blocks>` / `page-builder` components as per package.
+
+## 330. (2026-10-28): User Profile Update - Country/State/City/Zip/Address Not Required
+- Controller: `app/Http/Controllers/UserController.php@updateProfile` - removed `required` from phone/address/city/country, made postal_code nullable, read optional fields safely
+- View: `resources/views/user/profile-edit.blade.php` - pass `required => ['full_name']`, hide phone via `withPhone => false`, hide default checkbox
+- Address fields partial remains reusable; user profile now only requires Full Name + Email
+
+## 330. (2026-10-28): User Profile Update - Country/State/City/Zip/Address Not Required
+- Controller: `app/Http/Controllers/UserController.php@updateProfile` - removed `required` from phone/address/city/country, made postal_code nullable, read optional fields safely
+- View: `resources/views/user/profile-edit.blade.php` - pass `required => ['full_name']`, hide phone via `withPhone => false`, hide default checkbox
+- Address fields partial remains reusable; user profile now only requires Full Name + Email
+
+## 331. (2026-10-29): Category URLs - Use /category/{slug} Instead of /category/parent/child
+- Routes: `/category/{parent}/{child}/{subchild?}` now redirects (301) to `/category/{slug}` using child/subchild slug
+- Controller `ShopController@category` already handles any category by slug (resolves parent/sub/child)
+- Views updated: header mega menu, mobile menu, shop sidebar/breadcrumbs use `route('category', ['slug' => ...])`
+
+## 332. (2026-10-29): Category URLs - Keep /category/parent/child/... Working
+- Route `/category/{parent}/{child}/{subchild?}` now uses `ShopController@categoryByPath` (same page as `category`, no redirect)
+- Method finds category by path (parent->child->subchild) and renders `shop.index` with correct `currentCategory/currentSubcategory/currentChildcategory`
+
+## 333. (2026-10-29): Category Page - Hide Products Without Usable Image
+- `ShopController@category`, `ShopController@categoryByPath` now filter paginated collection to only products with `filled($product->image)` (same behavior as home page)
+- Prevents showing products with no/broken images on category pages
+
+## 334. (2026-10-29): Category Menu Counts - Only Products With Images
+- `CategoryTree` already uses `Product::hasUsableImage()` for counts (verified)
+- `Product::statusCountsByCategoryId()` already uses `hasUsableImage()`
+- Counts in header/sidebar/shop filters now reflect products with usable images only
+
+## 335. (2026-10-29): Category Page Count & Listing Fix - Filter By Image After Fetch
+- Category listing now fetches all matching products with `hasUsableImage()` scope, then filters by `filled($product->image)` (covers S3/image resolution cases where scope may miss) and paginates manually
+- Ensures "Hardware, Fasteners and Fittings" shows only products that actually have usable images and correct count
+
+## 336. (2026-10-29): Category Counts - Count Only Products With Actual Images
+- `CategoryTree` now counts products with `filled($product->image)` after loading (not just `hasUsableImage()` scope)
+- Counts in header/shop filters now match the filtered product list on category pages
+
+## 337. (2026-10-29): Fixed admin sidebar dropdown (data-bs-toggle typo, route names for export/commission).
+
+## 338. (2026-10-29): Fixed product_type filter 500 when column missing.
+
+## 339. (2026-10-30): Fix HTTP 500 / 512M OOM on all pages (category tree + category listing)
+- Root cause 1: `CategoryTree::tree()` loaded all ~761k active products (`Product::where('status', true)->get(['id','category_id','main_image','images_json'])`) whenever the 6h cache was cold/cleared → 500MB+ RAM vs 512M limit → fatal 500 on every page (frontend + admin). Cache never survived because the rebuild itself died.
+- Fix 1: counts now come from existing SQL aggregate `Product::statusCountsByCategoryId()->all()` (GROUP BY category_id); cache rebuild ~5s, ~80MB peak, 2.5MB cached JSON.
+- Fix 2: `AppServiceProvider` view composer skips `CategoryTree` for `/admin/*` requests (only the storefront layout uses `$mobileCategoryTree`).
+- Fix 3: reverted 333/335 `->get()->filter(filled($product->image))` pagination in `ShopController@category` / `@categoryByPath` — it loaded the whole category into memory (Brake = 106k products) and caused a second OOM on `/category/brake`. Back to SQL `paginate(24)` with `hasUsableImage()`, which matches header/sidebar counts and keeps peak memory ~120MB.
+- Note: 47,388 products have local `main_image` paths whose files do not exist (`public/assets/images/thumbnails/` missing); they now count/appear like the shop listing (placeholder image) instead of crashing.
+- Verified 200: `/`, `/search`, `/category/brake`, `/category/steering`, `/admin/dashboard`, `/admin/products`, `/admin/products/{id}/edit`, `/admin/images`, `/admin/product-bulk-upload`; no new memory fatals in logs.
+- Verified 200: `/`, `/search`, `/category/brake`, `/category/steering`, `/admin/dashboard`, `/admin/products`, `/admin/products/{id}/edit`, `/admin/images`, `/admin/product-bulk-upload`; no new memory fatals in logs.
+
+## 340. (2026-10-30): Product images — AWS first, placeholder fallback (no legacy stautoparts images)
+- `Product::getImageAttribute()` now only returns: (a) `s3://autoparts-hub/...` source-bucket refs (or the equivalent S3 HTTP URLs), (b) S3 refs from `images_json`, or (c) images uploaded through this app's own media manager (`storage/uploads/...` / `uploads/...` that exist on disk).
+- Legacy local filenames (`assets/images/thumbnails/...`), bare filenames, other local paths, and third-party http(s) URLs (e.g. `pfc.parts`) are treated as "no image" → `assets/images/placeholder.png`. Old stautoparts images are never used.
+- Added `onerror` placeholder fallback to raw admin product `<img>` tags (products index/edit/show gallery, contacts) so S3 objects that are missing/deleted (403) fall back to the placeholder instead of a broken image.
+- Verified: AWS product renders signed `autoparts-hub` URLs; `pfc.parts` product now renders placeholders (0 pfc refs); bare-filename products show placeholder; admin product pages 200.
+
+## 341. (2026-10-30): Hide placeholder-image products from storefront listings
+- `Product::scopeHasUsableImage()` tightened from "any non-empty image" to AWS-only SQL: `s3://autoparts-hub/...` / `autoparts-hub.s3[.region].amazonaws.com` refs (in `main_image` or `images_json`) plus own media-manager uploads (`uploads/...`, `storage/uploads/...`). Legacy local paths, bare filenames, and third-party URLs no longer qualify.
+- Storefront listings/counts now exclude products that would render the placeholder: `/search`, `/category/{slug}`, category counts (`CategoryTree` / `statusCountsByCategoryId`), and category pages.
+- Added `hasUsableImage()` to Home featured/random/explore-tab queries and product page related/similar queries so those sections still fill up with real-image products.
+- Cleared `front_category_tree_v2` cache and rebuilt it (~3.5s). Brake tree count 100,902 == SQL listing count 100,902 (previously 151,267 unscoped).
+- Verified: `/`, `/search?q=0052`, `/category/brake` return 200 with 0 placeholder product cards (24/24 and 48/48 AWS images). A known no-image product (`loadcontroller-...-25854`, category 1191) no longer appears in its category listing. Direct product URLs still render with the placeholder policy if opened (e.g. old links/bookmarks); only listings are hidden.
+- Caveat: SQL can match an AWS reference whose object is missing/deleted; such a product can still show the placeholder via `onerror` until the object is restored or the row is cleaned. Sample of 80 random S3 objects all existed.
+- [x] Cart qty capped to stock (server + JS); increase button disables at max stock; totals update on change.
+
+## 342. (2026-10-30): Product Detail Qty — Matched Cart Design
+
+**Change:** Product detail page ka quantity selector cart page ke design se match kiya: circular light minus/plus buttons aur centered quantity input. Existing stock limit aur total-price update behavior unchanged.
+
+**Files changed:**
+- `resources/views/product/show.blade.php` — updated quantity control markup and styles
+
+## 343. (2026-10-30): Dedicated Commission History Records
+
+**Change:** Added a dedicated `commission_histories` table for product-level and global commission changes. Records include scope, old/new commission, product reference, actor, IP address, and timestamps. Unchanged values do not create duplicate history entries.
+
+**Files changed:**
+- `database/migrations/2026_10_30_000001_create_commission_histories_table.php` — created the history table and indexes
+- `app/Models/CommissionHistory.php` — added history model and record helper
+- `app/Http/Controllers/ProductController.php` — records product commission changes transactionally
+- `app/Http/Controllers/AdminController.php` — records global commission changes transactionally
+
+**Verification:** Migration applied successfully; a temporary insert was verified and rolled back.
+## 344. (2026-11-02): Storefront Listings — `images_json` No Longer Counts As Main Image
+
+**Problem:** `Fast Orange® Antibacterial Foaming Hand Wash 7.5OZ` (product `358613`) ka `main_image` legacy bare filename (`95105_001.jpg`) hai, lekin `images_json` me valid S3 gallery image hai. `Product::scopeHasUsableImage()` `images_json` ko bhi match karta tha, is liye product shop/category listings me aa raha tha — jabke card par placeholder render hota tha.
+
+**Fix:** `scopeHasUsableImage()` ab sirf `main_image` (S3 source bucket ya own `uploads/...`) ko visibility ke liye consider karta hai. `images_json` gallery ke liye reserved hai; wo main image nahi ban sakta.
+
+**Impact:** Storefront listings se 253 aise products hide hue jo sirf `images_json` image ke bharose the (`493,932` → `493,679` active products). Category counts/CategoryTree same scope use karte hain, is liye wahan bhi automatically reflect hua.
+
+**Files changed:**
+- `app/Models/Product.php` — removed `images_json` match from `scopeHasUsableImage()`
+
+**Verification:** Product `358613` ab `hasUsableImage()` query me `false` hai; `php artisan cache:clear` chalaya gaya taake cached category counts refresh hon.
+
+## 345. (2026-11-02): No Main Image — Product Page 404 + Sitemap Exclusion
+
+**Change:** Products jinke paas usable `main_image` nahi hai, unki product detail URL ab 404 return karti hai aur wo `sitemap.xml` me bhi list nahi hoti.
+
+**Files changed:**
+- `app/Http/Controllers/ProductController.php` — `show()` me `hasUsableImage()` scope + PHP-level guard (404)
+- `app/Http/Controllers/ShopController.php` — unused `product()` method me same guard, consistency ke liye
+- `app/Http/Controllers/HomeController.php` — `sitemap()` ki product query par `hasUsableImage()`
+
+**Verification:**
+- `Fast Orange® Antibacterial Foaming Hand Wash 7.5OZ` (`358613`): `/product/fast-orange-...-95105` → **404**
+- Valid-image product (`breather-screw-valve-radiator-001-10-23148`) → **200**
+- Sitemap query me product `358613` included nahi hai
+- `SourceS3ImageUrlTest`: 5 passed
+
+## 346. (2026-11-02): Cart Page — Product Image/Name Link
+
+**Change:** Cart page ke har item ka image aur product name ab product detail page ka link hai. Cart item array me `slug` add kiya (add + refresh), taake old sessions me bhi refresh par link mil jaye. Agar slug missing ho (deleted product) to plain text fallback render hota hai.
+
+**Files changed:**
+- `resources/views/cart/index.blade.php` — image/name wrapped in product links with fallback
+- `app/Http/Controllers/CartController.php` — `slug` stored in cart items and refreshed from DB
+
+**Verification:** `php artisan view:cache` successful; PHP syntax check passed.
+
+## 347. (2026-11-02): Footer Copyright `/` Link — Subdirectory Base Path Fix
+
+**Problem:** Footer copyright setting me `<a href="/">` tha. Browser me leading `/` domain root hota hai, is liye link `http://localhost/` par ja raha tha instead of `http://localhost/new-steve/`.
+
+**Fix:** `app/helpers.php` me `prefixAppBasePathInHtml()` add kiya — stored HTML ke root-relative `href`/`src`/`action` values me app ka base path prefix karta hai. Already-prefixed paths aur external URLs untouched rehte hain. Footer copyright rendering me ye helper apply kiya.
+
+**Files changed:**
+- `app/helpers.php` — `prefixAppBasePathInHtml()`
+- `resources/views/layouts/app.blade.php` — footer copyright output par helper applied
+
+**Verification:** `href="/"` ab `href="/new-steve/"` render hota hai (browser me `http://localhost/new-steve/`); `/shop` -> `/new-steve/shop`; external URLs unchanged.
+
+## 348. (2026-11-02): Brand Pages — Clean `/brand/{slug}` URLs
+
+**Change:** Brand links ab `/search?brand=autolite` ki jagah `/brand/autolite` use karte hain. Naya public route `GET /brand/{slug}` (`brand`) add kiya jo us brand ke products ko same shop listing UI (filters, sort, pagination, vehicle filter) ke saath dikhata hai.
+
+**Files changed:**
+- `routes/web.php` — `Route::get('/brand/{slug}', [ShopController::class, 'brand'])->name('brand')`
+- `app/Http/Controllers/ShopController.php` — `brand()` method + `filterProducts()` route-brand support; `currentBrand` view ko pass
+- `resources/views/shop/index.blade.php` — brand title, breadcrumb (`Home > Brands > Brand`), selected brand filter + canonical clear URL
+- `resources/views/brands/index.blade.php` — brand card links new route par
+- `resources/views/home/index.blade.php` — home brand links new route par
+- `resources/views/product/show.blade.php` — product detail "Brand" ab brand page link
+- `app/Http/Controllers/HomeController.php` — sitemap me active brands add
+
+**Behavior:**
+- `/brand/autolite` → 200, sirf Autolite products (24 per page)
+- `/brand/autolite?brand=bbr` → 302 `/brand/bbr` (URL canonical)
+- `/brand/autolite?brand=` → 302 `/search` (filter clear)
+- Missing brand → 404
+- `/search?brand=autolite` old URL abhi bhi kaam karta hai
+
+**Verification:** Brand page 200; 24/24 product cards Autolite brand ke; title `Autolite - StAutoparts`; breadcrumb correct; blade cache successful.
+
+## 349. (2026-11-02): Brand URL Generation — Guard Empty Brand Slugs
+
+**Problem:** `/brands` page 500 (`UrlGenerationException: Missing required parameter for [Route: brand] [Missing parameter: slug]`) kyunki `brands` table me 94 rows ka `slug` empty hai. `route('brand', ['slug' => ''])` required parameter missing throw karta hai.
+
+**Fix:**
+- `BrandController@brands()` — public brands list se empty `name`/`slug` rows exclude
+- `HomeController@index()` — home "Top Brands" query bhi sirf valid `name` + `slug` brands leti hai
+- `resources/views/brands/index.blade.php` — link generation par `filled($brand->slug)` guard + `/brands` fallback
+- `resources/views/home/index.blade.php` — same guard
+
+**Verification:** `http://192.168.130.54/new-steve/brands` → **200** (pehle 500), home → **200**, brand links valid slugs ke saath (`/brand/us-speedo`, `/brand/gates`, etc.).
+
+
+## 350. (2026-11-02): Admin Payment Methods — Provider Credentials
+
+**Change:** Added a Payment Methods settings page with credential cards for the providers in the supplied reference: PayPal, Stripe, MercadoPago, bKash, Nagad, SSLCommerz, Aamarpay, Iyzico, Instamojo, PayStack, PayHere, N-Genius, VoguePay, RazorPay, Authorize.Net, and Payku. Secret values are encrypted before storage and never rendered back into form inputs; blank secret fields preserve the saved value. Sandbox toggles and provider-specific fields are included where applicable.
+
+**Files changed:**
+- `app/Http/Controllers/Admin/PaymentMethodSettingsController.php` — provider field definitions, validation, encrypted credential persistence
+- `resources/views/admin/settings/payment-methods.blade.php` — credential management UI
+- `routes/web.php` — payment-method page and provider update routes
+- `app/Http/Controllers/AdminController.php` — All Settings tile links to Payment Methods
+- `resources/views/admin/partials/sidebar.blade.php` — sidebar link points to Payment Methods settings
+
+**Behavior note:** This page stores gateway credentials; it does not add payment processing SDKs. Checkout continues to use its existing COD/card/PayPal flow, and other listed gateways require separate checkout integrations before they can accept payments.
+
+**Verification:** PHP syntax, registered routes, Blade compilation, and server-side rendering of all 16 provider cards passed. Storefront returned HTTP 200; the admin page redirects unauthenticated users to login.
+
+## 351. (2026-11-03): Checkout Delivery Info — Product Image/Name Link
+
+**Change:** Checkout ke delivery-info step me cart items ka image aur product name ab product detail page par link karte hain, bilkul cart page (#346) ki tarah. Cart array me pehle se `slug` available hai (`CartController@refreshCartPrices()`), is liye controller change ki zaroorat nahi padi.
+
+**Files changed:**
+- `resources/views/checkout/delivery-info.blade.php` — image + name ko `route('product', $item['slug'])` link me wrap kiya; slug missing hone par plain fallback
+
+**Verification:** Blade view compile/cache successful; product link cart page ke same URL pattern (`/product/{slug}`) par jaata hai.
+
+## 352. (2026-11-03): General Settings — Footer Configuration Included
+
+**Problem:** Admin "General Settings" page sirf header configuration dikha raha tha; footer columns manager alag "Footer Settings" page par tha. User ko General Settings me header aur footer dono ki settings chahiye thi.
+
+**Fix:**
+- Footer columns manager ko reusable partial `resources/views/admin/settings/partials/footer-columns.blade.php` me extract kiya.
+- "General Settings" (`admin.settings.header`) page par Header Configuration ke baad **Footer Configuration** card include kiya; dedicated Footer Settings page bhi same partial use karta hai.
+- Page title `Header Settings` → `General Settings`; All Settings hub me General group ke andar "Footer Settings" tile add kiya.
+- Footer form me hidden `return_to` field add kiya, taake General Settings se save karne par wahi page par redirect ho (footer page se save karne par footer page par).
+
+**Files changed:**
+- `resources/views/admin/settings/partials/footer-columns.blade.php` — new shared partial (form + styles + JS)
+- `resources/views/admin/settings/footer.blade.php` — partial include
+- `resources/views/admin/settings/header.blade.php` — title General Settings + Footer Configuration section
+- `app/Http/Controllers/AdminController.php` — General group tile + footer save redirect handling
+
+**Verification:** `php -l` passed, `php artisan view:cache` successful. Authenticated render check: `/admin/settings/header` → 200 with `Footer Configuration`, footer form/JS present, nav menu intact; `/admin/settings/footer` → 200.
+
+## 353. (2026-11-03): Remove Separate Footer Settings Page
+
+**Change:** Footer settings ab General Settings page ka part hain, is liye alag "Footer Settings" page/menu ki zaroorat nahi rahi. Separate entry ko sidebar aur All Settings hub dono jagah se hata diya; dedicated page/route bhi remove kar diya.
+
+**Files changed:**
+- `resources/views/admin/partials/sidebar.blade.php` — top-level "Footer Settings" link removed
+- `app/Http/Controllers/AdminController.php` — All Settings ka Footer Settings tile + unused `footerSettings()` method removed; footer save ab General Settings par redirect karta hai
+- `routes/web.php` — `GET /admin/settings/footer` route removed (POST update route intact)
+- `resources/views/admin/settings/footer.blade.php` — deleted (footer UI shared partial se General Settings me aa chuka hai)
+- `resources/views/admin/settings/partials/footer-columns.blade.php` — `return_to` hidden field removed
+
+**Verification:** `/admin/settings/header` → 200 with Footer Configuration, footer form/JS and nav menu; `/admin/settings` → 200 with no "Footer Settings" tile; sidebar me "Footer Settings" link nahi hai; `admin.settings.footer.update` POST route intact.
+
+## 354. (2026-11-03): SEO Integration & Admin SEO Settings
+
+**Change:** Storefront SEO ko admin-managed banaya. Global SEO settings page add ki gayi (search appearance, verification, analytics, robots/sitemap), meta-tags ka hardcoded `noindex` bug fix kiya, aur analytics/verification tags storefront layout me wire kiye.
+
+**Files changed:**
+- `app/Http/Controllers/AdminController.php` — `seoSettings()` / `updateSeoSettings()` + All Settings me SEO group
+- `resources/views/admin/settings/seo.blade.php` — naya SEO settings page (meta defaults, OG image, Search Console/Bing/Pinterest verification, GA4/GTM/Pixel, robots & sitemap toggles)
+- `routes/web.php` — `admin.settings.seo` GET/POST routes + public `/robots.txt` route
+- `resources/views/admin/partials/sidebar.blade.php` — SEO Settings link
+- `resources/views/partials/meta-tags.blade.php` — per-page `robots` respected; global meta defaults, verification tags, OG/Twitter image and handle; default noindex for private pages
+- `resources/views/layouts/app.blade.php` — SEO analytics partials included in head/body
+- `resources/views/partials/seo-analytics.blade.php` — GA4, GTM, Facebook Pixel head snippets
+- `resources/views/partials/seo-analytics-body.blade.php` — GTM/Pixel noscript fallbacks
+- `app/Http/Controllers/HomeController.php` — dynamic `robots()` + sitemap enable/disable checks
+- `app/helpers.php` — `defaultRobotsTxt()` helper
+- `public/robots.txt` — removed (now served dynamically so admin edits apply)
+
+**Verification:** Admin `/admin/settings/seo` → 200; settings save redirect + persisted values verified; home `/` → `index, follow`; cart/login → `noindex, nofollow`; `/robots.txt` → 200 with dynamic sitemap URL; indexing off → home noindex + robots `Disallow: /`; sitemap off → `/sitemap.xml` 404; `php artisan view:cache` passes.
+
+## 355. (2026-11-03): XML Sitemap Link in Admin
+
+**Change:** SEO settings ke "Robots & Sitemap" section me enabled sitemap ka direct `/sitemap.xml` link add kiya. All Settings hub ke SEO group me bhi "XML Sitemap" tile add kiya jo sitemap new tab me kholta hai. Sitemap setting enabled (`seo_sitemap_enabled=1`) verify kiya.
+
+**Files changed:**
+- `resources/views/admin/settings/seo.blade.php` — sitemap toggle ke neeche clickable sitemap URL
+- `resources/views/admin/settings/index.blade.php` — tiles ko `url` + `external` support (new tab links)
+- `app/Http/Controllers/AdminController.php` — SEO group me "XML Sitemap" tile
+
+**Verification:** `/admin/settings` and `/admin/settings/seo` → 200 with `sitemap.xml` link + `target="_blank"`; `/sitemap.xml` → 200, `application/xml`; `seo_sitemap_enabled=1`.
+
+## 356. (2026-11-03): Sitemap/robots URL Auto-Follows Live Domain
+
+**Problem:** `seo_robots_txt` setting me `Sitemap: http://localhost/new-steve/sitemap.xml` hardcoded save ho gaya tha, is liye site move hone par robots.txt purana domain dikhata. Sitemap XML `<loc>` URLs pehle se request host use karte the, lekin stored robots content portable nahi tha.
+
+**Fix:**
+- Default robots content me sitemap URL ab `{{sitemap}}` placeholder ke roop me store hota hai.
+- `normalizeRobotsTxtForStorage()` save ke waqt localhost/current-host sitemap URL ko placeholder me badalta hai; external sitemap URLs untouched rehte hain.
+- `renderRobotsTxt()` request ke waqt placeholder ko current `url('/sitemap.xml')` se replace karta hai, aur purane localhost/current-host sitemap lines ko bhi current domain par rebase karta hai.
+- Sitemap disabled hone par robots se `Sitemap:` line automatically hat jaati hai.
+- Admin SEO page par note add kiya ke sitemap URL current domain follow karta hai.
+- Existing DB value ko placeholder form me migrate kiya (`seo_robots_txt`).
+
+**Files changed:**
+- `app/helpers.php` — `defaultRobotsTxt()`, `robotsLocalHosts()`, `normalizeRobotsTxtForStorage()`, `renderRobotsTxt()`
+- `app/Http/Controllers/HomeController.php` — `/robots.txt` ab `renderRobotsTxt()` use karta hai
+- `app/Http/Controllers/AdminController.php` — SEO settings load par rendered robots, save par portable normalization
+- `resources/views/admin/settings/seo.blade.php` — auto-domain note
+
+**Verification:** Web-request simulation `http://shop.example.com/robots.txt` → `Sitemap: http://shop.example.com/sitemap.xml`; `https://shop.example.com/sitemap.xml` → sab `<loc>` URLs `https://shop.example.com/...`, `localhost` count 0; `php -l` + `php artisan view:cache` passed.
+
+## 357. (2026-11-03): Search Category Menu URLs Made Domain-Independent
+
+**Problem:** Search bar category dropdown ka `search_category_menu` setting absolute URLs store kar raha tha (`http://localhost/new-steve/new-steve/category/...`), jo live domain par toot jaate aur duplicate base path bhi bana rahe the.
+
+**Fix:**
+- Menu URLs ab app-relative paths (`/category/{slug}`) store hote hain; host/base path render time par `url()` se add hota hai.
+- Admin category picker `route('category', $slug, false)` use karta hai, is liye current host DB me save nahi hota.
+- Legacy absolute URLs ko `normalizeAppUrlPath()` se clean kiya; existing setting ko relative paths me migrate kiya.
+- Storefront dropdown ab `url($path)` se link banata hai.
+
+**Files changed:**
+- `app/helpers.php` — `normalizeAppUrlPath()`
+- `app/Http/Controllers/AdminController.php` — search category settings load/save normalization
+- `resources/views/admin/settings/search-categories.blade.php` — relative `data-url`
+- `resources/views/admin/settings/search-categories-tree.blade.php` — relative `data-url`
+- `resources/views/layouts/app.blade.php` — dropdown links `url()` se render
+
+**Verification:** Migration ke baad `search_category_menu` URLs `/category/...`; `normalizeAppUrlPath()` legacy `/new-steve/new-steve/...` ko `/category/...` banata hai; `url()` live host ke saath full URL deta hai; `php -l` + `php artisan view:cache` passed.

@@ -137,7 +137,7 @@ class ScanContentDuplicates extends Command
         };
 
         $pairs = [
-            ['products', 'image'], ['brands', 'image'], ['categories', 'image'],
+            ['products', 'image'], ['brands', 'image'], ['categories', 'banner'],
             ['blogs', 'image'], ['pages', 'image'], ['home_page_sections', 'image'],
             ['users', 'avatar'], ['users', 'avatar_original'], ['sellers', 'image'],
         ];

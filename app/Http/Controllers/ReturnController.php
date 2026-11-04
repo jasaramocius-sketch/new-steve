@@ -28,6 +28,17 @@ class ReturnController extends Controller
             return back()->with('error', 'Return requests can only be raised for delivered orders.');
         }
 
+        $windowDays = (int) \App\Models\Setting::get('return_window_days', 30);
+        $deliveredAt = $order->created_at;
+        foreach ((array) ($order->status_history ?? []) as $entry) {
+            if (($entry['status'] ?? '') === 'delivered' && ! empty($entry['at'])) {
+                $deliveredAt = \Carbon\Carbon::parse($entry['at']);
+            }
+        }
+        if ($windowDays > 0 && $deliveredAt->lt(now()->subDays($windowDays))) {
+            return back()->with('error', 'Return request window of ' . $windowDays . ' days has expired.');
+        }
+
         $existing = ReturnRequest::where('order_id', $order->id)
             ->where('user_id', auth()->id())
             ->whereIn('status', ['pending', 'approved'])
@@ -62,6 +73,17 @@ class ReturnController extends Controller
 
         if (! in_array($order->status, ['delivered'], true)) {
             return back()->with('error', 'Return requests can only be raised for delivered orders.');
+        }
+
+        $windowDays = (int) \App\Models\Setting::get('return_window_days', 30);
+        $deliveredAt = $order->created_at;
+        foreach ((array) ($order->status_history ?? []) as $entry) {
+            if (($entry['status'] ?? '') === 'delivered' && ! empty($entry['at'])) {
+                $deliveredAt = \Carbon\Carbon::parse($entry['at']);
+            }
+        }
+        if ($windowDays > 0 && $deliveredAt->lt(now()->subDays($windowDays))) {
+            return back()->with('error', 'Return request window of ' . $windowDays . ' days has expired.');
         }
 
         // Guard against overshooting quantity for any item.

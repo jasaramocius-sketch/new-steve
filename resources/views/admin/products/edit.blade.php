@@ -52,6 +52,13 @@
                             <label class="form-label">Name *</label>
                             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $product->name) }}" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+                            <label class="form-label mt-2">SKU / Part Number</label>
+                            <div class="input-group">
+                                <input type="text" name="sku" id="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku', $product->sku) }}" placeholder="e.g. am-6113">
+                                <button type="button" class="btn btn-outline-secondary" id="sku-generate-btn" title="Generate SKU"><i class="fas fa-dice"></i> Auto</button>
+                                @error('sku') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
                         </div>
 
                         <div class="col-md-3">
@@ -61,17 +68,15 @@
                         </div>
 
                         <div class="col-md-3">
-                <label class="form-label">SKU / Part Number</label>
-                <div class="input-group">
-                    <input type="text" name="sku" id="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku', $product->sku) }}" placeholder="e.g. am-6113">
-                    <button type="button" class="btn btn-outline-secondary" id="sku-generate-btn" title="Generate SKU"><i class="fas fa-dice"></i> Auto</button>
-                    @error('sku') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-            </div>
-
-                        <div class="col-md-3">
                             <label class="form-label">Old Price</label>
                             <input type="number" step="0.01" name="old_price" class="form-control" value="{{ old('old_price', $product->old_price) }}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Commission (%)</label>
+                            <input type="number" step="0.01" min="0" max="100" name="commission" class="form-control no-spinner @error('commission') is-invalid @enderror" value="{{ old('commission', $product->commission) }}" placeholder="Global ({{ number_format(globalCommissionPercent(), 2) }}%)">
+                            @error('commission') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <small class="text-muted">Leave empty to use the global commission.</small>
                         </div>
 
                         <div class="col-md-3">
@@ -181,7 +186,7 @@
 
                         <div class="col-md-12">
                             <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control texteditor" rows="4">{{ old('description', $product->description) }}</textarea>
+                            <textarea name="description" class="form-control textarea-control texteditor" rows="4">{{ old('overview', $product->overview) }}</textarea>
                         </div>
                         
                         <div class="col-md-12">
@@ -191,25 +196,25 @@
                                     ? $product->policy_text
                                     : trim(view('partials.product-buy-return-policy', ['product' => $product])->render()));
                             @endphp
-                            <textarea name="policy_text" class="form-control texteditor" rows="4">{{ $policyEditorValue }}</textarea>
+                            <textarea name="policy_text" class="form-control textarea-control texteditor" rows="4">{{ $policyEditorValue }}</textarea>
                         </div>
                         
                         <div class="col-md-12">
                             <label class="form-label">Key Features</label>
-                            <textarea name="features" class="form-control" rows="4" placeholder="Enter one feature per line...">{{ old('features', is_array($product->features) ? implode("\n", $product->features) : '') }}</textarea>
+                            <textarea name="features" class="form-control textarea-control" rows="4" placeholder="Enter one feature per line...">{{ old('features', is_array($product->features) ? implode("\n", $product->features) : '') }}</textarea>
                             @include('admin.partials.key-features-preview', ['initialFeatures' => old('features', is_array($product->features) ? implode("\n", $product->features) : '')])
                         </div>
                         
                         <div class="col-md-12">
                             <label class="form-label">Specifications</label>
-                            <textarea name="specifications" class="form-control text-monospace" rows="4" placeholder="One per line, format:  Label :: Value&#10;e.g.&#10;Brand :: Duralast&#10;Material :: Ceramic">{{ old('specifications', is_array($product->specifications) ? implode("\n", array_map(fn ($s) => ($s['label'] ?? '') . ' :: ' . ($s['value'] ?? ''), $product->specifications)) : '') }}</textarea>
+                            <textarea name="specifications" class="form-control textarea-control text-monospace" rows="4" placeholder="One per line, format:  Label :: Value&#10;e.g.&#10;Brand :: Duralast&#10;Material :: Ceramic">{{ old('specifications', is_array($product->specifications) ? implode("\n", array_map(fn ($s) => ($s['label'] ?? '') . ' :: ' . ($s['value'] ?? ''), $product->specifications)) : '') }}</textarea>
                             <small class="text-muted">Format: <code>Label :: Value</code> on each line (rendered as a specifications table on the product page).</small>
                             @include('admin.partials.specifications-preview', ['initialSpecifications' => old('specifications', is_array($product->specifications) ? implode("\n", array_map(fn ($s) => ($s['label'] ?? '') . ' :: ' . ($s['value'] ?? ''), $product->specifications)) : '')])
                         </div>
                         
                         <div class="col-md-12">
                             <label class="form-label">Reviews Data (JSON array)</label>
-                            <textarea name="reviews_data" class="form-control text-monospace" rows="4" placeholder='[{"name":"John","rating":5,"text":"Great product!"}]'>{{ old('reviews_data', is_array($product->reviews_data) ? json_encode($product->reviews_data, JSON_PRETTY_PRINT) : '') }}</textarea>
+                            <textarea name="reviews_data" class="form-control textarea-control text-monospace" rows="4" placeholder='[{"name":"John","rating":5,"text":"Great product!"}]'>{{ old('reviews_data', is_array($product->reviews_data) ? json_encode($product->reviews_data, JSON_PRETTY_PRINT) : '') }}</textarea>
                             <small class="text-muted">Format: [{"name":"John","rating":5,"text":"Great product!"}]</small>
                         </div>
                     </div>
@@ -223,7 +228,7 @@
                             <div class="card p-3 border-dashed h-100">
                                 @if($product->image)
                                     <div class="mb-3 d-flex align-items-center bg-light p-2 rounded">
-                                        <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="60" height="60" class="admin-image-thumb-bordered">
+                                        <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="60" height="60" class="admin-image-thumb-bordered" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                                         <div class="ms-3">
                                             <small class="text-muted d-block fw-bold">Current Primary Image</small>
                                             <small class="text-muted">Upload a new one below or choose from image manager to replace.</small>
@@ -242,7 +247,7 @@
                                     @endif
                                 </div>
                                 <div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="impOpen_product_image()">
+                                    <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_product_image()">
                                         <i class="fas fa-folder-open me-1"></i> Browse Image Manager
                                     </button>
                                 </div>
@@ -275,7 +280,7 @@
                                 <div id="impPreview_gallery_images" class="d-none my-2"></div>
                                 
                                 <div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
+                                    <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
                                         <i class="fas fa-folder-open me-1"></i> Browse Image Manager
                                     </button>
                                     <small class="text-muted mt-2 d-block">Pick multiple from Image Manager, or upload files above.</small>

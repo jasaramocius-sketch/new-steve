@@ -35,7 +35,7 @@
                   <h3 class="fs-16 fw-700 text-dark mb-0">Any additional info?</h3>
                 </div>
                 <div class="form-group px-4">
-                  <textarea name="additional_info" rows="5" class="form-control texteditor rounded-0" placeholder="Type your text..."></textarea>
+                  <textarea name="additional_info" rows="5" class="form-control textarea-control texteditor rounded-0" placeholder="Type your text..."></textarea>
                 </div>
 
                 <div class="card-header p-4 border-bottom-0 bg-white">
@@ -44,54 +44,30 @@
 
                 <div class="card-body text-center px-4 pt-0">
                   <div class="row gutters-10">
+                    @forelse($paymentMethods as $method => $paymentOption)
                     <div class="col-6 col-xl-4 col-md-4 w-33">
-                      <label class="aiz-megabox d-block mb-3" onclick="document.getElementById('pm_card').checked=true;toggleCardForm();">
-                        <input value="card" type="radio" name="payment_method" id="pm_card" class="payment-radio">
+                      <label class="aiz-megabox d-block mb-3" onclick="document.getElementById('pm_{{ $method }}').checked=true;">
+                        <input value="{{ $method }}" type="radio" name="payment_method" id="pm_{{ $method }}" class="payment-radio" @checked($method === 'cod' || ($loop->first && !array_key_exists('cod', $paymentMethods)))>
                         <span class="d-block aiz-megabox-elem rounded-0 p-3">
-                          <i class="las la-credit-card la-3x d-block mb-2 text-primary"></i>
+                          <i class="{{ $paymentOption['icon'] }} la-3x d-block mb-2 text-primary"></i>
                           <span class="d-block text-center">
-                            <span class="d-block fw-600 fs-15">Stripe</span>
+                            <span class="d-block fw-600 fs-15">{{ $paymentOption['label'] }}</span>
                           </span>
                         </span>
                       </label>
                     </div>
-
-                    <div class="col-6 col-xl-4 col-md-4 w-33">
-                      <label class="aiz-megabox d-block mb-3" onclick="document.getElementById('pm_cod').checked=true;toggleCardForm();">
-                        <input value="cod" type="radio" name="payment_method" id="pm_cod" checked class="payment-radio">
-                        <span class="d-block aiz-megabox-elem rounded-0 p-3">
-                          <i class="las la-money-bill-wave la-3x d-block mb-2 text-primary"></i>
-                          <span class="d-block text-center">
-                            <span class="d-block fw-600 fs-15">Cash on Delivery</span>
-                          </span>
-                        </span>
-                      </label>
+                    @empty
+                    <div class="col-12">
+                      <div class="alert alert-warning mb-0">No payment methods are currently available.</div>
                     </div>
+                    @endforelse
                   </div>
 
-                  <div id="card-details" class="mt-4 text-left" style="display:none;">
-                    <div class="card border rounded-0 p-4 bg-light">
-                      <h6 class="fs-14 fw-700 mb-3">Card Details</h6>
-                      <div class="form-group mb-3">
-                        <label class="fs-12 fw-600 text-muted mb-1">Card Number</label>
-                        <input type="text" name="card_number" id="card_number" class="form-control rounded-0" inputmode="numeric" pattern="[0-9\s]*" placeholder="1234 5678 9012 3456" maxlength="19">
-                      </div>
-                      <div class="row">
-                        <div class="col-6">
-                          <div class="form-group mb-3">
-                            <label class="fs-12 fw-600 text-muted mb-1">Expiry Date</label>
-                            <input type="text" name="card_expiry" id="card_expiry" class="form-control rounded-0" inputmode="numeric" pattern="[0-9\/\s]*" placeholder="MM / YY" maxlength="7">
-                          </div>
-                        </div>
-                        <div class="col-6">
-                          <div class="form-group mb-3">
-                            <label class="fs-12 fw-600 text-muted mb-1">CVV</label>
-                            <input type="text" name="card_cvv" id="card_cvv" class="form-control rounded-0" inputmode="numeric" pattern="[0-9]*" placeholder="123" maxlength="4">
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  @if (array_key_exists('card', $paymentMethods))
+                  <div class="alert alert-info text-left mt-4 mb-0" role="note">
+                    Stripe payments are completed on Stripe's secure checkout page. You will be redirected there after placing the order, and your card details are never stored on our servers.
                   </div>
+                  @endif
                 </div>
 
                 <div class="pt-3 px-4 fs-14 pb-4">
@@ -154,9 +130,9 @@
                       </td>
                     </tr>
                     <tr class="cart-shipping">
-                      <th class="pl-0 fs-14 pb-2 text-dark fw-600">Tax</th>
+                      <th class="pl-0 fs-14 pb-2 text-dark fw-600">Tax ({{ $taxRate }}%)</th>
                       <td class="text-right pr-0 fs-14 pb-2 fw-600 text-primary">
-                        <span class="fw-600">{{ currency_format(0) }}</span>
+                        <span class="fw-600">{{ currency_format($tax) }}</span>
                       </td>
                     </tr>
                     <tr class="cart-shipping">
@@ -165,6 +141,16 @@
                         <span class="fw-600">{{ currency_format($shippingCost) }}</span>
                       </td>
                     </tr>
+                    @if($shippingMethod === 'pickup' && session('shipping_info.pickup_point'))
+                    @php($pickupPoint = session('shipping_info.pickup_point'))
+                    <tr class="cart-shipping">
+                      <th class="pl-0 fs-14 pb-2 text-dark fw-600">Pickup Point</th>
+                      <td class="text-right pr-0 fs-14 pb-2 text-primary">
+                        <strong>{{ $pickupPoint['name'] }}</strong><br>
+                        <small>{{ $pickupPoint['location'] }} · {{ $pickupPoint['contact'] }}</small>
+                      </td>
+                    </tr>
+                    @endif
                     @if(!empty($couponData))
                     <tr class="cart-coupon">
                       <th class="pl-0 fs-14 pb-2 text-success fw-600">
@@ -204,32 +190,5 @@
     
   </div>
 </section>
-
-<script>
-var cardRadio = document.getElementById('pm_card');
-var codRadio = document.getElementById('pm_cod');
-var cardDetails = document.getElementById('card-details');
-var cardFields = ['card_number', 'card_expiry', 'card_cvv'].map(function(id) {
-    return document.getElementById(id);
-});
-
-function toggleCardForm() {
-    var show = cardRadio && cardRadio.checked;
-    if (cardDetails) cardDetails.style.display = show ? 'block' : 'none';
-    cardFields.forEach(function(el) {
-        if (el) {
-            if (show) {
-                el.setAttribute('required', 'required');
-            } else {
-                el.removeAttribute('required');
-            }
-        }
-    });
-}
-
-if (cardRadio) cardRadio.addEventListener('change', toggleCardForm);
-if (codRadio) codRadio.addEventListener('change', toggleCardForm);
-toggleCardForm();
-</script>
 
 @endsection

@@ -1,6 +1,8 @@
 #!/bin/bash
 DIR="$(cd "$(dirname "$0")" && pwd)"
 PIDFILE="$DIR/storage/file-backups/.watcher.pid"
+LOGFILE="$DIR/storage/logs/file-watcher.log"
+PHP_BIN="${PHP_BIN:-/usr/bin/php}"
 
 case "${1:-start}" in
   start)
@@ -8,7 +10,10 @@ case "${1:-start}" in
       echo "Watcher already running (PID $(cat "$PIDFILE"))"
       exit 1
     fi
-    nohup node "$DIR/file-watcher.mjs" >> "$DIR/storage/logs/file-watcher.log" 2>&1 &
+    if [ ! -f "$DIR/storage/file-backups/.state.json" ]; then
+      "$PHP_BIN" "$DIR/artisan" file:audit --init || exit 1
+    fi
+    nohup "$PHP_BIN" "$DIR/artisan" file:audit --watch --interval=10 --max-archive-days=0 --per-file-limit=0 >> "$LOGFILE" 2>&1 &
     echo $! > "$PIDFILE"
     echo "Watcher started (PID $!)"
     ;;
@@ -29,7 +34,7 @@ case "${1:-start}" in
     fi
     ;;
   restart)
-    "$0" stop; sleep 1; "$0" start
+    "$0" stop; "$0" start
     ;;
   *)
     echo "Usage: $0 {start|stop|status|restart}"

@@ -6,6 +6,7 @@ use FilesystemIterator;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -114,20 +115,13 @@ class CleanupDuplicateImages extends Command
             return is_string($blob) ? json_decode($blob, true) : $blob;
         };
 
-        foreach (DB::table('products')->whereNotNull('image')->where('image', '!=', '')->pluck('image') as $v) {
-            $add($v);
+        foreach ($this->imagePathColumns() as [$table, $column]) {
+            foreach (DB::table($table)->whereNotNull($column)->where($column, '!=', '')->pluck($column) as $v) {
+                $add($v);
+            }
         }
         foreach (DB::table('products')->whereNotNull('reviews_data')->pluck('reviews_data') as $v) {
             $this->scanJsonRefs($decode($v));
-        }
-        foreach (DB::table('brands')->whereNotNull('image')->where('image', '!=', '')->pluck('image') as $v) {
-            $add($v);
-        }
-        foreach (DB::table('categories')->whereNotNull('image')->where('image', '!=', '')->pluck('image') as $v) {
-            $add($v);
-        }
-        foreach (DB::table('blogs')->whereNotNull('image')->where('image', '!=', '')->pluck('image') as $v) {
-            $add($v);
         }
         foreach (DB::table('blogs')->whereNotNull('content_blocks')->pluck('content_blocks') as $v) {
             $this->scanJsonRefs($decode($v));
@@ -135,29 +129,14 @@ class CleanupDuplicateImages extends Command
         foreach (DB::table('blogs')->whereNotNull('details')->pluck('details') as $v) {
             $this->scanJsonRefs($decode($v));
         }
-        foreach (DB::table('pages')->whereNotNull('image')->where('image', '!=', '')->pluck('image') as $v) {
-            $add($v);
-        }
         foreach (DB::table('pages')->whereNotNull('content')->pluck('content') as $v) {
             $this->scanJsonRefs($decode($v));
         }
         foreach (DB::table('pages')->whereNotNull('content_blocks')->pluck('content_blocks') as $v) {
             $this->scanJsonRefs($decode($v));
         }
-        foreach (DB::table('home_page_sections')->whereNotNull('image')->where('image', '!=', '')->pluck('image') as $v) {
-            $add($v);
-        }
         foreach (DB::table('home_page_sections')->whereNotNull('extra_data')->where('extra_data', '!=', '[]')->pluck('extra_data') as $v) {
             $this->scanJsonRefs($decode($v));
-        }
-        foreach (DB::table('users')->whereNotNull('avatar')->pluck('avatar') as $v) {
-            $add($v);
-        }
-        foreach (DB::table('users')->whereNotNull('avatar_original')->pluck('avatar_original') as $v) {
-            $add($v);
-        }
-        foreach (DB::table('sellers')->whereNotNull('image')->where('image', '!=', '')->pluck('image') as $v) {
-            $add($v);
         }
         foreach (DB::table('settings')->pluck('value') as $v) {
             if (is_string($v) && ! str_contains($v, 'uploads/')) {
@@ -207,6 +186,43 @@ class CleanupDuplicateImages extends Command
         $path = preg_replace('#^(storage/|public/)#', '', $path);
 
         return $path;
+    }
+
+    /**
+     * Resolve the column that actually holds the image path of a table. The
+     * catalogue schema names them differently (products.main_image, brands.logo).
+     */
+    protected function imageColumn(string $table, array $candidates): ?string
+    {
+        foreach ($candidates as $candidate) {
+            if (Schema::hasColumn($table, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The [table, column] pairs that hold a plain image path.
+     *
+     * @return array<int,array{0:string,1:string}>
+     */
+    protected function imagePathColumns(): array
+    {
+        $pairs = [
+            ['products', $this->imageColumn('products', ['main_image', 'image'])],
+            ['brands', $this->imageColumn('brands', ['logo', 'image'])],
+            ['categories', $this->imageColumn('categories', ['banner'])],
+            ['blogs', $this->imageColumn('blogs', ['image'])],
+            ['pages', $this->imageColumn('pages', ['image'])],
+            ['home_page_sections', $this->imageColumn('home_page_sections', ['image'])],
+            ['users', $this->imageColumn('users', ['avatar'])],
+            ['users', $this->imageColumn('users', ['avatar_original'])],
+            ['sellers', $this->imageColumn('sellers', ['image'])],
+        ];
+
+        return array_values(array_filter($pairs, fn ($pair) => $pair[1] !== null));
     }
 
     /** @return array<string,array<string,string>> filename -> [dir => relative path] */
@@ -308,11 +324,7 @@ class CleanupDuplicateImages extends Command
         }
         $counts = [];
 
-        $pairs = [
-            ['products', 'image'], ['brands', 'image'], ['categories', 'image'],
-            ['blogs', 'image'], ['pages', 'image'], ['home_page_sections', 'image'],
-            ['users', 'avatar'], ['users', 'avatar_original'], ['sellers', 'image'],
-        ];
+        $pairs = $this->imagePathColumns();
         foreach ($pairs as [$table, $column]) {
             $c = 0;
             foreach (DB::table($table)->whereNotNull($column)->where($column, '!=', '')->pluck($column) as $raw) {
@@ -420,17 +432,7 @@ class CleanupDuplicateImages extends Command
         };
 
         // Simple path columns
-        $pairs = [
-            ['products', 'image'],
-            ['brands', 'image'],
-            ['categories', 'image'],
-            ['blogs', 'image'],
-            ['pages', 'image'],
-            ['home_page_sections', 'image'],
-            ['users', 'avatar'],
-            ['users', 'avatar_original'],
-            ['sellers', 'image'],
-        ];
+        $pairs = $this->imagePathColumns();
         foreach ($pairs as [$table, $column]) {
             $count = 0;
             foreach (DB::table($table)->whereNotNull($column)->where($column, '!=', '')->pluck($column, 'id') as $id => $raw) {

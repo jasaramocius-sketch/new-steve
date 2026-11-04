@@ -13,7 +13,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h4 class="h4-style mb-0">My Wishlist</h4>
     @if(count($wishlist) > 0)
-    <form action="{{ route('wishlist.clear') }}" method="POST">
+    <form action="{{ route('wishlist.clear') }}" method="POST" id="wishlist-clear-all-form">
         @csrf
         @method('DELETE')
         <button class="btn btn-danger steve-btn">
@@ -25,19 +25,19 @@
 
 <div class="d-grid wishlist-page-products">    
     @forelse($wishlist as $item)
-    <div class="wishlist-page-products-items">
         @php
             $product = $item->product ?? $item;
             $wishlistId = isset($item->id) ? $item->id : null;
         @endphp
 
-        @include('partials.product-card', [
-            'product' => $product,
-            'wishlistItemId' => $wishlistId,
-            'showRemoveWishlistIcon' => true,
-            'colClass' => 'col-lg-4 col-md-6 mb-4',
-        ])
-    </div>
+        <div class="wishlist-page-products-items">
+            @include('partials.product-card', [
+                'product' => $product,
+                'wishlistItemId' => $wishlistId,
+                'showRemoveWishlistIcon' => true,
+                'colClass' => 'col-lg-4 col-md-6 mb-4',
+            ])
+        </div>
     @empty
     </div>
         <div class="col-12">

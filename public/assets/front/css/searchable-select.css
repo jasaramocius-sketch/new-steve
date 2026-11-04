@@ -1,0 +1,165 @@
+/* ============================================================
+   Searchable Select (public/assets/front/js/searchable-select.js)
+   Keep the native <select> in the form while providing a searchable
+   dropdown UI. Loaded in both layouts (frontend + admin).
+   ============================================================ */
+
+/* Keep the native select off-screen, not display:none, so it remains part of
+   form submission and HTML5 validation. */
+.ss-native {
+    position: absolute !important;
+    left: -9999px !important;
+    top: 0 !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0;
+    pointer-events: none;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Visible trigger — inherits the theme styling from the .form-select class. */
+.ss-control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 40px;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.ss-control .ss-value {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* .ss-control.ss-placeholder .ss-value {
+    color: #9aa2ae;
+} */
+
+.ss-control.disabled,
+.ss-control[aria-disabled="true"] {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.form-select-wrapper:has(.ss-native.is-invalid) .ss-control,
+.form-select-wrapper:has(.ss-native:required:invalid) .ss-control:focus {
+    border-color: #dc3545;
+}
+
+/* The dropdown panel is appended to the body to avoid clipping by overflow. */
+.ss-panel {
+    position: fixed;
+    z-index: 2055;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: .5rem;
+    box-shadow: 0 12px 32px rgba(16, 24, 40, .16);
+    overflow: hidden;
+}
+
+.ss-panel[hidden] {
+    display: none !important;
+}
+
+.ss-search-wrap {
+    padding: .5rem;
+    border-bottom: 1px solid #eef1f5;
+    background: #fff;
+}
+
+.ss-search {
+    width: 100%;
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    padding: .375rem .625rem;
+    font-size: .875rem;
+    line-height: 1.4;
+    color: inherit;
+    background: #fff;
+    outline: none;
+}
+
+.ss-search:focus {
+    border-color: #98a2b3;
+    box-shadow: 0 0 0 3px rgba(152, 162, 179, .18);
+}
+
+.ss-list {
+    list-style: none;
+    margin: 0;
+    padding: .25rem 0;
+    max-height: 260px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.ss-list li[role="option"] {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .45rem .75rem;
+    font-size: .875rem;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ss-list li[role="option"]:hover,
+.ss-list li[role="option"].ss-active {
+    background: #f2f4f7;
+}
+
+.ss-list li[role="option"][aria-selected="true"] {
+    font-weight: 600;
+    color: var(--bs-primary, #0d6efd);
+}
+
+.ss-list li[role="option"][aria-selected="true"]::after {
+    content: "✓";
+    margin-left: auto;
+    font-weight: 700;
+}
+
+.ss-list li.ss-option-disabled {
+    color: #adb5bd;
+    cursor: not-allowed;
+    background: transparent;
+}
+
+.ss-group {
+    padding: .4rem .75rem .25rem;
+    font-size: .68rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #98a2b3;
+}
+
+.ss-empty {
+    padding: .75rem;
+    font-size: .85rem;
+    color: #98a2b3;
+    text-align: center;
+}
+
+.ss-more {
+    padding: .45rem .75rem;
+    font-size: .75rem;
+    color: #98a2b3;
+    border-top: 1px solid #eef1f5;
+    background: #fbfcfd;
+}
+
+.ss-more[hidden] {
+    display: none;
+}

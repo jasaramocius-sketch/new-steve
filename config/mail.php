@@ -49,6 +49,14 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        'mailgun' => [
+            'transport' => 'mailgun_api',
+        ],
+
+        'microsoft' => [
+            'transport' => 'microsoft_graph',
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

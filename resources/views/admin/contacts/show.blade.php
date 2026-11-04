@@ -97,7 +97,7 @@
                     @csrf
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-muted small">{{ $contact->reply ? 'Update reply' : 'Write reply' }}</label>
-                        <textarea name="reply" class="form-control" rows="5" placeholder="Type your reply to {{ $contact->name }}...">{{ old('reply', $contact->reply) }}</textarea>
+                        <textarea name="reply" class="form-control textarea-control" rows="5" placeholder="Type your reply to {{ $contact->name }}...">{{ old('reply', $contact->reply) }}</textarea>
                         @error('reply')
                             <div class="text-danger small mt-1">{{ $message }}</div>
                         @enderror
@@ -152,7 +152,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center gap-3">
                     @if($contact->product->image)
-                        <img src="{{ storedImageUrl($contact->product->image, 'assets/images/thumbnails') }}" alt="" class="admin-contact-product-image">
+                        <img src="{{ storedImageUrl($contact->product->image, 'assets/images/thumbnails') }}" alt="" class="admin-contact-product-image" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                     @endif
                     <div>
                         <a href="{{ route('product', $contact->product->slug) }}" target="_blank" class="fw-semibold text-dark text-decoration-none">{{ $contact->product->name }}</a>

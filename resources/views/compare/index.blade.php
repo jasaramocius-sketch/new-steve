@@ -47,7 +47,7 @@
     <div class="table-responsive bg-white compare-table-wrapper" id="compare-table-wrapper">
         <table class="table compare-table align-middle text-center mb-0">
             <tr>
-                <th class="border-top" width="10%">Product Name</th>
+                <th class="border-top" width="10%"></th>
                 @foreach($compareItems as $item)
                 <td class="compare-col border-top" data-compare-id="{{ $item->id }}">
                     <div>
@@ -58,30 +58,42 @@
 
                     
 
-                    <a href="{{ route('product',$item->product->slug) }}"
+                    
+                </td>
+                @endforeach
+            </tr>
+            <tr>
+                <th>Product Name</th>
+                @foreach($compareItems as $item)
+                    <td class="fw-bold text-danger compare-col" data-compare-id="{{ $item->id }}">
+                        <a href="{{ route('product',$item->product->slug) }}"
                        class="text-decoration-none">
                         {{ $item->product->name }}
                     </a>
-                </td>
+                    </td>
+                @endforeach
+            </tr>
+            <tr>
+                <th>Brand</th>
+                @foreach($compareItems as $item)
+                    <td class="fw-bold text-danger compare-col" data-compare-id="{{ $item->id }}">
+                        {{ $item->product->brand->name ?? 'N/A' }}
+                    </td>
+                @endforeach
+            </tr>
+            <tr>
+                <th>Category</th>
+                @foreach($compareItems as $item)
+                    <td class="fw-bold text-danger compare-col" data-compare-id="{{ $item->id }}">
+                        {{ $item->product->category->name ?? 'N/A' }}
+                    </td>
                 @endforeach
             </tr>
             <tr>
                 <th>Price</th>
                 @foreach($compareItems as $item)
                     <td class="fw-bold text-danger compare-col" data-compare-id="{{ $item->id }}">
-                        {{ currency_format(buyerPrice($item->product->price)) }}
-                    </td>
-                @endforeach
-            </tr>
-            <tr>
-                <th>Old Price</th>
-                @foreach($compareItems as $item)
-                    <td class="compare-col border-top-1" data-compare-id="{{ $item->id }}">
-                        @if($item->product->old_price)
-                            <del>{{ currency_format(buyerPrice($item->product->old_price)) }}</del>
-                        @else
-                            -
-                        @endif
+                        {{ currency_format(buyerPrice($item->product->price, $item->product)) }}
                     </td>
                 @endforeach
             </tr>
@@ -110,17 +122,42 @@
                 @endforeach
             </tr>
             <tr>
+                <th class="compare-row-label">Part Number</th>
+                @foreach($compareItems as $item)
+                    <td class="compare-col" data-compare-id="{{ $item->id }}">
+                        @if($item->product->part_number)
+                            {{ $item->product->part_number }}
+                        @else
+                            <span class="text-muted">Universal</span>
+                        @endif
+                    </td>
+                @endforeach
+            </tr>
+            <tr>
+                <th class="compare-row-label">Availability</th>
+                @foreach($compareItems as $item)
+                    <td class="compare-col" data-compare-id="{{ $item->id }}">
+                        @if((int) ($item->product->stock ?? 0) > 0)
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">In Stock</span>
+                        @else
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Out of Stock</span>
+                        @endif
+                    </td>
+                @endforeach
+            </tr>
+            <tr>
                 <th>Description</th>
                 @foreach($compareItems as $item)
                     <td style="min-width:300px" class="compare-col" data-compare-id="{{ $item->id }}">
-                        {{ Str::limit(strip_tags(html_entity_decode((string) $item->product->description)), 150) }}
+                        {{ Str::limit(strip_tags(html_entity_decode((string) $item->product->overview)), 150) }}
                     </td>
                 @endforeach
             </tr>
             <tr>
                 <th>Action</th>
                 @foreach($compareItems as $item)
-                    <td class="compare-col" data-compare-id="{{ $item->id }}">
+                    <td class="compare-col compare-action-btn" data-compare-id="{{ $item->id }}">
+                        <div class="gap-1">
                         @if((int) ($item->product->stock ?? 0) > 0)
                         <form action="{{ route('cart.add') }}" method="POST" class="add-cart-form">
                             @csrf
@@ -129,15 +166,15 @@
                             <input type="hidden" name="product_name"
                                    value="{{ $item->product->name }}">
                             <input type="hidden" name="product_price"
-                                   value="{{ buyerPrice($item->product->price) }}">
+                                   value="{{ buyerPrice($item->product->price, $item->product) }}">
                             <input type="hidden" name="product_image"
                                    value="{{ storedImageUrl($item->product->image, 'assets/images/thumbnails') }}">
-                            <button type="submit" class="btn btn-danger mb-2 steve-btn">
+                            <button type="submit" class="btn btn-danger steve-btn">
                                 Add to Cart
                             </button>
                         </form>
                         @else
-                            <button type="button" class="btn btn-danger mb-2 steve-btn" disabled>Out of Stock</button>
+                            <button type="button" class="btn btn-danger steve-btn" disabled>Out of Stock</button>
                         @endif
                         <button type="button"
                                 class="btn btn-outline-secondary compare-remove-btn steve-btn"
@@ -145,6 +182,7 @@
                                 data-id="{{ $item->id }}">
                             Remove
                         </button>
+                    </div>
                     </td>
                 @endforeach
             </tr>
