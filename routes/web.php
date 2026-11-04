@@ -183,12 +183,12 @@ Route::delete('/compare/{id}', [CompareController::class, 'remove'])->name('comp
 |--------------------------------------------------------------------------
 */
 
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
+Route::get('/users/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/users/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/registration', [AuthController::class, 'registerForm'])->name('register');
-Route::post('/registration', [AuthController::class, 'register'])->name('register.post');
+Route::get('/users/registration', [AuthController::class, 'registerForm'])->name('register');
+Route::post('/users/registration', [AuthController::class, 'register'])->name('register.post');
 
 Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->middleware('throttle:5,1')->name('password.email');
@@ -219,7 +219,7 @@ Route::prefix('admin')->group(function () {
 });
 
 Route::get('/use/login', function () {
-    return redirect('/login');
+    return redirect()->route('login');
 });
 /*
 |--------------------------------------------------------------------------

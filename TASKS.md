@@ -5078,3 +5078,32 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - `resources/views/layouts/app.blade.php` — dropdown links `url()` se render
 
 **Verification:** Migration ke baad `search_category_menu` URLs `/category/...`; `normalizeAppUrlPath()` legacy `/new-steve/new-steve/...` ko `/category/...` banata hai; `url()` live host ke saath full URL deta hai; `php -l` + `php artisan view:cache` passed.
+
+## 358. (2026-11-04): User Login URL Changed to `/users/login`
+
+**Change:** Public login GET/POST routes ab `/users/login` use karte hain. Existing `login` and `login.submit` route names preserve kiye, so internal links and authentication redirects use the new path. `/login` ka redirect route add nahi kiya. Logout and the product-review login link were updated to use the named route.
+
+**Files changed:**
+- `routes/web.php` — moved the public login GET/POST routes to `/users/login`; updated the legacy `/use/login` redirect target
+- `app/Http/Controllers/AuthController.php` — logout now redirects through the named login route
+- `resources/views/product/show.blade.php` — review authorization message links through the named login route
+
+**Verification:** `route:list` shows GET/POST `users/login` and no `/login` route; `route('login')` generates `/new-steve/users/login`; PHP syntax checks and `git diff --check` passed.
+
+## 359. (2026-11-04): Pickup Points Select/Filter Form Fix
+
+**Problem:** Admin → Pickup Points page ke "Name" search input par galti se `form-select` class lagi thi, is liye text input select/dropdown jaisa arrow ke saath render ho raha tha. Checkout delivery-info page par pickup-point select validation error ke baad reset ho jata tha aur selected pickup point retain nahi hota tha.
+
+**Fix:**
+- Admin pickup points filter input: `form-select` → `form-control`.
+- Checkout pickup select: `form-control` → `form-select` (baaki selects ke saath consistent; 10+ pickup points par searchable-select widget auto-enable hota hai).
+- `shipping_method` aur `pickup_point_id` ab `old()` / session se restore hote hain, is liye validation error ya back navigation ke baad bhi selection bani rehti hai.
+- Pickup point validation error form par inline show hota hai.
+- Home Delivery par switch karne par select clear hota hai aur searchable-select widget bhi sync hota hai.
+- Initial hidden state selected delivery method ke hisaab se set hota hai.
+
+**Files changed:**
+- `resources/views/admin/settings/pickup-points/index.blade.php` — filter input class fix
+- `resources/views/checkout/delivery-info.blade.php` — pickup select class, old-value retention, inline error, JS sync
+
+**Verification:** Dono Blade views ke compile checks passed. Note: DB me abhi 0 pickup points hain, is liye checkout par "Pickup point" option tab tak nahi dikhega jab tak Admin → Settings → Pickup Points se kam se kam ek **Open** point add na ho.

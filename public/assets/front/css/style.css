@@ -2896,6 +2896,11 @@ p.text-lg {
     margin-bottom: 60px;
   }
 
+  .gs-buy-confidence-section {
+    margin-top: 60px;
+    margin-bottom: 60px;
+  }
+
   .gs-brands-section .gs-brands {
     display: flex;
     flex-wrap: wrap;
