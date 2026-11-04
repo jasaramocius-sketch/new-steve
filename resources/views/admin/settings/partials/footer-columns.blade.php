@@ -211,7 +211,7 @@
                     '<div class="footer-col-header">' +
                         '<span class="footer-drag-handle" title="Drag to reorder">' + gripSvg + '</span>' +
                         '<select class="form-select form-select-sm footer-col-type">' + typeOptions + '</select>' +
-                        '<input type="text" class="form-control form-control-sm footer-col-heading" placeholder="Heading" value="' + heading.replace(/"/g, '&quot;') + '">' +
+                        '<input type="text" class="form-control footer-col-heading steve-input-form" placeholder="Heading" value="' + heading.replace(/"/g, '&quot;') + '">' +
                         '<select class="form-select form-select-sm footer-col-span">' + spanOptions + '</select>' +
                         '<div class="footer-col-actions">' +
                             '<button type="button" class="footer-remove-btn footer-remove-col" title="Remove Column">' + trashSvg + '</button>' +

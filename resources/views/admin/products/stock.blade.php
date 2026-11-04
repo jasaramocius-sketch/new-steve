@@ -27,7 +27,7 @@
     <div class="card-body p-0">
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2">
             <form method="GET" action="{{ route('admin.products.stock') }}" class="d-flex align-items-center gap-2 flex-nowrap">
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm h-40px" placeholder="Search name or SKU..." style="min-width:200px;">
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control h-40px" placeholder="Search name or SKU..." style="min-width:200px;">
                 <select name="stock_filter" class="form-select form-select-sm w-auto h-40px">
                     <option value="low" {{ request('stock_filter', 'low') === 'low' ? 'selected' : '' }}>Low stock</option>
                     <option value="out_of_stock" {{ request('stock_filter') === 'out_of_stock' ? 'selected' : '' }}>Out of stock</option>
@@ -87,7 +87,7 @@
                                 <span class="fw-bold {{ $product->stock <= 0 ? 'text-danger' : 'text-warning' }}">{{ $product->stock }}</span>
                             </td>
                             <td style="min-width:110px;">
-                                <input type="number" name="editable_qty[]" class="form-control form-control-sm editable-qty" min="0" value="{{ max($product->stock, 0) }}">
+                                <input type="number" name="editable_qty[]" class="form-control editable-qty" min="0" value="{{ max($product->stock, 0) }}">
                             </td>
                         </tr>
                         @empty

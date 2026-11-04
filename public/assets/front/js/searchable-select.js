@@ -36,7 +36,7 @@
         if (parseInt(select.getAttribute('size'), 10) > 1) return false;
         if (select.getAttribute('data-ss-bound') === '1') return false;
         if (select.getAttribute('data-searchable') === 'off') return false;
-        // Address fields ka apna searchable widget hai.
+        // Address fields have their own searchable widget.
         if (select.closest('.address-suggest')) return false;
         if (select.closest('.nice-select')) return false;
         if (optionCount(select) < minOptions(select)) return false;
@@ -107,7 +107,7 @@
 
     function openPanel(inst) {
         if (inst.select.disabled) return;
-        // baaki khule hue dropdowns band karo
+        // Close any other open dropdowns.
         for (var i = 0; i < instances.length; i++) {
             if (instances[i] !== inst && instances[i].open) closePanel(instances[i]);
         }
@@ -118,7 +118,7 @@
         inst.control.setAttribute('aria-expanded', 'true');
         inst.wrapper.classList.add('focused');
         renderList(inst, '');
-        // currently selected option ko highlight karo (ArrowDown se next par jayega)
+        // Highlight the currently selected option; ArrowDown moves to the next option.
         var selectedOpt = inst.select.options[inst.select.selectedIndex] || null;
         if (selectedOpt) {
             var selIdx = inst.items.indexOf(selectedOpt);
@@ -167,7 +167,7 @@
 
             if (inst.items.length > MAX_RENDER) continue;
 
-            // optgroup heading (sirf jab search empty ho)
+            // Show the optgroup heading only when the search is empty.
             if (!q && opt.parentElement && opt.parentElement.tagName === 'OPTGROUP') {
                 var groupLabel = opt.parentElement.label || '';
                 if (groupLabel && !shownGroups[groupLabel]) {
@@ -206,8 +206,8 @@
 
         if (inst.items.length > MAX_RENDER) {
             inst.footer.hidden = false;
-            inst.footer.textContent = 'Showing first ' + MAX_RENDER + ' of ' + inst.items.length +
-                ' matches — type to narrow down';
+            // inst.footer.textContent = 'Showing first ' + MAX_RENDER + ' of ' + inst.items.length +
+            //     ' matches — type to narrow down';
         } else {
             inst.footer.hidden = true;
             inst.footer.textContent = '';
@@ -293,7 +293,7 @@
         if (select.getAttribute('data-ss-bound') === '1') return;
         select.setAttribute('data-ss-bound', '1');
 
-        // Native select abhi visible hai — width note kar lo (w-auto cases ke liye).
+        // The native select is still visible; record its width for w-auto cases.
         var measured = select.getBoundingClientRect().width;
 
         var control = document.createElement('div');
@@ -336,7 +336,7 @@
         panel.appendChild(footer);
         document.body.appendChild(panel);
 
-        // Control native select ke turant baad, wrapper ke andar.
+        // Insert the control immediately after the native select, inside the wrapper.
         select.parentNode.insertBefore(control, select.nextSibling);
         select.classList.add('ss-native');
         select.setAttribute('tabindex', '-1');
@@ -411,7 +411,7 @@
             }
         });
 
-        // mousedown par default rok kar focus search input par hi rakhte hain
+        // Prevent the default mousedown behavior to keep focus in the search input.
         list.addEventListener('mousedown', function (e) {
             e.preventDefault();
         });
@@ -423,14 +423,14 @@
             if (!isNaN(idx) && inst.items[idx]) choose(inst, inst.items[idx]);
         });
 
-        // Panel body me hai, is liye page ke doosre click-handlers (jaise
-        // form-select.js ka .focused cleanup) is par na chalein.
+        // The panel is appended to the body so other page click handlers (such as
+        // form-select.js's .focused cleanup) do not run for clicks inside it.
         panel.addEventListener('click', function (e) {
             e.stopPropagation();
         });
 
-        // Required select invalid ho to panel khol kar focus control par le aao
-        // (native select off-screen hai, browser ka validation bubble dikhta nahi).
+        // If a required select is invalid, open the panel and focus the control.
+        // The native select is off-screen, so its browser validation bubble is hidden.
         select.addEventListener('invalid', function () {
             openPanel(inst);
             if (control.focus) control.focus({ preventScroll: true });

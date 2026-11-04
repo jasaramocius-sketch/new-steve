@@ -101,7 +101,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Admin Note (shown to customer)</label>
-                            <textarea name="admin_note" rows="3" class="form-control" placeholder="Visible to the customer...">{{ $return->admin_note }}</textarea>
+                            <textarea name="admin_note" rows="3" class="form-control textarea-control" placeholder="Visible to the customer...">{{ $return->admin_note }}</textarea>
                         </div>
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary steve-btn"><i class="fas fa-save me-1"></i> Save Decision</button>

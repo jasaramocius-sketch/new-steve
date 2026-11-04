@@ -877,9 +877,9 @@ $(document).ready(function() {
     $("#price-slider").slider(priceSliderOptions());
     $("#price-range-label").text(priceSymbol + $("#price-slider").slider("values", 0).toLocaleString() + " - " + priceSymbol + $("#price-slider").slider("values", 1).toLocaleString());
 
-    // Widget default collapsed hai — slider tab init hota hai jab container hidden
-    // hota hai, isliye width/handle calculations galat ho sakti hain. Panel expand
-    // hone par slider ko current values ke saath dobara init karte hain.
+    // The widget is collapsed by default, so the slider initializes while its
+    // container is hidden and width/handle calculations may be incorrect.
+    // Reinitialize it with the current values when the panel expands.
     $(document).on('shown.bs.collapse', '#sidebarPriceCollapse', function () {
         var $slider = $("#price-slider");
         if (!$slider.hasClass('ui-slider')) return;

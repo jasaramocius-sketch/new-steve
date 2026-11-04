@@ -69,7 +69,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Description</label>
-                            <textarea name="description" class="form-control" rows="2">{{ $apiIntegration->description }}</textarea>
+                            <textarea name="description" class="form-control textarea-control" rows="2">{{ $apiIntegration->description }}</textarea>
                         </div>
                     </div>
                 </div>

@@ -21,7 +21,7 @@
                 <div class="card-body">
                     <form action="{{ route('admin.settings.smtp.update') }}" method="POST" autocomplete="off" class="smtp-settings-form">
                         @csrf
-                        <div class="form-group row">
+                        <div class="form-group row align-items-center">
                             <label class="col-md-3 col-form-label" for="mail-driver">Type</label>
                             <div class="col-md-9">
                                 <select id="mail-driver" name="mail_driver" class="form-control form-select" required>

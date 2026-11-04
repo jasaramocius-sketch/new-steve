@@ -11,14 +11,14 @@
 <div class="container-fluid">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
         <div>
-            <h4 class="mb-1">SEO Settings</h4>
+            <!-- <h4 class="mb-1">SEO Settings</h4> -->
             <p class="text-muted mb-0">Search appearance, verification, analytics and crawler rules.</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('sitemap') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+            <a href="{{ route('sitemap') }}" target="_blank" rel="noopener" class="btn btn-outline-secondary">
                 <i class="fas fa-sitemap me-1"></i> View Sitemap
             </a>
-            <a href="{{ route('robots') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+            <a href="{{ route('robots') }}" target="_blank" rel="noopener" class="btn btn-outline-secondary">
                 <i class="fas fa-robot me-1"></i> View robots.txt
             </a>
         </div>
@@ -89,7 +89,7 @@
 
                 <div class="form-group mb-3">
                     <label class="form-label"><strong>Default Meta Description</strong></label>
-                    <textarea name="seo_default_meta_description" rows="3" class="form-control" maxlength="500"
+                    <textarea name="seo_default_meta_description" rows="3" class="form-control textarea-control" maxlength="500"
                         placeholder="Shop quality auto parts with fast shipping and expert support.">{{ old('seo_default_meta_description', $settings['seo_default_meta_description'] ?? '') }}</textarea>
                     <small class="text-muted">Aim for 150–160 characters for best search results.</small>
                 </div>
@@ -126,12 +126,12 @@
                             <input type="hidden" name="remove_seo_default_og_image" id="remove_seo_default_og_image" value="0">
                             <div id="impPreview_seo_default_og_image" class="d-none mt-2"></div>
                             <div class="d-flex flex-wrap gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                <button type="button" class="btn btn-outline-primary"
                                     onclick="document.getElementById('remove_seo_default_og_image').value='0'; impOpen_seo_default_og_image()">
                                     <i class="fas fa-images me-1"></i> Browse Image Manager
                                 </button>
                                 @if (!empty($ogImage))
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearSeoOgImage()">
+                                    <button type="button" class="btn btn-outline-danger" onclick="clearSeoOgImage()">
                                         <i class="fas fa-times me-1"></i> Clear Image
                                     </button>
                                 @endif
@@ -254,7 +254,7 @@
 
                 <div class="form-group mb-2">
                     <label class="form-label"><strong>robots.txt Content</strong></label>
-                    <textarea name="seo_robots_txt" id="seo_robots_txt" rows="10" class="form-control font-monospace"
+                    <textarea name="seo_robots_txt" id="seo_robots_txt" rows="10" class="form-control textarea-control form-control-sm font-monospace"
                         placeholder="Leave blank to auto-generate robots.txt for the current domain.">{{ old('seo_robots_txt', $settings['seo_robots_txt'] ?? '') }}</textarea>
                     <div class="d-flex flex-wrap justify-content-between gap-1 mt-1">
                         <small class="text-muted">Leave blank to auto-generate. The sitemap URL follows the current domain automatically, so it keeps working after moving to a live domain.</small>

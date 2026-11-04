@@ -39,7 +39,7 @@
                     <label>Image</label>
                     <input type="hidden" name="image_from_manager" id="image_from_manager_category_image">
                     <div id="impPreview_category_image" class="d-none mt-2"></div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_category_image()">
+                    <button type="button" class="btn btn-outline-primary" onclick="impOpen_category_image()">
                         <i class="fas fa-images me-1"></i> Browse Image Manager
                     </button>
                 </div>

@@ -317,7 +317,7 @@
                   </div>
                   <div class="mb-3">
                     <label class="form-label fw-semibold">Your Review *</label>
-                    <textarea class="form-control" id="reviewText" rows="3" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
+                    <textarea class="form-control textarea-control" id="reviewText" rows="3" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
                   </div>
                   <div class="mb-3">
                     <label class="form-label fw-semibold">Review Images</label>
@@ -529,7 +529,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Message *</label>
-            <textarea name="message" class="form-control" required rows="4" maxlength="2000"></textarea>
+            <textarea name="message" class="form-control textarea-control" required rows="4" maxlength="2000"></textarea>
           </div>
         </div>
         <div class="modal-footer">

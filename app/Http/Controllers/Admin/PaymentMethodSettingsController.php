@@ -23,6 +23,7 @@ class PaymentMethodSettingsController extends Controller
                 $value = $stored[$field['name']] ?? ($field['default'] ?? '');
                 $field['value'] = $field['secret'] ? '' : $value;
                 $field['configured'] = $field['secret'] && $value !== '';
+                $field['masked'] = $field['configured'] ? $this->maskSecret((string) $value) : '';
                 $fields[] = $field;
             }
 
@@ -81,6 +82,25 @@ class PaymentMethodSettingsController extends Controller
         Setting::set('payment_method_'.$provider, Crypt::encryptString(json_encode($credentials, JSON_THROW_ON_ERROR)));
 
         return redirect()->route('admin.settings.payment-methods')->with('success', $definition['title'].' settings saved.');
+    }
+
+    /**
+     * Show just enough of a stored secret for the admin to recognise it.
+     * The full value is never sent back to the browser.
+     */
+    private function maskSecret(string $value): string
+    {
+        $length = strlen($value);
+
+        if ($length === 0) {
+            return '';
+        }
+
+        if ($length <= 4) {
+            return str_repeat('*', $length);
+        }
+
+        return str_repeat('*', 8).substr($value, -4);
     }
 
     private function decodeCredentials(?string $value): array

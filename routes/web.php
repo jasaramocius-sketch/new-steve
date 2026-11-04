@@ -137,6 +137,12 @@ Route::get('/checkout/payment', [CartController::class, 'payment'])->middleware(
 
 Route::post('/checkout/payment', [CartController::class, 'paymentSubmit'])->middleware(['nocache'])->name('checkout.payment.submit');
 
+Route::get('/checkout/stripe/success', [CartController::class, 'stripeSuccess'])->middleware(['nocache'])->name('checkout.stripe.success');
+
+Route::get('/checkout/stripe/cancel', [CartController::class, 'stripeCancel'])->middleware(['nocache'])->name('checkout.stripe.cancel');
+
+Route::post('/checkout/stripe/webhook', [CartController::class, 'stripeWebhook'])->name('checkout.stripe.webhook');
+
 Route::get('/checkout/order-confirmed', [CartController::class, 'orderConfirmed'])->middleware(['nocache'])->name('checkout.confirmed');
 
 /* Address management for checkout */

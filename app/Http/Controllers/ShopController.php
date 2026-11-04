@@ -19,18 +19,18 @@ class ShopController extends Controller
     public function __construct(private VehicleCatalog $vehicleCatalog) {}
 
     /**
-     * Buyer-facing price ka SQL expression (cost + product/global commission).
+     * SQL expression for the buyer-facing price (cost + product/global commission).
      *
-     * Storefront par price `buyerPrice()` se dikhti hai (cost + commission), is liye
-     * price filter/sort bhi isi expression par hone chahiye — warna max_price = 172
-     * par $190.29 wala product (cost 172.99 + 10%) bhi list ho jata hai.
+     * The storefront displays prices through `buyerPrice()` (cost + commission),
+     * so price filters and sorting must use this same expression. Otherwise, a
+     * product costing $172.99 plus 10% commission would appear when max_price = 172.
      */
     private function buyerPriceExpression(): string
     {
         $global = max(0, min(100, (float) globalCommissionPercent()));
         $global = number_format($global, 2, '.', '');
 
-        // Model ki tarah 0–100 clamp karo (product-level commission null ho to global).
+        // Clamp to 0–100 as in the model; use the global rate when product commission is null.
         return '(cost * (1 + (LEAST(GREATEST(COALESCE(commission, '.$global.'), 0), 100) / 100)))';
     }
 

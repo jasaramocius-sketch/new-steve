@@ -22,7 +22,7 @@
     @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
     <div class="alert alert-info">
-        Credentials are encrypted when saved. Saving credentials does not enable a gateway in checkout; the current checkout integrations are COD, card, and PayPal.
+        Credentials are encrypted when saved. The Stripe keys are used by the hosted Stripe Checkout at checkout (enable Stripe Payment in System Settings). The other gateways are stored for future use and are not yet active at checkout.
     </div>
 
     <div class="row">
@@ -34,20 +34,32 @@
                         <form action="{{ route('admin.settings.payment-methods.update', $method['provider']) }}" method="POST" autocomplete="off" class="payment-method-form">
                             @csrf
                             @foreach ($method['fields'] as $field)
-                                <div class="form-group row">
+                                @php
+                                    $isSecret = (bool) ($field['secret'] ?? false);
+                                    $hasSavedValue = $isSecret && ($field['configured'] ?? false);
+                                    // Never echo a secret back into the DOM. Non-secret fields keep what was just typed.
+                                    $displayValue = $isSecret ? '' : old($field['name'], $field['value']);
+                                    // Show the masked hint inside the field itself when a secret is already saved.
+                                    $placeholder = $isSecret
+                                        ? ($hasSavedValue ? $field['masked'] : 'Enter '.$field['label'])
+                                        : 'Enter '.$field['label'];
+                                @endphp
+                                <div class="form-group row align-items-center">
                                     <label class="col-md-4 col-form-label" for="{{ $method['provider'] }}-{{ $field['name'] }}">{{ $field['label'] }}</label>
                                     <div class="col-md-8">
                                         <input
                                             id="{{ $method['provider'] }}-{{ $field['name'] }}"
-                                            type="{{ $field['secret'] ? 'password' : ($field['type'] ?? 'text') }}"
-                                            class="form-control"
+                                            type="{{ $isSecret ? 'password' : ($field['type'] ?? 'text') }}"
+                                            class="form-control @error($field['name']) is-invalid @enderror"
                                             name="{{ $field['name'] }}"
-                                            value="{{ $field['secret'] ? '' : $field['value'] }}"
-                                            placeholder="{{ $field['secret'] && $field['configured'] ? 'Saved securely; leave blank to keep current' : ($field['value'] ?: $field['label']) }}"
-                                            autocomplete="{{ $field['secret'] ? 'new-password' : 'off' }}"
-                                            @required(($field['required'] ?? false) && !($field['secret'] && $field['configured']))
+                                            value="{{ $displayValue }}"
+                                            placeholder="{{ $placeholder }}"
+                                            autocomplete="{{ $isSecret ? 'new-password' : 'off' }}"
+                                            @if ($isSecret) data-lpignore="true" data-1p-ignore @endif
+                                            @required(($field['required'] ?? false) && ! $hasSavedValue)
                                         >
-                                        @if ($field['secret'] && $field['configured']) <small class="text-muted">Saved securely; value is not displayed.</small> @endif
+                                        @error($field['name']) <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                        @if ($hasSavedValue) <small class="text-muted d-block mt-1">Saved securely. Leave blank to keep the current secret; the full value is never displayed.</small> @endif
                                         @if (!empty($field['help'])) <div class="alert alert-primary mt-2 mb-0" role="note">{{ $field['help'] }}</div> @endif
                                     </div>
                                 </div>

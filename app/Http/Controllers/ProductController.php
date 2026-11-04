@@ -1010,65 +1010,71 @@ class ProductController extends Controller
     {
         $headers = ['id', 'name', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
 
-        $products = Product::with('category', 'brand', 'seller', 'galleryImages')->get();
-
-        $callback = function () use ($headers, $products) {
+        $callback = function () use ($headers) {
+            set_time_limit(0);
             $handle = fopen('php://output', 'w');
             fputcsv($handle, $headers);
 
-            foreach ($products as $p) {
-                $galleryUrls = $p->galleryImages->map(function ($img) {
-                    return $img->url ? url($img->url) : '';
-                })->filter()->values()->implode('|');
+            Product::with('category', 'brand', 'seller', 'galleryImages')
+                ->chunkById(500, function ($products) use ($handle) {
+                    foreach ($products as $p) {
+                        $galleryUrls = $p->galleryImages->map(function ($img) {
+                            return $img->url ? url($img->url) : '';
+                        })->filter()->values()->implode('|');
 
-                $features = is_array($p->features) ? implode("\n", array_filter($p->features)) : '';
+                        $features = is_array($p->features) ? implode("\n", array_filter($p->features)) : '';
 
-                $specsLines = [];
-                foreach ((array) $p->specifications as $spec) {
-                    $label = trim($spec['label'] ?? '');
-                    $value = trim($spec['value'] ?? '');
-                    $specsLines[] = ($label !== '' && $value !== '') ? $label.'::'.$value : ($label ?: $value);
-                }
-                $specs = implode("\n", array_filter($specsLines));
+                        $specsLines = [];
+                        foreach ((array) $p->specifications as $spec) {
+                            $label = trim($spec['label'] ?? '');
+                            $value = trim($spec['value'] ?? '');
+                            $specsLines[] = ($label !== '' && $value !== '') ? $label.'::'.$value : ($label ?: $value);
+                        }
+                        $specs = implode("\n", array_filter($specsLines));
 
-                $reviewsData = is_array($p->reviews_data) && $p->reviews_data ? json_encode($p->reviews_data) : '';
+                        $reviewsData = is_array($p->reviews_data) && $p->reviews_data ? json_encode($p->reviews_data) : '';
 
-                fputcsv($handle, [
-                    $p->id,
-                    $p->name,
-                    $p->sku ?? '',
-                    $p->price,
-                    $p->old_price ?? '',
-                    $p->category->name ?? '',
-                    $p->stock ?? 0,
-                    $p->description ?? '',
-                    $p->badge ?? '',
-                    $p->product_type ?? 'none',
-                    $p->status ? '1' : '0',
-                    $p->featured ? '1' : '0',
-                    $p->image ? url(storedPath($p->image, 'assets/images/thumbnails')) : '',
-                    $p->brand->name ?? '',
-                    $p->seller->name ?? '',
-                    $p->year ?? '',
-                    $p->make ?? '',
-                    $p->model ?? '',
-                    $galleryUrls,
-                    $p->policy_text ?? '',
-                    $features,
-                    $specs,
-                    $reviewsData,
-                    $p->tab_label_1 ?? '',
-                    $p->tab_label_2 ?? '',
-                    $p->tab_label_3 ?? '',
-                ]);
-            }
+                        fputcsv($handle, [
+                            $p->id,
+                            $p->name,
+                            $p->sku ?? '',
+                            $p->price,
+                            $p->old_price ?? '',
+                            $p->category->name ?? '',
+                            $p->stock ?? 0,
+                            $p->description ?? '',
+                            $p->badge ?? '',
+                            $p->product_type ?? 'none',
+                            $p->status ? '1' : '0',
+                            $p->featured ? '1' : '0',
+                            $p->image ? url(storedPath($p->image, 'assets/images/thumbnails')) : '',
+                            $p->brand->name ?? '',
+                            $p->seller->name ?? '',
+                            $p->year ?? '',
+                            $p->make ?? '',
+                            $p->model ?? '',
+                            $galleryUrls,
+                            $p->policy_text ?? '',
+                            $features,
+                            $specs,
+                            $reviewsData,
+                            $p->tab_label_1 ?? '',
+                            $p->tab_label_2 ?? '',
+                            $p->tab_label_3 ?? '',
+                        ]);
+                    }
+
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+                });
 
             fclose($handle);
         };
 
-        return response()->stream($callback, 200, [
+        return response()->streamDownload($callback, 'products-export-'.date('Y-m-d').'.csv', [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="products-export-'.date('Y-m-d').'.csv"',
         ]);
     }
 

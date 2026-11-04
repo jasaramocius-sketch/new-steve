@@ -224,7 +224,7 @@
                                 @endphp
                                 <div class="input-group input-group-sm admin-commission-cell" style="width:80px;">
                                     <input type="number" step="0.01" min="0" max="100"
-                                           class="form-control form-control-sm js-product-commission no-spinner"
+                                           class="form-control js-product-commission no-spinner"
                                            value="{{ $productCommissionLabel }}"
                                            data-default="{{ $productCommissionLabel }}"
                                            data-url="{{ route('admin.products.commission', $product->id) }}"

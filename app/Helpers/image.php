@@ -47,7 +47,7 @@ if (! function_exists('saveImageWithWebp')) {
         $subdir = 'uploads/'.now()->format('Y/m');
         $destination = storage_path('app/public/'.$subdir);
 
-        // Directory auto-create karo agar nahi hai
+        // Create the directory automatically if it does not exist.
         if (! is_dir($destination)) {
             mkdir($destination, 0775, true);
         }
@@ -73,7 +73,7 @@ if (! function_exists('saveImageWithWebp')) {
 if (! function_exists('saveImageFromUrlWithWebp')) {
     function saveImageFromUrlWithWebp(string $url, string $dir = 'uploads'): ?string
     {
-        // SSRF guard: sirf public http(s) URLs allow karo
+        // SSRF guard: allow only public HTTP(S) URLs.
         $parts = parse_url($url);
         if (! $parts || ! in_array($parts['scheme'] ?? '', ['http', 'https'], true) || empty($parts['host'])) {
             return null;

@@ -10,6 +10,14 @@
 @endsection
 @section('content')
 
+@php
+    $selectedShippingMethod = old('shipping_method', session('shipping_info.method', 'free'));
+    if ($selectedShippingMethod === 'pickup' && ! $pickupEnabled) {
+        $selectedShippingMethod = 'free';
+    }
+    $selectedPickupPointId = (string) old('pickup_point_id', session('shipping_info.pickup_point_id', ''));
+@endphp
+
 @include('partials.checkout-steps', ['activeStep' => 3])
 
 <section class="py-4">
@@ -19,6 +27,10 @@
         <div class="border bg-white p-4 mb-4">
           <form class="form-default" action="{{ route('checkout.delivery-info.store') }}" role="form" method="POST">
             @csrf
+
+            @if ($errors->any())
+              <div class="alert alert-danger">{{ $errors->first() }}</div>
+            @endif
 
             <div class="card mb-5 border-0 rounded-0 shadow-none">
               <div class="card-header py-3 px-0 border-bottom-0 bg-white">
@@ -66,7 +78,7 @@
                     <div class="row gutters-5 justify-content-end">
                       <div class="col-6">
                         <label class="aiz-megabox d-block bg-white mb-0">
-                          <input type="radio" name="shipping_method" value="free" checked class="d-none">
+                          <input type="radio" name="shipping_method" value="free" @checked($selectedShippingMethod === 'free') class="d-none">
                           <span class="d-flex aiz-megabox-elem rounded-0" style="padding: 0.75rem 1.2rem;">
                             <span class="aiz-rounded-check flex-shrink-0 mt-1"></span>
                             <span class="flex-grow-1 pl-3 fw-600">Home Delivery</span>
@@ -76,21 +88,22 @@
                       @if($pickupEnabled)
                       <div class="col-6">
                         <label class="aiz-megabox d-block bg-white mb-0">
-                          <input type="radio" name="shipping_method" value="pickup" class="d-none">
+                          <input type="radio" name="shipping_method" value="pickup" @checked($selectedShippingMethod === 'pickup') class="d-none">
                           <span class="d-flex aiz-megabox-elem rounded-0" style="padding: 0.75rem 1.2rem;">
                             <span class="aiz-rounded-check flex-shrink-0 mt-1"></span>
                             <span class="flex-grow-1 pl-3 fw-600">Pickup point</span>
                           </span>
                         </label>
                       </div>
-                      <div class="col-12 mt-3 pickup-point-selection" id="pickup-point-selection" hidden>
+                      <div class="col-12 mt-3 pickup-point-selection" id="pickup-point-selection" @unless($selectedShippingMethod === 'pickup') hidden @endunless>
                         <label for="pickup-point-id" class="fs-14 fw-600">Choose a pickup point</label>
-                        <select id="pickup-point-id" name="pickup_point_id" class="form-control">
+                        <select id="pickup-point-id" name="pickup_point_id" class="form-select" @error('pickup_point_id') aria-invalid="true" @enderror>
                           <option value="">Select pickup point</option>
                           @foreach ($pickupPoints as $pickupPoint)
-                            <option value="{{ $pickupPoint->id }}">{{ $pickupPoint->name }} — {{ $pickupPoint->location }} ({{ $pickupPoint->contact }})</option>
+                            <option value="{{ $pickupPoint->id }}" @selected($selectedPickupPointId === (string) $pickupPoint->id)>{{ $pickupPoint->name }} — {{ $pickupPoint->location }} ({{ $pickupPoint->contact }})</option>
                           @endforeach
                         </select>
+                        @error('pickup_point_id') <div class="text-danger fs-12 mt-1">{{ $message }}</div> @enderror
                       </div>
                       @endif
                     </div>
@@ -128,7 +141,11 @@ function updatePickupPointVisibility() {
   const pickupSelected = document.querySelector('input[name="shipping_method"]:checked')?.value === 'pickup';
   pickupPointSelection.hidden = !pickupSelected;
   pickupPointSelect.required = pickupSelected;
-  if (!pickupSelected) pickupPointSelect.value = '';
+  if (!pickupSelected && pickupPointSelect.value !== '') {
+    pickupPointSelect.value = '';
+    // Keep the optional searchable-select widget (if attached) in sync.
+    pickupPointSelect.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 }
 
 pickupMethodInputs.forEach((input) => input.addEventListener('change', updatePickupPointVisibility));

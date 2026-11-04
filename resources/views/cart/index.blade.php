@@ -129,7 +129,7 @@
           <div class="px-3 mb-4">
             <form action="{{ route('cart.coupon.apply') }}" method="POST" class="d-flex gap-2">
               @csrf
-              <input type="text" name="coupon_code" class="form-control form-control-sm rounded-0" placeholder="Enter coupon code" required>
+              <input type="text" name="coupon_code" class="form-control rounded-0" placeholder="Enter coupon code" required>
               <button type="submit" class="btn btn-sm btn-outline-primary steve-btn px-3">Apply</button>
             </form>
           </div>

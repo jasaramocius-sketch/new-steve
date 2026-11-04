@@ -43,7 +43,7 @@
         <!-- Search + Upload -->
         <div class="d-flex gap-2 mb-2">
           <div class="flex-grow-1">
-            <input type="text" class="form-control form-control-sm" id="impSearch_{{ $pickerId }}" placeholder="Search images..." autocomplete="off">
+            <input type="text" class="form-control" id="impSearch_{{ $pickerId }}" placeholder="Search images..." autocomplete="off">
           </div>
           <label class="btn btn-sm btn-outline-primary mb-0 admin-picker-label">
             <i class="fas fa-upload me-1"></i> Upload New
@@ -54,7 +54,7 @@
         <!-- Provide URL to download -->
         <div class="d-flex gap-2 mb-1">
           <div class="flex-grow-1">
-            <input type="url" class="form-control form-control-sm" id="impUrlInput_{{ $pickerId }}" placeholder="Provide an image URL to download (optional)" autocomplete="off">
+            <input type="url" class="form-control" id="impUrlInput_{{ $pickerId }}" placeholder="Provide an image URL to download (optional)" autocomplete="off">
           </div>
           <button type="button" class="btn btn-sm btn-outline-secondary" id="impUrlBtn_{{ $pickerId }}">
             <i class="fas fa-download me-1"></i> Download URL

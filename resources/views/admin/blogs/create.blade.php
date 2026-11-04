@@ -36,7 +36,7 @@
                         <label class="form-label">Content</label>
                         <textarea id="editor"
                             name="details"
-                            class="form-control texteditor @error('details') is-invalid @enderror"
+                            class="form-control textarea-control texteditor @error('details') is-invalid @enderror"
                             rows="15">{{ old('details') }}</textarea>
                         @error('details')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -144,7 +144,7 @@
                                     class="d-none mb-2">
                                 </div>
                                 <button type="button"
-                                    class="btn btn-sm btn-outline-primary"
+                                    class="btn btn-outline-primary"
                                     onclick="impOpen_blog_image()">
                                     <i class="fas fa-images me-1"></i>
                                     Browse Image Manager

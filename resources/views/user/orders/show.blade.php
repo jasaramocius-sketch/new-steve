@@ -769,10 +769,10 @@
             <div class="order-payment-list">
                 <div class="order-payment-row">
                     <span>Payment Status</span>
-                    @if($currentStatus == 'delivered')
+                    @if(($order->payment_status ?? 'unpaid') === 'paid')
                         <span class="badge badge--success"><i class="fas fa-check me-1"></i> Paid</span>
-                    @elseif($currentStatus == 'cancelled')
-                        <span class="badge badge--danger"><i class="fas fa-times me-1"></i> Cancelled</span>
+                    @elseif(($order->payment_status ?? '') === 'refunded')
+                        <span class="badge badge--secondary"><i class="fas fa-undo me-1"></i> Refunded</span>
                     @else
                         <span class="badge badge--warning"><i class="fas fa-clock me-1"></i> Unpaid</span>
                     @endif
@@ -956,7 +956,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold fs-14">Your Review <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="orderReviewText" rows="4" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
+                    <textarea class="form-control textarea-control" id="orderReviewText" rows="4" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold fs-14">Review Images</label>

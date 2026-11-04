@@ -100,8 +100,8 @@
         <div class="card-header">
             <form action="{{ route('admin.settings.currency.index') }}" method="GET">
                 <div class="row gutters-5 align-items-end">
-                    <div class="col-3 col-md-6 col-8 d-flex flex-row align-items-end gap-2">
-                        <label class="col-auto fs-12 text-muted mb-1" for="currency-search">Currency name</label>
+                    <div class="col-3 col-md-6 col-8 d-flex flex-row align-items-center gap-2">
+                        <label class="col-auto fs-12 text-muted" for="currency-search">Currency name</label>
                         <input id="currency-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Name or code">
                     </div>
                     <div class="col-auto"><button type="submit" class="btn btn-primary">Filter</button></div>

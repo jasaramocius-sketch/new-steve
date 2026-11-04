@@ -178,7 +178,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Meta description</label>
-                            <textarea name="meta_description" id="meta_description" class="form-control @error('meta_description') is-invalid @enderror" rows="2" maxlength="500">{{ old('meta_description', $page->meta_description) }}</textarea>
+                            <textarea name="meta_description" id="meta_description" class="form-control textarea-control @error('meta_description') is-invalid @enderror" rows="2" maxlength="500">{{ old('meta_description', $page->meta_description) }}</textarea>
                             @error('meta_description') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <div class="form-text text-end mb-0">Recommended 160 characters. <span id="meta_description_count" class="fw-semibold font-monospace">{{ mb_strlen(old('meta_description', $page->meta_description) ?? '') }}</span>/500</div>
                         </div>
@@ -190,7 +190,7 @@
             <section id="s-content" class="card border-0 shadow-sm mb-3 tab-pane">
                 <div class="card-body">
                     <h5 class="mb-3">Content</h5>
-                    <textarea name="content" class="form-control texteditor @error('content') is-invalid @enderror" rows="12">{{ old('content', $page->content) }}</textarea>
+                    <textarea name="content" class="form-control textarea-control texteditor @error('content') is-invalid @enderror" rows="12">{{ old('content', $page->content) }}</textarea>
                     @error('content') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
             </section>

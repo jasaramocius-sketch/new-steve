@@ -14,9 +14,11 @@ use App\Models\PickupPoint;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Vehicle;
+use App\Services\StripeCheckoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class CartController extends Controller
 {
@@ -539,18 +541,8 @@ class CartController extends Controller
             'payment_method' => 'required|in:'.implode(',', array_keys($paymentMethods)),
         ]);
 
-        $paymentDetails = [];
-        if ($request->payment_method === 'card' && $request->filled('card_number')) {
-            $digits = preg_replace('/\D/', '', $request->card_number);
-            $paymentDetails['card_last_four'] = substr($digits, -4);
-            $paymentDetails['card_number'] = substr($request->card_number, 0, 6).'****'.substr($digits, -4);
-        }
-
-        if (in_array($request->payment_method, ['card', 'paypal'], true)) {
-            $paymentDetails['transaction_id'] = generateTransactionId();
-        }
-
-        $paymentDetails = empty($paymentDetails) ? null : json_encode($paymentDetails);
+        $paymentMethod = (string) $request->payment_method;
+        $isStripe = $paymentMethod === 'card';
 
         $cart = $this->refreshCartPrices();
         if (count($cart) === 0) {
@@ -605,8 +597,62 @@ class CartController extends Controller
             $shippingDetails['pickup_point'] = $shipping['pickup_point'];
         }
 
-        // Save to database
-        $dbOrder = DB::transaction(function () use ($request, $cart, $shippingDetails, $shipping, $grandTotal, $shippingCost, $tax, $paymentDetails, $couponData, $couponDiscount, $total, $products) {
+        // Card payments are only marked paid after Stripe confirms the charge.
+        $paymentDetails = null;
+        if ($paymentMethod === 'paypal') {
+            $paymentDetails = json_encode(['transaction_id' => generateTransactionId()]);
+        }
+
+        $dbOrder = $this->createCheckoutOrder(
+            $request,
+            $cart,
+            $shippingDetails,
+            $shipping,
+            $grandTotal,
+            $shippingCost,
+            $tax,
+            $paymentDetails,
+            $couponData,
+            $couponDiscount,
+            $total,
+            $products
+        );
+
+        if ($isStripe && $grandTotal > 0) {
+            return $this->startStripeCheckout($dbOrder, $cart, $billing);
+        }
+
+        if ($isStripe) {
+            // A fully discounted order needs no charge, so consider it paid.
+            $dbOrder->update(['payment_status' => 'paid']);
+        }
+
+        $this->notifyOrderPlaced($dbOrder);
+
+        session()->put('last_order', $this->orderSummary($dbOrder));
+        $this->clearCheckoutSession();
+
+        return redirect()->route('checkout.confirmed');
+    }
+
+    /**
+     * Persist the order, its items, coupon usage and stock movement in one transaction.
+     */
+    private function createCheckoutOrder(
+        Request $request,
+        array $cart,
+        array $shippingDetails,
+        array $shipping,
+        float $grandTotal,
+        float $shippingCost,
+        float $tax,
+        ?string $paymentDetails,
+        array $couponData,
+        float $couponDiscount,
+        float $total,
+        $products
+    ): Order {
+        return DB::transaction(function () use ($request, $cart, $shippingDetails, $shipping, $grandTotal, $shippingCost, $tax, $paymentDetails, $couponData, $couponDiscount, $total, $products) {
 
             $orderNumber = 'ORD'.strtoupper(uniqid());
 
@@ -617,7 +663,7 @@ class CartController extends Controller
                 'total_amount' => $grandTotal,
                 'status' => 'pending',
                 'payment_method' => $request->payment_method,
-                'payment_status' => in_array($request->payment_method, ['card', 'paypal'], true) ? 'paid' : 'unpaid',
+                'payment_status' => $request->payment_method === 'paypal' ? 'paid' : 'unpaid',
                 'payment_details' => $paymentDetails,
                 'delivery_type' => $shipping['method'] ?? 'free',
                 'shipping_fee' => $shippingCost,
@@ -673,46 +719,245 @@ class CartController extends Controller
 
             return $dbOrder;
         });
+    }
 
-        NotificationHelper::orderPlaced($dbOrder);
-
-        $toEmail = $billing['email'] ?? null ?: ($dbOrder->user?->email ?? null);
-        if ($toEmail) {
-            Mail::to($toEmail)->queue(new OrderConfirmationMail($dbOrder->load('items.product')));
+    /**
+     * Start a hosted Stripe Checkout session using the admin-saved credentials.
+     */
+    private function startStripeCheckout(Order $order, array $cart, array $billing)
+    {
+        // Release stock held by an earlier abandoned Stripe attempt.
+        $previousOrderId = session('pending_stripe_order_id');
+        if ($previousOrderId && (int) $previousOrderId !== (int) $order->id) {
+            $previous = Order::find($previousOrderId);
+            if ($previous && $previous->payment_status !== 'paid') {
+                $this->cancelPendingOrder($previous);
+            }
         }
 
-        // Build session data for the confirmation page
-        $order = [
-            'id' => '#'.$dbOrder->order_number,
-            'db_id' => $dbOrder->id,
-            'date' => $dbOrder->created_at->format('d M, Y'),
-            'total' => $grandTotal,
-            'subtotal' => $total,
-            'status' => 'Pending',
-            'payment_method' => $request->payment_method,
-            'coupon_code' => $couponData['code'] ?? null,
-            'coupon_discount' => $couponDiscount,
-            'customer_name' => $billing['name'] ?? auth()->user()->name,
-            'customer_email' => $billing['email'] ?? auth()->user()->email,
-            'customer_phone' => $billing['phone'] ?? '',
-            'address' => ($billing['address'] ?? '').', '.($billing['city'] ?? '').', '.($billing['country'] ?? ''),
-            'items' => array_values(array_map(fn ($item) => [
-                'name' => $item['name'],
-                'qty' => $item['qty'],
-                'price' => $item['price'],
-            ], $cart)),
-        ];
+        $itemCount = array_sum(array_map(fn ($item) => (int) $item['qty'], $cart));
+        $lineItems = [[
+            'name' => 'Order '.$order->order_number.' ('.$itemCount.' item'.($itemCount === 1 ? '' : 's').')',
+            'amount' => (float) $order->total_amount,
+            'quantity' => 1,
+        ]];
 
-        session()->put('last_order', $order);
+        try {
+            $session = app(StripeCheckoutService::class)->createCheckoutSession($lineItems, $order->order_number, [
+                'order_id' => $order->id,
+                'email' => $billing['email'] ?? null,
+                'success_url' => route('checkout.stripe.success').'?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.stripe.cancel'),
+            ]);
+        } catch (Throwable $exception) {
+            $this->cancelPendingOrder($order);
 
-        // Clear checkout session data
-        session()->forget('cart');
-        session()->forget('billing_info');
-        session()->forget('shipping_info');
-        session()->forget('checkout_vehicle_id');
-        session()->forget('coupon');
+            return back()->with('error', 'Stripe could not start the payment: '.$exception->getMessage());
+        }
+
+        if (empty($session->url) || empty($session->id)) {
+            $this->cancelPendingOrder($order);
+
+            return back()->with('error', 'Stripe did not return a valid checkout session. Please try again.');
+        }
+
+        $details = json_decode($order->payment_details ?? '[]', true) ?: [];
+        $details['stripe_session_id'] = $session->id;
+        $order->update(['payment_details' => json_encode($details)]);
+        session(['pending_stripe_order_id' => $order->id]);
+
+        return redirect()->away($session->url);
+    }
+
+    /**
+     * Cancel an unpaid order and return its reserved stock to the catalogue.
+     */
+    private function cancelPendingOrder(Order $order): void
+    {
+        if ($order->payment_status === 'paid') {
+            return;
+        }
+
+        if ($order->stock_deducted) {
+            $order->restoreStock();
+        }
+
+        $order->update([
+            'status' => 'cancelled',
+            'payment_status' => 'failed',
+            'stock_deducted' => false,
+        ]);
+        $order->recordStatusChange('cancelled', 'Stripe checkout was not completed');
+    }
+
+    public function stripeSuccess(Request $request)
+    {
+        $sessionId = (string) $request->query('session_id', '');
+        if ($sessionId === '') {
+            return redirect()->route('checkout.payment')->with('error', 'Missing Stripe session reference.');
+        }
+
+        $session = app(StripeCheckoutService::class)->retrieveCheckoutSession($sessionId);
+
+        if (! $session || ($session->payment_status ?? null) !== 'paid') {
+            return redirect()->route('checkout.payment')->with('error', 'Stripe payment was not completed. Please try again.');
+        }
+
+        $orderId = $session->metadata->order_id ?? null;
+        $order = $orderId ? Order::find($orderId) : null;
+
+        if (! $order || (string) ($session->client_reference_id ?? '') !== (string) $order->order_number) {
+            return redirect()->route('checkout.payment')->with('error', 'We could not verify this Stripe payment against an order. Please contact support.');
+        }
+
+        $this->markOrderPaid($order, $session);
+
+        session()->put('last_order', $this->orderSummary($order));
+        $this->clearCheckoutSession();
 
         return redirect()->route('checkout.confirmed');
+    }
+
+    /**
+     * Stripe calls this endpoint server-to-server. The session is re-fetched from
+     * Stripe with our secret key, so the payload cannot be forged.
+     */
+    public function stripeWebhook(Request $request)
+    {
+        $event = json_decode($request->getContent(), true) ?: [];
+        $type = (string) ($event['type'] ?? '');
+        $sessionId = (string) ($event['data']['object']['id'] ?? '');
+
+        $handledEvents = ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'checkout.session.expired'];
+
+        if (! in_array($type, $handledEvents, true) || $sessionId === '') {
+            return response()->json(['received' => true]);
+        }
+
+        $session = app(StripeCheckoutService::class)->retrieveCheckoutSession($sessionId);
+        if (! $session) {
+            return response()->json(['received' => true]);
+        }
+
+        $order = isset($session->metadata->order_id) ? Order::find($session->metadata->order_id) : null;
+        if (! $order || (string) ($session->client_reference_id ?? '') !== (string) $order->order_number) {
+            return response()->json(['received' => true]);
+        }
+
+        if (($session->payment_status ?? null) === 'paid') {
+            $this->markOrderPaid($order, $session);
+        } elseif ($type === 'checkout.session.expired') {
+            $this->cancelPendingOrder($order);
+        }
+
+        return response()->json(['received' => true]);
+    }
+
+    private function markOrderPaid(Order $order, object $session): void
+    {
+        if ($order->payment_status === 'paid') {
+            return;
+        }
+
+        $details = json_decode($order->payment_details ?? '[]', true) ?: [];
+        $details['stripe_session_id'] = $session->id ?? null;
+        $details['transaction_id'] = $session->payment_intent ?? ($session->id ?? null);
+
+        $update = [
+            'payment_status' => 'paid',
+            'payment_details' => json_encode($details),
+        ];
+
+        // A paid order should not stay in the "Pending" fulfilment state.
+        if ($order->status === 'pending') {
+            $update['status'] = 'processing';
+        }
+
+        $order->update($update);
+        $order->recordStatusChange(
+            $update['status'] ?? $order->status,
+            'Payment received through Stripe'.(! empty($details['transaction_id']) ? ' ('.$details['transaction_id'].')' : '')
+        );
+        $this->notifyOrderPlaced($order);
+    }
+
+    public function stripeCancel(Request $request)
+    {
+        // If Stripe actually captured the payment despite the cancel redirect, honour it.
+        $sessionId = (string) $request->query('session_id', '');
+        if ($sessionId !== '') {
+            $session = app(StripeCheckoutService::class)->retrieveCheckoutSession($sessionId);
+            if ($session && ($session->payment_status ?? null) === 'paid') {
+                return redirect()->route('checkout.stripe.success', ['session_id' => $sessionId]);
+            }
+        }
+
+        $pendingOrderId = session('pending_stripe_order_id');
+        if ($pendingOrderId) {
+            $pending = Order::find($pendingOrderId);
+            if ($pending) {
+                $this->cancelPendingOrder($pending);
+            }
+        }
+
+        session()->forget('pending_stripe_order_id');
+
+        return redirect()->route('checkout.payment')->with('error', 'Stripe payment was cancelled. Your cart is still saved, so you can try again.');
+    }
+
+    private function notifyOrderPlaced(Order $order): void
+    {
+        $order->loadMissing('items.product');
+        NotificationHelper::orderPlaced($order);
+
+        $billing = json_decode($order->shipping_details ?? '[]', true) ?: [];
+        $toEmail = ($billing['email'] ?? null) ?: ($order->user?->email ?? null);
+        if ($toEmail) {
+            Mail::to($toEmail)->queue(new OrderConfirmationMail($order));
+        }
+    }
+
+    /**
+     * Build the array consumed by the order confirmation page.
+     */
+    private function orderSummary(Order $order): array
+    {
+        $order->loadMissing('items.product');
+        $billing = json_decode($order->shipping_details ?? '[]', true) ?: [];
+        $subtotal = $order->items->sum(fn ($item) => (float) $item->price * (int) $item->qty);
+
+        return [
+            'id' => '#'.$order->order_number,
+            'db_id' => $order->id,
+            'date' => $order->created_at->format('d M, Y'),
+            'total' => (float) $order->total_amount,
+            'subtotal' => $subtotal,
+            'status' => ucfirst($order->status),
+            'payment_method' => $order->payment_method,
+            'coupon_code' => $order->coupon_code,
+            'coupon_discount' => (float) $order->coupon_discount,
+            'customer_name' => $billing['name'] ?? $order->user?->name ?? '',
+            'customer_email' => $billing['email'] ?? $order->user?->email ?? '',
+            'customer_phone' => $billing['phone'] ?? '',
+            'address' => ($billing['address'] ?? '').', '.($billing['city'] ?? '').', '.($billing['country'] ?? ''),
+            'items' => $order->items->map(fn ($item) => [
+                'name' => $item->product->name ?? 'Product #'.$item->product_id,
+                'qty' => (int) $item->qty,
+                'price' => (float) $item->price,
+            ])->values()->all(),
+        ];
+    }
+
+    private function clearCheckoutSession(): void
+    {
+        session()->forget([
+            'cart',
+            'billing_info',
+            'shipping_info',
+            'checkout_vehicle_id',
+            'coupon',
+            'pending_stripe_order_id',
+        ]);
     }
 
     public function orderConfirmed()
@@ -727,24 +972,7 @@ class CartController extends Controller
                 ->first();
 
             if ($dbOrder) {
-                $billing = json_decode($dbOrder->shipping_details, true) ?? [];
-                $order = [
-                    'id' => '#'.$dbOrder->order_number,
-                    'db_id' => $dbOrder->id,
-                    'date' => $dbOrder->created_at->format('d M, Y'),
-                    'total' => $dbOrder->total_amount,
-                    'status' => ucfirst($dbOrder->status),
-                    'payment_method' => $dbOrder->payment_method,
-                    'customer_name' => $billing['name'] ?? auth()->user()->name,
-                    'customer_email' => $billing['email'] ?? auth()->user()->email,
-                    'customer_phone' => $billing['phone'] ?? '',
-                    'address' => ($billing['address'] ?? '').', '.($billing['city'] ?? '').', '.($billing['country'] ?? ''),
-                    'items' => $dbOrder->items->map(fn ($i) => [
-                        'name' => $i->product->name ?? 'Product #'.$i->product_id,
-                        'qty' => $i->qty,
-                        'price' => $i->price,
-                    ])->toArray(),
-                ];
+                $order = $this->orderSummary($dbOrder);
             }
         }
 
@@ -791,7 +1019,7 @@ class CartController extends Controller
     {
         $methods = [];
 
-        if (Setting::get('stripe_payment', '1') === '1') {
+        if (Setting::get('stripe_payment', '1') === '1' && app(StripeCheckoutService::class)->isConfigured()) {
             $methods['card'] = ['label' => 'Stripe', 'icon' => 'las la-credit-card'];
         }
         if (Setting::get('cash_payment', '1') === '1') {

@@ -1,11 +1,11 @@
 /* ============================================================
    Searchable Select (public/assets/front/js/searchable-select.js)
-   Native <select> ko form me rakhte hue uske liye search wala
-   dropdown UI. Dono layouts (frontend + admin) me load hota hai.
+   Keep the native <select> in the form while providing a searchable
+   dropdown UI. Loaded in both layouts (frontend + admin).
    ============================================================ */
 
-/* Native select off-screen — display:none nahi, warna form submit
-   aur HTML5 validation se field drop ho jati hai. */
+/* Keep the native select off-screen, not display:none, so it remains part of
+   form submission and HTML5 validation. */
 .ss-native {
     position: absolute !important;
     left: -9999px !important;
@@ -19,7 +19,7 @@
     margin: 0 !important;
 }
 
-/* Visible trigger — .form-select class se theme ki styling milti hai */
+/* Visible trigger — inherits the theme styling from the .form-select class. */
 .ss-control {
     position: relative;
     display: flex;
@@ -55,7 +55,7 @@
     border-color: #dc3545;
 }
 
-/* Dropdown panel body me append hota hai (overflow clipping se bachne ke liye) */
+/* The dropdown panel is appended to the body to avoid clipping by overflow. */
 .ss-panel {
     position: fixed;
     z-index: 2055;

@@ -2129,6 +2129,9 @@ p.text-lg {
   gap: 8px;
   background-color: #fff;
 }
+.single-product-list-view .content-wrapper{
+  justify-content: center;
+}
 
 .single-product .product-title,
 .single-product-list-view .product-title {
@@ -2402,6 +2405,9 @@ p.text-lg {
 .single-product-list-view .price-wrapper h4 del,
 .single-product-list-view .product-title del {
   font-size: 28px;
+}
+.single-product-list-view .product-title {
+  font-size: 22px;
 }
 
 @media (max-width:1199.97px) {
@@ -17948,7 +17954,7 @@ span.product-badge.product-cat {
   fill: #9a909045;
 }
 
-/* Summary tables: pehli row ke upar hairline (order-confirmed, checkout payment) */
+/* Summary tables: thin top border above the first row (order confirmation, checkout payment). */
 table.summary-table tbody tr:first-child>th,
 table.summary-table tbody tr:first-child>td,
 table.summary-table thead tr:first-child>th {
@@ -19015,3 +19021,22 @@ button.filter-chip-clear i.las.la-times{
 .payment-method-form .form-group label, .smtp-settings-form .form-group label, .order-settings-form .form-group label{
   margin: 0;
 }
+
+.steve-input-form{
+  height: 40px;
+}
+.form-control{
+  height: 40px;
+}
+.form-control-sm.font-monospace, .textarea-control {
+  height: unset;
+}
+
+/* @media (max-width: 575px) {
+    .flex-sm-column {
+        flex-direction: column !important;
+    }
+    .align-items-sm-start{
+        align-items: flex-start !important;
+    }
+} */

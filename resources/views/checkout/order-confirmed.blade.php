@@ -16,7 +16,7 @@
   $shipping = max(($order['total'] ?? 0) - $subtotal + $couponDiscount, 0);
   $paymentLabels = [
     'cod' => 'Cash on Delivery',
-    'card' => 'Credit / Debit Card',
+    'card' => 'Stripe',
     'paypal' => 'Paypal',
   ];
   $paymentMethod = $paymentLabels[$order['payment_method'] ?? 'cod'] ?? ($order['payment_method'] ?? 'Cash on Delivery');

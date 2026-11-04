@@ -29,7 +29,7 @@
                     @if($status)
                         <input type="hidden" name="status" value="{{ $status }}">
                     @endif
-                    <input type="text" name="search" value="{{ $search }}" class="form-control form-control-sm" placeholder="Search product, reviewer, review..." style="min-width:220px;">
+                    <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Search product, reviewer, review..." style="min-width:220px;">
                     <button class="btn btn-sm btn-primary"><i class="fas fa-search"></i></button>
                 </form>
             </div>

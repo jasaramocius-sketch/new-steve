@@ -36,7 +36,7 @@
                     <div class="form-group row">
                         <label class="col-lg-3 col-form-label" for="translation-{{ $loop->index }}">{{ $key }}</label>
                         <div class="col-lg-9">
-                            <textarea id="translation-{{ $loop->index }}" class="form-control" name="translations[{{ $key }}]" rows="2">{{ $value }}</textarea>
+                            <textarea id="translation-{{ $loop->index }}" class="form-control textarea-control" name="translations[{{ $key }}]" rows="2">{{ $value }}</textarea>
                         </div>
                     </div>
                 @empty

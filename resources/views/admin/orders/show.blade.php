@@ -43,8 +43,8 @@
         <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
             <!-- <a href="{{ route('admin.orders.index') }}" class="text-decoration-none text-muted"><i class="fas fa-arrow-left me-1"></i> Back</a> -->
             <h4 class="mb-0 fw-bold">Order #{{ $order->order_number }}</h4>
-            <span class="badge {{ $orderBadge }}">{{ ucfirst($order->status) }}</span>
-            <span class="badge {{ $paymentBadge }}">{{ ucfirst($order->payment_status ?? 'unpaid') }}</span>
+            <span class="badge {{ $orderBadge }}">Order: {{ ucfirst($order->status) }}</span>
+            <span class="badge {{ $paymentBadge }}">Payment: {{ ucfirst($order->payment_status ?? 'unpaid') }}</span>
         </div>
         <small class="text-muted">Placed on {{ $order->created_at->format('M d, Y \a\t h:i A') }}</small>
     </div>
@@ -289,6 +289,10 @@
                 </div>
                 <div class="card-body">
                     <div class="small">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Payment Status</span>
+                            <span class="badge {{ $paymentBadge }}">{{ ucfirst($order->payment_status ?? 'unpaid') }}</span>
+                        </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Method</span>
                             <span class="fw-medium">{{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A')) }}</span>

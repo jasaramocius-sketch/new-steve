@@ -97,7 +97,7 @@
                     @csrf
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-muted small">{{ $contact->reply ? 'Update reply' : 'Write reply' }}</label>
-                        <textarea name="reply" class="form-control" rows="5" placeholder="Type your reply to {{ $contact->name }}...">{{ old('reply', $contact->reply) }}</textarea>
+                        <textarea name="reply" class="form-control textarea-control" rows="5" placeholder="Type your reply to {{ $contact->name }}...">{{ old('reply', $contact->reply) }}</textarea>
                         @error('reply')
                             <div class="text-danger small mt-1">{{ $message }}</div>
                         @enderror

@@ -105,7 +105,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Caption</label>
-                            <textarea name="caption" class="form-control texteditor" rows="3" placeholder="Optional caption">{{ old('caption', $image->caption) }}</textarea>
+                            <textarea name="caption" class="form-control textarea-control texteditor" rows="3" placeholder="Optional caption">{{ old('caption', $image->caption) }}</textarea>
                         </div>
 
                         <button type="submit" class="btn btn-primary steve-btn gap-1">

@@ -35,7 +35,7 @@
                     <label class="form-label">Image</label>
                     <input type="hidden" name="image_from_manager" id="image_from_manager_seller_image">
                     <div id="impPreview_seller_image" class="d-none mt-2"></div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_seller_image()">
+                    <button type="button" class="btn btn-outline-primary" onclick="impOpen_seller_image()">
                         <i class="fas fa-images me-1"></i> Browse Image Manager
                     </button>
                 </div>
@@ -50,7 +50,7 @@
 
                 <div class="col-md-12">
                     <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control texteditor @error('description') is-invalid @enderror" rows="4">{{ old('description') }}</textarea>
+                    <textarea name="description" class="form-control textarea-control texteditor @error('description') is-invalid @enderror" rows="4">{{ old('description') }}</textarea>
                     @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
             </div>

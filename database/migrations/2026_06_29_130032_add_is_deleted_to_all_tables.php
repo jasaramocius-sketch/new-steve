@@ -16,17 +16,17 @@ return new class extends Migration
             'blog_categories',
             'orders',
             'contacts',
-            // baki tables...
+            // Remaining tables...
         ];
 
         foreach ($tables as $tableName) {
 
-            // deleted_at nahi hai to skip
+            // Skip tables without deleted_at.
             if (! Schema::hasColumn($tableName, 'deleted_at')) {
                 continue;
             }
 
-            // is_deleted pehle se hai to skip
+            // Skip tables that already have is_deleted.
             if (Schema::hasColumn($tableName, 'is_deleted')) {
                 continue;
             }

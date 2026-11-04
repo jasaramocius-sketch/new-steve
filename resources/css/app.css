@@ -14,5 +14,5 @@
 .form-select:not([disabled]) { cursor: pointer; }
 
 
-/* 2026-09-16 (Task #296): native <option> list — open dropdown lines bhi pointer (Chrome/FF; Safari native) */
+/* 2026-09-16 (Task #296): show a pointer for open native <option> lists (Chrome/Firefox; Safari uses native UI). */
 option:hover { cursor: pointer; }

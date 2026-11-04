@@ -183,30 +183,30 @@
 
                         <div class="col-md-12">
                             <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control texteditor" rows="4">{{ old('description') }}</textarea>
+                            <textarea name="description" class="form-control textarea-control texteditor" rows="4">{{ old('description') }}</textarea>
                         </div>
                         
                         <div class="col-md-12">
                             <label class="form-label">Policy Text</label>
-                            <textarea name="policy_text" class="form-control texteditor" rows="4">{{ old('policy_text') }}</textarea>
+                            <textarea name="policy_text" class="form-control textarea-control texteditor" rows="4">{{ old('policy_text') }}</textarea>
                         </div>
                         
                         <div class="col-md-12">
                             <label class="form-label">Key Features</label>
-                            <textarea name="features" class="form-control" rows="4" placeholder="Enter one feature per line...">{{ old('features') }}</textarea>
+                            <textarea name="features" class="form-control textarea-control" rows="4" placeholder="Enter one feature per line...">{{ old('features') }}</textarea>
                             @include('admin.partials.key-features-preview', ['initialFeatures' => old('features', '')])
                         </div>
                         
                         <div class="col-md-12">
                             <label class="form-label">Specifications</label>
-                            <textarea name="specifications" class="form-control text-monospace" rows="4" placeholder="One per line, format:  Label :: Value&#10;e.g.&#10;Brand :: Duralast&#10;Material :: Ceramic">{{ old('specifications') }}</textarea>
+                            <textarea name="specifications" class="form-control textarea-control text-monospace" rows="4" placeholder="One per line, format:  Label :: Value&#10;e.g.&#10;Brand :: Duralast&#10;Material :: Ceramic">{{ old('specifications') }}</textarea>
                             <small class="text-muted">Format: <code>Label :: Value</code> on each line (rendered as a specifications table on the product page).</small>
                             @include('admin.partials.specifications-preview', ['initialSpecifications' => old('specifications', '')])
                         </div>
                         
                         <div class="col-md-12">
                             <label class="form-label">Reviews Data (JSON array)</label>
-                            <textarea name="reviews_data" class="form-control text-monospace" rows="4" placeholder='[{"name":"John","rating":5,"text":"Great product!"}]'>{{ old('reviews_data') }}</textarea>
+                            <textarea name="reviews_data" class="form-control textarea-control text-monospace" rows="4" placeholder='[{"name":"John","rating":5,"text":"Great product!"}]'>{{ old('reviews_data') }}</textarea>
                             <small class="text-muted">Format: [{"name":"John","rating":5,"text":"Great product!"}]</small>
                         </div>
                     </div>
@@ -235,7 +235,7 @@
                                 <input type="file" name="gallery_images[]" class="form-control mb-2" multiple accept="image/*">
                                 <input type="hidden" name="gallery_images_from_manager" id="gallery_images_from_manager">
                                 <div id="impPreview_gallery_images" class="d-none my-2"></div>
-                                <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
+                                <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
                                     <i class="fas fa-folder-open me-1"></i> Browse Image Manager
                                 </button>
                                 <small class="text-muted mt-2 d-block">Pick multiple images from Image Manager, or upload files above.</small>

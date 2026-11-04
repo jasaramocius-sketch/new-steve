@@ -9,17 +9,17 @@
 @endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <!-- <div class="ap-page-header mb-3">
-        <nav class="ap-breadcrumb" aria-label="Breadcrumb">
+    <div class="ap-page-header mb-3">
+        <!-- <nav class="ap-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ route('admin.settings.index') }}">Settings</a>
             <span class="sep" aria-hidden="true">/</span>
             <span class="current" aria-current="page">Pickup Points</span>
-        </nav>
+        </nav> -->
         <div class="ap-page-header-row">
-            <h1 class="ap-page-title">Pickup Points</h1>
-            <div class="ap-page-actions"><a href="{{ route('admin.settings.pickup-points.create') }}" class="btn btn-sm btn-info">Add New Pick-up Point</a></div>
+            <!-- <h1 class="ap-page-title">Pickup Points</h1> -->
+            
         </div>
-    </div> -->
+    </div>
 
     <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif -->
@@ -27,12 +27,13 @@
     <div class="card">
         <div class="card-header">
             <form action="{{ route('admin.settings.pickup-points.index') }}" method="GET">
-                <div class="row gutters-5 align-items-end">
-                    <div class="col-auto d-flex flex-row align-items-end gap-2">
-                        <label class="fs-12 text-muted mb-1" for="pickup-search">Name</label>
+                <div class="d-flex flex-wrap gap-3 align-items-end">
+                    <div class="col d-flex d-sm-flex flex-row align-items-center gap-2">
+                        <label class="fs-12 text-muted" for="pickup-search">Name</label>
                         <input id="pickup-search" type="text" class="form-select" name="search" value="{{ $search }}" placeholder="Name, manager or location">
+                    <div class="col"><button type="submit" class="btn btn-sm btn-primary">Filter</button></div>
                     </div>
-                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary">Filter</button></div>
+                    <div class=""><a href="{{ route('admin.settings.pickup-points.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add New Pick-up Point</a></div>
                 </div>
             </form>
         </div>

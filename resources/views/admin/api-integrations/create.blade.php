@@ -65,7 +65,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Description</label>
-                            <textarea name="description" class="form-control" rows="2" placeholder="Optional notes"></textarea>
+                            <textarea name="description" class="form-control textarea-control" rows="2" placeholder="Optional notes"></textarea>
                         </div>
                     </div>
                 </div>

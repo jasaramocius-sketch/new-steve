@@ -62,8 +62,9 @@ class Blog extends Model
     }
 
     /**
-     * Koi scheduled blog jiska publish-time nikal gaya ho usse turant "published"
-     * transition kar deta hai (status + DB dono) — bina cron ke, cheap idempotent UPDATE.
+     * Immediately transition any scheduled blog whose publish time has passed to
+     * "published" (both status and database), without a cron job. This is a cheap,
+     * idempotent UPDATE.
      */
     public static function autoPublishDueScheduled(): void
     {
