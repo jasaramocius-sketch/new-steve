@@ -17,18 +17,16 @@
 
 <div class="Faq-hero">
 <!-- Banner Hero Section -->
-<section class="gs-breadcrumb-section faq-hero-section" style="background-image: url('{{ asset('assets/images/1724480495Imagexxxxxpng.png') }}'); background-size: cover; background-position: center;">
-  <div class="faq-hero-overlay"></div>
-  <div class="container">
-    <div class="content-wrapper">
-      <h2 class="breadcrumb-title faq-hero-title">Frequently asked questions</h2>
-      <ul class="bread-menu">
-        <li><a href="{{ route('home') }}">Home</a></li>
-        <li style="color: var(--primary)">FAQs</li>
-      </ul>
-    </div>
-  </div>
-</section>
+@include('partials.breadcrumb', [
+    'title' => 'Frequently asked questions',
+    'class' => 'faq-hero-section',
+    'titleClass' => 'faq-hero-title',
+    'overlay' => true,
+    'items' => [
+        ['label' => 'Home', 'url' => route('home')],
+        ['label' => 'FAQs'],
+    ],
+])
 </div>
 
 <div class="Faqs-page-container">

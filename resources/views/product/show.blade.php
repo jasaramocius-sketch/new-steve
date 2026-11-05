@@ -880,7 +880,7 @@ document.addEventListener('click', (e) => {
     .then(result => {
       if (result.status === 401) {
         alertEl.className = 'alert alert-danger';
-        alertEl.innerHTML = 'Please <a href="' + window.loginUrl + '">login</a> to write a review.';
+        alertEl.innerHTML = 'Please <a href="{{ route('login') }}">login</a> to write a review.';
         alertEl.classList.remove('d-none');
         submitReviewBtn.disabled = false;
         submitReviewBtn.textContent = 'Submit Review';

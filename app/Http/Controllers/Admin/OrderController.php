@@ -59,6 +59,35 @@ class OrderController extends Controller
 
         $order = Order::with('items.product')->findOrFail($id);
         $oldStatus = $order->status;
+        $requestedStatus = $validatedData['status'] ?? null;
+        $statusRanks = ['pending' => 0, 'processing' => 1, 'shipped' => 2, 'delivered' => 3];
+
+        if ($requestedStatus !== null && $requestedStatus !== $oldStatus) {
+            $isReopeningCancelledOrder = $oldStatus === 'cancelled';
+            $isMovingStatusBackward = isset($statusRanks[$oldStatus], $statusRanks[$requestedStatus])
+                && $statusRanks[$requestedStatus] < $statusRanks[$oldStatus];
+
+            if ($isReopeningCancelledOrder || $isMovingStatusBackward) {
+                return back()
+                    ->withErrors(['status' => 'Order status cannot be moved backward or changed after cancellation.'])
+                    ->withInput();
+            }
+        }
+
+        $requestedPaymentStatus = $validatedData['payment_status'] ?? null;
+        $oldPaymentStatus = $order->payment_status ?? 'unpaid';
+        $paymentStatusRanks = ['unpaid' => 0, 'paid' => 1, 'refunded' => 2];
+
+        if (
+            $requestedPaymentStatus !== null
+            && $requestedPaymentStatus !== $oldPaymentStatus
+            && isset($paymentStatusRanks[$oldPaymentStatus], $paymentStatusRanks[$requestedPaymentStatus])
+            && $paymentStatusRanks[$requestedPaymentStatus] < $paymentStatusRanks[$oldPaymentStatus]
+        ) {
+            return back()
+                ->withErrors(['payment_status' => 'Payment status cannot be moved backward.'])
+                ->withInput();
+        }
 
         $newPaymentStatus = $request->has('payment_status') && $request->filled('payment_status')
             ? $request->payment_status

@@ -11,11 +11,18 @@
 @section('content')
 
 @php
-    $selectedShippingMethod = old('shipping_method', session('shipping_info.method', 'free'));
-    if ($selectedShippingMethod === 'pickup' && ! $pickupEnabled) {
-        $selectedShippingMethod = 'free';
+    $defaultShippingMethod = $homeDeliveryAvailable ? 'home_delivery' : 'pickup';
+    $selectedShippingMethod = old('shipping_method', session('shipping_info.method', $defaultShippingMethod));
+    if (! in_array($selectedShippingMethod, ['home_delivery', 'pickup'], true)) {
+        $selectedShippingMethod = $defaultShippingMethod;
+    }
+    if ($selectedShippingMethod === 'home_delivery' && ! $homeDeliveryAvailable && $pickupEnabled) {
+        $selectedShippingMethod = 'pickup';
+    } elseif ($selectedShippingMethod === 'pickup' && ! $pickupEnabled && $homeDeliveryAvailable) {
+        $selectedShippingMethod = 'home_delivery';
     }
     $selectedPickupPointId = (string) old('pickup_point_id', session('shipping_info.pickup_point_id', ''));
+    $selectedShippingRateId = (string) old('shipping_rate_id', session('shipping_info.rate_id', $shippingRates->first()?->id ?? ''));
 @endphp
 
 @include('partials.checkout-steps', ['activeStep' => 3])
@@ -76,17 +83,45 @@
                   </div>
                   <div class="col-md-6">
                     <div class="row gutters-5 justify-content-end">
-                      <div class="col-6">
+                      @if($homeDeliveryAvailable)
+                      <div class="{{ $pickupEnabled ? 'col-6' : 'col-12' }}">
                         <label class="aiz-megabox d-block bg-white mb-0">
-                          <input type="radio" name="shipping_method" value="free" @checked($selectedShippingMethod === 'free') class="d-none">
+                          <input type="radio" name="shipping_method" value="home_delivery" @checked($selectedShippingMethod === 'home_delivery') class="d-none">
                           <span class="d-flex aiz-megabox-elem rounded-0" style="padding: 0.75rem 1.2rem;">
                             <span class="aiz-rounded-check flex-shrink-0 mt-1"></span>
                             <span class="flex-grow-1 pl-3 fw-600">Home Delivery</span>
                           </span>
                         </label>
+                        @if($shippingType === 'carrier_wise_shipping')
+                        <div class="mt-3 home-delivery-rates" id="home-delivery-rates" @unless($selectedShippingMethod === 'home_delivery') hidden @endunless>
+                          @foreach($shippingRates as $rate)
+                          <label class="d-flex align-items-start border p-3 mb-2">
+                            <input type="radio" name="shipping_rate_id" value="{{ $rate->id }}" class="mt-1 mr-2" @checked($selectedShippingRateId === (string) $rate->id)>
+                            <span class="flex-grow-1">
+                              <strong>{{ $rate->carrier->name }}</strong>
+                              @if($rate->carrier->delivery_estimate)<span class="text-muted"> · {{ $rate->carrier->delivery_estimate }}</span>@endif
+                            </span>
+                            <strong>{{ currency_format($rate->fee) }}</strong>
+                          </label>
+                          @endforeach
+                          @error('shipping_rate_id') <div class="text-danger fs-12 mt-1">{{ $message }}</div> @enderror
+                        </div>
+                        @else
+                        <div class="mt-3 home-delivery-rates" id="home-delivery-rates" @unless($selectedShippingMethod === 'home_delivery') hidden @endunless>
+                          <div class="d-flex align-items-start border p-3 mb-2">
+                            <span class="flex-grow-1">
+                              <strong>{{ $standardShipping['carrier_name'] ?? 'Standard Shipping' }}</strong>
+                            </span>
+                            <strong>{{ currency_format($standardShipping['cost'] ?? 0) }}</strong>
+                          </div>
+                        </div>
+                        @endif
                       </div>
+                      @elseif($homeDeliveryEnabled)
+                        <div class="col-12 text-muted">No home-delivery rate is available for {{ $billing['city'] ?? '' }}, {{ $billing['state'] ?? '' }}, {{ $billing['country'] ?? '' }}. Please choose pickup or contact the store.</div>
+                      @endif
                       @if($pickupEnabled)
-                      <div class="col-6">
+                      <div class="{{ $homeDeliveryAvailable ? 'col-6' : 'col-12' }}">
                         <label class="aiz-megabox d-block bg-white mb-0">
                           <input type="radio" name="shipping_method" value="pickup" @checked($selectedShippingMethod === 'pickup') class="d-none">
                           <span class="d-flex aiz-megabox-elem rounded-0" style="padding: 0.75rem 1.2rem;">
@@ -135,20 +170,28 @@
 const pickupMethodInputs = document.querySelectorAll('input[name="shipping_method"]');
 const pickupPointSelection = document.getElementById('pickup-point-selection');
 const pickupPointSelect = document.getElementById('pickup-point-id');
+const homeDeliveryRates = document.getElementById('home-delivery-rates');
+const shippingRateInputs = document.querySelectorAll('input[name="shipping_rate_id"]');
 
-function updatePickupPointVisibility() {
-  if (!pickupPointSelection || !pickupPointSelect) return;
-  const pickupSelected = document.querySelector('input[name="shipping_method"]:checked')?.value === 'pickup';
-  pickupPointSelection.hidden = !pickupSelected;
-  pickupPointSelect.required = pickupSelected;
-  if (!pickupSelected && pickupPointSelect.value !== '') {
+function updateShippingOptionVisibility() {
+  const selectedMethod = document.querySelector('input[name="shipping_method"]:checked')?.value;
+  const pickupSelected = selectedMethod === 'pickup';
+  const homeDeliverySelected = selectedMethod === 'home_delivery';
+  if (pickupPointSelection && pickupPointSelect) {
+    pickupPointSelection.hidden = !pickupSelected;
+    pickupPointSelect.required = pickupSelected;
+  }
+  if (homeDeliveryRates) {
+    homeDeliveryRates.hidden = !homeDeliverySelected;
+    shippingRateInputs.forEach((input) => { input.required = homeDeliverySelected; });
+  }
+  if (!pickupSelected && pickupPointSelect && pickupPointSelect.value !== '') {
     pickupPointSelect.value = '';
-    // Keep the optional searchable-select widget (if attached) in sync.
     pickupPointSelect.dispatchEvent(new Event('change', { bubbles: true }));
   }
 }
 
-pickupMethodInputs.forEach((input) => input.addEventListener('change', updatePickupPointVisibility));
-updatePickupPointVisibility();
+pickupMethodInputs.forEach((input) => input.addEventListener('change', updateShippingOptionVisibility));
+updateShippingOptionVisibility();
 </script>
 @endsection

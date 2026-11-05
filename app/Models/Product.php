@@ -18,6 +18,7 @@ class Product extends Model
     protected $fillable = [
         'brand_id',
         'category_id',
+        'seller_id',
         'part_number',
         'slug',
         'name',
@@ -31,6 +32,7 @@ class Product extends Model
         'gtin_upc',
         'hazmat',
         'cost',
+        'shipping_cost',
         'commission',
         'core_price',
         'super_stock',
@@ -51,6 +53,7 @@ class Product extends Model
         'specs_json' => 'array',
         'images_json' => 'array',
         'cost' => 'decimal:2',
+        'shipping_cost' => 'decimal:2',
         'commission' => 'decimal:2',
         'core_price' => 'decimal:2',
     ];

@@ -323,6 +323,7 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
+            'shipping_cost' => 'nullable|numeric|min:0|max:99999999.99',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
@@ -340,7 +341,7 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
+        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
@@ -415,6 +416,7 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
+            'shipping_cost' => 'nullable|numeric|min:0|max:99999999.99',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
@@ -432,7 +434,7 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
+        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(

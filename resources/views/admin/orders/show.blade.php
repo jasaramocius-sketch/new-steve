@@ -21,6 +21,11 @@
     $paymentDetails = is_array($order->payment_details) ? $order->payment_details : json_decode($order->payment_details, true);
     $paymentDetails = is_array($paymentDetails) ? $paymentDetails : [];
     $transactionId = $paymentDetails['transaction_id'] ?? '';
+    $orderStatusRanks = ['pending' => 0, 'processing' => 1, 'shipped' => 2, 'delivered' => 3];
+    $currentOrderStatusRank = $orderStatusRanks[$order->status] ?? null;
+    $paymentStatusRanks = ['unpaid' => 0, 'paid' => 1, 'refunded' => 2];
+    $currentPaymentStatus = $order->payment_status ?? 'unpaid';
+    $currentPaymentStatusRank = $paymentStatusRanks[$currentPaymentStatus] ?? 0;
 
     $orderBadge = match($order->status) {
         'pending'    => 'bg-light text-warning border border-warning-subtle',
@@ -162,21 +167,26 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Order Status</label>
-                            <select name="status" class="form-select">
-                                <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Processing</option>
-                                <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                                <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                            <select name="status" class="form-select @error('status') is-invalid @enderror">
+                                @foreach(['pending' => 'Pending', 'processing' => 'Processing', 'shipped' => 'Shipped', 'delivered' => 'Delivered'] as $statusValue => $statusLabel)
+                                    <option value="{{ $statusValue }}" {{ $order->status === $statusValue ? 'selected' : '' }} {{ $order->status === 'cancelled' || ($currentOrderStatusRank !== null && $orderStatusRanks[$statusValue] < $currentOrderStatusRank) ? 'disabled' : '' }}>{{ $statusLabel }}</option>
+                                @endforeach
                                 <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                             </select>
+                            @error('status')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Payment Status</label>
-                            <select name="payment_status" class="form-select">
-                                <option value="unpaid" {{ ($order->payment_status ?? 'unpaid') === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
-                                <option value="paid" {{ ($order->payment_status ?? '') === 'paid' ? 'selected' : '' }}>Paid</option>
-                                <option value="refunded" {{ ($order->payment_status ?? '') === 'refunded' ? 'selected' : '' }}>Refunded</option>
+                            <select name="payment_status" class="form-select @error('payment_status') is-invalid @enderror">
+                                @foreach(['unpaid' => 'Unpaid', 'paid' => 'Paid', 'refunded' => 'Refunded'] as $paymentStatusValue => $paymentStatusLabel)
+                                    <option value="{{ $paymentStatusValue }}" {{ $currentPaymentStatus === $paymentStatusValue ? 'selected' : '' }} {{ $paymentStatusRanks[$paymentStatusValue] < $currentPaymentStatusRank ? 'disabled' : '' }}>{{ $paymentStatusLabel }}</option>
+                                @endforeach
                             </select>
+                            @error('payment_status')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-12" id="transactionIdGroup">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Transaction ID</label>

@@ -5078,3 +5078,95 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - `resources/views/layouts/app.blade.php` — dropdown links `url()` se render
 
 **Verification:** Migration ke baad `search_category_menu` URLs `/category/...`; `normalizeAppUrlPath()` legacy `/new-steve/new-steve/...` ko `/category/...` banata hai; `url()` live host ke saath full URL deta hai; `php -l` + `php artisan view:cache` passed.
+
+## 358. (2026-11-04): User Login URL Changed to `/users/login`
+
+**Change:** Public login GET/POST routes ab `/users/login` use karte hain. Existing `login` and `login.submit` route names preserve kiye, so internal links and authentication redirects use the new path. `/login` ka redirect route add nahi kiya. Logout and the product-review login link were updated to use the named route.
+
+**Files changed:**
+- `routes/web.php` — moved the public login GET/POST routes to `/users/login`; updated the legacy `/use/login` redirect target
+- `app/Http/Controllers/AuthController.php` — logout now redirects through the named login route
+- `resources/views/product/show.blade.php` — review authorization message links through the named login route
+
+**Verification:** `route:list` shows GET/POST `users/login` and no `/login` route; `route('login')` generates `/new-steve/users/login`; PHP syntax checks and `git diff --check` passed.
+
+## 359. (2026-11-04): Pickup Points Select/Filter Form Fix
+
+**Problem:** Admin → Pickup Points page ke "Name" search input par galti se `form-select` class lagi thi, is liye text input select/dropdown jaisa arrow ke saath render ho raha tha. Checkout delivery-info page par pickup-point select validation error ke baad reset ho jata tha aur selected pickup point retain nahi hota tha.
+
+**Fix:**
+- Admin pickup points filter input: `form-select` → `form-control`.
+- Checkout pickup select: `form-control` → `form-select` (baaki selects ke saath consistent; 10+ pickup points par searchable-select widget auto-enable hota hai).
+- `shipping_method` aur `pickup_point_id` ab `old()` / session se restore hote hain, is liye validation error ya back navigation ke baad bhi selection bani rehti hai.
+- Pickup point validation error form par inline show hota hai.
+- Home Delivery par switch karne par select clear hota hai aur searchable-select widget bhi sync hota hai.
+- Initial hidden state selected delivery method ke hisaab se set hota hai.
+
+**Files changed:**
+- `resources/views/admin/settings/pickup-points/index.blade.php` — filter input class fix
+- `resources/views/checkout/delivery-info.blade.php` — pickup select class, old-value retention, inline error, JS sync
+
+**Verification:** Dono Blade views ke compile checks passed. Note: DB me abhi 0 pickup points hain, is liye checkout par "Pickup point" option tab tak nahi dikhega jab tak Admin → Settings → Pickup Points se kam se kam ek **Open** point add na ho.
+
+## 360. (2026-11-05): Shipping Location Pages — Countries, States, Cities + Area-Wise Cost Integration
+
+**Problem:** Admin shipping had Configuration, Zones and Carriers pages but was missing Shipping Countries, Shipping States and Shipping Cities pages (referenced autoparts setup). Also `countries`/`states`/`cities` tables had no `status` column and `cities` had no `cost` column, so area-wise shipping couldn't use city cost as reference does.
+
+**Solution:** Added full CRUD for shipping countries/states/cities under Settings sidebar, wired status/cost into area-wise shipping, and kept existing checkout behavior unchanged (default method still `carrier_wise_shipping`).
+
+### Database
+- `database/migrations/2026_11_05_000003_add_status_and_cost_to_shipping_locations.php` — `status` (boolean default true) on `countries`/`states`/`cities`; `cost` (decimal 12,2) on `cities`. Migrated via `php artisan migrate --force`.
+
+### Models
+- `app/Models/Country.php` — `status` fillable/cast + `scopeActive()`
+- `app/Models/State.php` — `status` fillable/cast + `scopeActive()`
+- `app/Models/City.php` — `status`, `cost` fillable/cast + `scopeActive()` + `country()` relation
+
+### Backend
+- `app/Http/Controllers/Admin/ShippingLocationController.php` (NEW) — countries list+status toggle; states list/filter/create/edit/update/delete/status toggle (blocks delete if cities exist); cities list/filter/create/edit/update/delete/status toggle with cost field.
+- `routes/web.php` — 13 routes: `admin.settings.shipping-countries.index/status`, `shipping-states.*`, `shipping-cities.*` under admin group.
+- `app/Http/Controllers/LocationController.php` — states/cities AJAX now only return active records; cache keys versioned (`address_states_v2_*`, `address_cities_v2_*`).
+- `app/Helpers/AddressHelper.php` — `countries()` reads active countries from DB with `Cache::rememberForever('address_countries_v2')`, hardcoded fallback retained.
+- `app/Services/ShippingChargeService.php` — area-wise now matches active city (status=true, cost not null, city/state/country match) → uses `city.cost`; falls back to matching shipping zone `cost` if no city. Tests via tinker confirmed: city cost 55 applied, city null/inactive → zone cost fallback.
+- `resources/views/admin/settings/shipping/configuration.blade.php` — area-wise note updated to point to Shipping Cities (with zone fallback); quick links now include Countries/States/Cities.
+
+### Views (NEW)
+- `resources/views/admin/settings/shipping/countries/index.blade.php` — search/filter by name/status, status toggle button (Visible/Hidden).
+- `resources/views/admin/settings/shipping/states/index.blade.php` — search/filter by name/country/status, inline Add New State form, status toggle, edit/delete action buttons (`.action-btn` circular SVG style), delete blocked when cities exist.
+- `resources/views/admin/settings/shipping/states/edit.blade.php` — edit state name/country/status.
+- `resources/views/admin/settings/shipping/cities/index.blade.php` — search/filter by name/country/state/status, area-cost column, inline Add New City form with cost input.
+- `resources/views/admin/settings/shipping/cities/edit.blade.php` — edit city name/state/cost/status.
+
+### Sidebar
+- `resources/views/admin/partials/sidebar.blade.php` — replaced disabled Shipping block with active links: Shipping Configuration, Shipping Countries, Shipping States, Shipping Cities, Shipping Zones, Shipping Carriers.
+
+**Verification:** All new/changed PHP files pass `php -l`; migration ran OK; `php artisan view:clear && view:cache` OK; all routes registered (`route:list`); tinker verified area-wise quote returns city cost when set and zone cost when city missing/inactive.
+
+## 361. (2026-11-05): Admin Sidebar Design Fix
+
+**Problem:** Admin sidebar submenus looked plain — no icons on submenu items, parent submenus didn't auto-expand when a child was active, and collapsed sidebar (72px) showed no hover tooltips, making navigation unclear.
+
+**Solution:** Polished the admin sidebar with submenu styling, auto-expand on active child, and collapsed-state hover tooltips.
+
+### Files changed
+- `resources/views/admin/partials/sidebar.blade.php`:
+  - Added icons to all submenu items (`nav-item-sub` with `fas` icons): Products (All Products, Bulk Import/Export, Categories, Brands, Stock Management, Commission, Product Reviews), Shipping (Configuration, Countries, States, Cities, Zones, Carriers).
+  - Parent submenu now auto-expands (`expanded`/`show`) when any child route is active, not just when parent route matches.
+  - Products parent now also active for `admin.reviews.*`.
+  - JS: wraps nav labels in `.nav-label` spans and auto-sets `data-bs-original-title` from visible label text for hover tooltips.
+- `public/assets/front/css/backend.css`:
+  - `.nav-item-sub` styles: padding, gap, font-size, hover/active states, left border accent.
+  - `.submenu-arrow` rotate animation on expand.
+  - Section separator borders between nav sections.
+  - Collapsed state: hides submenu items, centers parent nav items, shows hover tooltip via `::after` using `data-bs-original-title`.
+
+### Verification
+- `php -l` clean on sidebar Blade file.
+- `php artisan view:cache` compiled successfully.
+- Sidebar renders with icons, active states, and collapsed tooltip hover.
+
+## 351. (2026-11-05): Admin Sidebar Layout Fix
+
+- Fixed content margin to match sidebar width (280px).
+- Set nav-wrap direction to LTR.
+- Added submenu arrow and moved it to far right.

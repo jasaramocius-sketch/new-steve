@@ -29,6 +29,7 @@
 /* Product cards slider - match Slick design */
 .product-cards-slider .swiper-wrapper {
   display: flex;
+  /* padding: 10px 10px; */
 }
 
 .product-cards-slider .swiper-slide {
@@ -70,6 +71,7 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
+  /* box-shadow: #00000024 0px 0px 8px 5px; */
 }
 
 

@@ -16,20 +16,14 @@
 @section('content')
 
 <!-- Breadcrumb -->
-<section class="gs-breadcrumb-section" style="background-image: url('{{ asset('assets/images/1724480495Imagexxxxxpng.png') }}'); background-size: cover; background-position: center;">
-  <div class="container">
-    <div class="row justify-content-center content-wrapper">
-      <div class="col-12">
-        <h2 class="breadcrumb-title">Blog Details</h2>
-        <ul class="bread-menu">
-          <li><a href="{{ route('home') }}">Home</a></li>
-          <li><a href="{{ route('blog') }}">Blog</a></li>
-          <li style="color: var(--primary)">{{ Str::limit($blog->title, 40) }}</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
+@include('partials.breadcrumb', [
+    'title' => 'Blog Details',
+    'items' => [
+        ['label' => 'Home', 'url' => route('home')],
+        ['label' => 'Blog', 'url' => route('blog')],
+        ['label' => Str::limit($blog->title, 40)],
+    ],
+])
 
 <!-- Blog Wrapper -->
 <div class="gs-blog-wrapper">

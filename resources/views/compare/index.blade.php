@@ -13,17 +13,13 @@
 
 
     <!-- Banner Hero Section -->
-<section class="gs-breadcrumb-section" style="background-image: url('{{ asset('assets/images/1724480495Imagexxxxxpng.png') }}'); background-size: cover; background-position: center;">
-  <div class="container">
-    <div class="content-wrapper">
-      <h2 class="breadcrumb-title">Compare Products</h2>
-      <ul class="bread-menu">
-        <li><a href="{{ route('home') }}">Home</a></li>
-        <li style="color: var(--primary)">Compare Products</li>
-      </ul>
-    </div>
-  </div>
-</section>
+@include('partials.breadcrumb', [
+    'title' => 'Compare Products',
+    'items' => [
+        ['label' => 'Home', 'url' => route('home')],
+        ['label' => 'Compare Products'],
+    ],
+])
 <div class="container pt-5 pb-5 compare-page-products">
 
     <div class="d-flex justify-content-between align-items-center mb-4">

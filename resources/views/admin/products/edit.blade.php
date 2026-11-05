@@ -73,6 +73,12 @@
                         </div>
 
                         <div class="col-md-3">
+                            <label class="form-label">Shipping Cost</label>
+                            <input type="number" step="0.01" min="0" name="shipping_cost" class="form-control" value="{{ old('shipping_cost', $product->shipping_cost ?? 0) }}">
+                            <small class="text-muted">Used with Product Wise Shipping.</small>
+                        </div>
+
+                        <div class="col-md-3">
                             <label class="form-label">Commission (%)</label>
                             <input type="number" step="0.01" min="0" max="100" name="commission" class="form-control no-spinner @error('commission') is-invalid @enderror" value="{{ old('commission', $product->commission) }}" placeholder="Global ({{ number_format(globalCommissionPercent(), 2) }}%)">
                             @error('commission') <div class="invalid-feedback">{{ $message }}</div> @enderror
