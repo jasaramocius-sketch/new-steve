@@ -66,7 +66,17 @@
                 <a href="{{ route('password.request') }}" class="a-tag-text-hover">Forgot Password?</a>
               </div>
             </div>
-            
+
+            <div class="form-check mt-2">
+              <input class="form-check-input @error('terms') is-invalid @enderror" type="checkbox" name="terms" value="1" id="login_terms" {{ old('terms') ? 'checked' : '' }} required>
+              <label class="form-check-label" for="login_terms">
+                I agree to the <a href="{{ route('privacy.policy') }}" class="a-tag-text-hover" target="_blank">Privacy Policy</a> and <a href="{{ route('terms.conditions') }}" class="a-tag-text-hover" target="_blank">Terms &amp; Conditions</a>
+              </label>
+              @error('terms')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+              @enderror
+            </div>
+
             <button type="submit" class="template-btn btn-forms steve-btn button-hover mt-3">Sign In</button>
             <!-- <p class="text-center login-or">Or</p> -->
             <hr></hr>

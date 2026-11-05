@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\NotificationHelper;
 use App\Mail\WelcomeMail;
 use App\Models\Compare;
+use App\Models\Subscriber;
 use App\Models\User;
 use App\Models\Wishlist;
 use Illuminate\Http\Request;
@@ -87,6 +88,12 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
+        $request->validate([
+            'terms' => 'accepted',
+        ], [
+            'terms.accepted' => 'Please agree to the Privacy Policy and Terms & Conditions to sign in.',
+        ]);
+
         $credentials = $request->only('email', 'password');
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
@@ -119,6 +126,9 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
+            'terms' => 'accepted',
+        ], [
+            'terms.accepted' => 'Please agree to the Privacy Policy and Terms & Conditions to create an account.',
         ]);
 
         $user = User::create([
@@ -127,6 +137,10 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role' => 'customer',
         ]);
+
+        if ($request->boolean('subscribe')) {
+            Subscriber::firstOrCreate(['email' => strtolower(trim($user->email))]);
+        }
 
         Auth::login($user);
 

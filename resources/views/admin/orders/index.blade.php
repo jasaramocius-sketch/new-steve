@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 {{-- Add your custom page ID and classes right here --}}
 @include('partials.page-attributes', ['pageId' => 'admin-orders-index-page', 'pageClass' => 'admin-orders-index-page'])
-@section('page-title', 'Orders')
+@section('page-title', 'All Orders')
 @section('meta_tags')
     @include('partials.meta-tags', [
         'pageTitle' => 'Orders - Admin Panel',
@@ -12,7 +12,7 @@
 @section('content')
 
  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="fw-bold mb-0">All Orders</h4>
+    <div class=""></div>
     <a href="{{ route('admin.orders.export-csv', request()->query()) }}" class="btn btn-primary steve-btn">
         <i class="fas fa-file-csv me-1"></i> Export CSV
     </a>

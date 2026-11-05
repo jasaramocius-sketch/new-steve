@@ -12,6 +12,7 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\Revision;
 use App\Models\Setting;
+use App\Models\TaxType;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -224,7 +225,9 @@ class AdminController extends Controller
     public function customSettings()
     {
         $settings = Setting::getAllAsArray();
-        return view('admin.settings.custom', compact('settings'));
+        $taxTypes = TaxType::orderBy('name')->get();
+
+        return view('admin.settings.custom', compact('settings', 'taxTypes'));
     }
 
     public function orderSettings()
@@ -288,13 +291,13 @@ class AdminController extends Controller
                 'title' => 'Shipping',
                 'icon' => 'fas fa-truck',
                 'items' => [
-                    ['name' => 'Shipping Configuration', 'description' => 'Shipping methods and costs', 'icon' => 'fas fa-truck-loading', 'route' => 'admin.api-integrations.index'],
+                    ['name' => 'Shipping Configuration', 'description' => 'Enable or disable home delivery', 'icon' => 'fas fa-truck-loading', 'route' => 'admin.settings.shipping'],
                     ['name' => 'Pickup point', 'description' => 'Collection locations', 'icon' => 'fas fa-store', 'route' => 'admin.settings.pickup-points.index'],
                     ['name' => 'Shipping Countries', 'description' => 'Countries you ship to', 'icon' => 'fas fa-flag'],
                     ['name' => 'Shipping States', 'description' => 'States within countries', 'icon' => 'fas fa-map'],
                     ['name' => 'Shipping Cities', 'description' => 'Cities within states', 'icon' => 'fas fa-city'],
-                    ['name' => 'Shipping Zones', 'description' => 'Zone-based shipping', 'icon' => 'fas fa-map-marked'],
-                    ['name' => 'Shipping Carrier', 'description' => 'Carriers and transit times', 'icon' => 'fas fa-shipping-fast', 'route' => 'admin.api-integrations.index'],
+                    ['name' => 'Shipping Zones', 'description' => 'Destinations and delivery rates', 'icon' => 'fas fa-map-marked', 'route' => 'admin.settings.shipping-zones.index'],
+                    ['name' => 'Shipping Carrier', 'description' => 'Carriers and transit times', 'icon' => 'fas fa-shipping-fast', 'route' => 'admin.settings.shipping-carriers.index'],
                 ],
             ],
             [
@@ -432,13 +435,14 @@ class AdminController extends Controller
 
     public function updateCustomSettings(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'tax_rate' => 'required|numeric|min:0|max:100',
+            'custom_value' => 'nullable|string|max:255',
         ]);
-        foreach ($request->except('_token') as $key => $value) {
-            Setting::updateOrCreate(['key' => $key], ['value' => $value]);
-        }
-        return redirect()->route('admin.settings.custom')->with('success', 'Custom settings updated.');
+        Setting::set('tax_rate', (string) $validated['tax_rate']);
+        Setting::set('custom_value', (string) ($validated['custom_value'] ?? ''));
+
+        return redirect()->route('admin.settings.custom')->with('success', 'Tax rate and custom value updated.');
     }
 
     public function headerSettings()
@@ -934,7 +938,9 @@ class AdminController extends Controller
 
         Setting::set('webp_frontend', $request->boolean('webp_frontend') ? '1' : '0');
 
-        return redirect()->route('admin.settings.header')->with('success', 'Header settings updated successfully.');
+        return redirect()->route('admin.settings.header')
+            ->with('success', 'Header settings updated successfully.')
+            ->with('settings_tab', 'header');
     }
 
     public function commissionSettings()
@@ -972,7 +978,9 @@ class AdminController extends Controller
         $data = json_decode((string) $request->input('footer_columns', '[]'), true);
 
         if (! is_array($data)) {
-            return back()->with('error', 'Invalid footer columns data.');
+            return back()
+                ->with('error', 'Invalid footer columns data.')
+                ->with('settings_tab', 'footer');
         }
 
         $allowedTypes = ['links', 'newsletter', 'contact'];
@@ -1019,7 +1027,9 @@ class AdminController extends Controller
 
         Setting::set('footer_columns', json_encode($columns));
 
-        return redirect()->route('admin.settings.header')->with('success', 'Footer settings updated successfully.');
+        return redirect()->route('admin.settings.header')
+            ->with('success', 'Footer settings updated successfully.')
+            ->with('settings_tab', 'footer');
     }
 
     public function searchCategorySettings()

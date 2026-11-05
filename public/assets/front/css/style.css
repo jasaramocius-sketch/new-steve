@@ -459,7 +459,13 @@ p.text-lg {
 .w-40 {
   width: 40% !important;
 }
+.w-60px {
+  width: 60px;
+}
 
+.w-40px {
+  width: 40px;
+}
 #toast-container>.toast-success {
   background-color: #28a745;
 }
@@ -3056,6 +3062,245 @@ p.text-lg {
   }
 } */
 
+/* Keep the admin sidebar theme after the shared site styles above. */
+body .admin-sidebar {
+  /* background: linear-gradient(180deg, #14283b 0%, #101e2d 100%); */
+  border-right: 1px solid rgba(255, 255, 255, .06);
+  box-shadow: 8px 0 28px rgba(15, 30, 45, .12);
+}
+
+body .admin-sidebar .brand {
+  min-height: 76px;
+  padding: 14px 18px;
+  border-bottom-color: rgba(255, 255, 255, .1);
+}
+
+body .admin-sidebar .brand a {
+  align-items: center !important;
+  color: #f7fbff;
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-decoration: none;
+}
+
+body .admin-sidebar .brand a img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex: 0 0 40px;
+  border-radius: 9px;
+}
+
+body .admin-sidebar .nav-wrap {
+  padding: 12px 12px 32px;
+  scrollbar-color: rgba(148, 173, 194, .35) transparent;
+}
+
+body .admin-sidebar .nav-wrap::-webkit-scrollbar {
+  width: 5px;
+}
+
+body .admin-sidebar .nav-wrap::-webkit-scrollbar-thumb {
+  background: rgba(148, 173, 194, .35);
+  border-radius: 8px;
+}
+
+body .admin-sidebar .nav-section {
+  margin: 18px 0 6px;
+  padding: 10px 12px 6px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  color: #8fa7bc;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+
+body .admin-sidebar .nav-section:first-child {
+  margin-top: 2px;
+  border-top: 0;
+}
+
+body .admin-sidebar .nav-item {
+  min-height: 42px;
+  margin: 2px 0;
+  padding: 10px 12px;
+  gap: 12px;
+  border: 0;
+  /* border-radius: 8px; */
+  color: #c1ced9;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  transition: background-color .18s ease, color .18s ease;
+}
+
+body .admin-sidebar .nav-item i:not(.submenu-arrow) {
+  width: 20px;
+  flex: 0 0 20px;
+  color: #fff;
+  font-size: 15px;
+  transition: color .18s ease;
+}
+
+body .admin-sidebar .nav-item:hover,
+body .admin-sidebar .nav-item:focus-visible {
+  background: rgba(255, 255, 255, .07);
+  color: #fff;
+  outline: none;
+}
+
+body .admin-sidebar .nav-item:hover i:not(.submenu-arrow),
+body .admin-sidebar .nav-item:focus-visible i:not(.submenu-arrow) {
+  color: #7ed6c2;
+}
+
+body .admin-sidebar .nav-item.active {
+  background: linear-gradient(90deg, rgba(42, 171, 146, .24), rgba(42, 171, 146, .1));
+  box-shadow: inset 3px 0 #48c6a9;
+  color: #fff;
+  font-weight: 650;
+}
+
+body .admin-sidebar .nav-item.active i:not(.submenu-arrow) {
+  color: var(--primary);
+}
+
+body .admin-sidebar .submenu-arrow {
+  color: #8fa7bc;
+  font-size: 10px;
+}
+
+body .admin-sidebar .sidebar-link.expanded .submenu-arrow {
+  color: #72ddc1;
+}
+
+body .admin-sidebar .admin-sidebar-drop > li {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+body .admin-sidebar .admin-sidebar-drop .submenu {
+  margin: 4px 0 8px 16px;
+  padding: 4px 0 4px 10px;
+  border-left: 1px solid rgba(143, 167, 188, .25);
+}
+
+body .admin-sidebar .admin-sidebar-drop .submenu li {
+  display: block;
+  margin: 1px 0;
+  padding: 0;
+  list-style: none;
+}
+
+body .admin-sidebar .admin-sidebar-drop .submenu li::before {
+  content: none !important;
+}
+
+body .admin-sidebar .admin-sidebar-drop .submenu li > a {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  margin: 1px 0;
+  padding: 7px 9px;
+  gap: 9px;
+  border: 0;
+  /* border-radius: 6px; */
+  color: #aebdcc !important;
+  font-size: 12px;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: background-color .18s ease, color .18s ease;
+}
+
+body .admin-sidebar .admin-sidebar-drop .submenu li > a i {
+  width: 16px;
+  flex: 0 0 16px;
+  color: #839caf;
+  font-size: 12px;
+  text-align: center;
+}
+
+body .admin-sidebar .admin-sidebar-drop .submenu li > a:hover,
+body .admin-sidebar .admin-sidebar-drop .submenu li > a:focus-visible {
+  background: rgba(255, 255, 255, .06);
+  color: #fff !important;
+  outline: none;
+}
+
+body .admin-sidebar .admin-sidebar-drop .submenu li > a.active {
+  background: rgba(72, 198, 169, .14);
+  box-shadow: inset 2px 0 #48c6a9;
+  color: #a8f0dd !important;
+  font-weight: 600;
+}
+
+body .admin-sidebar .admin-sidebar-drop .submenu li > a.active i {
+  color: #72ddc1;
+}
+
+body .admin-sidebar .shipping-settings-submenu > .sidebar-link.active {
+  background: rgba(255, 255, 255, .06);
+  box-shadow: none;
+}
+
+@media (min-width: 768px) {
+  body .admin-sidebar.icon-collapsed {
+    box-shadow: 5px 0 20px rgba(15, 30, 45, .16);
+  }
+
+  body .admin-sidebar.icon-collapsed .brand {
+    justify-content: center;
+    padding: 14px 8px;
+  }
+
+  body .admin-sidebar.icon-collapsed .brand a {
+    flex: 0 0 40px;
+  }
+
+  body .admin-sidebar.icon-collapsed .brand .nav-label,
+  body .admin-sidebar.icon-collapsed .nav-section-text {
+    display: none;
+  }
+
+  body .admin-sidebar.icon-collapsed .nav-item {
+    width: 48px;
+    min-height: 44px;
+    margin: 3px auto;
+    padding: 10px 12px;
+  }
+
+  body .admin-sidebar.icon-collapsed .nav-item.active {
+    box-shadow: unset;
+    padding: 0;
+    background: unset;
+    padding: 10px 12px;
+  }
+
+  body .admin-sidebar.icon-collapsed .nav-item:hover::after,
+  body .admin-sidebar.icon-collapsed .sidebar-link:hover::after {
+    left: calc(100% + 8px);
+    margin: 0;
+    padding: 7px 10px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 7px;
+    background: #14283b;
+    box-shadow: 0 8px 22px rgba(8, 20, 32, .25);
+    color: #f7fbff;
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .admin-sidebar,
+  body .admin-sidebar *,
+  body .main-content {
+    transition-duration: .01ms !important;
+  }
+}
+
 @media (max-width:1239.99px) {
   .gs-main-single-blog .right-side-content .title {
     margin-bottom: 10px;
@@ -5385,35 +5630,71 @@ tbody tr:last-child {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
   -webkit-box-pack: center;
   -ms-flex-pack: center;
   justify-content: center;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
   gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.gs-breadcrumb-section .bread-menu li {
-  position: relative;
+/* Normalise every breadcrumb markup variant (ul > li, div > p, div > span)
+   so the section looks identical on every page. */
+.gs-breadcrumb-section .bread-menu > li,
+.gs-breadcrumb-section .bread-menu > p,
+.gs-breadcrumb-section .bread-menu > span {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  list-style: none;
 }
 
-.gs-breadcrumb-section .bread-menu li::after {
+.gs-breadcrumb-section .bread-menu > li::after,
+.gs-breadcrumb-section .bread-menu > p::after,
+.gs-breadcrumb-section .bread-menu > span::after {
   content: "/";
   color: #fff;
   margin-left: 8px;
 }
 
-.gs-breadcrumb-section .bread-menu li:last-child::after {
+.gs-breadcrumb-section .bread-menu > li:last-child::after,
+.gs-breadcrumb-section .bread-menu > p:last-child::after,
+.gs-breadcrumb-section .bread-menu > span:last-child::after {
   content: "";
   margin-left: 0;
 }
 
-.gs-breadcrumb-section .bread-menu li a {
+.gs-breadcrumb-section .bread-menu a {
   color: #fff;
+  text-decoration: none;
   -webkit-transition: all .3s ease-in;
   -o-transition: all .3s ease-in;
   transition: all .3s ease-in;
 }
 
-.gs-breadcrumb-section .bread-menu li a:hover {
+.gs-breadcrumb-section .bread-menu a:hover {
+  color: var(--primary);
+}
+
+/* Last item is the current page. */
+.gs-breadcrumb-section .bread-menu > li:last-child,
+.gs-breadcrumb-section .bread-menu > p:last-child,
+.gs-breadcrumb-section .bread-menu > span:last-child,
+.gs-breadcrumb-section .bread-menu > li:last-child a,
+.gs-breadcrumb-section .bread-menu > p:last-child a,
+.gs-breadcrumb-section .bread-menu > span:last-child a {
   color: var(--primary);
 }
 
@@ -5463,6 +5744,15 @@ tbody tr:last-child {
 @media (max-width:767.98px) {
   .gs-vendor-breadcrumb ul li::after {
     margin-left: 4px;
+  }
+
+  .bread-menu p a, .bread-menu p.breadcrumb-without-link {
+      display: inline-block;
+      max-width: 10ch;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
   }
 }
 
@@ -12673,6 +12963,7 @@ form#home-vehicle-filter-form {
 .product-nav-wrapper .filter-sort-brand-wrapper div {
   flex-direction: column;
   align-items: flex-start !important;
+  width: 180px;
 }
 .product-nav-wrapper .filter-sort-brand-wrapper div select{
   border: 1px solid #c7c0bf !important;
@@ -12718,7 +13009,11 @@ form#home-vehicle-filter-form {
     gap: 20px;
   }
 }
-
+@media (max-width:767px) {
+  .product-nav-wrapper .filter-sort-brand-wrapper div{
+    width: 160px;
+  }
+}
 @media (max-width:399px) {
   .product-nav-wrapper .form-select-sm {
     width: 125px !important;
@@ -16196,6 +16491,9 @@ td.compare-col.compare-action-btn div {
   padding: 10px 24px;
 }
 
+  td:nth-child(5), td:nth-child(6), td:nth-child(7), td:nth-child(8), td:nth-child(9), td:nth-child(10), td:nth-child(11), td:nth-child(12) {    
+    align-content: center;
+  }
 @media (max-width:991.98px) {
   .dashboard-additional-block-2 {
     grid-template-columns: 1fr 1fr;
@@ -18183,7 +18481,7 @@ button.filter-chip-clear i.las.la-times{
   font-size: 14px;
 }
 .admin-sidebar-drop .submenu a.active{
-  display: inline-block;
+  /* display: inline-block; */
   padding: 3px 6px;
   color: #fff !important;
   background: rgba(255, 255, 255, .1);
@@ -18200,11 +18498,19 @@ button.filter-chip-clear i.las.la-times{
   width: 100%;
 }
 
+/* .admin-sidebar-drop .submenu li{
+  display: flex;
+  align-items: center;
+} */
 .admin-sidebar-drop .submenu li:before {
-  font-family: "Font Awesome 5 Free";
-  font-weight: 900;
-  content: "\f068"; 
+  content: "";
   margin-right: 8px;
+  display: inline-block;
+  background-color: #fff;
+  height: 1px;
+  width: 1px;
+  padding: 2px;
+  margin-bottom: 3px;
 }
 .admin-sidebar-drop .active.expanded .nav-label i{
   transform: rotate(360deg);

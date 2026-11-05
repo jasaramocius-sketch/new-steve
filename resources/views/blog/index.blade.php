@@ -18,19 +18,13 @@
 @section('content')
 
 <!-- Breadcrumb -->
-<section class="gs-breadcrumb-section" style="background-image: url('{{ asset('assets/images/1724480495Imagexxxxxpng.png') }}'); background-size: cover; background-position: center;">
-  <div class="container">
-    <div class="row justify-content-center content-wrapper">
-      <div class="col-12">
-        <h2 class="breadcrumb-title">{{ $blogTitle }}</h2>
-        <ul class="bread-menu">
-          <li><a href="{{ route('home') }}">Home</a></li>
-          <li style="color: var(--primary)">Blog</li> 
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
+@include('partials.breadcrumb', [
+    'title' => $blogTitle,
+    'items' => [
+        ['label' => 'Home', 'url' => route('home')],
+        ['label' => 'Blog'],
+    ],
+])
 
 @if (!empty($page->content))
   <div class="container">

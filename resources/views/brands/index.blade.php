@@ -13,20 +13,13 @@
 @section('content')
 
 <!-- Banner Hero Section -->
-<section class="gs-breadcrumb-section"
-    style="background-image: url('{{ asset('/assets/images/1724480495Imagexxxxxpng.png') }}');
-    background-size: cover; background-position: center;">
-
-  <div class="container">
-    <div class="content-wrapper">
-      <h2 class="breadcrumb-title">All Brands</h2>
-      <ul class="bread-menu">
-        <li><a href="{{ route('home') }}">Home</a></li>
-        <li><a href="{{ route('brands') }}">Brands</a></li>
-      </ul>
-    </div>
-  </div>
-</section>
+@include('partials.breadcrumb', [
+    'title' => 'All Brands',
+    'items' => [
+        ['label' => 'Home', 'url' => route('home')],
+        ['label' => 'Brands'],
+    ],
+])
 
 <div class="container mt-5 mb-5">
 

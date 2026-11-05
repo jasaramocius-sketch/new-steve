@@ -33,6 +33,13 @@
                 </div>
 
                 <div class="col-md-6">
+                    <label class="form-label">Shipping Cost</label>
+                    <input type="number" step="0.01" min="0" name="shipping_cost" class="form-control @error('shipping_cost') is-invalid @enderror" value="{{ old('shipping_cost', $seller->shipping_cost ?? 0) }}">
+                    <small class="text-muted">Used with Seller Wise Flat Shipping.</small>
+                    @error('shipping_cost') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-6">
                     <label class="form-label">Image</label>
                     @if($seller->image)
                         <div class="mb-2">

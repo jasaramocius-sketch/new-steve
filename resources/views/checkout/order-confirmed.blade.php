@@ -13,7 +13,9 @@
 @php
   $subtotal = $order['subtotal'] ?? collect($order['items'] ?? [])->sum(fn($item) => $item['price'] * $item['qty']);
   $couponDiscount = $order['coupon_discount'] ?? 0;
-  $shipping = max(($order['total'] ?? 0) - $subtotal + $couponDiscount, 0);
+  $shipping = (float) ($order['shipping_fee'] ?? max(($order['total'] ?? 0) - $subtotal + $couponDiscount, 0));
+  $shippingMethod = $order['shipping_carrier']
+      ?? (($order['delivery_type'] ?? null) === 'pickup' ? 'Pickup point' : 'Home delivery');
   $paymentLabels = [
     'cod' => 'Cash on Delivery',
     'card' => 'Stripe',
@@ -80,7 +82,7 @@
                   </tr>
                   <tr>
                     <td class="w-50 fw-600 border-top-0 py-2">Shipping:</td>
-                    <td class="border-top-0 pr-0 py-2">{{ $shipping > 0 ? 'Flat shipping rate' : 'Free shipping' }}</td>
+                    <td class="border-top-0 pr-0 py-2">{{ $shippingMethod }}</td>
                   </tr>
                   <tr>
                     <td class="w-50 fw-600 border-top-0 py-2">Payment method:</td>

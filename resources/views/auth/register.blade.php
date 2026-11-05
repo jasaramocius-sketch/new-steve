@@ -11,17 +11,13 @@
 @section('content')
 
 <!-- Banner Hero Section -->
-<section class="gs-breadcrumb-section" style="background-image: url('{{ asset('assets/images/1724480495Imagexxxxxpng.png') }}'); background-size: cover; background-position: center;">
-  <div class="container">
-    <div class="content-wrapper">
-      <h2 class="breadcrumb-title">Sign Up</h2>
-      <ul class="bread-menu">
-        <li><a href="{{ route('home') }}">Home</a></li>
-        <li><a href="#">Sign Up</a></li>
-      </ul>
-    </div>
-  </div>
-</section>
+@include('partials.breadcrumb', [
+    'title' => 'Sign Up',
+    'items' => [
+        ['label' => 'Home', 'url' => route('home')],
+        ['label' => 'Sign Up'],
+    ],
+])
 
 <!-- Register Form Section -->
 <section class="gs-reg-section">
@@ -59,6 +55,24 @@
                     </span>
                 </div>
             </div>
+
+            <div class="form-check mt-2">
+              <input class="form-check-input @error('terms') is-invalid @enderror" type="checkbox" name="terms" value="1" id="register_terms" {{ old('terms') ? 'checked' : '' }} required>
+              <label class="form-check-label" for="register_terms">
+                I agree to the <a href="{{ route('privacy.policy') }}" class="a-tag-text-hover" target="_blank">Privacy Policy</a> and <a href="{{ route('terms.conditions') }}" class="a-tag-text-hover" target="_blank">Terms &amp; Conditions</a>
+              </label>
+              @error('terms')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+              @enderror
+            </div>
+
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" name="subscribe" value="1" id="register_subscribe" {{ old('subscribe') ? 'checked' : '' }}>
+              <label class="form-check-label" for="register_subscribe">
+                Subscribe to our newsletter for offers and updates
+              </label>
+            </div>
+
             <br>
             <button type="submit" class="template-btn btn-forms steve-btn button-hover">Register Now</button>
             <!-- <p class="text-center login-or">Or</p> -->

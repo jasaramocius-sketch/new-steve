@@ -18,6 +18,9 @@ use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SellerController;
 use App\Http\Controllers\Admin\SmtpSettingsController;
+use App\Http\Controllers\Admin\ShippingLocationController;
+use App\Http\Controllers\Admin\ShippingSettingsController;
+use App\Http\Controllers\Admin\TaxTypeController;
 use App\Http\Controllers\Admin\SubscriberController;
 use App\Http\Controllers\Admin\ApiIntegrationController;
 use App\Http\Controllers\AdminAuthController;
@@ -253,6 +256,67 @@ Route::prefix('admin')
             ->name('admin.profile');
         Route::post('/profile', [AdminController::class, 'updateProfile'])
             ->name('admin.profile.update');
+
+        Route::get('/settings/shipping', [ShippingSettingsController::class, 'configuration'])
+            ->name('admin.settings.shipping');
+        Route::post('/settings/shipping', [ShippingSettingsController::class, 'updateConfiguration'])
+            ->name('admin.settings.shipping.update');
+
+        Route::get('/settings/shipping-countries', [ShippingLocationController::class, 'countries'])
+            ->name('admin.settings.shipping-countries.index');
+        Route::post('/settings/shipping-countries/{country}/status', [ShippingLocationController::class, 'updateCountryStatus'])
+            ->name('admin.settings.shipping-countries.status');
+
+        Route::get('/settings/shipping-states', [ShippingLocationController::class, 'states'])
+            ->name('admin.settings.shipping-states.index');
+        Route::post('/settings/shipping-states', [ShippingLocationController::class, 'storeState'])
+            ->name('admin.settings.shipping-states.store');
+        Route::get('/settings/shipping-states/{state}/edit', [ShippingLocationController::class, 'editState'])
+            ->name('admin.settings.shipping-states.edit');
+        Route::put('/settings/shipping-states/{state}', [ShippingLocationController::class, 'updateState'])
+            ->name('admin.settings.shipping-states.update');
+        Route::delete('/settings/shipping-states/{state}', [ShippingLocationController::class, 'destroyState'])
+            ->name('admin.settings.shipping-states.destroy');
+        Route::post('/settings/shipping-states/{state}/status', [ShippingLocationController::class, 'updateStateStatus'])
+            ->name('admin.settings.shipping-states.status');
+
+        Route::get('/settings/shipping-cities', [ShippingLocationController::class, 'cities'])
+            ->name('admin.settings.shipping-cities.index');
+        Route::post('/settings/shipping-cities', [ShippingLocationController::class, 'storeCity'])
+            ->name('admin.settings.shipping-cities.store');
+        Route::get('/settings/shipping-cities/{city}/edit', [ShippingLocationController::class, 'editCity'])
+            ->name('admin.settings.shipping-cities.edit');
+        Route::put('/settings/shipping-cities/{city}', [ShippingLocationController::class, 'updateCity'])
+            ->name('admin.settings.shipping-cities.update');
+        Route::delete('/settings/shipping-cities/{city}', [ShippingLocationController::class, 'destroyCity'])
+            ->name('admin.settings.shipping-cities.destroy');
+        Route::post('/settings/shipping-cities/{city}/status', [ShippingLocationController::class, 'updateCityStatus'])
+            ->name('admin.settings.shipping-cities.status');
+
+        Route::get('/settings/shipping-carriers', [ShippingSettingsController::class, 'carriers'])
+            ->name('admin.settings.shipping-carriers.index');
+        Route::get('/settings/shipping-carriers/create', [ShippingSettingsController::class, 'createCarrier'])
+            ->name('admin.settings.shipping-carriers.create');
+        Route::post('/settings/shipping-carriers', [ShippingSettingsController::class, 'storeCarrier'])
+            ->name('admin.settings.shipping-carriers.store');
+        Route::get('/settings/shipping-carriers/{carrier}/edit', [ShippingSettingsController::class, 'editCarrier'])
+            ->name('admin.settings.shipping-carriers.edit');
+        Route::put('/settings/shipping-carriers/{carrier}', [ShippingSettingsController::class, 'updateCarrier'])
+            ->name('admin.settings.shipping-carriers.update');
+        Route::delete('/settings/shipping-carriers/{carrier}', [ShippingSettingsController::class, 'destroyCarrier'])
+            ->name('admin.settings.shipping-carriers.destroy');
+        Route::get('/settings/shipping-zones', [ShippingSettingsController::class, 'zones'])
+            ->name('admin.settings.shipping-zones.index');
+        Route::get('/settings/shipping-zones/create', [ShippingSettingsController::class, 'createZone'])
+            ->name('admin.settings.shipping-zones.create');
+        Route::post('/settings/shipping-zones', [ShippingSettingsController::class, 'storeZone'])
+            ->name('admin.settings.shipping-zones.store');
+        Route::get('/settings/shipping-zones/{zone}/edit', [ShippingSettingsController::class, 'editZone'])
+            ->name('admin.settings.shipping-zones.edit');
+        Route::put('/settings/shipping-zones/{zone}', [ShippingSettingsController::class, 'updateZone'])
+            ->name('admin.settings.shipping-zones.update');
+        Route::delete('/settings/shipping-zones/{zone}', [ShippingSettingsController::class, 'destroyZone'])
+            ->name('admin.settings.shipping-zones.destroy');
         Route::post('/profile/password', [AdminController::class, 'updatePassword'])
             ->name('admin.profile.password');
 
@@ -560,6 +624,18 @@ Route::prefix('admin')
             ->name('admin.settings.custom');
         Route::post('/settings/custom', [AdminController::class, 'updateCustomSettings'])
             ->name('admin.settings.custom.update');
+        Route::get('/settings/tax-types/create', [TaxTypeController::class, 'create'])
+            ->name('admin.settings.tax-types.create');
+        Route::post('/settings/tax-types', [TaxTypeController::class, 'store'])
+            ->name('admin.settings.tax-types.store');
+        Route::get('/settings/tax-types/{taxType}/edit', [TaxTypeController::class, 'edit'])
+            ->name('admin.settings.tax-types.edit');
+        Route::put('/settings/tax-types/{taxType}', [TaxTypeController::class, 'update'])
+            ->name('admin.settings.tax-types.update');
+        Route::post('/settings/tax-types/{taxType}/status', [TaxTypeController::class, 'toggleStatus'])
+            ->name('admin.settings.tax-types.status');
+        Route::delete('/settings/tax-types/{taxType}', [TaxTypeController::class, 'destroy'])
+            ->name('admin.settings.tax-types.destroy');
 
         Route::get('/settings/header', [AdminController::class, 'headerSettings'])
             ->name('admin.settings.header');

@@ -19,10 +19,11 @@
                 'admin.products.*',
                 'admin.categories.*',
                 'admin.brands.*',
-                'admin.settings.commission*'
+                'admin.settings.commission*',
+                'admin.reviews.*'
             );
 
-            // Submenu default expanded
+            // Submenu default expanded if parent or any child is active
             $productsExpanded = $productsActive;
 
             // All Products
@@ -65,13 +66,14 @@
                 <ul class="collapse list-unstyled submenu {{ $productsExpanded ? 'show' : '' }}"
                     id="productsSubmenu">
 
-                    <li><a href="{{ route('admin.products.index') }}" class="{{ $allProductsActive ? 'active' : '' }}">All Products</a></li>
-                    <li><a href="{{ route('admin.products.import-form') }}" class="{{ $productImportActive ? 'active' : '' }}">Bulk Import</a></li>
-                    <li><a href="{{ route('admin.products.export-csv') }}" class="{{ request()->routeIs('admin.products.export-csv') ? 'active' : '' }}">Bulk Export</a></li>
-                    <li><a href="{{ route('admin.categories.index') }}" class="{{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">Categories</a></li>
-                    <li><a href="{{ route('admin.brands.index') }}" class="{{ request()->routeIs('admin.brands.*') ? 'active' : '' }}">Brands</a></li>
-                    <li><a href="{{ route('admin.products.stock') }}" class="{{ $productStockActive ? 'active' : '' }}">Stock Management</a></li>
-                    <li><a href="{{ route('admin.settings.commission') }}" class="{{ request()->routeIs('admin.settings.commission*') ? 'active' : '' }}">Commission</a></li>
+                    <li><a href="{{ route('admin.products.index') }}" class="nav-item-sub {{ $allProductsActive ? 'active' : '' }}"><i class="fas fa-boxes-stacked" aria-hidden="true"></i> All Products</a></li>
+                    <li><a href="{{ route('admin.products.import-form') }}" class="nav-item-sub {{ $productImportActive ? 'active' : '' }}"><i class="fas fa-file-import" aria-hidden="true"></i> Bulk Import</a></li>
+                    <li><a href="{{ route('admin.products.export-csv') }}" class="nav-item-sub {{ request()->routeIs('admin.products.export-csv') ? 'active' : '' }}"><i class="fas fa-file-export" aria-hidden="true"></i> Bulk Export</a></li>
+                    <li><a href="{{ route('admin.categories.index') }}" class="nav-item-sub {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}"><i class="fas fa-folder-tree" aria-hidden="true"></i> Categories</a></li>
+                    <li><a href="{{ route('admin.brands.index') }}" class="nav-item-sub {{ request()->routeIs('admin.brands.*') ? 'active' : '' }}"><i class="fas fa-tags" aria-hidden="true"></i> Brands</a></li>
+                    <li><a href="{{ route('admin.products.stock') }}" class="nav-item-sub {{ $productStockActive ? 'active' : '' }}"><i class="fas fa-boxes-packing" aria-hidden="true"></i> Stock Management</a></li>
+                    <li><a href="{{ route('admin.settings.commission') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.commission*') ? 'active' : '' }}"><i class="fas fa-percent" aria-hidden="true"></i> Commission</a></li>
+                    <li><a href="{{ route('admin.reviews.index') }}" class="nav-item-sub {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}"><i class="fas fa-star" aria-hidden="true"></i> Product Reviews</a></li>
 
                 </ul>
             </li>
@@ -114,15 +116,16 @@
         <a href="{{ route('admin.coupons.index') }}" class="nav-item {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}">
             <i class="fas fa-percent"></i> Coupons
         </a>
-        <a href="{{ route('admin.reviews.index') }}" class="nav-item {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
+        <!-- <a href="{{ route('admin.reviews.index') }}" class="nav-item {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
             <i class="fas fa-star"></i> Reviews
-        </a>
+        </a> -->
 
         <div class="nav-section">Settings</div>
         @php
-            $setupConfigExpanded = request()->routeIs('admin.settings.*', 'admin.api-integrations.*', 'admin.home-page.*');
+            $setupConfigExpanded = request()->routeIs('admin.settings.*', 'admin.api-integrations.*', 'admin.home-page.*')
+                && ! request()->routeIs('admin.settings.commission*');
         @endphp
-        <ul class="admin-sidebar-drop list-unstyled">
+        <ul class="admin-sidebar-drop submenu-sub list-unstyled">
             <li>
                 <a href="#setupConfigSubmenu"
                 class="nav-item sidebar-link {{ $setupConfigExpanded ? 'active' : 'collapsed' }}"
@@ -136,17 +139,41 @@
                 </a>
 
                 <ul class="collapse list-unstyled submenu {{ $setupConfigExpanded ? 'show' : '' }}" id="setupConfigSubmenu">
-                    <li><a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.index') ? 'active' : '' }}">All Settings</a></li>
-                    <li><a href="{{ route('admin.settings.header') }}" class="{{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}">General Settings</a></li>
-                    <li><a href="{{ route('admin.settings.seo') }}" class="{{ request()->routeIs('admin.settings.seo*') ? 'active' : '' }}">SEO Settings</a></li>
-                    <li><a href="{{ route('admin.settings.features') }}" class="{{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}">Features activation</a></li>
-                    <li><a href="{{ route('admin.settings.languages.index') }}" class="{{ request()->routeIs('admin.settings.languages.*') ? 'active' : '' }}">Languages</a></li>
-                    <li><a href="{{ route('admin.settings.currency.index') }}" class="{{ request()->routeIs('admin.settings.currency.*') ? 'active' : '' }}">Currency</a></li>
-                    <li><a href="{{ route('admin.settings.custom') }}" class="{{ request()->routeIs('admin.settings.custom*') ? 'active' : '' }}">Vat &amp; TAX</a></li>
-                    <li><a href="{{ route('admin.settings.pickup-points.index') }}" class="{{ request()->routeIs('admin.settings.pickup-points.*') ? 'active' : '' }}">Pickup point</a></li>
-                    <li><a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'active' : '' }}">SMTP Settings</a></li>
-                    <li><a href="{{ route('admin.settings.payment-methods') }}" class="{{ request()->routeIs('admin.settings.payment-methods*') ? 'active' : '' }}">Payment Methods</a></li>
-                    <li><a href="{{ route('admin.settings.order') }}" class="{{ request()->routeIs('admin.settings.order*') ? 'active' : '' }}">Order Configuration</a></li>
+                    <li><a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.index') ? 'active' : '' }}"><i class="fas fa-sliders" aria-hidden="true"></i> All Settings</a></li>
+                    <li><a href="{{ route('admin.settings.header') }}" class="{{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}"><i class="fas fa-gear" aria-hidden="true"></i> General Settings</a></li>
+                    <li><a href="{{ route('admin.settings.seo') }}" class="{{ request()->routeIs('admin.settings.seo*') ? 'active' : '' }}"><i class="fas fa-magnifying-glass" aria-hidden="true"></i> SEO Settings</a></li>
+                    <li><a href="{{ route('admin.settings.features') }}" class="{{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}"><i class="fas fa-toggle-on" aria-hidden="true"></i> Features activation</a></li>
+                    <li><a href="{{ route('admin.settings.languages.index') }}" class="{{ request()->routeIs('admin.settings.languages.*') ? 'active' : '' }}"><i class="fas fa-language" aria-hidden="true"></i> Languages</a></li>
+                    <li><a href="{{ route('admin.settings.currency.index') }}" class="{{ request()->routeIs('admin.settings.currency.*') ? 'active' : '' }}"><i class="fas fa-coins" aria-hidden="true"></i> Currency</a></li>
+                    <li><a href="{{ route('admin.settings.custom') }}" class="{{ request()->routeIs('admin.settings.custom*') ? 'active' : '' }}"><i class="fas fa-percent" aria-hidden="true"></i> Vat &amp; TAX</a></li>
+                    <li><a href="{{ route('admin.settings.pickup-points.index') }}" class="{{ request()->routeIs('admin.settings.pickup-points.*') ? 'active' : '' }}"><i class="fas fa-store" aria-hidden="true"></i> Pickup point</a></li>
+                    <li><a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'active' : '' }}"><i class="fas fa-envelope" aria-hidden="true"></i> SMTP Settings</a></li>
+                    <li><a href="{{ route('admin.settings.payment-methods') }}" class="{{ request()->routeIs('admin.settings.payment-methods*') ? 'active' : '' }}"><i class="fas fa-credit-card" aria-hidden="true"></i> Payment Methods</a></li>
+                    <li><a href="{{ route('admin.api-integrations.index') }}" class="{{ request()->routeIs('admin.api-integrations*') ? 'active' : '' }}">
+                        <i class="fas fa-plug" aria-hidden="true"></i> API Integrations
+                    </a></li>
+                    @php($shippingMenuExpanded = request()->routeIs('admin.settings.shipping*', 'admin.settings.shipping-countries.*', 'admin.settings.shipping-states.*', 'admin.settings.shipping-cities.*', 'admin.settings.shipping-zones.*', 'admin.settings.shipping-carriers.*'))
+                    <li class="shipping-settings-submenu">
+                        <a href="#shippingSettingsSubmenu"
+                           class="nav-item sidebar-link {{ $shippingMenuExpanded ? 'active' : 'collapsed' }} {{ $shippingMenuExpanded ? 'expanded' : '' }}"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="{{ $shippingMenuExpanded ? 'true' : 'false' }}"
+                           aria-controls="shippingSettingsSubmenu">
+                            <i class="fas fa-truck-fast"></i>
+                            <span>Shipping</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                         <ul class="collapse list-unstyled submenu {{ $shippingMenuExpanded ? 'show' : '' }}" id="shippingSettingsSubmenu">
+                             <li><a href="{{ route('admin.settings.shipping') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping', 'admin.settings.shipping.update') ? 'active' : '' }}"><i class="fas fa-sliders"></i> Shipping Configuration</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-countries.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-countries.*') ? 'active' : '' }}"><i class="fas fa-globe"></i> Shipping Countries</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-states.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-states.*') ? 'active' : '' }}"><i class="fas fa-map-marked-alt"></i> Shipping States</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-cities.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-cities.*') ? 'active' : '' }}"><i class="fas fa-building"></i> Shipping Cities</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-zones.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-zones.*') ? 'active' : '' }}"><i class="fas fa-map-marker-alt"></i> Shipping Zones</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-carriers.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-carriers.*') ? 'active' : '' }}"><i class="fas fa-ship"></i> Shipping Carriers</a></li>
+                         </ul>
+                     </li>
+                    <li><a href="{{ route('admin.settings.order') }}" class="{{ request()->routeIs('admin.settings.order*') ? 'active' : '' }}"><i class="fas fa-clipboard-list" aria-hidden="true"></i> Order Configuration</a></li>
                     <!-- <li><span class="text-muted" aria-disabled="true">File System &amp; Cache Configuration</span></li>
                     <li>
                         <span class="text-muted" aria-disabled="true">Social media Logins</span>
@@ -183,9 +210,6 @@
         </ul>
         <a href="{{ route('admin.home-page.index') }}" class="nav-item {{ request()->routeIs('admin.home-page.*') ? 'active' : '' }}">
             <i class="fas fa-home"></i> Home Page
-        </a>
-        <a href="{{ route('admin.api-integrations.index') }}" class="nav-item {{ request()->routeIs('admin.api-integrations*') ? 'active' : '' }}">
-            <i class="fas fa-plug"></i> API Integrations
         </a>
         <a href="{{ route('admin.settings.search-categories') }}" class="nav-item {{ request()->routeIs('admin.settings.search-categories*') ? 'active' : '' }}">
             <i class="fas fa-list-ul"></i> Search Categories
@@ -241,8 +265,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var sidebar = document.querySelector('.admin-sidebar');
     if (!sidebar) { console.error('Sidebar not found'); return; }
 
-    // 1. Wrap nav-item label text in a span
-    document.querySelectorAll('.admin-sidebar .nav-item').forEach(function(item) {
+    // 1. Wrap nav-item label text in a span + set tooltip title from label
+    document.querySelectorAll('.admin-sidebar .nav-item, .admin-sidebar .sidebar-link').forEach(function(item) {
         var icon = item.querySelector('i');
         if (!icon) return;
         var label = document.createElement('span');
@@ -250,10 +274,21 @@ document.addEventListener('DOMContentLoaded', function() {
         var node = icon.nextSibling;
         while (node) {
             var next = node.nextSibling;
+            // Skip the chevron-arrow icon (it's a sibling too)
+            if (node.classList && node.classList.contains('submenu-arrow')) {
+                node = next;
+                continue;
+            }
             label.appendChild(node);
             node = next;
         }
         item.appendChild(label);
+        // Keep submenu arrow at the far right after the label
+        var arrow = item.querySelector('.submenu-arrow');
+        if (arrow) { item.appendChild(arrow); }
+        // Set tooltip title from visible text (icon + label)
+        var title = Array.from(item.querySelectorAll('.nav-label')).map(function(l){ return l.textContent.trim(); }).join(' ');
+        if (title) item.setAttribute('data-bs-original-title', title);
     });
 
     // 2. Wrap brand text in a span (logo stays untouched)
@@ -451,5 +486,19 @@ document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (link)
     syncParentState();
     target.addEventListener('shown.bs.collapse', syncParentState);
     target.addEventListener('hidden.bs.collapse', syncParentState);
+});
+
+document.addEventListener('show.bs.collapse', function (event) {
+    const opening = event.target;
+    const sidebar = opening instanceof Element ? opening.closest('.admin-sidebar') : null;
+
+    if (!sidebar || !window.bootstrap?.Collapse) return;
+
+    sidebar.querySelectorAll('.collapse.show').forEach(function (expanded) {
+        // Keep the open parent visible when expanding one of its nested menus.
+        if (expanded === opening || expanded.contains(opening)) return;
+
+        window.bootstrap.Collapse.getOrCreateInstance(expanded, { toggle: false }).hide();
+    });
 });
 </script>
