@@ -96,8 +96,12 @@ class ProductController extends Controller
 
     public static function resolveImportedSku(array $data, string $name, ?Product $existing = null): string
     {
-        if (! empty($data['sku'])) {
-            return trim($data['sku']);
+        $partNumber = trim((string) ($data['part_number'] ?? ''));
+        if ($partNumber === '') {
+            $partNumber = trim((string) ($data['sku'] ?? ''));
+        }
+        if ($partNumber !== '') {
+            return $partNumber;
         }
 
         if ($existing?->sku) {
@@ -319,7 +323,6 @@ class ProductController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
@@ -348,12 +351,11 @@ class ProductController extends Controller
             (string) ($data['description'] ?? ''),
             (string) ($data['policy_text'] ?? '')
         );
-        $data['sku'] = $request->filled('sku') ? trim($request->sku) : null;
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
         $data['specifications'] = $this->parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
-        $data['slug'] = Str::slug($request->name).'-'.time();
-        $data['sku'] = $data['sku'] ?: Product::generateSku((string) $request->name);
+        $data['part_number'] = Product::generateSku((string) $request->name);
+        $data['slug'] = Str::slug($request->name.'-'.$data['part_number']);
 
         if ($request->hasFile('image')) {
             $data['main_image'] = saveImageWithWebp($request->file('image'));
@@ -412,7 +414,6 @@ class ProductController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
@@ -441,7 +442,6 @@ class ProductController extends Controller
             (string) ($data['description'] ?? ''),
             (string) ($data['policy_text'] ?? '')
         );
-        $data['sku'] = $request->filled('sku') ? trim($request->sku) : ($product->sku ?: Product::generateSku((string) $request->name, (int) $product->id));
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
         $data['specifications'] = $this->parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
@@ -736,7 +736,7 @@ class ProductController extends Controller
         $header = fgetcsv($handle, 0, ',');
 
         $header = array_map('trim', $header);
-        $expected = ['id', 'name', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'buy_return_policy', 'return_policy', 'features', 'feature_list', 'reviews', 'reviews_data', 'specifications', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $expected = ['id', 'name', 'part_number', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'buy_return_policy', 'return_policy', 'features', 'feature_list', 'reviews', 'reviews_data', 'specifications', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
 
         $colMap = [];
         foreach ($header as $i => $col) {
@@ -877,11 +877,11 @@ class ProductController extends Controller
 
             if ($existingProduct) {
                 $insertData['slug'] = $existingProduct->slug;
-                $insertData['sku'] = self::resolveImportedSku($data, $data['name'], $existingProduct);
+                $insertData['part_number'] = self::resolveImportedSku($data, $data['name'], $existingProduct);
             } else {
-                $insertData['slug'] = Str::slug($data['name']).'-'.time().'-'.$imported;
                 $insertData['added_by'] = 'admin';
-                $insertData['sku'] = self::resolveImportedSku($data, $data['name']);
+                $insertData['part_number'] = self::resolveImportedSku($data, $data['name']);
+                $insertData['slug'] = Str::slug($data['name']).'-'.time().'-'.$imported;
             }
 
             if (! empty($data['image']) && filter_var($data['image'], FILTER_VALIDATE_URL)) {
@@ -986,7 +986,7 @@ class ProductController extends Controller
 
     public function downloadSampleCsv()
     {
-        $headers = ['id', 'name', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $headers = ['id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
         $rows = [
             ['', 'Brake Pads Set', 'bp-1001', '49.99', '69.99', 'Brakes', '100', 'High quality ceramic brake pads', 'New', 'none', '1', '1', 'https://example.com/images/brake-pads.jpg', 'Duralast', 'AutoZone Seller', '2020', 'Toyota', 'Camry', 'https://example.com/images/brake-pads-2.jpg|https://example.com/images/brake-pads-3.jpg', '<p>We offer a 30-day return policy for unused items in original packaging.</p>', "Premium quality\nEasy installation", "Material::Ceramic\nFriction::Low dust", '[{"name":"Ava","rating":5,"text":"Perfect fit and fast delivery.","deleted":false}]', 'Overview', 'Specifications', 'Reviews'],
             ['', 'Oil Filter', '', '12.99', '', 'Engine', '250', '', 'Sale', 'none', '1', '0', '', 'Apex Gasket', 'AutoZone Seller', '2019', 'Honda', 'Civic', '', '<p>Items can be returned within 14 days if they are not installed or damaged.</p>', '', 'Thread::M20x1.5', '[{"name":"Noah","rating":4,"text":"Works well and shipped quickly.","deleted":false}]', '', '', ''],
@@ -1010,7 +1010,7 @@ class ProductController extends Controller
 
     public function exportCsv()
     {
-        $headers = ['id', 'name', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $headers = ['id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
 
         $callback = function () use ($headers) {
             set_time_limit(0);
@@ -1039,7 +1039,7 @@ class ProductController extends Controller
                         fputcsv($handle, [
                             $p->id,
                             $p->name,
-                            $p->sku ?? '',
+                            $p->part_number ?? '',
                             $p->price,
                             $p->old_price ?? '',
                             $p->category->name ?? '',

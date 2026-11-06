@@ -105,13 +105,14 @@
 
               <div class="d-flex flex-wrap align-items-center">
                 <p class="stock {{ $product['stock'] > 0 ? 'in-stock' : 'out-stock' }}">{{ $product['stock'] > 0 ? 'In Stock' : 'Out of Stock' }}</p>
+              </div>
                 @php
                   $visibleReviews = collect($product['reviews_data'] ?? [])->filter(fn ($r) => ! ($r['deleted'] ?? false) && ($r['approved'] ?? true) !== false);
                   $avgRating = $visibleReviews->avg('rating');
                   $displayRating = round($avgRating);
                 @endphp
                 @if($visibleReviews->count() > 0)
-                <p class="rating" id="product-rating">
+                <p class="rating mt-2" id="product-rating">
                   @for($i = 0; $i < 5; $i++)
                   <svg xmlns="http://www.w3.org/2000/svg" width="17" height="16" viewBox="0 0 17 16" fill="none">
                       <path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="{{ $i < $displayRating ? '#EEAE0B' : '#E2E8F0' }}" />
@@ -120,7 +121,6 @@
                   <span id="product-review-count">({{ $visibleReviews->count() }})</span>
                 </p>
                 @endif
-              </div>
 
               @if($product->year && $product->make && $product->model)
                 <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 8px;">

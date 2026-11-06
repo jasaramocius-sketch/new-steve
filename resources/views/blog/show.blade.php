@@ -48,7 +48,7 @@
                   <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="#292D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="#292D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <span class="meta-title">By: Admin</span>
+                <span class="meta-title">By: {{ $blog->author ?: 'Admin' }}</span>
               </div>
               <div class="single-meta">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -56,15 +56,15 @@
                 </svg>
                 <span class="meta-title">{{ $blog->post_date->format('M d - Y') }}</span>
               </div>
-              @if($blog->category)
+              @foreach($blog->allCategories() as $blogCategory)
               <div class="single-meta">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="#292D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   <circle cx="12" cy="12" r="3" stroke="#292D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <a href="{{ route('blog.category', $blog->category->slug) }}" class="meta-title">{{ $blog->category->name }}</a>
+                <a href="{{ route('blog.category', $blogCategory->slug) }}" class="meta-title">{{ $blogCategory->name }}</a>
               </div>
-              @endif
+              @endforeach
             </div>
 
             <!-- Post Title -->
@@ -89,45 +89,51 @@
 
         <x-page-blocks :model="$blog" />
 
-        <div class="row mt-4 border-top pt-4 single-blog-content-navigation">
-          <div class="col-md-6">
+        <nav class="single-blog-content-navigation" aria-label="Blog post navigation">
+          <div class="single-blog-navigation-item">
             @if($previous)
-              <small class="text-muted d-block">Previous Post</small>
-              <div class="a-tag-hover-color">
-                <i class="fas fa-arrow-left"></i>
-                <a href="{{ route('blog.show', $previous->slug) }}">{{ $previous->title }}</a>
-              </div>
+              <a class="single-blog-navigation-link" href="{{ route('blog.show', $previous->slug) }}">
+                <span class="single-blog-navigation-direction">
+                  <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                  Previous Post
+                </span>
+                <span class="single-blog-navigation-title">{{ $previous->title }}</span>
+              </a>
             @else
-              <small class="text-muted d-block">Previous Post</small>
-            @endif  
-          </div>
-          <div class="col-md-6 text-md-end">
-            @if($next)
-              <small class="text-muted d-block">Next Post</small>
-              <div class="a-tag-hover-color">
-                <a href="{{ route('blog.show', $next->slug) }}">{{ $next->title }}</a>
-                <i class="fas fa-arrow-right"></i>            
+              <div class="single-blog-navigation-link is-disabled">
+                <span class="single-blog-navigation-direction">
+                  <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                  Previous Post
+                </span>
+                <span class="single-blog-navigation-title">No previous post</span>
               </div>
-            @else
-              <small class="text-muted d-block">Next Post</small>
             @endif
           </div>
-        </div>
+          <div class="single-blog-navigation-item is-next">
+            @if($next)
+              <a class="single-blog-navigation-link" href="{{ route('blog.show', $next->slug) }}">
+                <span class="single-blog-navigation-direction">
+                  Next Post
+                  <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </span>
+                <span class="single-blog-navigation-title">{{ $next->title }}</span>
+              </a>
+            @else
+              <div class="single-blog-navigation-link is-disabled">
+                <span class="single-blog-navigation-direction">
+                  Next Post
+                  <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </span>
+                <span class="single-blog-navigation-title">No next post</span>
+              </div>
+            @endif
+          </div>
+        </nav>
       </div>
 
       <!-- Sidebar -->
       <div class="col-12 col-lg-4 mt-40 mt-lg-0">
-        <button class="blog-sidebar-toggle d-lg-none border-0 bg-transparent p-2 steve-btn" type="button" style="border-radius:6px; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,0.08);">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
-          <span class="ms-2 fw-500">Sidebar</span>
-        </button>
-        <div class="blog-sidebar-overlay"></div>
-        <div class="gs-blog-sidebar-wrapper right-side">
-
+        <aside class="gs-blog-sidebar-wrapper right-side" role="complementary" aria-label="Blog sidebar">
           <!-- Search Widget -->
           <!-- <div class="single-blog-widget">
             <h5 class="widget-title">Search</h5>
@@ -146,7 +152,7 @@
             <h5 class="widget-title">Categories</h5>
             <ul class="cat-wrapper">
               @foreach($categories as $cat)
-              <li><a href="{{ route('blog.category', $cat->slug) }}">{{ $cat->name }} ({{ $cat->blogs_count }})</a></li>
+              <li><a href="{{ route('blog.category', $cat->slug) }}">{{ $cat->name }} ({{ $cat->total_blogs_count }})</a></li>
               @endforeach
             </ul>
           </div> -->
@@ -172,37 +178,10 @@
             </div>
           </div>
 
-        </div>
+        </aside>
       </div>
 
     </div>
   </div>
 </div>
-@endsection
-
-@section('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  var sidebar = document.querySelector('.gs-blog-sidebar-wrapper');
-  var overlay = document.querySelector('.blog-sidebar-overlay');
-  var toggle = document.querySelector('.blog-sidebar-toggle');
-
-  function openSidebar() {
-    sidebar.classList.add('active');
-    overlay.classList.add('active');
-    document.body.classList.add('overflow-hidden');
-  }
-  function closeSidebar() {
-    sidebar.classList.remove('active');
-    overlay.classList.remove('active');
-    document.body.classList.remove('overflow-hidden');
-  }
-
-  if (toggle) toggle.addEventListener('click', openSidebar);
-  if (overlay) overlay.addEventListener('click', closeSidebar);
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('active')) closeSidebar();
-  });
-});
-</script>
 @endsection

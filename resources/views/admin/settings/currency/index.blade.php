@@ -24,8 +24,7 @@
                         <input type="hidden" name="symbol_format" value="{{ $settings['symbol_format'] }}">
                         <input type="hidden" name="decimal_separator" value="{{ $settings['decimal_separator'] }}">
                         <input type="hidden" name="no_of_decimals" value="{{ $settings['no_of_decimals'] }}">
-                        <div class="col-md-8 form-group mb-2">
-                            <label for="system-default-currency">System Default Currency</label>
+                        <div class="col form-group mb-2">
                             <select id="system-default-currency" name="system_default_currency" class="form-control form-select" required>
                                 @foreach ($activeCurrencies as $currency)
                                     <option value="{{ $currency->code }}" @selected($settings['system_default_currency'] === $currency->code)>{{ $currency->name }} ({{ $currency->code }})</option>
@@ -83,7 +82,7 @@
 
     <div class="card">
         <div class="card-header">
-            <div class="row align-items-center gutters-5 w-100">
+            <div class="row align-items-center gutters-5">
                 <div class="col">
                     <h2 class="h6 mb-0">All Currencies</h2>
                     <small class="text-muted">Exchange rates are relative to 1 USD.</small>

@@ -6,12 +6,12 @@
 @endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <div class="ap-page-header mb-3">
+    <!-- <div class="ap-page-header mb-3">
         <div class="ap-page-header-row">
             <h1 class="ap-page-title">{{ $isEditing ? 'Edit Tax Type' : 'Add Tax Type' }}</h1>
         </div>
-    </div>
-    <div class="col-lg-6 px-0">
+    </div> -->
+    <div class="col">
         <div class="card">
             <form action="{{ $isEditing ? route('admin.settings.tax-types.update', $taxType) : route('admin.settings.tax-types.store') }}" method="POST">
                 @csrf

@@ -27,7 +27,7 @@
     <div class="card-body p-0">
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2">
             <form method="GET" action="{{ route('admin.products.stock') }}" class="d-flex align-items-center gap-2 flex-nowrap">
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control h-40px" placeholder="Search name or SKU..." style="min-width:200px;">
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control h-40px" placeholder="Search name or Part Number..." style="min-width:200px;">
                 <select name="stock_filter" class="form-select form-select-sm w-auto h-40px">
                     <option value="low" {{ request('stock_filter', 'low') === 'low' ? 'selected' : '' }}>Low stock</option>
                     <option value="out_of_stock" {{ request('stock_filter') === 'out_of_stock' ? 'selected' : '' }}>Out of stock</option>
@@ -64,7 +64,7 @@
                         <tr>
                             <th class="ps-3"><input type="checkbox" id="selectAll"></th>
                             <th>Product</th>
-                            <th>SKU</th>
+                            <th>Part Number</th>
                             <th>Category</th>
                             <th>Stock</th>
                             <th>New Qty</th>
@@ -81,7 +81,7 @@
                                 <a href="{{ route('admin.products.details', $product->id) }}" class="text-decoration-none fw-semibold">{{ $product->name }}</a>
                                 <div class="small text-muted">#{{ $product->id }}</div>
                             </td>
-                            <td><span class="badge bg-light text-dark border">{{ $product->sku ?: '—' }}</span></td>
+                            <td><span class="badge bg-light text-dark border">{{ $product->part_number ?: '—' }}</span></td>
                             <td>{{ $product->category?->name ?? '—' }}</td>
                             <td>
                                 <span class="fw-bold {{ $product->stock <= 0 ? 'text-danger' : 'text-warning' }}">{{ $product->stock }}</span>

@@ -63,7 +63,7 @@
             </div>
             @include('admin.partials.date-range-filter', ['filterRoute' => 'admin.revisions.index'])
             @if($filterModelType || $filterModelId)
-                <a href="{{ route('admin.revisions.index') }}" class="btn btn-sm btn-outline-danger" title="Clear page filter">
+                <a href="{{ route('admin.revisions.index') }}" class="btn btn-outline-danger" title="Clear page filter">
                     <i class="fas fa-times me-1"></i> Filtered
                     @if($filterModelType)
                         {{ class_basename($filterModelType) }}

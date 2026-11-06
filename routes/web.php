@@ -641,6 +641,14 @@ Route::prefix('admin')
             ->name('admin.settings.header');
         Route::post('/settings/header', [AdminController::class, 'updateHeaderSettings'])
             ->name('admin.settings.header.update');
+        Route::get('/settings/contact', [AdminController::class, 'contactSettings'])
+            ->name('admin.settings.contact');
+        Route::post('/settings/contact', [AdminController::class, 'updateContactSettings'])
+            ->name('admin.settings.contact.update');
+        Route::get('/settings/invoice', [AdminController::class, 'invoiceSettings'])
+            ->name('admin.settings.invoice');
+        Route::post('/settings/invoice', [AdminController::class, 'updateInvoiceSettings'])
+            ->name('admin.settings.invoice.update');
         Route::get('/settings/seo', [AdminController::class, 'seoSettings'])
             ->name('admin.settings.seo');
         Route::post('/settings/seo', [AdminController::class, 'updateSeoSettings'])

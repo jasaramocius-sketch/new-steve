@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
@@ -258,6 +259,8 @@ class AdminController extends Controller
                 'icon' => 'fas la-sliders-h',
                 'items' => [
                     ['name' => 'General Settings', 'description' => 'Header, footer, logos and navigation', 'icon' => 'fas fa-cog', 'route' => 'admin.settings.header'],
+                    ['name' => 'Contact Information', 'description' => 'Address, phone, email, working hours and map', 'icon' => 'fas fa-address-book', 'route' => 'admin.settings.contact'],
+                    ['name' => 'Invoice Settings', 'description' => 'Manage invoice branding, content and PDF layout', 'icon' => 'fas fa-file-invoice', 'route' => 'admin.settings.invoice'],
                     ['name' => 'Features activation', 'description' => 'Turn store features on or off', 'icon' => 'fas fa-toggle-on', 'route' => 'admin.settings.features'],
                     ['name' => 'Order Configuration', 'description' => 'Minimum order amount', 'icon' => 'fas fa-shopping-bag', 'route' => 'admin.settings.order'],
                     ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'fas fa-hdd'],
@@ -457,6 +460,163 @@ class AdminController extends Controller
             ->orderBy('title')->get();
 
         return view('admin.settings.header', compact('settings', 'categories', 'pages', 'posts'));
+    }
+
+    public function contactSettings()
+    {
+        $settings = Setting::getAllAsArray();
+
+        return view('admin.settings.contact', compact('settings'));
+    }
+
+    public function updateContactSettings(Request $request)
+    {
+        $map = trim((string) $request->input('contact_map_embed', ''));
+        $map = html_entity_decode($map, ENT_QUOTES | ENT_HTML5);
+
+        // Allow admins to paste either the embed URL or the complete iframe code.
+        if ($map !== '' && preg_match('/<iframe[^>]*\bsrc\s*=\s*["\']([^"\']+)["\']/i', $map, $matches)) {
+            $map = html_entity_decode(trim($matches[1]), ENT_QUOTES | ENT_HTML5);
+        }
+
+        $request->merge(['contact_map_embed' => $map]);
+
+        $validated = $request->validate([
+            'header_address' => 'nullable|string|max:1000',
+            'header_phone' => 'nullable|string|max:50',
+            'header_email' => 'nullable|email|max:255',
+            'contact_working_hours' => 'nullable|string|max:1000',
+            'contact_map_embed' => [
+                'nullable',
+                'string',
+                'max:2000',
+                function ($attribute, $value, $fail) {
+                    if ($value === null || trim($value) === '') {
+                        return;
+                    }
+
+                    $parts = parse_url(trim($value));
+                    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+                    $host = strtolower((string) ($parts['host'] ?? ''));
+                    $path = (string) ($parts['path'] ?? '');
+
+                    $validHost = in_array($host, ['www.google.com', 'google.com', 'maps.google.com'], true);
+                    $validScheme = in_array($scheme, ['http', 'https'], true);
+
+                    if (! $validScheme || ! $validHost || ! str_starts_with($path, '/maps')) {
+                        $fail('Enter a valid Google Maps embed URL (the iframe src), or leave it blank.');
+                    }
+                },
+            ],
+        ]);
+
+        foreach (['header_address', 'header_phone', 'header_email', 'contact_working_hours', 'contact_map_embed'] as $key) {
+            Setting::set($key, (string) ($validated[$key] ?? ''));
+        }
+
+        return redirect()->route('admin.settings.contact')
+            ->with('success', 'Contact information updated successfully.');
+    }
+
+    public function invoiceSettings()
+    {
+        $settings = Setting::getAllAsArray();
+        $invoiceLogo = $settings['invoice_logo'] ?? config('invoice.logo');
+        $invoiceLogoUrl = null;
+
+        if ($invoiceLogo !== '') {
+            $invoiceLogoUrl = str_starts_with($invoiceLogo, 'invoices/')
+                ? asset('storage/'.$invoiceLogo)
+                : asset(ltrim($invoiceLogo, '/'));
+        }
+
+        $defaults = config('invoice.settings', []);
+        $invoiceSettings = [];
+        foreach ($defaults as $key => $default) {
+            $invoiceSettings[$key] = $settings[$key] ?? $default;
+        }
+        foreach (config('invoice.visible_sections', []) as $key) {
+            $invoiceSettings[$key] = ($settings[$key] ?? '1') === '1';
+        }
+
+        return view('admin.settings.invoice', compact('invoiceLogoUrl', 'invoiceSettings'));
+    }
+
+    public function updateInvoiceSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'invoice_logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'remove_invoice_logo' => 'nullable|boolean',
+            'invoice_business_name' => 'nullable|string|max:255',
+            'invoice_business_address' => 'nullable|string|max:1000',
+            'invoice_business_phone' => 'nullable|string|max:50',
+            'invoice_business_email' => 'nullable|email|max:255',
+            'invoice_business_tax_id' => 'nullable|string|max:100',
+            'invoice_primary_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'invoice_layout' => 'required|in:standard,compact',
+            'invoice_prefix' => 'nullable|string|max:30',
+            'invoice_date_format' => 'required|in:d M Y,M d Y,Y-m-d,d/m/Y',
+            'invoice_title' => 'required|string|max:100',
+            'invoice_note' => 'nullable|string|max:2000',
+            'invoice_terms' => 'nullable|string|max:2000',
+            'invoice_footer' => 'nullable|string|max:500',
+            'invoice_currency_label' => 'nullable|string|max:10',
+            'invoice_label_product' => 'required|string|max:50',
+            'invoice_label_quantity' => 'required|string|max:50',
+            'invoice_label_price' => 'required|string|max:50',
+            'invoice_label_line_total' => 'required|string|max:50',
+            'invoice_label_subtotal' => 'required|string|max:50',
+            'invoice_label_shipping' => 'required|string|max:50',
+            'invoice_label_tax' => 'required|string|max:50',
+            'invoice_label_discount' => 'required|string|max:50',
+            'invoice_label_total' => 'required|string|max:50',
+            'invoice_show_business' => 'required|boolean',
+            'invoice_show_billing' => 'required|boolean',
+            'invoice_show_payment' => 'required|boolean',
+            'invoice_show_delivery' => 'required|boolean',
+            'invoice_show_items' => 'required|boolean',
+            'invoice_show_subtotal' => 'required|boolean',
+            'invoice_show_shipping' => 'required|boolean',
+            'invoice_show_tax' => 'required|boolean',
+            'invoice_show_discount' => 'required|boolean',
+            'invoice_show_total' => 'required|boolean',
+        ]);
+
+        $currentLogo = Setting::get('invoice_logo');
+
+        if ($request->hasFile('invoice_logo')) {
+            $newLogo = $request->file('invoice_logo')->store('invoices', 'public');
+            if (! $newLogo) {
+                throw new \RuntimeException('The invoice logo could not be stored.');
+            }
+
+            Setting::set('invoice_logo', $newLogo);
+            $this->deleteStoredInvoiceLogo($currentLogo);
+        } elseif ($request->boolean('remove_invoice_logo')) {
+            Setting::set('invoice_logo', '');
+            $this->deleteStoredInvoiceLogo($currentLogo);
+        }
+
+        foreach (array_keys($validated) as $key) {
+            if (in_array($key, ['invoice_logo', 'remove_invoice_logo'], true)) {
+                continue;
+            }
+
+            $value = str_starts_with($key, 'invoice_show_')
+                ? ($request->boolean($key) ? '1' : '0')
+                : (string) ($validated[$key] ?? '');
+            Setting::set($key, $value);
+        }
+
+        return redirect()->route('admin.settings.invoice')
+            ->with('success', 'Invoice settings updated successfully.');
+    }
+
+    private function deleteStoredInvoiceLogo(?string $path): void
+    {
+        if ($path && str_starts_with($path, 'invoices/')) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     public function seoSettings()

@@ -30,7 +30,7 @@
                 <div class="d-flex flex-wrap gap-3 align-items-end">
                     <div class="col d-flex d-sm-flex flex-row align-items-center gap-2">
                         <label class="fs-12 text-muted" for="pickup-search">Name</label>
-                        <input id="pickup-search" type="text" class="form-select" name="search" value="{{ $search }}" placeholder="Name, manager or location">
+                        <input id="pickup-search" type="text" class="form-control form-input" name="search" value="{{ $search }}" placeholder="Name, manager or location">
                     <div class="col"><button type="submit" class="btn btn-sm btn-primary">Filter</button></div>
                     </div>
                     <div class=""><a href="{{ route('admin.settings.pickup-points.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add New Pick-up Point</a></div>

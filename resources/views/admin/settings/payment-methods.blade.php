@@ -58,6 +58,9 @@
                                             @if ($isSecret) data-lpignore="true" data-1p-ignore @endif
                                             @required(($field['required'] ?? false) && ! $hasSavedValue)
                                         >
+                                    </div>
+                                    <div class="col">
+
                                         @error($field['name']) <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                                         @if ($hasSavedValue) <small class="text-muted d-block mt-1">Saved securely. Leave blank to keep the current secret; the full value is never displayed.</small> @endif
                                         @if (!empty($field['help'])) <div class="alert alert-primary mt-2 mb-0" role="note">{{ $field['help'] }}</div> @endif

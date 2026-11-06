@@ -16,7 +16,7 @@
                value="{{ request('search') }}">
     </div>
     @if($showClear)
-        <a href="{{ $clearRoute }}" class="btn btn-lg btn-outline-danger d-flex align-items-center" title="Clear search" data-bs-toggle="tooltip" data-bs-placement="top">
+        <a href="{{ $clearRoute }}" class="btn btn-outline-danger d-flex align-items-center h-40px w-40px" title="Clear search" data-bs-toggle="tooltip" data-bs-placement="top">
             <i class="fas fa-times"></i>
         </a>
     @endif

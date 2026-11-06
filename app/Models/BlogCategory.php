@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\Revisable;
 use App\Traits\TracksIsDeleted;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -32,5 +33,23 @@ class BlogCategory extends Model
     public function blogs()
     {
         return $this->hasMany(Blog::class, 'blog_category_id');
+    }
+
+    public function additionalBlogs()
+    {
+        return $this->belongsToMany(Blog::class, 'blog_additional_category')->withTimestamps();
+    }
+
+    public function scopeWithBlogCounts(Builder $query): Builder
+    {
+        return $query->withCount([
+            'blogs' => fn ($q) => $q->accessible(),
+            'additionalBlogs' => fn ($q) => $q->accessible(),
+        ]);
+    }
+
+    public function getTotalBlogsCountAttribute(): int
+    {
+        return (int) ($this->blogs_count ?? 0) + (int) ($this->additional_blogs_count ?? 0);
     }
 }

@@ -12,6 +12,15 @@
 
 @section('content')
 
+@php
+    $contactAddress = \App\Models\Setting::get('header_address', config('contact.address'));
+    $contactPhone = \App\Models\Setting::get('header_phone', config('contact.phone'));
+    $contactEmail = \App\Models\Setting::get('header_email', config('contact.email'));
+    $contactWorkingHours = \App\Models\Setting::get('contact_working_hours', config('contact.working_hours'));
+    $contactMapEmbed = \App\Models\Setting::get('contact_map_embed', config('contact.map_embed'));
+    $contactPhoneHref = preg_replace('/[^0-9+]/', '', (string) $contactPhone);
+@endphp
+
 <section class="contect-page-main-section">
     <div class="container">
         @if (!empty($page->content))
@@ -50,62 +59,71 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-body p-4">
                         <h4 class="mb-4">Contact Information</h4>
-                        <div class="mb-4 d-flex gap-2 ">
-                            <div class="">
-                            <i class="fas fa-map-marker-alt me-2 w-fit"></i>
+                        @if (filled($contactAddress))
+                            <div class="mb-4 d-flex gap-2 ">
+                                <div class="">
+                                <i class="fas fa-map-marker-alt me-2 w-fit"></i>
+                                </div>
+                                <div class="">
+                                <strong>Address</strong>
+                                <p class="text-muted mb-0">
+                                    {!! nl2br(e($contactAddress)) !!}
+                                </p></div>
                             </div>
-                            <div class="">
-                            <strong>Address</strong>
-                            <p class="text-muted mb-0">
-                                123 Business Street,<br>
-                                Ahmedabad, Gujarat, India
-                            </p></div>
-                        </div>
-                        <div class="mb-4 d-flex gap-2 ">
-                            <div class="">
-                            <i class="fas fa-phone me-2 w-fit"></i>
+                        @endif
+                        @if (filled($contactPhone))
+                            <div class="mb-4 d-flex gap-2 ">
+                                <div class="">
+                                <i class="fas fa-phone me-2 w-fit"></i>
+                                </div>
+                                <div class="">
+                                <strong>Phone</strong></br>
+                                <a href="tel:{{ $contactPhoneHref }}" class="text-muted mb-0 a-tag-hover-color-red">
+                                    {{ $contactPhone }}
+                                </a>
                             </div>
-                            <div class="">
-                            <strong>Phone</strong></br>
-                            <a href="tel:+919876543210" class="text-muted mb-0 a-tag-hover-color-red">
-                                +91 98765 43210
-                            </a>
-                        </div>
-                        </div>
-                        <div class="mb-4 d-flex gap-2 ">
-                            <div class="">
-                            <i class="fas fa-envelope me-2 w-fit"></i>
                             </div>
-                            <div class="">
-                            <strong>Email Address</strong></br>
-                            <a href="mailto:help@steveautoparts.com" class="text-muted mb-0 a-tag-hover-color-red">
-                                help@steveautoparts.com
-                            </a>
-                        </div>
-                        </div>
-                        <div class="mb-4 d-flex gap-2 ">
-                            <div class="">
-                            <i class="fas fa-clock me-2 w-fit"></i>
+                        @endif
+                        @if (filled($contactEmail))
+                            <div class="mb-4 d-flex gap-2 ">
+                                <div class="">
+                                <i class="fas fa-envelope me-2 w-fit"></i>
+                                </div>
+                                <div class="">
+                                <strong>Email Address</strong></br>
+                                <a href="mailto:{{ $contactEmail }}" class="text-muted mb-0 a-tag-hover-color-red">
+                                    {{ $contactEmail }}
+                                </a>
                             </div>
-                            <div class="">
-                            <strong>Working Hours</strong>
-                            <p class="text-muted mb-0">
-                                Mon - Sat: 9:00 AM - 6:00 PM
-                            </p>
-                        </div>
-                        </div>
+                            </div>
+                        @endif
+                        @if (filled($contactWorkingHours))
+                            <div class="mb-4 d-flex gap-2 ">
+                                <div class="">
+                                <i class="fas fa-clock me-2 w-fit"></i>
+                                </div>
+                                <div class="">
+                                <strong>Working Hours</strong>
+                                <p class="text-muted mb-0">
+                                    {!! nl2br(e($contactWorkingHours)) !!}
+                                </p>
+                            </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
         <!-- Google Map -->
-        <div class="mt-5">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-0">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20984356.956115294!2d-100.71302391942747!3d42.01410682907968!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x54eab584e432360b%3A0x1c3bb99243deb742!2sUnited%20States!5e0!3m2!1sen!2sin!4v1783516805589!5m2!1sen!2sin" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        @if (filled($contactMapEmbed))
+            <div class="mt-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        <iframe src="{{ $contactMapEmbed }}" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                    </div>
                 </div>
             </div>
-        </div>
+        @endif
     </div>
 </section>
 

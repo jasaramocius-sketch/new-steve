@@ -54,7 +54,7 @@
                 @php
                     $status = strtolower($order->status ?? 'pending');
                     $badge = $deliveryBadges[$status] ?? 'badge--secondary';
-                    $isPaid = $order->payment_method && $order->payment_method !== 'cod';
+                    $isPaid = strtolower((string) ($order->payment_status ?? 'unpaid')) === 'paid';
                 @endphp
                 <tr>
                     <td data-label="Order Code" class="order-code">
@@ -84,13 +84,15 @@
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                             </a>
-                            <a href="{{ route('user.orders.invoice', $order->id) }}" target="_blank" class="action-btn btn-invoice" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Download Invoice">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg>
-                            </a>
+                            @if($order->canDownloadInvoice())
+                                <a href="{{ route('user.orders.invoice', $order->id) }}" target="_blank" class="action-btn btn-invoice" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Download Invoice">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </a>
+                            @endif
                             @if($status === 'delivered')
                                 <a href="{{ route('user.returns.create', $order->id) }}" class="action-btn btn-view" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Request Return" style="color:#198754;">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -55,6 +55,7 @@
                         <th class="ps-3">No.</th>
                         <th>Image</th>
                         <th><a href="{{ sortUrl('title', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">Title {!! sortIndicator('title', $sortBy, $sortDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('author', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">Author {!! sortIndicator('author', $sortBy, $sortDir) !!}</a></th>
                         <th><a href="{{ sortUrl('status', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">Status {!! sortIndicator('status', $sortBy, $sortDir) !!}</a></th>
                         <th><a href="{{ sortUrl('created_at', $sortBy, $sortDir) }}" class="text-decoration-none text-dark">Date {!! sortIndicator('created_at', $sortBy, $sortDir) !!}</a></th>
                         <th class="pe-3">Action</th>
@@ -72,6 +73,7 @@
                             @endif
                         </td>
                         <td>{{ $blog->title ?? 'Untitled' }}</td>
+                        <td>{{ $blog->author ?: 'Admin' }}</td>
                         <td>
                             @if(request()->has('trashed'))
                                 <span class="badge admin-clickable {{ $blog->status === 'published' ? 'bg-success' : 'bg-light text-warning border border-warning-subtle' }}">Deleted</span>
@@ -110,7 +112,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">{{ request()->has('trashed') ? 'Trash is empty.' : 'No results found.' }}</td>
+                        <td colspan="7" class="text-center py-4 text-muted">{{ request()->has('trashed') ? 'Trash is empty.' : 'No results found.' }}</td>
                     </tr>
                     @endforelse
                 </tbody>

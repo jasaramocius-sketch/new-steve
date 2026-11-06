@@ -8,8 +8,8 @@
 <div class="blog-category-field">
     <!-- <label class="form-label">Category</label> -->
 
-    <div class="input-group">
-        <select name="blog_category_id" class="form-control @error('blog_category_id') is-invalid @enderror">
+    <div class="input-group new-category-select {{ $errors->has('blog_category_id') || $errors->has('new_category') ? 'is-invalid' : '' }}">
+        <select name="blog_category_id" class="form-control form-select w-100 @error('blog_category_id') is-invalid @enderror">
             <option value="">None</option>
 
             @foreach($blogCategories as $cat)
@@ -35,12 +35,45 @@
         </button>
     </div>
 
+    <div class="blog-new-category {{ old('new_category') ? '' : 'd-none' }} mt-2 p-2 border rounded bg-light">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <label class="form-label small mb-1">New Category Name *</label>
+                <input
+                    type="text"
+                    name="new_category"
+                    value="{{ old('new_category') }}"
+                    class="form-control @error('new_category') is-invalid @enderror"
+                    placeholder="e.g. Suspension"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label small mb-1">Parent Category</label>
+                <select name="new_category_parent_id" class="form-control form-select @error('new_category_parent_id') is-invalid @enderror">
+                    <option value="">— Top Level —</option>
+                    @foreach($blogCategories as $cat)
+                        <option value="{{ $cat->id }}"
+                            {{ old('new_category_parent_id') == $cat->id ? 'selected' : '' }}>
+                            {{ $cat->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        @error('new_category')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+    </div>
+
     @error('blog_category_id')
         <div class="invalid-feedback d-block">{{ $message }}</div>
     @enderror
 
     <div class="mt-2">
-        <label class="form-label small mb-1 d-block">Additional Categories (optional — check one or more)</label>
+        <label class="form-label small mb-1 d-block">Additional Categories (optional — the primary category is excluded automatically)</label>
         <div class="blog-additional-categories border rounded p-2 bg-white">
             @php $additionalSelected = collect($selectedAdditionalIds ?? []); @endphp
             @foreach($blogCategories as $cat)
@@ -76,37 +109,31 @@
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
-
-    <div class="blog-new-category {{ old('new_category') ? '' : 'd-none' }} mt-2 p-2 border rounded bg-light">
-        <div class="row g-2">
-            <div class="col-md-6">
-                <label class="form-label small mb-1">New Category Name *</label>
-                <input
-                    type="text"
-                    name="new_category"
-                    value="{{ old('new_category') }}"
-                    class="form-control @error('new_category') is-invalid @enderror"
-                    placeholder="e.g. Suspension"
-                    autocomplete="off"
-                >
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label small mb-1">Parent Category</label>
-                <select name="new_category_parent_id" class="form-control">
-                    <option value="">— Top Level —</option>
-                    @foreach($blogCategories as $cat)
-                        <option value="{{ $cat->id }}"
-                            {{ old('new_category_parent_id') == $cat->id ? 'selected' : '' }}>
-                            {{ $cat->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-
-        @error('new_category')
-            <div class="invalid-feedback d-block">{{ $message }}</div>
-        @enderror
-    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var field = document.querySelector('.blog-category-field');
+    if (!field) return;
+
+    var primary = field.querySelector('select[name="blog_category_id"]');
+    var boxes = field.querySelectorAll('input[name="additional_categories[]"]');
+    if (!primary || !boxes.length) return;
+
+    function syncAdditionalCategories() {
+        var primaryId = primary.value;
+
+        boxes.forEach(function (box) {
+            var isPrimary = primaryId !== '' && box.value === primaryId;
+            box.disabled = isPrimary;
+
+            if (isPrimary) {
+                box.checked = false;
+            }
+        });
+    }
+
+    primary.addEventListener('change', syncAdditionalCategories);
+    syncAdditionalCategories();
+});
+</script>

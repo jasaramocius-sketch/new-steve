@@ -20,7 +20,7 @@
         <div class="ap-page-header-row"><h1 class="ap-page-title">{{ $isEditing ? 'Edit Currency' : 'Add New Currency' }}</h1></div>
     </div> -->
 
-    <div class="col-lg-6 px-0">
+    <div class="col">
         <div class="card">
             <form action="{{ $isEditing ? route('admin.settings.currency.update', $currency) : route('admin.settings.currency.store') }}" method="POST">
                 @csrf
@@ -28,7 +28,7 @@
                 <div class="card-body">
                     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
                     <div class="form-group">
-                        <label for="currency-name">Currency name</label>
+                        <label for="currency-name" class="mt-0">Currency name</label>
                         <input id="currency-name" name="name" class="form-control" value="{{ old('name', $currency->name) }}" maxlength="100" required>
                     </div>
                     <div class="form-group">
@@ -49,7 +49,7 @@
                             <label class="custom-control-label" for="currency-active">Active</label>
                         </div>
                     @endif
-                    <div class="form-group mb-0 d-flex gap-2">
+                    <div class="form-group mb-0 d-flex gap-2 mt-2">
                         <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>{{ $isEditing ? 'Update' : 'Save' }}</button>
                         <a href="{{ route('admin.settings.currency.index') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-times"></i> Cancel</a>
                     </div>

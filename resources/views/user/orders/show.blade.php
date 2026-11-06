@@ -600,18 +600,20 @@
     </div>
 
     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-        <a href="{{ route('user.orders.invoice', $order->id) }}"
-           target="_blank"
-           class="template-btn outline-btn lg-btn steve-btn steve-btn-sm order-print-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round" style="margin-right:6px;">
-                <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-            Print Order
-        </a>
+        @if($order->canDownloadInvoice())
+            <a href="{{ route('user.orders.invoice', $order->id) }}"
+               target="_blank"
+               class="template-btn outline-btn lg-btn steve-btn steve-btn-sm order-print-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" style="margin-right:6px;">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Download Invoice
+            </a>
+        @endif
         @if($currentStatus === 'delivered')
             <a href="{{ route('user.returns.create', $order->id) }}"
                class="template-btn lg-btn steve-btn steve-btn-sm order-print-btn"
@@ -804,10 +806,10 @@
             </h5>
 
             <div class="order-shipping-method">
-                <span class="order-shipping-icon">
-                    <i class="fas fa-truck"></i>
-                </span>
-                <div>
+                <!-- <span class="">
+                    <i class="fa fa-truck-fast"></i>
+                </span> -->
+                <div  class="d-flex flex-row align-items-center justify-content-between w-100 gap-4">
                     <p class="order-shipping-name">{{ ucfirst($order->delivery_type ?? 'Free Shipping') }}</p>
                     <p class="order-shipping-subtitle">
                         {{ $currentStatus === 'delivered' ? 'Order delivered successfully' : 'Delivery information' }}

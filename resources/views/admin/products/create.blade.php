@@ -50,12 +50,9 @@
                             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
-                            <label class="form-label mt-2">SKU / Part Number</label>
-                            <div class="input-group">
-                                <input type="text" name="sku" id="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku') }}" placeholder="e.g. am-6113">
-                                <button type="button" class="btn btn-outline-secondary" id="sku-generate-btn" title="Generate SKU"><i class="fas fa-dice"></i> Auto</button>
-                                @error('sku') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
+                            <label class="form-label mt-2">Part Number</label>
+                            <input type="text" class="form-control" value="Generated automatically when saved" readonly>
+                            <small class="form-text text-muted">The Part Number is generated automatically and cannot be entered manually.</small>
                         </div>
 
                         <div class="col-md-3">
@@ -266,15 +263,5 @@
 
 @include('admin.partials.image-manager-picker', ['pickerId' => 'product_image', 'targetInput' => 'image_from_manager'])
 @include('admin.partials.image-manager-picker', ['pickerId' => 'gallery_images', 'targetInput' => 'gallery_images_from_manager', 'multiple' => true])
-
-<script>
-document.getElementById('sku-generate-btn').addEventListener('click', function () {
-    const name = (document.querySelector('input[name="name"]')?.value || '').trim();
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    const prefix = ('SKU-' + slug.substring(0, 6)).toUpperCase();
-    const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
-    document.getElementById('sku').value = prefix + '-' + rand;
-});
-</script>
 
 @endsection

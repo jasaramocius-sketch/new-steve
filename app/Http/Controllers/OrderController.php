@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Services\InvoiceSettingsService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -152,8 +153,12 @@ class OrderController extends Controller
             abort(403, 'You are not authorized to view this order.');
         }
 
-        // Load the blade view file and pass the order data to it
-        $pdf = Pdf::loadView('user.orders.invoice', compact('order'));
+        if (! $order->canDownloadInvoice()) {
+            abort(403, 'Invoice is not available for this order yet.');
+        }
+
+        $invoiceData = app(InvoiceSettingsService::class)->forOrder($order);
+        $pdf = Pdf::loadView('user.orders.invoice', ['order' => $order] + $invoiceData);
 
         // Set the paper size to A4 (optional but recommended for invoices)
         $pdf->setPaper('a4', 'portrait');

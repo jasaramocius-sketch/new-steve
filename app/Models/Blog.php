@@ -19,6 +19,7 @@ class Blog extends Model
         'slug',
         'image',
         'details',
+        'author',
         'status',
         'published_at',
         'blog_category_id',
@@ -44,7 +45,11 @@ class Blog extends Model
 
     public function allCategories()
     {
-        return collect([$this->category])->filter()->merge($this->additionalCategories);
+        return collect([$this->category])
+            ->filter()
+            ->merge($this->additionalCategories)
+            ->unique('id')
+            ->values();
     }
 
     public function tags()

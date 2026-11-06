@@ -207,7 +207,7 @@
                         </td>
                         <td class="admin-product-name">
                             <a href="{{ route('product', $product->slug) }}" target="_blank">{{ Str::words($product->name, 3, '...') }}</a>
-                            <div class="small text-muted"><code>#{{ $product->sku ?: '—' }}</code></div>
+                            <div class="small text-muted">Part Number: <code>{{ $product->part_number ?: '—' }}</code></div>
                         </td>
                         <td>{{ $product->category->name ??  'N/A' }}</td>
                         <td>{{ $product->seller->name ?? 'N/A' }}</td>

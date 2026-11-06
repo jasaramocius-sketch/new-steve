@@ -28,7 +28,7 @@
 
                 <div class="col-md-3">
                     <label class="form-label">Status</label>
-                    <select name="status" class="form-control @error('status') is-invalid @enderror">
+                    <select name="status" class="form-control form-select @error('status') is-invalid @enderror">
                         <option value="active" {{ (old('status', $category->status) ?? 'active') === 'active' ? 'selected' : '' }}>Active</option>
                         <option value="inactive" {{ (old('status', $category->status) ?? 'active') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
@@ -37,7 +37,7 @@
 
                 <div class="col-md-3">
                     <label class="form-label">Parent Category</label>
-                    <select name="parent_id" class="form-control @error('parent_id') is-invalid @enderror">
+                    <select name="parent_id" class="form-control form-select @error('parent_id') is-invalid @enderror">
                         <option value="">— None (Top Level) —</option>
                         @foreach($parents as $p)
                             <option value="{{ $p->id }}" {{ (old('parent_id', $category->parent_id ?? '') == $p->id) ? 'selected' : '' }}>

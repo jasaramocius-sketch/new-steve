@@ -1292,6 +1292,7 @@ body.user-reviews-page.modal-open { overflow-y: scroll !important; padding-right
   transition: all 0.3s ease;
   text-decoration: none;
   gap: 8px;
+  align-items: stretch;
 }
 
 .steve-btn-sm {
@@ -1661,6 +1662,20 @@ body.user-reviews-page.modal-open { overflow-y: scroll !important; padding-right
   }
 }
 
+@media (max-width: 991.98px) {
+  .blog-show-page .gs-blog-sidebar-wrapper {
+    position: static;
+    left: auto;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    transition: none;
+  }
+}
+
 /* ── Blog content body (CKEditor raw HTML) ── */
 .blog-content-body {
   color: #4c3533;
@@ -1714,14 +1729,14 @@ body.user-reviews-page.modal-open { overflow-y: scroll !important; padding-right
 
 /* Footer link hover — color + underline (text width only) */
 .gs-footer-section .footer-row ul>li a,
-.gs-footer-section .footer-row .left-info a:not(.header-logo-wrapper) {
+.gs-footer-section .footer-row .left-info a:not(.header-logo-wrapper), .gs-footer-section .footer-row .left-info span:not(.header-logo-wrapper) {
   position: relative;
   width: fit-content;
   transition: color 0.3s ease-in;
 }
 
 .gs-footer-section .footer-row ul>li a::after,
-.gs-footer-section .footer-row .left-info a:not(.header-logo-wrapper)::after {
+.gs-footer-section .footer-row .left-info a:not(.header-logo-wrapper)::after, .gs-footer-section .footer-row .left-info span:not(.header-logo-wrapper)::after {
   content: "";
   position: absolute;
   width: 0;
@@ -1736,12 +1751,12 @@ body.user-reviews-page.modal-open { overflow-y: scroll !important; padding-right
 }
 
 .gs-footer-section .footer-row ul>li a:hover,
-.gs-footer-section .footer-row .left-info a:not(.header-logo-wrapper):hover {
+.gs-footer-section .footer-row .left-info a:not(.header-logo-wrapper):hover, .gs-footer-section .footer-row .left-info span:not(.header-logo-wrapper):hover {
   color: var(--primary) !important;
 }
 
 .gs-footer-section .footer-row ul>li a:hover::after,
-.gs-footer-section .footer-row .left-info a:not(.header-logo-wrapper):hover::after {
+.gs-footer-section .footer-row .left-info a:not(.header-logo-wrapper):hover::after, .gs-footer-section .footer-row .left-info span:not(.header-logo-wrapper):hover::after {
   width: 100%;
   opacity: 1;
   visibility: visible;

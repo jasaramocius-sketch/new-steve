@@ -66,7 +66,7 @@
             <h5 class="widget-title">Categories</h5>
             <ul class="cat-wrapper">
               @foreach($categories as $cat)
-              <a href="{{ route('blog.category', $cat->slug) }}" class="blog-page-cat-list {{ isset($category) && $category->id === $cat->id ? 'active' : '' }}"><i class="fas fa-arrow-right ms-1"></i> {{ $cat->name }} ({{ $cat->blogs_count }})</a>
+              <a href="{{ route('blog.category', $cat->slug) }}" class="blog-page-cat-list {{ isset($category) && $category->id === $cat->id ? 'active' : '' }}"><i class="fas fa-arrow-right ms-1"></i> {{ $cat->name }} ({{ $cat->total_blogs_count }})</a>
               @endforeach
             </ul>
           </div>
@@ -125,12 +125,12 @@
             </a>
           </div>
           <div class="right-side-content">
-            <div class="d-flex gap-1">
-            @if($blog->category)
-            <a href="{{ route('blog.category', $blog->category->slug) }}" class="blog-card-category">
-              <i class="fas fa-folder me-1"></i> {{ $blog->category->name }}
+            <div class="d-flex gap-1 flex-wrap">
+            @foreach($blog->allCategories() as $blogCategory)
+            <a href="{{ route('blog.category', $blogCategory->slug) }}" class="blog-card-category">
+              <i class="fas fa-folder me-1"></i> {{ $blogCategory->name }}
             </a>
-            @endif
+            @endforeach
             <div class="date-wrapper">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <path d="M8 2V4M16 2V4M3 10.5H21M5 4H19C20.1046 4 21 4.89543 21 6V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V6C3 4.89543 3.89543 4 5 4Z" stroke="#292D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

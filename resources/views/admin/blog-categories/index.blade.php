@@ -69,7 +69,7 @@
                         <td>{{ $cat->name }}</td>
                         <td>{{ $cat->parent?->name ?? "—" }}</td>
                         <td><code>{{ $cat->slug }}</code></td>
-                        <td>{{ $cat->blogs_count }}</td>
+                        <td>{{ $cat->total_blogs_count }}</td>
                         <td>
                             @if(request()->has('trashed'))
                                 <span class="badge bg-light text-secondary border border-secondary-subtle">Deleted</span>

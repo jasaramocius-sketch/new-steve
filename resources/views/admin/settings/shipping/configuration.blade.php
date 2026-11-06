@@ -153,21 +153,6 @@
                 </form>
             </div>
         </div>
-
-        <div class="col-lg-6">
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="mb-0 h6">Quick Links</h5>
-                </div>
-                <div class="card-body">
-                    <a href="{{ route('admin.settings.shipping-countries.index') }}" class="btn btn-outline-primary mb-1">Shipping Countries</a>
-                    <a href="{{ route('admin.settings.shipping-states.index') }}" class="btn btn-outline-primary mb-1">Shipping States</a>
-                    <a href="{{ route('admin.settings.shipping-cities.index') }}" class="btn btn-outline-primary mb-1">Shipping Cities</a>
-                    <a href="{{ route('admin.settings.shipping-zones.index') }}" class="btn btn-outline-primary mb-1">Manage Shipping Zones</a>
-                    <a href="{{ route('admin.settings.shipping-carriers.index') }}" class="btn btn-outline-primary mb-1">Manage Carriers</a>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 @endsection

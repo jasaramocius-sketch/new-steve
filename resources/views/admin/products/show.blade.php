@@ -153,8 +153,8 @@
                         <td>{{ $product->name }}</td>
                     </tr>
                     <tr>
-                        <th class="text-muted">SKU</th>
-                        <td>{{ $product->sku ?: '—' }}</td>
+                        <th class="text-muted">Part Number</th>
+                        <td>{{ $product->part_number ?: '—' }}</td>
                     </tr>
                     <tr>
                         <th class="text-muted">Price</th>

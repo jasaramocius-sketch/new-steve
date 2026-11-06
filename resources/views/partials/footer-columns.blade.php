@@ -55,9 +55,9 @@
             <a class="wow-replaced d-block mb-2 text-white" data-wow-delay=".2s" href="mailto:{{ \App\Models\Setting::get('header_email', 'help@steveautoparts.com') }}">
                 <i class="fas fa-envelope me-2"></i> {{ \App\Models\Setting::get('header_email', 'help@steveautoparts.com') }}
             </a>
-            <a class="wow-replaced d-block text-white" data-wow-delay=".3s" href="{{ route('contact') }}">
+            <span class="wow-replaced d-block text-white" data-wow-delay=".3s" href="{{ route('contact') }}">
                 <i class="fas fa-map-marker-alt me-2"></i> {{ \App\Models\Setting::get('header_address', '3584 Hickory Heights Drive , USA') }}
-            </a>
+            </span>
         @elseif($footerType === 'newsletter')
             @if($footerHeading)
                 <h3 class="text-white mb-3 footer-col-title">{{ $footerHeading }}</h3>

@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Services\InvoiceSettingsService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -35,7 +36,8 @@ class OrderInvoiceMail extends Mailable
     public function attachments(): array
     {
         $order = $this->order->loadMissing('items.product');
-        $pdf = Pdf::loadView('user.orders.invoice', compact('order'))->setPaper('a4', 'portrait');
+        $invoiceData = app(InvoiceSettingsService::class)->forOrder($order);
+        $pdf = Pdf::loadView('user.orders.invoice', ['order' => $order] + $invoiceData)->setPaper('a4', 'portrait');
 
         return [
             Attachment::fromData(

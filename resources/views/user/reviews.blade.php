@@ -15,7 +15,7 @@
     <h4 class="h4-style mb-0">My Reviews</h4>
     <a href="{{ route('shop') }}" class="btn btn-primary steve-btn">Continue Shopping</a>
 </div>
-<div class="view-reviews-filter d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
+<div class="view-reviews-filter d-grid grid-template-columns-auto align-items-center justify-content-between mb-3 gap-2 flex-wrap">
     <form method="GET" action="{{ route('user.reviews') }}" class="d-flex gap-2 align-items-center" id="reviewFilterForm">
         @include('admin.partials.search-form', [
             'route' => route('user.reviews'),

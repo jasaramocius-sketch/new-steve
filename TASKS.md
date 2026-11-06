@@ -5170,3 +5170,73 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - Fixed content margin to match sidebar width (280px).
 - Set nav-wrap direction to LTR.
 - Added submenu arrow and moved it to far right.
+
+## 362. (2026-11-05): Soft Delete Support for Shipping Data
+
+- Added Laravel `SoftDeletes` support for countries, states, cities, shipping carriers, shipping zones, and shipping zone rates.
+- Added migration `2026_11_05_000004_add_soft_deletes_to_shipping_tables.php` and applied it to the configured `new_steve` database.
+- Deleting a shipping zone now soft-deletes its rates as well.
+- Carrier/state creation can restore matching soft-deleted records; deleted zone rates are restored when re-added.
+- Verified all six tables have `deleted_at`, shipping routes load, and PHP syntax checks pass. Feature tests could not run because PHP SQLite PDO is unavailable.
+
+## 363. (2026-11-06): Contact Us "Contact Information" managed from admin
+
+- Added `Settings > Contact Information` page (`admin.settings.contact` / `.update`) with address, phone, email, working hours, and Google Maps embed URL.
+- Phone, email, and address reuse `header_phone`, `header_email`, and `header_address`, so header, footer, and Contact Us stay in sync.
+- Added new settings `contact_working_hours` and `contact_map_embed`; defaults live in `config/contact.php`.
+- `resources/views/pages/contact.blade.php` now reads settings instead of hardcoded values, supports multi-line address/hours, builds `tel:`/`mailto:` links, and hides the map when the embed URL is blank.
+- Map field accepts either the Google Maps embed URL or the full iframe code (URL is extracted); only Google Maps hosts are accepted.
+- Added the Contact Information tile to the All Settings hub and a sidebar link. Existing admin middleware already allows `master_admin`, `admin`, and `staff`.
+- Verified Contact Us returns 200 with values from settings; admin view renders; map iframe extraction and invalid-URL rejection tested.
+
+## 364. (2026-11-06): Make blog additional categories functional
+
+- Blog category pages now include blogs where the category is either the primary category or an additional category (`blog_additional_category`).
+- Added combined category counts: primary blogs + additional blogs, exposed as `total_blogs_count` via `BlogCategory::scopeWithBlogCounts()` and `additionalBlogs()`.
+- Blog cards and the single blog page now list all assigned categories (primary + additional), deduplicated by `Blog::allCategories()`.
+- Frontend blog queries eager-load `additionalCategories` to avoid N+1 queries.
+- Admin blog create/edit now disables the primary category in the Additional Categories checkboxes and the server also filters it out before syncing.
+- Admin blog category list now shows combined primary + additional blog counts.
+- Deleted the existing redundant pivot row where the additional category matched the blog's primary category.
+- Verified `/blog`, category pages (including a blog assigned only through an additional category), blog show, and tag pages return 200; combined counts and admin sync filtering tested.
+
+## 365. (2026-11-06): Blog author change option
+
+- Added nullable `author` column to `blogs` (migration `2026_11_06_000001_add_author_to_blogs_table.php`) and added it to the `Blog` fillable fields.
+- Admin blog Create/Edit now has an **Author** field with suggestions from admin/staff users. Custom names are allowed; blank falls back to "Admin".
+- Admin blog list now shows an Author column and supports sorting by author.
+- Blog detail page shows the saved author ("By: ...") instead of the hardcoded "By: Admin".
+- Verified create/edit/admin index views render, custom author appears on the frontend, and null author falls back to "Admin".
+
+
+## 366. (2026-11-06): Add Admin-Managed Shipping Functionality
+
+- Add shipping functionality that administrators can configure and manage from the admin panel.
+
+## 367. (2026-11-06): Blog Author — Fetch Users + Logged-in User Default (NEW TASK)
+
+**Status: Pending**
+
+- Change the blog Author field to fetch/select users from the `users` table instead of free-text suggestions.
+- On blog create, default the author to the currently logged-in admin/staff user.
+- On blog edit, preselect the blog's saved author.
+- Keep the "Admin" fallback when no author is selected.
+- Decide whether to store `author_id` (FK to `users`) or keep the existing `author` name snapshot before implementation.
+
+## 368. (2026-11-06): Admin Invoice Management (NEW TASK)
+
+**Status: Completed**
+
+- Add admin controls for managing invoice generation and configuration. The current invoice is generated as a PDF from order data with a fixed template.
+- Implemented Invoice Settings in the admin panel to manage the logo, business details, primary color, standard/compact layout, invoice prefix/date format/title, note/terms/footer, display-only currency label, amount labels, and visibility of invoice sections.
+- Generated order invoice PDFs now apply these settings while preserving order amounts and customer/order records.
+
+## 369. (2026-11-06): Customer Invoice Availability Before Delivery
+
+- Added `Order::canDownloadInvoice()` to decouple invoice availability from delivery status.
+- Customer invoices are available for `processing`, `shipped`, and `delivered` orders; `pending` and `cancelled` orders are excluded.
+- Prepaid orders require `payment_status = paid`; COD orders are eligible from `processing` onward because payment is collected on delivery.
+- Order Details now shows a "Download Invoice" button only when eligible, and the Orders list hides the invoice action for ineligible orders.
+- `OrderController@invoice` now enforces the same rule server-side with a 403 response for direct access to an unavailable invoice.
+- Corrected the Orders list payment badge to use the actual `payment_status` instead of inferring paid/unpaid from the payment method.
+- Verified allowed orders return a PDF, while pending, cancelled, and unpaid card orders are blocked; Order Details and Orders list render correctly.

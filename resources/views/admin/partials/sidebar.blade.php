@@ -141,6 +141,8 @@
                 <ul class="collapse list-unstyled submenu {{ $setupConfigExpanded ? 'show' : '' }}" id="setupConfigSubmenu">
                     <li><a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.index') ? 'active' : '' }}"><i class="fas fa-sliders" aria-hidden="true"></i> All Settings</a></li>
                     <li><a href="{{ route('admin.settings.header') }}" class="{{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}"><i class="fas fa-gear" aria-hidden="true"></i> General Settings</a></li>
+                    <li><a href="{{ route('admin.settings.contact') }}" class="{{ request()->routeIs('admin.settings.contact*') ? 'active' : '' }}"><i class="fas fa-address-book" aria-hidden="true"></i> Contact Information</a></li>
+                    <li><a href="{{ route('admin.settings.invoice') }}" class="{{ request()->routeIs('admin.settings.invoice*') ? 'active' : '' }}"><i class="fas fa-file-invoice" aria-hidden="true"></i> Invoice Settings</a></li>
                     <li><a href="{{ route('admin.settings.seo') }}" class="{{ request()->routeIs('admin.settings.seo*') ? 'active' : '' }}"><i class="fas fa-magnifying-glass" aria-hidden="true"></i> SEO Settings</a></li>
                     <li><a href="{{ route('admin.settings.features') }}" class="{{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}"><i class="fas fa-toggle-on" aria-hidden="true"></i> Features activation</a></li>
                     <li><a href="{{ route('admin.settings.languages.index') }}" class="{{ request()->routeIs('admin.settings.languages.*') ? 'active' : '' }}"><i class="fas fa-language" aria-hidden="true"></i> Languages</a></li>

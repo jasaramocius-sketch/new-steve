@@ -64,7 +64,7 @@
                                         $currentStatus = old('status', $blog->status ?? 'draft');
                                     @endphp
                                     <select name="status"
-                                        class="form-control @error('status') is-invalid @enderror">
+                                        class="form-control form-select @error('status') is-invalid @enderror">
                                         <option value="draft"
                                             {{ $currentStatus === 'draft' ? 'selected' : '' }}>
                                             Draft
@@ -112,6 +112,25 @@
                                         Cancel
                                     </a>
                                 </div>
+                            </div>
+                        </div>
+                        {{-- Author --}}
+                        <div class="card border shadow-none mb-3">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0">Author</h6>
+                            </div>
+                            <div class="card-body">
+                                <select
+                                    name="author"
+                                    class="form-select @error('author') is-invalid @enderror">
+                                    @foreach($blogAuthors as $author)
+                                        <option value="{{ $author }}" @selected(old('author', $defaultAuthor) === $author)>{{ $author }}</option>
+                                    @endforeach
+                                </select>
+                                @error('author')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Shown on the blog page as "By: ...".</small>
                             </div>
                         </div>
                         {{-- Category --}}
