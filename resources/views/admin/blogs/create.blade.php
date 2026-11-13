@@ -102,6 +102,7 @@
                                     </button>
                                     <a href="{{ route('admin.blogs.index') }}"
                                         class="btn btn-primary steve-btn gap-1">
+                                        <i class="fas fa-times"></i>
                                         Cancel
                                     </a>
                                 </div>
@@ -165,8 +166,8 @@
                                 <button type="button"
                                     class="btn btn-outline-primary"
                                     onclick="impOpen_blog_image()">
-                                    <i class="fas fa-images me-1"></i>
-                                    Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i>
+                                    Browse
                                 </button>
                                 @error('image')
                                     <div class="text-danger small mt-2">

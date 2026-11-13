@@ -20,12 +20,19 @@ class TaxTypeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:150|unique:tax_types,name',
+            'name' => ['required', 'string', 'max:150', Rule::unique('tax_types', 'name')->whereNull('deleted_at')],
             'is_active' => 'nullable|boolean',
         ]);
         $validated['is_active'] = $request->boolean('is_active');
 
-        TaxType::create($validated);
+        $taxType = TaxType::withTrashed()->where('name', $validated['name'])->first();
+
+        if ($taxType) {
+            $taxType->restore();
+            $taxType->update($validated);
+        } else {
+            TaxType::create($validated);
+        }
 
         return redirect()->route('admin.settings.custom')->with('success', 'Tax type added.');
     }

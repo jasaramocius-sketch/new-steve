@@ -5,9 +5,8 @@
     @include('partials.meta-tags', ['pageTitle' => $isEditing ? 'Edit Carrier' : 'Add Carrier'])
 @endsection
 @section('content')
-<div class="container-fluid px-15px px-lg-25px">
-    <div class="ap-page-header mb-3"><div class="ap-page-header-row"><h1 class="ap-page-title">{{ $isEditing ? 'Edit Carrier' : 'Add Carrier' }}</h1></div></div>
-    <div class="col-lg-7 px-0">
+<div class="container-fluid px-15px px-lg-25px">   
+    <div class="col px-0">
         <div class="card">
             <form action="{{ $isEditing ? route('admin.settings.shipping-carriers.update', $carrier) : route('admin.settings.shipping-carriers.store') }}" method="POST">
                 @csrf
@@ -30,8 +29,10 @@
                         <input id="carrier-active" type="checkbox" name="is_active" value="1" class="custom-control-input" @checked(old('is_active', $isEditing ? $carrier->is_active : true))>
                         <label class="custom-control-label" for="carrier-active">Active and available at checkout</label>
                     </div>
-                    <button type="submit" class="btn btn-primary">{{ $isEditing ? 'Update Carrier' : 'Save Carrier' }}</button>
-                    <a href="{{ route('admin.settings.shipping-carriers.index') }}" class="btn btn-light">Cancel</a>
+                    <div class="form-group d-flex gap-2">
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>{{ $isEditing ? 'Update Carrier' : 'Save Carrier' }}</button>
+                        <a href="{{ route('admin.settings.shipping-carriers.index') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-times"></i>Cancel</a>
+                    </div>
                 </div>
             </form>
         </div>

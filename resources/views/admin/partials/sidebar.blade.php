@@ -96,7 +96,7 @@
             <i class="fas fa-puzzle-piece"></i> Page Builder
         </a>
         <a href="{{ route('admin.images.index') }}" class="nav-item {{ request()->routeIs('admin.images.*') ? 'active' : '' }}">
-            <i class="fas fa-images"></i> Image Manager
+            <i class="fas fa-cloud-upload-alt"></i> Image Manager
         </a>
         <a href="{{ route('admin.blogs.index') }}" class="nav-item {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
             <i class="fas fa-blog"></i> Blog
@@ -150,6 +150,7 @@
                     <li><a href="{{ route('admin.settings.custom') }}" class="{{ request()->routeIs('admin.settings.custom*') ? 'active' : '' }}"><i class="fas fa-percent" aria-hidden="true"></i> Vat &amp; TAX</a></li>
                     <li><a href="{{ route('admin.settings.pickup-points.index') }}" class="{{ request()->routeIs('admin.settings.pickup-points.*') ? 'active' : '' }}"><i class="fas fa-store" aria-hidden="true"></i> Pickup point</a></li>
                     <li><a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'active' : '' }}"><i class="fas fa-envelope" aria-hidden="true"></i> SMTP Settings</a></li>
+                    <li><a href="{{ route('admin.settings.google-recaptcha') }}" class="{{ request()->routeIs('admin.settings.google-recaptcha*') ? 'active' : '' }}"><i class="fas fa-shield-alt" aria-hidden="true"></i> Google reCAPTCHA</a></li>
                     <li><a href="{{ route('admin.settings.payment-methods') }}" class="{{ request()->routeIs('admin.settings.payment-methods*') ? 'active' : '' }}"><i class="fas fa-credit-card" aria-hidden="true"></i> Payment Methods</a></li>
                     <li><a href="{{ route('admin.api-integrations.index') }}" class="{{ request()->routeIs('admin.api-integrations*') ? 'active' : '' }}">
                         <i class="fas fa-plug" aria-hidden="true"></i> API Integrations

@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 {{-- Add your custom page ID and classes right here --}}
 @include('partials.page-attributes', ['pageId' => 'admin-products-import-page', 'pageClass' => 'admin-products-import-page'])
-@section('page-title', 'Import Products')
+@section('page-title', 'Import Products from CSV')
 @section('meta_tags')
     @include('partials.meta-tags', [
         'pageTitle' => 'Import Products - Admin Panel',
@@ -11,12 +11,6 @@
 @section('content')
 
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Import Products from CSV</h5>
-        <a href="{{ route('admin.products.download-sample-csv') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-download"></i> Download Sample CSV
-        </a>
-    </div>
     <div class="card-body">
         <form action="{{ route('admin.products.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
@@ -55,11 +49,14 @@
                 <code>reviews</code> or <code>reviews_data</code> (JSON array or <code>name::rating::text|name::rating::text</code>),
                 <code>tab_label_1</code>, <code>tab_label_2</code>, <code>tab_label_3</code> (custom tab titles)
             </div>
+        <a href="{{ route('admin.products.download-sample-csv') }}" class="btn btn-outline-secondary mb-2">
+            <i class="fas fa-download"></i> Download Sample CSV
+        </a>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary steve-btn gap-1">
                     <i class="fas fa-upload"></i> Import Products
                 </button>
-                <a href="{{ route('admin.products.index') }}" class="btn btn-primary">Cancel</a>
+                <a href="{{ route('admin.products.index') }}" class="btn btn-primary steve-btn gap-1"><i class="fas fa-times"></i> Cancel</a>
             </div>
         </form>
     </div>

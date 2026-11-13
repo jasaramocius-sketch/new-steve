@@ -71,7 +71,7 @@ class AdditionalHomePageSectionsSeeder extends Seeder
         ];
 
         foreach ($sections as $data) {
-            HomePageSection::firstOrCreate(
+            HomePageSection::firstOrCreateRestored(
                 ['section_name' => $data['section_name']],
                 $data
             );

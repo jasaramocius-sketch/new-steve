@@ -4,10 +4,11 @@ namespace App\Models;
 
 use App\Traits\Revisable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Brand extends Model
 {
-    use Revisable;
+    use Revisable, SoftDeletes;
 
     protected $table = 'brands';
 

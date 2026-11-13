@@ -194,8 +194,8 @@
                                 <button type="button"
                                     class="btn btn-outline-primary"
                                     onclick="impOpen_blog_image()">
-                                    <i class="fas fa-images me-1"></i>
-                                    Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i>
+                                    Browse
                                 </button>
                                 @error('image')
                                     <div class="text-danger small mt-2">

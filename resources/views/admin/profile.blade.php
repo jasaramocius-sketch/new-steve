@@ -77,7 +77,7 @@
                             </div>
                             <div>
                                 <button type="button" class="btn btn-outline-primary" onclick="impOpen_avatar()">
-                                    <i class="fas fa-images me-1"></i>Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i>Browse
                                 </button>
                                 <div><small class="text-muted">Select a profile photo from Image Manager</small></div>
                             </div>

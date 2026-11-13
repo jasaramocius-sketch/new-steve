@@ -6,6 +6,7 @@ use App\Mail\ContactReceivedMail;
 use App\Models\Contact;
 use App\Models\Page;
 use App\Models\Setting;
+use App\Services\Recaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -19,6 +20,10 @@ class ContactController extends Controller
             'subject' => 'required',
             'message' => 'required',
         ]);
+
+        if (Recaptcha::enabled('contact') && ! Recaptcha::verify($request, 'contact')) {
+            return back()->withErrors(['g-recaptcha-response' => 'Please complete the reCAPTCHA verification.'])->withInput();
+        }
 
         $contact = Contact::create($request->all() + ['user_id' => auth()->id()]);
 
@@ -55,6 +60,10 @@ class ContactController extends Controller
             'subject' => 'required',
             'message' => 'required',
         ]);
+
+        if (Recaptcha::enabled('contact') && ! Recaptcha::verify($request, 'contact')) {
+            return back()->withErrors(['g-recaptcha-response' => 'Please complete the reCAPTCHA verification.'])->withInput();
+        }
 
         $contact = Contact::create($request->all() + ['user_id' => auth()->id()]);
 

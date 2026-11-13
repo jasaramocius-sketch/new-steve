@@ -11,7 +11,7 @@
 @section('dashboard-content')
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="h4-style mb-0">My Vehicles</h4>
-    <button class="btn btn-primary btn-sm steve-btn" data-bs-toggle="modal" data-bs-target="#addVehicleModal">+ Add Vehicle</button>
+    <button class="btn btn-primary btn-sm steve-btn d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addVehicleModal">+ Add Vehicle</button>
 </div>
 
 <section>

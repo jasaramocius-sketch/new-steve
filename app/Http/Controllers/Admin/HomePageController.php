@@ -27,7 +27,7 @@ class HomePageController extends Controller
 
     public function index(Request $request)
     {
-        HomePageSection::firstOrCreate(
+        HomePageSection::firstOrCreateRestored(
             ['section_name' => 'services'],
             [
                 'title' => 'Services',

@@ -34,7 +34,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media-details" type="button" role="tab" aria-controls="media-details" aria-selected="false">
-                        <i class="fas fa-images me-1"></i> Media
+                        <i class="fas fa-cloud-upload-alt me-1"></i> Media
                     </button>
                 </li>
             </ul>
@@ -138,9 +138,9 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label d-block">&nbsp;</label>
-                            <div class="form-check form-switch mt-1">
+                            <div class="form-check form-switch mt-3">
                                 <input type="checkbox" name="featured" value="1" class="form-check-input" id="featured" {{ old('featured') ? 'checked' : '' }}>
                                 <label class="form-check-label" for="featured">Featured Product</label>
                             </div>
@@ -218,7 +218,7 @@
                 <!-- Tab 4: Media -->
                 <div class="tab-pane fade" id="media-details" role="tabpanel" aria-labelledby="media-tab">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col">
                             <label class="form-label fw-bold">Primary Image</label>
                             <div class="card p-3 border-dashed">
                                 <input type="file" name="image" class="form-control mb-2 @error('image') is-invalid @enderror" accept="image/*">
@@ -232,15 +232,17 @@
                                         @endif
                                     </div>
 
-                        <div class="col-md-6">
+                        <div class="col">
                             <label class="form-label fw-bold">Gallery Images</label>
                             <div class="card p-3 border-dashed">
                                 <input type="file" name="gallery_images[]" class="form-control mb-2" multiple accept="image/*">
                                 <input type="hidden" name="gallery_images_from_manager" id="gallery_images_from_manager">
                                 <div id="impPreview_gallery_images" class="d-none my-2"></div>
-                                <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
-                                    <i class="fas fa-folder-open me-1"></i> Browse Image Manager
-                                </button>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
+                                        <i class="fas fa-cloud-upload-alt me-1"></i> Browse
+                                    </button>
+                                </div>
                                 <small class="text-muted mt-2 d-block">Pick multiple images from Image Manager, or upload files above.</small>
                             </div>
                         </div>

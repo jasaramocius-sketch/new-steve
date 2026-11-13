@@ -11,12 +11,8 @@
 <div class="container-fluid">
     <div class="mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h4 class="mb-1">Contact Information</h4>
             <p class="text-muted mb-0">Manage the details shown on the Contact Us page. Phone, email and address are also used in the site header and footer.</p>
         </div>
-        <a href="{{ route('admin.settings.index') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i> All Settings
-        </a>
     </div>
 
     <div class="row">

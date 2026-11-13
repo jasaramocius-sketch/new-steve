@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 {{-- Add your custom page ID and classes right here --}}
 @include('partials.page-attributes', ['pageId' => 'admin-coupons-index-page', 'pageClass' => 'admin-coupons-index-page'])
-@section('page-title', 'Coupons')
+@section('page-title', 'All Coupons')
 @section('meta_tags')
     @include('partials.meta-tags', [
         'pageTitle' => 'Coupons - Admin Panel',
@@ -11,7 +11,7 @@
 @section('content')
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
-    <h4 class="fw-bold mb-0">All Coupons</h4>
+    <div class=""></div>
     <a href="{{ route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Coupon</a>
 </div>
 

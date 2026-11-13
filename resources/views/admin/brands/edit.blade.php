@@ -45,7 +45,7 @@
                     <input type="hidden" name="image_from_manager" id="image_from_manager_brand_image">
                     <div id="impPreview_brand_image" class="d-none mt-2"></div>
                     <button type="button" class="btn btn-outline-primary mt-10" onclick="impOpen_brand_image()">
-                        <i class="fas fa-images me-1"></i> Browse Image Manager
+                        <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                     </button>
                 </div>
 

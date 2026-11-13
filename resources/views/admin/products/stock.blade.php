@@ -37,7 +37,12 @@
                         <option value="{{ $t }}" {{ $threshold === $t ? 'selected' : '' }}>Show ≤ {{ $t }}</option>
                     @endforeach
                 </select>
-                <button class="btn btn-sm btn-primary"><i class="fas fa-search"></i></button>
+                <button class="btn btn-primary"><i class="fas fa-search"></i></button>
+                @if (request()->filled('search') || request()->filled('stock_filter') || request()->filled('threshold'))
+                    <a href="{{ route('admin.products.stock') }}" class="btn btn-outline-secondary h-40px d-flex align-items-center gap-1" title="Clear filters">
+                        <i class="fas fa-times"></i>
+                    </a>
+                @endif
             </form>
             <div class="text-muted small">
                 Showing {{ $products->firstItem() }}-{{ $products->lastItem() }} of {{ $products->total() }}

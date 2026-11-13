@@ -59,8 +59,10 @@
                         <input id="zone-active" type="checkbox" name="is_active" value="1" class="custom-control-input" @checked(old('is_active', $isEditing ? $zone->is_active : true))>
                         <label class="custom-control-label" for="zone-active">Active and available at checkout</label>
                     </div>
-                    <button type="submit" class="btn btn-primary">{{ $isEditing ? 'Update Zone' : 'Save Zone' }}</button>
-                    <a href="{{ route('admin.settings.shipping-zones.index') }}" class="btn btn-light">Cancel</a>
+                    <div class="form-group d-flex gap-2">
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>{{ $isEditing ? 'Update Zone' : 'Save Zone' }}</button>
+                        <a href="{{ route('admin.settings.shipping-zones.index') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-times"></i>Cancel</a>
+                    </div>
                 </div>
             </form>
         </div>

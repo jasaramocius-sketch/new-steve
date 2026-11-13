@@ -63,16 +63,20 @@
                         </td>
                         <td>{{ $review['user_name'] }}</td>
                         <td>
-                            @for($i = 0; $i < 5; $i++)
-                                <i class="fas fa-star {{ $i < $review['rating'] ? 'text-warning' : 'text-muted opacity-25' }}"></i>
-                            @endfor
+                            <div class="d-flex align-items-center gap-1">
+                                @for($i = 0; $i < 5; $i++)
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="13" viewBox="0 0 17 16" fill="none">
+                                        <path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="{{ $i < $review['rating'] ? '#EEAE0B' : '#E2E8F0' }}" />
+                                    </svg>
+                                @endfor
+                            </div>
                         </td>
                         <td style="max-width:300px;">
                             <span class="d-inline-block text-truncate" style="max-width:280px;" title="{{ $review['review'] }}">
                                 {{ \Illuminate\Support\Str::limit($review['review'], 80) }}
                             </span>
                             @if(!empty($review['images']))
-                                <small class="text-muted ms-1"><i class="fas fa-images"></i> {{ count($review['images']) }}</small>
+                                <small class="text-muted ms-1"><i class="fas fa-cloud-upload-alt"></i> {{ count($review['images']) }}</small>
                             @endif
                         </td>
                         <td>{{ $review['date'] }}</td>

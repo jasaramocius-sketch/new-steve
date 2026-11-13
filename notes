@@ -1,12 +1,7 @@
-<option value="10">
-        &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;└ Cooling Systems
-    </option>
-
 $2y$12$5uBS3u6Rr3DNRa.6iPqh0e2djvaW4E/Wphhc./0cygMMM.OmSolBi
 
 wp-core-ui wp-editor-wrap html-active
 wp-core-ui wp-editor-wrap tmce-active
-
 
 
 4:- Automotive Parts Maintenance Collage
@@ -14,8 +9,6 @@ wp-core-ui wp-editor-wrap tmce-active
 6:- Automotive Maintenance Part Collage
 7:- Automotive Parts and Service Collage
 8:- Automotive Parts Maintenance Collage
-
-
 
 02/09/2026
 
@@ -69,7 +62,6 @@ aiz-carousel product-gallery-thumb slick-initialized slick-slider
 fa-solid fa-circle-check
 
 
-
 Home : 
 <!-- Banner "Shop Now" button top space add -->
 <!-- Swiper button disable to cursor change. -->
@@ -82,7 +74,6 @@ Product :
 <!-- Compare product page action button line -->
 <!-- Compare product add : Part number, Category, Brand.   -->
 <!-- Compare product description wrong get.  -->
-
 
 
 <!-- Header hide language option. -->
@@ -112,45 +103,33 @@ Promise.catch
 (anonymous) @ script.js?v=1793358037:251
 
 
-
 Cart page Qty issue solved
 Home page hero banner vehicle filter form design fixed
 commission history save in DB
 
-
 kiya user order cancell kr skta he
-
-
-
 
 Cart page add product details page link : Product name and image both. - Done
 SubCategories URL set Done
 Product without main image 404 set & search result "No products found"
 Brand URL fix /new-steve/search?brand=autolite to /new-steve/brand/autolite
 
-
 /new-steve/checkout/payment
 /autoparts/checkout/payment_select
-
 
 
 http://192.168.130.37/autoparts/product/cast-aluminum-standard-rotation-w-seal-41017 - Brand: ZW (line_code)
 http://192.168.130.54/new-steve/product/cast-aluminum-standard-rotation-w-seal-41017 - Brand: Gates (name)
 
-
-
 Sitemap.xml set
 SEO Integration & Admin SEO Settings
 
 
-
 Pickup Points select form issue
-
 
 Shop page Vehicle filter style set same as home page hero section Vehicle filter
 Categories page load issue sloved
 Test Stripe payment is working
-
 
 
 Login page login form "I agree to the Privacy Policy and Terms & Conditions" chackbox add

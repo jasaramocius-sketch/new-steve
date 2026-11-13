@@ -387,13 +387,13 @@
     white-space: nowrap;
 }
 
-.user-order-details-page .order-items-table thead th:first-child {
+/* .user-order-details-page .order-items-table thead th:first-child {
     border-radius: 8px 0 0 8px;
 }
 
 .user-order-details-page .order-items-table thead th:last-child {
     border-radius: 0 8px 8px 0;
-}
+} */
 
 .user-order-details-page .order-items-table tbody td {
     padding: 17px 14px;
@@ -421,9 +421,9 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    border-radius: 8px;
-    background: var(--order-primary);
-    color: #f8fafc;
+    border-radius: 20px;
+    background: #f1f5f9;
+    color: var(--order-primary);
     font-size: 12px;
     font-weight: 700;
 }
@@ -616,7 +616,7 @@
         @endif
         @if($currentStatus === 'delivered')
             <a href="{{ route('user.returns.create', $order->id) }}"
-               class="template-btn lg-btn steve-btn steve-btn-sm order-print-btn"
+               class="template-btn lg-btn steve-btn steve-btn-sm d-flex align-items-center order-print-btn"
                style="background:var(--primary);color:#fff;">
                 <i class="fas fa-undo me-1"></i> Request Return
             </a>
@@ -969,8 +969,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary fw-600 steve-btn" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary fw-600 steve-btn" id="orderSubmitReviewBtn">Submit Review</button>
+                <button type="button" class="btn btn-primary fw-600 steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
+                <button type="button" class="btn btn-primary fw-600 steve-btn gap-1" id="orderSubmitReviewBtn"><i class="fas fa-paper-plane"></i>Submit Review</button>
             </div>
         </div>
     </div>

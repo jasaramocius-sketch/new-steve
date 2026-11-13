@@ -33,7 +33,7 @@
     .select-overlay .check-circle svg { width: 20px; height: 20px; }
 
     /* === LIST VIEW === */
-    #images-container.list-view { display: flex; flex-direction: column; gap: 0; }
+    #images-container.list-view { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     #images-container.list-view .grid-item { width: 100%; }
     #images-container.list-view .image-card { display: flex; align-items: flex-start; border-radius: 0; border-left: none; border-right: none; border-top: none;flex-direction: row; }
     #images-container.list-view .image-card.selected { border-left: 2px solid #0d6efd !important; }
@@ -55,7 +55,7 @@
     #images-container.list-view .image-card .select-overlay { display: none !important; }
     .grid-view .image-card .list-bulk-check { display: none !important; }
     .grid-view .image-edit-link { flex-direction: column;}
-    #images-container.list-view .image-card .list-bulk-check { align-items: center; justify-content: center; padding: 4px;}
+    #images-container.list-view .image-card .list-bulk-check { align-items: center; justify-content: center; }
     .list-view .start-0 {right: 0;left: unset !important;}
     .list-view .image-card .list-bulk-check { display: flex; }
     body.img-bulk-mode.list-view-active #images-container.list-view .image-card .card-info { padding-left: 8px; }
@@ -95,7 +95,7 @@
 
     /* === BULK CHECK (shared) === */
     .bulk-check {
-        width: 18px; height: 18px; border: 2px solid #adb5bd; border-radius: 3px;
+        width: 18px; height: 18px; border: 2px solid #adb5bd; ;
         background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
         transition: all 0.15s ease; flex-shrink: 0; position: relative;
     }
@@ -194,7 +194,7 @@
                         <option value="asc" {{ request('order')=='asc'?'selected':'' }}>ASC</option>
                     </select>
                 </div>
-                <div class="col-lg-3 col-md-3 col-sm-6">
+                <div class="col d-grid flex-column gap-1">
                     <button type="submit" class="btn btn-primary w-100 steve-btn gap-1"><i class="fas fa-search"></i> Filter</button>
                     @if(request()->hasAny(['search', 'filter', 'sort', 'order']))
                         <a href="{{ route('admin.images.index') }}" class="btn btn-outline-secondary w-100 mt-1 steve-btn gap-1"><i class="fas fa-times"></i> Clear Filters</a>
@@ -305,7 +305,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary steve-btn gap-1" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
                     <button type="submit" class="btn btn-primary steve-btn gap-1"><i class="fas fa-upload"></i> Upload</button>
                 </div>
             </form>

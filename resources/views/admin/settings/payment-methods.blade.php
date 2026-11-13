@@ -19,8 +19,8 @@
         <div class="ap-page-header-row"><h1 class="ap-page-title">Payment Methods</h1></div>
     </div> -->
 
-    @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
-    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+    <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif -->
     <div class="alert alert-info">
         Credentials are encrypted when saved. The Stripe keys are used by the hosted Stripe Checkout at checkout (enable Stripe Payment in System Settings). The other gateways are stored for future use and are not yet active at checkout.
     </div>
@@ -72,9 +72,8 @@
                                 <div class="form-group row">
                                     <div class="col-md-4"><label class="col-form-label" for="{{ $method['provider'] }}-sandbox">{{ $method['title'] }} Sandbox Mode</label></div>
                                     <div class="col-md-8 d-flex align-items-center">
-                                        <div class="custom-control custom-switch">
-                                            <input id="{{ $method['provider'] }}-sandbox" type="checkbox" class="custom-control-input" name="{{ $method['sandbox'] }}" value="1" @checked($method['sandboxEnabled'])>
-                                            <label class="custom-control-label" for="{{ $method['provider'] }}-sandbox">Sandbox</label>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" id="{{ $method['provider'] }}-sandbox" type="checkbox" role="switch" name="{{ $method['sandbox'] }}" value="1" @checked($method['sandboxEnabled'])>
                                         </div>
                                     </div>
                                 </div>

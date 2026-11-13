@@ -37,7 +37,7 @@ class CurrencySettingsController extends Controller
     public function updateSettings(Request $request)
     {
         $validated = $request->validate([
-            'system_default_currency' => 'required|string|exists:currencies,code',
+            'system_default_currency' => ['required', 'string', Rule::exists('currencies', 'code')->whereNull('deleted_at')],
             'symbol_format' => 'required|in:1,2,3,4',
             'decimal_separator' => 'required|in:1,2',
             'no_of_decimals' => 'required|in:0,1,2,3',
@@ -58,7 +58,11 @@ class CurrencySettingsController extends Controller
 
     public function create()
     {
-        return view('admin.settings.currency.form', ['currency' => new Currency(), 'isEditing' => false]);
+        return view('admin.settings.currency.form', [
+            'currency' => new Currency,
+            'isEditing' => false,
+            'symbolOptions' => $this->currencySymbolOptions(),
+        ]);
     }
 
     public function store(Request $request)
@@ -66,18 +70,31 @@ class CurrencySettingsController extends Controller
         $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
         $validated = $request->validate([
             'name' => 'required|string|max:100',
-            'code' => 'required|string|size:3|alpha|unique:currencies,code',
+            'code' => ['required', 'string', 'size:3', 'alpha', Rule::unique('currencies', 'code')->whereNull('deleted_at')],
             'symbol' => 'required|string|max:12',
             'rate' => 'required|numeric|gt:0|max:100000000',
         ]);
-        Currency::create($validated + ['is_active' => $request->boolean('is_active')]);
+
+        $attributes = $validated + ['is_active' => $request->boolean('is_active')];
+        $currency = Currency::withTrashed()->where('code', $validated['code'])->first();
+
+        if ($currency) {
+            $currency->restore();
+            $currency->update($attributes);
+        } else {
+            Currency::create($attributes);
+        }
 
         return redirect()->route('admin.settings.currency.index')->with('success', 'Currency added.');
     }
 
     public function edit(Currency $currency)
     {
-        return view('admin.settings.currency.form', ['currency' => $currency, 'isEditing' => true]);
+        return view('admin.settings.currency.form', [
+            'currency' => $currency,
+            'isEditing' => true,
+            'symbolOptions' => $this->currencySymbolOptions(),
+        ]);
     }
 
     public function update(Request $request, Currency $currency)
@@ -136,5 +153,19 @@ class CurrencySettingsController extends Controller
         Cache::forget('dynamic_currency_rates');
 
         return redirect()->route('admin.settings.currency.index')->with('success', 'Exchange rates updated.');
+    }
+
+    private function currencySymbolOptions(): array
+    {
+        return Currency::query()
+            ->orderBy('name')
+            ->get(['code', 'name', 'symbol'])
+            ->map(fn (Currency $currency) => [
+                'symbol' => $currency->symbol,
+                'code' => $currency->code,
+                'label' => $currency->symbol.' - '.$currency->code.' ('.$currency->name.')',
+            ])
+            ->values()
+            ->all();
     }
 }

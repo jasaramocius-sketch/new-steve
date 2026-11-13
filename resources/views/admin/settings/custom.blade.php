@@ -4,15 +4,15 @@
 @section('page-title', 'Tax Rate and Custom Value Settings')
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Tax Rate and Custom Value Settings',
+        'pageTitle' => 'Tax Rate and Custom Value Settings - Admin Panel',
     ])
 @endsection
 @section('content')
-<div class="container-fluid px-15px px-lg-25px">
-    @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
-    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+<div class="Tax-Rate-settings-container d-grid grid-column gap-4">
+    <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif -->
 
-    <div class="card mb-4">
+    <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h5 class="mb-1">Tax Types</h5>
@@ -83,7 +83,7 @@
                         <input id="custom-value" type="text" name="custom_value" maxlength="255" class="form-control" value="{{ old('custom_value', $settings['custom_value'] ?? '') }}">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Save Tax Settings</button>
+                <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save Tax Settings</button>
             </form>
         </div>
     </div>

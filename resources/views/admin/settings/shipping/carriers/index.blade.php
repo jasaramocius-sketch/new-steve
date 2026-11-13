@@ -6,14 +6,12 @@
 @endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <div class="ap-page-header mb-3">
-        <div class="ap-page-header-row d-flex justify-content-between align-items-center">
-            <div class=""></div>
-            <a href="{{ route('admin.settings.shipping-carriers.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus mr-1"></i>Add Carrier</a>
-        </div>
-    </div>
     @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
+        <div class=""></div>
+        <a href="{{ route('admin.settings.shipping-carriers.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add Carrier</a>
+    </div>
     <div class="card">
         <div class="card-body table-responsive">
             <table class="table table-hover mb-0">

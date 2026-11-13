@@ -1,0 +1,5 @@
+// Feature toggles now use Bootstrap's shared .form-check.form-switch / .form-check-input.
+// The admin layout loads public/assets/front/css/backend.css and style.css, where
+// the standard switch design and theme colors are applied.
+//
+// No custom .feature-switch / .feature-switch-track styles are needed.

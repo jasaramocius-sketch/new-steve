@@ -263,14 +263,16 @@ class BlogController extends Controller
 
         $tagIds = [];
         foreach ($names as $name) {
-            $tag = Tag::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+            $tag = Tag::withTrashed()->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
             if (! $tag) {
                 $tag = Tag::create(['name' => $name]);
+            } elseif ($tag->trashed()) {
+                $tag->restore();
             }
             $tagIds[] = $tag->id;
         }
 
-            $blog->tags()->sync($tagIds);
+        $blog->tags()->sync($tagIds);
     }
 
     protected function syncAdditionalCategories(Request $request, Blog $blog)

@@ -31,7 +31,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4 form-group mb-2"><button class="btn btn-primary" type="submit">Save</button></div>
+                        <div class="col-md-4 form-group mb-2"><button class="btn btn-primary d-flex align-items-center gap-1" type="submit"><i class="fas fa-save"></i>Save</button></div>
                     </form>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="text-right"><button class="btn btn-sm btn-primary" type="submit">Save</button></div>
+                        <div class="text-right"><button class="btn btn-sm btn-primary d-flex align-items-center gap-1" type="submit"><i class="fas fa-save"></i>Save</button></div>
                     </form>
                 </div>
             </div>
@@ -103,7 +103,7 @@
                         <label class="col-auto fs-12 text-muted" for="currency-search">Currency name</label>
                         <input id="currency-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Name or code">
                     </div>
-                    <div class="col-auto"><button type="submit" class="btn btn-primary">Filter</button></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button></div>
                 </div>
             </form>
         </div>

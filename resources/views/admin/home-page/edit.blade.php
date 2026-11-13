@@ -132,7 +132,7 @@
                                     <input type="hidden" name="services[{{ $i }}][image_from_manager]" id="service_image_from_manager_{{ $i }}">
                                     <div id="impPreview_service_{{ $i }}" class="d-none mt-2"></div>
                                     <button type="button" class="btn btn-sm btn-outline-primary mt-2 mb-3" onclick="impOpen_service_{{ $i }}()">
-                                        <i class="fas fa-images me-1"></i> Change Image
+                                        <i class="fas fa-cloud-upload-alt me-1"></i> Change Image
                                     </button>
                                     <div class="row g-2">
                                         <div class="col-md-6">
@@ -190,7 +190,7 @@
                                                 <div id="impPreview_banner_{{ $i }}" class="d-none mt-1"></div>
                                                 <div class="d-flex gap-2 mt-1 flex-wrap">
                                                     <button type="button" class="btn btn-outline-primary" onclick="impOpen_banner_{{ $i }}()">
-                                                        <i class="fas fa-images me-1"></i> Browse Image Manager
+                                                        <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                                     </button>
                                                     <button type="button" id="clear_btn_banner_{{ $i }}" data-preview="impPreview_banner_{{ $i }}" class="btn btn-sm btn-outline-danger {{ !empty($banner['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('banners_image_from_manager_{{ $i }}','impPreview_banner_{{ $i }}','.banner-image-current-{{ $i }}')">
                                                         <i class="fas fa-times me-1"></i> Clear
@@ -285,7 +285,7 @@
                                                     <img src="{{ storedImageUrl($svc['image'], 'assets/images/services') }}" style="max-width:100px;height:60px;object-fit:contain;border:1px solid #ddd;">
                                                 </div>
                                                 @endif
-                                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_services_{{ $i }}()">Browse Image Manager</button>
+                                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_services_{{ $i }}()">Browse</button>
                                                 <button type="button" class="btn btn-sm btn-outline-danger {{ !empty($svc['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('services_image_from_manager_{{ $i }}','impPreview_services_{{ $i }}','.svc-current-{{ $i }}',null); this.classList.add('d-none');">Clear</button>
                                             </div>
                                             <div class="col-md-4 mb-2">
@@ -332,7 +332,7 @@
                                                     <img src="{{ storedImageUrl($p['image'], 'assets/images/partner') }}" style="max-width:120px;height:60px;object-fit:contain;border:1px solid #ddd;background:#fff;">
                                                 </div>
                                                 @endif
-                                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_{{ $i }}()">Browse Image Manager</button>
+                                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_{{ $i }}()">Browse</button>
                                                 <button type="button" class="btn btn-sm btn-outline-danger {{ !empty($p['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('partners_image_from_manager_{{ $i }}','impPreview_partners_{{ $i }}','.partner-current-{{ $i }}',null); this.classList.add('d-none');">Clear</button>
                                             </div>
                                             <div class="col-md-4 mb-2">
@@ -430,7 +430,7 @@
                             <div id="impPreview_deal_of_day_image" class="d-none mt-2"></div>
                             <div class="d-flex gap-2 mt-1">
                                 <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_section_image').value='0'; impOpen_deal_of_day_image()">
-                                    <i class="fas fa-images me-1"></i> Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                 </button>
                                 <button type="button" id="clear_btn_deal_of_day_image" data-preview="impPreview_deal_of_day_image" data-current=".deal-image-current" class="btn btn-outline-danger {{ $section->image ? '' : 'd-none' }}" onclick="clearPickerImage('image_from_manager_deal_of_day_image','impPreview_deal_of_day_image','.deal-image-current','remove_section_image')">
                                     <i class="fas fa-times me-1"></i> Clear Image
@@ -456,7 +456,7 @@
                             <div id="impPreview_deal_bg_image" class="d-none mt-2"></div>
                             <div class="d-flex gap-2 mt-1">
                                 <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_deal_bg_image').value='0'; impOpen_deal_bg_image()">
-                                    <i class="fas fa-images me-1"></i> Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                 </button>
                                 <button type="button" id="clear_btn_deal_bg_image" data-preview="impPreview_deal_bg_image" data-current=".home-image-current" class="btn btn-sm btn-outline-danger {{ $dealBgImage ? '' : 'd-none' }}" onclick="clearPickerImage('deal_bg_image_from_manager_deal_of_day','impPreview_deal_bg_image','.home-image-current','remove_deal_bg_image')">
                                     <i class="fas fa-times me-1"></i> Clear Image
@@ -726,7 +726,7 @@
                             <div id="impPreview_home_image" class="d-none mt-2"></div>
                             <div class="d-flex gap-2 mt-1">
                                 <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_section_image').value='0'; impOpen_home_image()">
-                                    <i class="fas fa-images me-1"></i> Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                 </button>
                                 <button type="button" id="clear_btn_home_image" data-preview="impPreview_home_image" data-current=".home-image-current" class="btn btn-outline-danger {{ $section->image ? '' : 'd-none' }}" onclick="clearPickerImage('image_from_manager_home_image','impPreview_home_image','.home-image-current','remove_section_image')">
                                     <i class="fas fa-times me-1"></i> Clear Image
@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     '<input type="hidden" name="partners[' + i + '][existing_image]" value="">' +
                     '<input type="hidden" name="partners[' + i + '][image_from_manager]" id="partners_image_from_manager_' + i + '">' +
                     '<div id="impPreview_partners_' + i + '" class="d-none mb-2"></div>' +
-                    '<button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse Image Manager</button>' +
+                    '<button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse</button>' +
                     '<button type="button" class="btn btn-outline-danger d-none" onclick="clearPickerImage(\'partners_image_from_manager_' + i + '\',\'impPreview_partners_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button>' +
                 '</div>' +
                 '<div class="col-md-4 mb-2">' +
@@ -945,7 +945,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     '<input type="hidden" name="services[' + i + '][existing_image]" value="">' +
                     '<input type="hidden" name="services[' + i + '][image_from_manager]" id="services_image_from_manager_' + i + '">' +
                     '<div id="impPreview_services_' + i + '" class="d-none mb-2"></div>' +
-                    '<button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_services_' + i + '()">Browse Image Manager</button>' +
+                    '<button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_services_' + i + '()">Browse</button>' +
                     '<button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'services_image_from_manager_' + i + '\',\'impPreview_services_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button>' +
                 '</div>' +
                 '<div class="col-md-4 mb-2">' +
@@ -1000,7 +1000,7 @@ if (typeof window.addPartner !== 'function') {
         var items = container.querySelectorAll('.partner-item');
         if (items.length >= 20) { alert('Maximum 20 partners allowed.'); return; }
         var i = items.length;
-        var html = '<div class="border rounded p-3 mb-3 partner-item"><div class="d-flex justify-content-between mb-2"><strong>Partner #' + (i+1) + '</strong><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'.partner-item\').remove();"><i class="fa fa-trash"></i></button></div><div class="row"><div class="col-md-4 mb-2"><label class="form-label">Logo</label><input type="hidden" name="partners[' + i + '][existing_image]" value=""><input type="hidden" name="partners[' + i + '][image_from_manager]" id="partners_image_from_manager_' + i + '"><div id="impPreview_partners_' + i + '" class="d-none mb-2"></div><button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse Image Manager</button><button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'partners_image_from_manager_' + i + '\',\'impPreview_partners_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button></div><div class="col-md-4 mb-2"><label class="form-label">Name</label><input type="text" name="partners[' + i + '][name]" class="form-control"></div><div class="col-md-4 mb-2"><label class="form-label">URL (optional)</label><input type="text" name="partners[' + i + '][url]" class="form-control"></div></div></div>';
+        var html = '<div class="border rounded p-3 mb-3 partner-item"><div class="d-flex justify-content-between mb-2"><strong>Partner #' + (i+1) + '</strong><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'.partner-item\').remove();"><i class="fa fa-trash"></i></button></div><div class="row"><div class="col-md-4 mb-2"><label class="form-label">Logo</label><input type="hidden" name="partners[' + i + '][existing_image]" value=""><input type="hidden" name="partners[' + i + '][image_from_manager]" id="partners_image_from_manager_' + i + '"><div id="impPreview_partners_' + i + '" class="d-none mb-2"></div><button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse</button><button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'partners_image_from_manager_' + i + '\',\'impPreview_partners_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button></div><div class="col-md-4 mb-2"><label class="form-label">Name</label><input type="text" name="partners[' + i + '][name]" class="form-control"></div><div class="col-md-4 mb-2"><label class="form-label">URL (optional)</label><input type="text" name="partners[' + i + '][url]" class="form-control"></div></div></div>';
         var d = document.createElement('div');
         d.innerHTML = html;
         container.appendChild(d.firstElementChild);

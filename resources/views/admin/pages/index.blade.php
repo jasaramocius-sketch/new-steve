@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 {{-- Add your custom page ID and classes right here --}}
 @include('partials.page-attributes', ['pageId' => 'admin-pages-index-page', 'pageClass' => 'admin-pages-index-page'])
-@section('page-title', 'Pages')
+@section('page-title', 'All Pages')
 @section('meta_tags')
     @include('partials.meta-tags', [
         'pageTitle' => 'Pages - Admin Panel',
@@ -12,10 +12,6 @@
 
 @php $trashedCount = \App\Models\Page::onlyTrashed()->count(); @endphp
 
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
-    <h4 class="fw-bold mb-0">All Pages</h4>
-    <a href="{{ route('admin.pages.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Page</a>
-</div>
 
 <ul class="nav nav-tabs flex-wrap flex-md-nowrap">
     <li class="nav-item">
@@ -24,11 +20,12 @@
     <li class="nav-item">
         <a class="nav-link {{ request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.pages.index', ['trashed' => 1]) }}">Trash ({{ $trashedCount }})</a>
     </li>
-    <li class="nav-item search-form ms-lg-auto">
+    <li class="nav-item search-form ms-lg-auto d-flex justify-content-end gap-2">
         @include('admin.partials.search-form', [
             'route' => route('admin.pages.index'),
             'placeholder' => 'Search pages...'
         ])
+    <a href="{{ route('admin.pages.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Page</a>
     </li>
 </ul>
 

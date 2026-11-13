@@ -134,8 +134,19 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2">
+        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2 admin-product-table-top-bar">
             <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-1">
+                    <span class="text-muted small">Show</span>
+                    <select class="form-select w-auto" onchange="window.location.href=this.value">
+                        @php $currentPerPage = request('per_page', '10'); @endphp
+                        @foreach([10, 20, 50, 100] as $n)
+                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ $currentPerPage == $n ? 'selected' : '' }}>{{ $n }}</option>
+                        @endforeach
+                        <option value="{{ request()->fullUrlWithQuery(['per_page' => 'all', 'page' => null]) }}" {{ $currentPerPage === 'all' ? 'selected' : '' }}>All</option>
+                    </select>
+                    <span class="text-muted small">per page</span>
+                </div>
                 @if(!request()->has('trashed'))
                     <button type="button" class="btn btn-danger steve-btn btn-sm d-none" id="bulk-delete-btn" data-bulk-action="{{ route('admin.products.bulk-delete') }}" onclick="if(confirm('Move the selected products to trash?')) bulkRun(this)"><i class="fas fa-trash me-1"></i> Delete (<span class="bulk-count">0</span>)</button>
                     <button type="button" class="btn btn-success steve-btn btn-sm d-none" id="bulk-activate-btn" data-bulk-action="{{ route('admin.products.bulk-status') }}" data-field="status" data-value="1" onclick="bulkRunValue(this)"><i class="fas fa-check me-1"></i> Activate (<span class="bulk-count">0</span>)</button>
@@ -148,20 +159,11 @@
                             <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                         @endforeach
                     </select>
-                    <button type="button" class="btn btn-primary steve-btn btn-sm d-none" id="bulk-move-btn" data-bulk-action="{{ route('admin.products.bulk-category') }}" onclick="bulkRunCategory(this)"><i class="fas fa-folder-open me-1"></i> Move (<span class="bulk-count">0</span>)</button>
+                    <button type="button" class="btn btn-primary steve-btn btn-sm d-none" id="bulk-move-btn" data-bulk-action="{{ route('admin.products.bulk-category') }}" onclick="bulkRunCategory(this)"><i class="fas fa-cloud-upload-alt me-1"></i> Move (<span class="bulk-count">0</span>)</button>
                 @else
                     <button type="button" class="btn btn-success steve-btn btn-sm d-none" id="bulk-restore-btn" data-bulk-action="{{ route('admin.products.bulk-restore') }}" onclick="bulkRun(this)"><i class="fas fa-undo me-1"></i> Restore (<span class="bulk-count">0</span>)</button>
                     <button type="button" class="btn btn-danger steve-btn btn-sm d-none" id="bulk-force-btn" data-bulk-action="{{ route('admin.products.bulk-force-delete') }}" onclick="if(confirm('Permanently delete the selected products from trash? This cannot be undone.')) bulkRun(this)"><i class="fas fa-trash-alt me-1"></i> Delete Permanently (<span class="bulk-count">0</span>)</button>
                 @endif
-                <span class="text-muted small">Show</span>
-                <select class="form-select w-auto" onchange="window.location.href=this.value">
-                    @php $currentPerPage = request('per_page', '10'); @endphp
-                    @foreach([10, 20, 50, 100] as $n)
-                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ $currentPerPage == $n ? 'selected' : '' }}>{{ $n }}</option>
-                    @endforeach
-                    <option value="{{ request()->fullUrlWithQuery(['per_page' => 'all', 'page' => null]) }}" {{ $currentPerPage === 'all' ? 'selected' : '' }}>All</option>
-                </select>
-                <span class="text-muted small">per page</span>
             </div>
         </div>
         <div class="table-responsive">

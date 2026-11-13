@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 {{-- Add your custom page ID and classes right here --}}
-@include('partials.page-attributes', ['pageId' => 'admin.currency-form-page', 'pageClass' => 'admin-currency-form-page'])
+@include('partials.page-attributes', ['pageId' => 'admin-currency-form-page', 'pageClass' => 'admin-currency-form-page'])
 @section('page-title', 'Add New Currency')
 @section('meta_tags')
     @include('partials.meta-tags', [
@@ -37,7 +37,38 @@
                     </div>
                     <div class="form-group">
                         <label for="currency-symbol">Currency symbol</label>
-                        <input id="currency-symbol" name="symbol" class="form-control" value="{{ old('symbol', $currency->symbol) }}" maxlength="12" required>
+                        @php
+                            $selectedSymbol = old('symbol', $currency->symbol);
+                            $selectedCode = old('code', $currency->code);
+                            $selectedOptionIndex = null;
+                            $fallbackOptionIndex = null;
+
+                            foreach ($symbolOptions as $index => $option) {
+                                if ($selectedSymbol === '' || $option['symbol'] !== $selectedSymbol) {
+                                    continue;
+                                }
+
+                                if ($fallbackOptionIndex === null) {
+                                    $fallbackOptionIndex = $index;
+                                }
+
+                                if ($selectedCode !== '' && $option['code'] === $selectedCode) {
+                                    $selectedOptionIndex = $index;
+                                    break;
+                                }
+                            }
+
+                            if ($selectedOptionIndex === null) {
+                                $selectedOptionIndex = $fallbackOptionIndex;
+                            }
+                        @endphp
+                        <select id="currency-symbol" name="symbol" class="form-control form-select" required>
+                            <option value="" disabled @selected($selectedOptionIndex === null)>Select a currency symbol</option>
+                            @foreach ($symbolOptions as $index => $option)
+                                <option value="{{ $option['symbol'] }}" @selected($index === $selectedOptionIndex)>{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <small class="form-text text-muted">Select the symbol that should appear with this currency.</small>
                     </div>
                     <div class="form-group">
                         <label for="currency-rate">Exchange Rate (1 USD = ?)</label>

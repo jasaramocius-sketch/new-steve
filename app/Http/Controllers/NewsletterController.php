@@ -12,10 +12,11 @@ class NewsletterController extends Controller
         $request->validate(['email' => 'required|email|max:255']);
 
         $email = strtolower(trim($request->email));
-        $exists = Subscriber::where('email', $email)->exists();
+        $subscriber = Subscriber::withTrashed()->firstOrCreate(['email' => $email]);
+        $exists = ! $subscriber->wasRecentlyCreated && ! $subscriber->trashed();
 
-        if (! $exists) {
-            Subscriber::create(['email' => $email]);
+        if ($subscriber->trashed()) {
+            $subscriber->restore();
         }
 
         if ($request->ajax() || $request->wantsJson()) {

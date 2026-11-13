@@ -14,7 +14,6 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
     <div class=""></div>
-    <a href="{{ route('admin.faqs.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add FAQ</a>
 </div>
 
 <ul class="nav nav-tabs flex-wrap flex-md-nowrap">
@@ -24,11 +23,12 @@
     <li class="nav-item">
         <a class="nav-link {{ request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.faqs.index', ['trashed' => 1]) }}">Trash ({{ $trashedCount }})</a>
     </li>
-    <li class="nav-item search-form ms-lg-auto">
+    <li class="nav-item search-form ms-lg-auto d-flex justify-content-end gap-2">
         @include('admin.partials.search-form', [
             'route' => route('admin.faqs.index'),
             'placeholder' => 'Search FAQs...'
         ])
+        <a href="{{ route('admin.faqs.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add FAQ</a>
     </li>
 </ul>
 

@@ -8,6 +8,8 @@ use App\Models\Compare;
 use App\Models\Subscriber;
 use App\Models\User;
 use App\Models\Wishlist;
+use App\Rules\UniquePhone;
+use App\Services\Recaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -94,6 +96,10 @@ class AuthController extends Controller
             'terms.accepted' => 'Please agree to the Privacy Policy and Terms & Conditions to sign in.',
         ]);
 
+        if (Recaptcha::enabled('login') && ! Recaptcha::verify($request, 'login')) {
+            return back()->withErrors(['g-recaptcha-response' => 'Please complete the reCAPTCHA verification.'])->withInput();
+        }
+
         $credentials = $request->only('email', 'password');
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
@@ -122,24 +128,41 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        if (Auth::check()) {
+            return redirect()->to($this->dashboardRoute());
+        }
+
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+            'phone' => filled($request->input('phone')) ? trim((string) $request->input('phone')) : null,
+        ]);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'phone' => ['required', 'string', 'max:50', 'regex:/^[0-9+\-\s()]*$/', new UniquePhone],
             'password' => 'required|min:6|confirmed',
             'terms' => 'accepted',
         ], [
             'terms.accepted' => 'Please agree to the Privacy Policy and Terms & Conditions to create an account.',
+            'email.unique' => 'This email is already registered. Please sign in instead or contact support if you cannot access your account.',
+            'phone.required' => 'Please enter your phone number.',
         ]);
+
+        if (Recaptcha::enabled('register') && ! Recaptcha::verify($request, 'register')) {
+            return back()->withErrors(['g-recaptcha-response' => 'Please complete the reCAPTCHA verification.'])->withInput();
+        }
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => 'customer',
         ]);
 
         if ($request->boolean('subscribe')) {
-            Subscriber::firstOrCreate(['email' => strtolower(trim($user->email))]);
+            Subscriber::firstOrCreateForEmail($user->email);
         }
 
         Auth::login($user);

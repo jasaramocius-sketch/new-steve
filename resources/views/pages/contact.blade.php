@@ -47,6 +47,10 @@
                             <input type="tel" name="phone" class="form-control mb-3" inputmode="numeric" placeholder="Phone" required>
                             <input type="text" name="subject" class="form-control mb-3" placeholder="Subject" required>
                             <textarea name="message" class="form-control textarea-control texteditor mb-3" rows="5" placeholder="Message" required></textarea>
+                            @error('g-recaptcha-response')
+                                <div class="text-danger mb-3">{{ $message }}</div>
+                            @enderror
+                            @include('partials.recaptcha-field', ['form' => 'contact', 'wrapperClass' => 'mb-3'])
                             <button type="submit" class="btn btn-primary steve-btn">
                                 Submit
                             </button>
@@ -128,3 +132,9 @@
 </section>
 
 @endsection
+
+@if(\App\Services\Recaptcha::enabled('contact'))
+@section('scripts')
+    @include('partials.recaptcha-scripts', ['form' => 'contact'])
+@endsection
+@endif

@@ -12,11 +12,11 @@
 
 @php $trashedCount = \App\Models\BlogCategory::onlyTrashed()->count(); @endphp
 
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
-    <!-- <h4 class="fw-bold mb-0">Blog Categories</h4> -->
+<!-- <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
+    <h4 class="fw-bold mb-0">Blog Categories</h4>
      <div></div>
     <a href="{{ route('admin.blog-categories.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Blog Category</a>
-</div>
+</div> -->
 
 <ul class="nav nav-tabs">
     <li class="nav-item">
@@ -25,11 +25,12 @@
     <li class="nav-item">
         <a class="nav-link {{ request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.blog-categories.index', ['trashed' => 1]) }}">Trash ({{ $trashedCount }})</a>
     </li>
-    <li class="nav-item search-form ms-lg-auto">
+    <li class="nav-item search-form ms-lg-auto d-flex justify-content-end gap-2">
         @include('admin.partials.search-form', [
             'route' => route('admin.blog-categories.index'),
             'placeholder' => 'Search categories...'
         ])
+    <a href="{{ route('admin.blog-categories.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Blog Category</a>
     </li>
 </ul>
 

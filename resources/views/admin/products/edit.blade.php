@@ -37,7 +37,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media-details" type="button" role="tab" aria-controls="media-details" aria-selected="false">
-                        <i class="fas fa-images me-1"></i> Media
+                        <i class="fas fa-cloud-upload-alt me-1"></i> Media
                     </button>
                 </li>
             </ul>
@@ -251,7 +251,7 @@
                                 </div>
                                 <div>
                                     <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_product_image()">
-                                        <i class="fas fa-folder-open me-1"></i> Browse Image Manager
+                                        <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                     </button>
                                 </div>
                             </div>
@@ -284,7 +284,7 @@
                                 
                                 <div>
                                     <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
-                                        <i class="fas fa-folder-open me-1"></i> Browse Image Manager
+                                        <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                     </button>
                                     <small class="text-muted mt-2 d-block">Pick multiple from Image Manager, or upload files above.</small>
                                 </div>

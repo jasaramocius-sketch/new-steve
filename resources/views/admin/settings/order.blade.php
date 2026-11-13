@@ -10,7 +10,7 @@
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
 
-    <div class="col-lg-6 px-0">
+    <div class="col px-0">
         <div class="card">
             <form action="{{ route('admin.settings.order.update') }}" method="POST" class="order-settings-form">
                 @csrf
@@ -19,22 +19,21 @@
                         <div class="alert alert-danger" role="alert">{{ $errors->first() }}</div>
                     @endif
                     <div class="form-group row align-items-center">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="control-label" for="minimum-order-check">Minimum Order Amount Check</label>
                         </div>
-                        <div class="col-md-8">
-                            <label class="feature-switch mb-0">
+                        <div class="col-md-9">
+                            <div class="form-check form-switch mb-0">
                                 <input type="hidden" name="minimum_order_amount_check" value="0">
-                                <input id="minimum-order-check" type="checkbox" name="minimum_order_amount_check" value="1" @checked(($settings['minimum_order_amount_check'] ?? '0') === '1')>
-                                <span class="feature-switch-track" aria-hidden="true"></span>
-                            </label>
+                                <input class="form-check-input" id="minimum-order-check" type="checkbox" role="switch" name="minimum_order_amount_check" value="1" @checked(($settings['minimum_order_amount_check'] ?? '0') === '1')>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group row">
-                        <div class="col-md-4 d-flex align-items-center">
+                        <div class="col-md-3 d-flex align-items-center">
                             <label class="control-label" for="minimum-order-amount">Set Minimum Order Amount</label>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-9">
                             <input id="minimum-order-amount" type="number" min="0" max="10000000" step="0.01" class="form-control" name="minimum_order_amount" value="{{ old('minimum_order_amount', $settings['minimum_order_amount'] ?? '0.00') }}" placeholder="Minimum Order Amount" required>
                         </div>
                     </div>
@@ -47,53 +46,5 @@
     </div>
 </div>
 
-<style>
-    .feature-switch {
-        position: relative;
-        display: inline-flex;
-        width: 48px;
-        height: 26px;
-        cursor: pointer;
-    }
-
-    .feature-switch input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-    }
-
-    .feature-switch-track {
-        position: absolute;
-        inset: 0;
-        background: #b7c0bd;
-        border-radius: 26px;
-        transition: background-color .18s ease;
-    }
-
-    .feature-switch-track::before {
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 20px;
-        height: 20px;
-        content: "";
-        background: #fff;
-        border-radius: 50%;
-        transition: transform .18s ease;
-    }
-
-    .feature-switch input:checked + .feature-switch-track {
-        background: #267c70;
-    }
-
-    .feature-switch input:checked + .feature-switch-track::before {
-        transform: translateX(22px);
-    }
-
-    .feature-switch input:focus-visible + .feature-switch-track {
-        outline: 3px solid rgba(38, 124, 112, .3);
-        outline-offset: 2px;
-    }
-</style>
+{{-- Feature toggles use Bootstrap's shared form-check / form-switch design. --}}
 @endsection

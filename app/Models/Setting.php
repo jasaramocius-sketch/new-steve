@@ -4,10 +4,11 @@ namespace App\Models;
 
 use App\Traits\Revisable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Setting extends Model
 {
-    use Revisable;
+    use Revisable, SoftDeletes;
 
     protected $fillable = ['key', 'value'];
 
@@ -20,7 +21,16 @@ class Setting extends Model
 
     public static function set($key, $value)
     {
-        return static::updateOrCreate(['key' => $key], ['value' => $value]);
+        $setting = static::withTrashed()->firstOrNew(['key' => $key]);
+        $setting->value = $value;
+
+        if ($setting->exists && $setting->trashed()) {
+            $setting->restore();
+        } else {
+            $setting->save();
+        }
+
+        return $setting;
     }
 
     public static function getAllAsArray()

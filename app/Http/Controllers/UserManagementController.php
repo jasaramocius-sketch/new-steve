@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Rules\UniquePhone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -27,16 +28,23 @@ class UserManagementController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+            'phone' => filled($request->input('phone')) ? trim((string) $request->input('phone')) : null,
+        ]);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'role' => 'required|in:master_admin,staff,customer',
             'status' => 'nullable|in:active,inactive',
-            'phone' => 'nullable|string|max:50|regex:/^[0-9+\-\s()]*$/',
+            'phone' => ['nullable', 'string', 'max:50', 'regex:/^[0-9+\-\s()]*$/', new UniquePhone],
             'city' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
             'address' => 'nullable|string|max:500',
+        ], [
+            'email.unique' => 'This email is already registered.',
         ]);
 
         User::create([
@@ -65,16 +73,23 @@ class UserManagementController extends Controller
     {
         $user = User::findOrFail($id);
 
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+            'phone' => filled($request->input('phone')) ? trim((string) $request->input('phone')) : null,
+        ]);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,'.$id,
             'password' => 'nullable|min:6',
             'role' => 'required|in:master_admin,staff,customer',
             'status' => 'nullable|in:active,inactive',
-            'phone' => 'nullable|string|max:50|regex:/^[0-9+\-\s()]*$/',
+            'phone' => ['nullable', 'string', 'max:50', 'regex:/^[0-9+\-\s()]*$/', new UniquePhone($user->id, $user->phone)],
             'city' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
             'address' => 'nullable|string|max:500',
+        ], [
+            'email.unique' => 'This email is already registered.',
         ]);
 
         if ($user->role === 'master_admin' && $request->role !== 'master_admin') {

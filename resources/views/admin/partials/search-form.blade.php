@@ -6,7 +6,7 @@
 <form action="{{ $route }}" method="GET" class="d-flex gap-2 align-items-center">
     <input type="hidden" name="page" value="">
     <div class="input-group <!--{{ $size ? ' input-group-' . $size : '' }}-->">
-        <button type="submit" class="input-group-text bg-white" title="Search" data-bs-toggle="tooltip" data-bs-placement="top">
+        <button type="submit" class="input-group-text btn btn-primary steve-btn gap-1" title="Search" data-bs-toggle="tooltip" data-bs-placement="top">
             <i class="fas fa-search"></i>
         </button>
         <input type="text"

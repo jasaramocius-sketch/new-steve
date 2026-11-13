@@ -46,10 +46,10 @@
                                     <option value="inactive" @selected($status === false)>Inactive</option>
                                 </select>
                             </div>
-                            <div class="col-md-auto d-flex gap-2">
-                                <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                            <div class="col-md-auto d-flex gap-1">
+                                <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
                                 @if ($search !== '' || $countryId > 0 || $stateId > 0 || $status !== null)
-                                    <a href="{{ route('admin.settings.shipping-cities.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                                    <a href="{{ route('admin.settings.shipping-cities.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-1"><i class="fas fa-times"></i></a>
                                 @endif
                             </div>
                         </div>
@@ -139,7 +139,7 @@
                             <small class="text-muted">Leave blank to use the matching shipping zone cost.</small>
                             @error('cost') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                     </form>
                 </div>
             </div>

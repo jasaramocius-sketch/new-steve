@@ -33,7 +33,7 @@
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header py-2">
-        <h6 class="modal-title"><i class="fas fa-images me-2"></i>Image Manager</h6>
+        <h6 class="modal-title"><i class="fas fa-cloud-upload-alt me-2"></i>Image Manager</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-3">
@@ -92,7 +92,7 @@
         @endif
       </div>
       <div class="modal-footer py-2">
-        <button type="button" class="btn btn-primary steve-btn" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary steve-btn" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
         <button type="button" class="btn btn-primary steve-btn" id="impSelectBtn_{{ $pickerId }}" disabled onclick="impConfirm_{{ $pickerId }}()">
           <i class="fas fa-check me-1"></i> {{ $multiple ? 'Add Selected' : 'Select Image' }}
         </button>

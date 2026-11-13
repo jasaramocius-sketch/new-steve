@@ -37,10 +37,10 @@
                                     <option value="inactive" @selected($status === false)>Inactive</option>
                                 </select>
                             </div>
-                            <div class="col-md-auto d-flex gap-2">
-                                <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                            <div class="col-md-auto d-flex gap-1">
+                                <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
                                 @if ($search !== '' || $countryId > 0 || $status !== null)
-                                    <a href="{{ route('admin.settings.shipping-states.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                                    <a href="{{ route('admin.settings.shipping-states.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-1"><i class="fas fa-times"></i>Clear</a>
                                 @endif
                             </div>
                         </div>
@@ -72,13 +72,12 @@
                                         <form action="{{ route('admin.settings.shipping-states.status', $state) }}" method="POST" class="state-status-form">
                                             @csrf
                                             <input type="hidden" name="status" value="{{ $state->status ? 1 : 0 }}">
-                                            <label class="feature-switch mb-0">
-                                                <input type="checkbox"
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input" type="checkbox"
                                                        role="switch"
                                                        aria-label="Toggle status for {{ $state->name }}"
                                                        @checked($state->status)>
-                                                <span class="feature-switch-track" aria-hidden="true"></span>
-                                            </label>
+                                            </div>
                                         </form>
                                     </td>
                                     <td class="pe-3 table-action-col">
@@ -129,70 +128,13 @@
                             </select>
                             @error('country_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-    .admin-shipping-states-page .feature-switch {
-        position: relative;
-        display: inline-flex;
-        width: 48px;
-        height: 26px;
-        cursor: pointer;
-    }
-
-    .admin-shipping-states-page .feature-switch input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-    }
-
-    .admin-shipping-states-page .feature-switch-track {
-        position: absolute;
-        inset: 0;
-        background: #b7c0bd;
-        border-radius: 26px;
-        transition: background-color .18s ease;
-    }
-
-    .admin-shipping-states-page .feature-switch-track::before {
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 20px;
-        height: 20px;
-        content: "";
-        background: #fff;
-        border-radius: 50%;
-        transition: transform .18s ease;
-    }
-
-    .admin-shipping-states-page .feature-switch input:checked + .feature-switch-track {
-        background: #267c70;
-    }
-
-    .admin-shipping-states-page .feature-switch input:checked + .feature-switch-track::before {
-        transform: translateX(22px);
-    }
-
-    .admin-shipping-states-page .feature-switch input:focus-visible + .feature-switch-track {
-        outline: 3px solid rgba(38, 124, 112, .3);
-        outline-offset: 2px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .admin-shipping-states-page .feature-switch-track,
-        .admin-shipping-states-page .feature-switch-track::before {
-            transition: none;
-        }
-    }
-</style>
 
 <script>
 document.querySelectorAll('.state-status-form').forEach((form) => {

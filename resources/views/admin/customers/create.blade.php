@@ -25,19 +25,19 @@
             @csrf
 
             <div class="mb-3">
-                <label>Name</label>
+                <label>Name<span class="text-danger">*</span></label>
                 <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
                 @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
-                <label>Email Address</label>
+                <label>Email Address<span class="text-danger">*</span></label>
                 <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" required>
                 @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
-                <label>Password</label>
+                <label>Password<span class="text-danger">*</span></label>
                 <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
                 @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
@@ -73,8 +73,8 @@
                 ])
             </div>
             <div class="d-flex gap-1">
-                <button class="btn btn-primary steve-btn gap-1">Save</button>
-                <a href="{{ route('admin.customers.index') }}" class="btn btn-primary steve-btn gap-1">Back</a>
+                <button class="btn btn-primary steve-btn gap-1"><i class="fas fa-save"></i>Save</button>
+                <a href="{{ route('admin.customers.index') }}" class="btn btn-primary steve-btn gap-1"><i class="fas fa-arrow-left"></i>Back</a>
             </div>
         </form>
 

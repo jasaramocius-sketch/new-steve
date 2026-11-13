@@ -17,7 +17,7 @@
             <button class="nav-link {{ session('settings_tab') === 'footer' ? 'active' : '' }}" id="footer-configuration-tab" data-bs-toggle="tab" data-bs-target="#footer-configuration" type="button" role="tab" aria-controls="footer-configuration" aria-selected="{{ session('settings_tab') === 'footer' ? 'true' : 'false' }}">Footer Configuration</button>
         </li>
     </ul>
-    <div class="tab-content pt-3" id="settingsConfigurationTabContent">
+    <div class="tab-content" id="settingsConfigurationTabContent">
         <div class="tab-pane fade {{ session('settings_tab') === 'footer' ? '' : 'show active' }}" id="header-configuration" role="tabpanel" aria-labelledby="header-configuration-tab">
             <div class="row">
                 <div class="col-md-12">
@@ -45,7 +45,7 @@
                                         <input type="hidden" name="image_from_manager_header_logo" id="image_from_manager_header_logo">
                                         <div id="impPreview_header_logo" class="d-none mt-2"></div>
                                         <button type="button" class="btn btn-outline-primary" onclick="impOpen_header_logo()">
-                                            <i class="fas fa-images me-1"></i> Browse Image Manager
+                                            <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                         </button>
                                     </div>
                                 </div>
@@ -59,7 +59,7 @@
                                         <input type="hidden" name="image_from_manager_header_favicon" id="image_from_manager_header_favicon">
                                         <div id="impPreview_header_favicon" class="d-none mt-2"></div>
                                         <button type="button" class="btn btn-outline-primary" onclick="impOpen_header_favicon()">
-                                            <i class="fas fa-images me-1"></i> Browse Image Manager
+                                            <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                         </button>
                                     </div>
                                 </div>
@@ -76,7 +76,7 @@
                                         <input type="hidden" name="image_from_manager_mobile_logo" id="image_from_manager_mobile_logo">
                                         <div id="impPreview_mobile_logo" class="d-none mt-2"></div>
                                         <button type="button" class="btn btn-outline-primary" onclick="impOpen_mobile_logo()">
-                                            <i class="fas fa-images me-1"></i> Browse Image Manager
+                                            <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                         </button>
                                     </div>
                                 </div>
@@ -90,7 +90,7 @@
                                         <input type="hidden" name="image_from_manager_footer_logo" id="image_from_manager_footer_logo">
                                         <div id="impPreview_footer_logo" class="d-none mt-2"></div>
                                         <button type="button" class="btn btn-outline-primary" onclick="impOpen_footer_logo()">
-                                            <i class="fas fa-images me-1"></i> Browse Image Manager
+                                            <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                         </button>
                                     </div>
                                 </div>
@@ -112,7 +112,7 @@
                                         <div id="impPreview_admin_header_bg" class="d-none mt-2"></div>
                                         <div class="d-flex gap-2 mt-1">
                                             <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_admin_header_bg').value='0'; impOpen_admin_header_bg()">
-                                                <i class="fas fa-images me-1"></i> Browse Image Manager
+                                                <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                             </button>
                                             <button type="button" id="clear_btn_admin_header_bg" data-preview="impPreview_admin_header_bg" data-current=".admin-header-bg-current" class="btn btn-sm btn-outline-danger {{ !empty($settings['admin_header_bg']) ? '' : 'd-none' }}" onclick="clearPickerImage('image_from_manager_admin_header_bg','impPreview_admin_header_bg','.admin-header-bg-current','remove_admin_header_bg')">
                                                 <i class="fas fa-times me-1"></i> Clear Image

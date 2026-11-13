@@ -1292,7 +1292,6 @@ body.user-reviews-page.modal-open { overflow-y: scroll !important; padding-right
   transition: all 0.3s ease;
   text-decoration: none;
   gap: 8px;
-  align-items: stretch;
 }
 
 .steve-btn-sm {

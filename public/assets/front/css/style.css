@@ -545,7 +545,10 @@ p.text-lg {
   font-weight: 600;
   color: #1f0300;
 }
-
+.wh-68px{
+  width: 68px;
+  height: 68px;
+}
 @media (max-width:767.98px) {
   .address-actions-dropdown {
     width: 20%;
@@ -2862,6 +2865,11 @@ p.text-lg {
   object-fit: contain;
   padding: 8px;
 }
+.gs-brands-section .single-brands img{
+  height: 100px;
+  padding-right: 70px;
+  padding-left: 70px;
+}
 .gs-partner-section .single-partner img{
   padding: 0;
 }
@@ -2880,7 +2888,13 @@ p.text-lg {
 .gs-partnerss.row.justify-content-center {
   margin: 0;
 }
-
+.gs-brands-inner-section{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+.gs-brands-inner-section .gs-brands-col{
+  height: 100px;
+}
 .gs-partner-section .single-partner img:hover {
   border-color: transparent;
   -webkit-box-shadow: 0 4px 32px 0 rgba(0, 0, 0, .09);
@@ -3265,17 +3279,21 @@ body .admin-sidebar .shipping-settings-submenu > .sidebar-link.active {
   }
 
   body .admin-sidebar.icon-collapsed .nav-item {
-    width: 48px;
-    min-height: 44px;
+    width: 40px;
+    min-height: 40px;
     margin: 3px auto;
-    padding: 10px 12px;
+    padding: 10px 10px;
   }
 
   body .admin-sidebar.icon-collapsed .nav-item.active {
     box-shadow: unset;
     padding: 0;
     background: unset;
-    padding: 10px 12px;
+    padding: 10px 10px;
+    background: linear-gradient(90deg, rgba(42, 171, 146, .24), rgba(42, 171, 146, .1));
+    box-shadow: inset 3px 0 #48c6a9;
+    color: #fff;
+    font-weight: 650;
   }
 
   body .admin-sidebar.icon-collapsed .nav-item:hover::after,
@@ -4999,6 +5017,10 @@ body .admin-sidebar .shipping-settings-submenu > .sidebar-link.active {
 
 }
 
+.show-per-page-select .form-select-wrapper {
+    width: auto;
+}
+
 tfoot tr:first-child,
 thead tr:first-child {
   border-top: 1px solid #e6e8ec;
@@ -5025,6 +5047,10 @@ tbody tr:last-child {
 }
 .admin-product-index-filter-bar form {
   grid-auto-flow: column;
+}
+.admin-product-table-top-bar{
+  display: grid !important;
+  grid-template-columns: 1fr;
 }
 .form-select-wrapper::after {
   content: '';
@@ -5057,6 +5083,10 @@ tbody tr:last-child {
     margin-bottom: 10px;
   }
 .admin-product-index-filter-bar form {
+  grid-auto-flow: row;
+  grid-template-columns: 50% 50%;
+}
+.admin-product-table-top-bar{
   grid-auto-flow: row;
   grid-template-columns: 50% 50%;
 }
@@ -19432,6 +19462,7 @@ a.single-blog-navigation-link:focus-visible {
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .single-blog-navigation-item.is-next .single-blog-navigation-link {
@@ -19447,6 +19478,29 @@ a.single-blog-navigation-link:focus-visible {
 .single-blog-navigation-link.is-disabled .single-blog-navigation-direction,
 .single-blog-navigation-link.is-disabled .single-blog-navigation-title {
   color: #817875;
+}
+
+.user-reviews-page .input-group-text{
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+}
+.Tax-Rate-settings-container{
+  grid-template-columns: 75% 22%;
+}
+
+.admin-dashboard-header .admin-navbar-first-col .page-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .Tax-Rate-settings-container{
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 575.98px) {

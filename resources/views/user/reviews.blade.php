@@ -205,7 +205,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary fw-600 steve-btn" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary fw-600 steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Close</button>
         </div>
       </div>
 
@@ -245,8 +245,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary fw-600 w-100px steve-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary fw-600 w-100px steve-btn" id="reviewModalSubmitBtn">Submit Review</button>
+          <button type="button" class="btn btn-primary fw-600 w-100px steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
+          <button type="button" class="btn btn-primary fw-600 w-100px steve-btn gap-1" id="reviewModalSubmitBtn"><i class="fa-solid fa-paper-plane"></i>Submit Review</button>
         </div>
       </form>
     </div>

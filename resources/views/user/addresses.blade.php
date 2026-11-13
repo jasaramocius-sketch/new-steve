@@ -187,8 +187,8 @@
                     ])
                 </div>
                 <div class="modal-footer">
-                    <button class="btn steve-btn steve-btn-sm text-white btn-primary">Save Changes</button>
-                    <button class="btn steve-btn steve-btn-sm text-white btn-primary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn steve-btn steve-btn-sm text-white btn-primary d-flex align-items-center"><i class="fas fa-save"></i>Save Changes</button>
+                    <button class="btn steve-btn steve-btn-sm text-white btn-primary d-flex align-items-center" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
                 </div>
             </div>
         </form>

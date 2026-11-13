@@ -35,10 +35,9 @@
                                 <form class="feature-setting-form" data-endpoint="{{ route('admin.settings.features.update') }}">
                                     @csrf
                                     <input type="hidden" name="key" value="{{ $item['key'] }}">
-                                    <label class="feature-switch mb-0">
-                                        <input type="checkbox" name="enabled" value="1" aria-label="{{ $item['label'] }}" @checked($item['enabled'])>
-                                        <span class="feature-switch-track" aria-hidden="true"></span>
-                                    </label>
+                                    <div class="form-check form-switch d-inline-block mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="enabled" value="1" aria-label="{{ $item['label'] }}" @checked($item['enabled'])>
+                                    </div>
                                 </form>
 
                                 @if (!empty($item['description']))
@@ -63,69 +62,9 @@
         border-radius: 5px;
     }
 
-    .feature-switch {
-        position: relative;
-        display: inline-flex;
-        width: 48px;
-        height: 26px;
-        cursor: pointer;
-    }
-
-    .feature-switch input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-    }
-
-    .feature-switch-track {
-        position: absolute;
-        inset: 0;
-        background: #b7c0bd;
-        border-radius: 26px;
-        transition: background-color .18s ease;
-    }
-
-    .feature-switch-track::before {
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 20px;
-        height: 20px;
-        content: "";
-        background: #fff;
-        border-radius: 50%;
-        transition: transform .18s ease;
-    }
-
-    .feature-switch input:checked + .feature-switch-track {
-        background: #267c70;
-    }
-
-    .feature-switch input:checked + .feature-switch-track::before {
-        transform: translateX(22px);
-    }
-
-    .feature-switch input:focus-visible + .feature-switch-track {
-        outline: 3px solid rgba(38, 124, 112, .3);
-        outline-offset: 2px;
-    }
-
-    .feature-switch input:disabled + .feature-switch-track {
-        cursor: wait;
-        opacity: .65;
-    }
-
     .feature-setting-note {
         color: #15536b;
         font-size: .875rem;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .feature-switch-track,
-        .feature-switch-track::before {
-            transition: none;
-        }
     }
 </style>
 

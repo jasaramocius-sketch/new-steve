@@ -12,18 +12,54 @@
 @endsection
 
 @section('content')
-<div class="d
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1">Page Builder</h4>
+        <p class="text-muted mb-0 small">Pick a page or blog post to edit its content blocks.</p>
+    </div>
+</div>
 
 @php
-    $grouped = [];
+    $typeLabels = ['page' => 'Pages', 'blog' => 'Blog Posts'];
+    $typeCounts = [];
+
     foreach ($items as $item) {
+        $typeCounts[$item['type']] = ($typeCounts[$item['type']] ?? 0) + 1;
+    }
+
+    $totalAll = count($items);
+    $selectedType = request()->query('type');
+
+    if (! is_string($selectedType) || ! array_key_exists($selectedType, $typeLabels)) {
+        $selectedType = null;
+    }
+
+    $visibleItems = $selectedType
+        ? array_values(array_filter($items, fn ($item) => $item['type'] === $selectedType))
+        : $items;
+
+    $grouped = [];
+    foreach ($visibleItems as $item) {
         $grouped[$item['type']][] = $item['model'];
     }
-    $typeLabels = ['page' => 'Pages', 'blog' => 'Blog Posts'];
 @endphp
 
+<ul class="nav nav-tabs flex-wrap flex-md-nowrap mb-3">
+    <li class="nav-item">
+        <a class="nav-link {{ !$selectedType ? 'active' : '' }}" href="{{ route('page-builder.index') }}">All ({{ $totalAll }})</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ $selectedType === 'page' ? 'active' : '' }}" href="{{ route('page-builder.index', ['type' => 'page']) }}">Pages ({{ $typeCounts['page'] ?? 0 }})</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ $selectedType === 'blog' ? 'active' : '' }}" href="{{ route('page-builder.index', ['type' => 'blog']) }}">Blog Posts ({{ $typeCounts['blog'] ?? 0 }})</a>
+    </li>
+</ul>
+
 @if (! count($grouped))
-    <div class="alert alert-info">No editable content found.</div>
+    <div class="alert alert-info">
+        No {{ $selectedType === 'page' ? 'pages' : ($selectedType === 'blog' ? 'blog posts' : 'editable content') }} found.
+    </div>
 @endif
 
 @foreach ($grouped as $type => $models)
@@ -33,7 +69,7 @@
             <span class="text-muted small ms-2">({{ count($models) }})</span>
         </div>
 
-        <div class="table-responsive mb-4">
+        <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>

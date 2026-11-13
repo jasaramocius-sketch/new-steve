@@ -9,13 +9,13 @@
 @endsection
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-between pb-3 border-bottom gap-3 mb-4">
+<!-- <div class="d-flex flex-wrap align-items-center justify-content-between pb-3 border-bottom gap-3 mb-4">
     <div>
         <h4 class="mb-0 fw-bold">Add New API Integration</h4>
         <p class="text-muted mb-0 small">Configure courier, payment, SMS, WhatsApp or any custom API</p>
     </div>
     <a href="{{ route('admin.api-integrations.index') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Back</a>
-</div>
+</div> -->
 
 <form action="{{ route('admin.api-integrations.store') }}" method="POST">
     @csrf

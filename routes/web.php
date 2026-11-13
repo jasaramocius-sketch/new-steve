@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\PickupPointController;
 use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SellerController;
+use App\Http\Controllers\Admin\RecaptchaSettingsController;
 use App\Http\Controllers\Admin\SmtpSettingsController;
 use App\Http\Controllers\Admin\ShippingLocationController;
 use App\Http\Controllers\Admin\ShippingSettingsController;
@@ -602,6 +603,13 @@ Route::prefix('admin')
             ->name('admin.settings.pickup-points.update');
         Route::delete('/settings/pickup-points/{pickupPoint}', [PickupPointController::class, 'destroy'])
             ->name('admin.settings.pickup-points.destroy');
+        Route::get('/settings/google-recaptcha', [RecaptchaSettingsController::class, 'index'])
+            ->name('admin.settings.google-recaptcha');
+        Route::post('/settings/google-recaptcha', [RecaptchaSettingsController::class, 'update'])
+            ->name('admin.settings.google-recaptcha.update');
+        Route::post('/settings/google-recaptcha/reset', [RecaptchaSettingsController::class, 'reset'])
+            ->name('admin.settings.google-recaptcha.reset');
+
         Route::get('/settings/smtp', [SmtpSettingsController::class, 'index'])
             ->name('admin.settings.smtp');
         Route::post('/settings/smtp', [SmtpSettingsController::class, 'update'])

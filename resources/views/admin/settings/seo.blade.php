@@ -128,7 +128,7 @@
                             <div class="d-flex flex-wrap gap-2">
                                 <button type="button" class="btn btn-outline-primary"
                                     onclick="document.getElementById('remove_seo_default_og_image').value='0'; impOpen_seo_default_og_image()">
-                                    <i class="fas fa-images me-1"></i> Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                 </button>
                                 @if (!empty($ogImage))
                                     <button type="button" class="btn btn-outline-danger" onclick="clearSeoOgImage()">

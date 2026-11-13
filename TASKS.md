@@ -5240,3 +5240,220 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - `OrderController@invoice` now enforces the same rule server-side with a 403 response for direct access to an unavailable invoice.
 - Corrected the Orders list payment badge to use the actual `payment_status` instead of inferring paid/unpaid from the payment method.
 - Verified allowed orders return a PDF, while pending, cancelled, and unpaid card orders are blocked; Order Details and Orders list render correctly.
+
+## 370. (2026-11-06): Order Confirmation Email Delivery Setup (NEW TASK)
+
+**Status: Pending**
+
+- Order confirmation and order status emails are already implemented and queued to the customer's billing/account email.
+- Current `.env` uses `MAIL_MAILER=log`, so emails are written to the log instead of being delivered to the customer's inbox.
+- `QUEUE_CONNECTION=database` is enabled, but no queue worker is running; the `jobs` table currently has 25 pending order emails.
+- `MAIL_FROM_ADDRESS` is still the placeholder `hello@example.com`.
+- Configure real SMTP credentials and a valid sender address.
+- Run a queue worker (Supervisor for production) and clear config after updating `.env`.
+- Decide whether to discard the existing 25 stale queued order emails before starting the worker, so old order emails are not sent unexpectedly.
+- Send a test order confirmation email and verify inbox delivery.
+
+## 371. (2026-11-12): Shared Feature Switch Design via `_form-check.scss`
+
+**Change:** Feature toggle switch ka design ab shared `resources/scss/_form-check.scss` source se manage hota hai. Admin layout `assets/front/css/backend.css` load karta hai, jahan ye shared styles compiled hain. `order.blade.php` me duplicate inline CSS hata diya, is liye Order Settings bhi same shared design use karta hai.
+
+**Files changed:**
+- `resources/views/admin/settings/order.blade.php` — duplicate `.feature-switch` inline `<style>` block removed
+- `resources/scss/_form-check.scss` — source-of-truth note added
+
+**Verification:** `php artisan view:cache` passed; Order Settings se inline duplicate CSS hat gaya. (Baad me #372 me yeh switches Bootstrap `form-check-input` par migrate kiye gaye.)
+
+## 372. (2026-11-12): Feature Switches Migrated to Bootstrap `form-check-input`
+
+**Change:** Custom `feature-switch` / `feature-switch-track` toggle design ko Bootstrap ke standard `form-check form-switch` + `form-check-input` se replace kiya. Ab Order Settings, Features activation, Payment Methods, Shipping Countries aur Shipping States sab same native switch design use karte hain; checked state `style.css` ke `--primary` theme color se aata hai.
+
+**Files changed:**
+- `resources/views/admin/settings/features.blade.php`
+- `resources/views/admin/settings/order.blade.php`
+- `resources/views/admin/settings/payment-methods.blade.php`
+- `resources/views/admin/settings/shipping/countries/index.blade.php`
+- `resources/views/admin/settings/shipping/states/index.blade.php`
+- `public/assets/front/css/backend.css` — custom `.feature-switch` / `.feature-switch-track` styles removed
+- `resources/scss/_form-check.scss` — old custom styles replaced with migration note
+
+**Verification:** Authenticated render checks: Order Settings, Features, Payment Methods, Shipping Countries, Shipping States all `200`; har page par `form-check-input` present aur `feature-switch-track` count `0`; `php artisan view:cache` passed.
+
+## 373. (2026-11-12): Default Language List Filter Clear Option
+
+**Change:** Languages list ke search/filter form me active search hone par **Clear** button add kiya, jo bina query string ke languages index par wapas le jata hai. Button `Filter` ke saath inline hai aur baaki admin filter pages ke same `btn-outline-secondary` pattern ko follow karta hai.
+
+**Files changed:**
+- `resources/views/admin/settings/languages/index.blade.php` — filter action group me conditional Clear link added
+
+**Verification:** `/admin/settings/languages` renders `200` without Clear link (no active filter); `/admin/settings/languages?search=en` renders `200` with Clear link; `php artisan view:cache` passed.
+
+## 374. (2026-11-12): Currency Symbol Dropdown Options on Add/Edit Currency
+
+**Change:** Add/Edit Currency form ke **Currency symbol** field ko text input se native `<select>` dropdown me convert kiya. Dropdown me har currency ka apna alag option show hota hai, symbol + code + name ke saath (for example `$ - USD (US Dollar)`, `kr - DKK (Danish Krone)`, `kr - NOK (Norwegian Krone)`, `kr - SEK (Swedish Krone)`). Same symbol wali currencies ko group nahi kiya gaya, kyunki unki exchange rate/value alag hoti hai. Edit karte waqt currency code ke basis par sahi option selected hota hai.
+
+**Files changed:**
+- `app/Http/Controllers/Admin/CurrencySettingsController.php` — `create()` / `edit()` ko unique currency symbol options pass kiye; `currencySymbolOptions()` helper added
+- `resources/views/admin/settings/currency/form.blade.php` — symbol field ko `<select>` dropdown me convert kiya, selected value old input / edit currency se sync
+
+**Verification:** `/admin/settings/currency/create` aur `/admin/settings/currency/{id}/edit` dono `200`; create par placeholder selected, edit par currency code ke hisaab se sahi option selected (DKK, NOK, SEK teeno alag alag options se verify kiye); 25 currency options + placeholder render ho rahe hain; `php artisan view:cache` passed.
+
+## 375. (2026-11-12): Google reCAPTCHA v3 Support
+
+**Change:** Google reCAPTCHA settings me v3 support add kiya. Ab admin **reCAPTCHA Version** select se `v2` ya `v3` choose kar sakta hai. v2 aur v3 ke keys alag hote hain, is liye dono ke separate site/secret key fields hain. Admin form me sirf selected version ka keys section show hota hai; version change karte hi JS v2/v3 fields ko turant toggle karta hai, aur page load par saved version ke hisaab se sahi section visible hota hai. v3 ke liye minimum score threshold bhi configurable hai. Storefront (`login`, `register`, `contact`) par selected version ke hisaab se ya to v2 checkbox widget render hota hai, ya v3 invisible token automatically generate hota hai. Server-side verification v3 me score aur action (`login` / `register` / `contact`) dono validate karta hai.
+
+**Files changed:**
+- `app/Services/Recaptcha.php` — version selection, v2/v3 keys, score + action verification
+- `app/Http/Controllers/Admin/RecaptchaSettingsController.php` — version, v3 keys, v3 score fields save/validate
+- `resources/views/admin/settings/google-recaptcha.blade.php` — version selector, separate v2/v3 key sections, score field, missing-key warning
+- `app/Http/Controllers/AuthController.php` — login/register verification ko action pass kiya
+- `app/Http/Controllers/ContactController.php` — contact verification ko action pass kiya
+- `resources/views/partials/recaptcha-field.blade.php` — v2 widget / v3 hidden token render
+- `resources/views/partials/recaptcha-scripts.blade.php` — v2/v3 API script + v3 token generation
+- `resources/views/auth/login.blade.php`, `resources/views/auth/register.blade.php`, `resources/views/pages/contact.blade.php` — shared reCAPTCHA partials use kiye
+
+**Verification:** Admin Google reCAPTCHA page `200`; saved version `v2` par v2 keys section visible aur v3 section `d-none`; saved version `v3` par v3 keys section visible aur v2 section `d-none`; version change toggle script present; v2 mode par login/register/contact pages par checkbox widget + v2 API script render hua; v3 mode par hidden `g-recaptcha-response` input + v3 render script render hua (v2 widget absent); settings save test me v2/v3 keys, encrypted secrets, version aur score correctly persist hue; `php artisan view:cache` passed. Live Google siteverify call test nahi kiya gaya (needs real v3 keys).
+
+## 376. (2026-11-12): Stock Management Filter Clear Option
+
+**Change:** Stock Management page ke filter form me **Clear** button add kiya. Button sirf tab dikhta hai jab `search`, `stock_filter` ya `threshold` me se koi filter active ho. Click karne par bina query string ke stock management page reset ho jata hai (default threshold aur low/all stock view). Button search button ke saath inline hai aur baaki admin filter pages ke `btn-outline-secondary` + `fa-times` pattern ko follow karta hai.
+
+**Files changed:**
+- `resources/views/admin/products/stock.blade.php` — filter form me conditional Clear link added
+
+**Verification:** `/admin/products/stock` (no query) par Clear link nahi dikhta; `?search=test`, `?stock_filter=out_of_stock&threshold=10`, aur `?threshold=5` par Clear link dikhta hai aur base stock URL par point karta hai; sabhi requests `200`; `php artisan view:cache` passed.
+
+## 377. (2026-11-12): Admin Product Reviews Rating Icons Match My Reviews
+
+**Change:** Admin **Product Reviews** table ke Rating column me FontAwesome star icons ki jagah **My Reviews** page wale inline SVG stars use kiye. Har star `14×13` size, `viewBox="0 0 17 16"`, filled color `#EEAE0B` aur empty color `#E2E8F0` hai. Stars ko `d-flex align-items-center gap-1` wrapper me rakha, taake spacing My Reviews page jaisi consistent rahe.
+
+**Files changed:**
+- `resources/views/admin/reviews/index.blade.php` — Rating column ke `fas fa-star` icons ko inline SVG stars se replace kiya
+
+**Verification:** `/admin/reviews` `200` render hua; rating 5 par 5 filled SVG stars render hue aur FontAwesome rating stars remove ho gaye; temporary rating 3 test me 3 filled + 2 empty SVG stars render hue; original review data restore kar diya; `php artisan view:cache` passed.
+
+## 378. (2026-11-13): Page Builder Pages / Blog Posts Tabs
+
+**Change:** Admin **Page Builder** index par **All / Pages / Blog Posts** tabs add kiye. Har tab apne count ke saath render hota hai (`All (35)`, `Pages (17)`, `Blog Posts (18)`) aur selected tab active state dikhata hai. `?type=page` aur `?type=blog` query string se list filter hoti hai, aur All tab par dono types wapas show hote hain. Empty state message bhi selected tab ke hisaab se change hota hai. Saath hi published view ka broken header markup (`<div class="d`) fix kiya, jis ki wajah se index ka content render nahi ho raha tha.
+
+**Files changed:**
+- `resources/views/vendor/page-builder/admin/page-builder/index.blade.php` — tabs, counts, type filtering, active state, dynamic empty state, fixed header markup
+- `/var/www/html/laravel-page-builder/src/Http/Controllers/PageBuilderController.php`, `/var/www/html/laravel-page-builder/resources/views/admin/page-builder/index.blade.php` — package source me bhi same tabs/counts/filtering parity add ki (app ka active code published view hai)
+
+**Verification:** `/admin/page-builder` `200` with counts All `35`, Pages `17`, Blog Posts `18`; `?type=page` par sirf Pages card render hua (17 rows) aur Pages tab active; `?type=blog` par sirf Blog Posts card render hua (18 rows) aur Blog Posts tab active; no-query par dono cards aur All tab active; `php artisan view:cache` passed.
+
+## 379. (2026-11-13): reCAPTCHA Deactivated (No Keys Available)
+
+**Change:** Filhal reCAPTCHA keys available nahi hain, is liye storefront forms par reCAPTCHA verification band kar diya. Admin **Google reCAPTCHA** settings me Login/Register/Contact teeno form toggles `0` kar diye. v2 site key aur encrypted secret settings me saved hain, taake future me keys milne par sirf toggles on karke reCAPTCHA dobara enable ho sake. Code already keys missing hone par auto-disable karta hai (`Recaptcha::enabled()` site/secret key check karta hai), lekin ab explicit toggles off hain.
+
+**Files changed:** None (DB settings only: `recaptcha_login`, `recaptcha_register`, `recaptcha_contact` = `0`)
+
+**Verification:** `Recaptcha::enabled()` login/register/contact ke liye `false`; `/users/login`, `/users/registration`, `/contact-us` sab `200`; teeno pages par `g-recaptcha` widget, `recaptcha/api.js` script aur hidden `g-recaptcha-response` token render nahi hua; admin Google reCAPTCHA page par teeno checkboxes unchecked aur missing-key warning nahi.
+
+## 380. (2026-11-13): Google reCAPTCHA Reset Option
+
+**Change:** Admin **Google reCAPTCHA** settings page par **Reset** button add kiya. Confirm dialog ke baad reset action v2/v3 site aur secret keys clear karta hai, version ko `v2` par reset karta hai, v3 score ko `0.5` par aur Login/Register/Contact teeno toggles ko off kar deta hai. Is se reCAPTCHA turant disable ho jata hai aur form clean state me wapas aa jata hai. Reset ke baad success message show hota hai.
+
+**Files changed:**
+- `app/Http/Controllers/Admin/RecaptchaSettingsController.php` — `reset()` method
+- `routes/web.php` — `POST /admin/settings/google-recaptcha/reset` route
+- `resources/views/admin/settings/google-recaptcha.blade.php` — card header me Reset button + confirmation dialog
+
+**Verification:** `POST admin/settings/google-recaptcha/reset` route list me present; admin page `200` with Reset button, `_token` aur confirm dialog; transactional test me reset ke baad version `v2`, saari keys empty, score `0.5`, teeno toggles `0`, `Recaptcha::enabled()` false aur site/secret keys `null`; rollback ke baad original settings restore ho gayi; `php artisan view:cache` passed.
+
+## 381. (2026-11-13): Pickup Points Search Button
+
+**Change:** Pickup Points list ke search field ke saath **Filter** button ki jagah **Search** button kar diya (icon `fa-filter` se `fa-search`). Saath hi search form ka malformed markup fix kiya — search group aur button group ke missing closing `div`s the, jis ki wajah se layout nested ho raha tha. Ab search input + Search button + Clear button ek proper group me hain aur Add New button right side par alag hai. Search input ko `min-width: 240px` diya taake desktop/mobile par usable rahe.
+
+**Files changed:**
+- `resources/views/admin/settings/pickup-points/index.blade.php` — Filter button ko Search button banaya, form markup/layout fix kiya, Clear link ko proper group me rakha
+
+**Verification:** `/admin/settings/pickup-points` `200`; Search button render hua aur Filter button absent; no query par Clear link nahi, `?search=test` par Clear link present; search input render hua; `php artisan view:cache` passed.
+
+## 382. (2026-11-13): Pickup Points Search Field Match All Products
+
+**Change:** Pickup Points ka search field ab All Products page wale shared partial `admin.partials.search-form` se render hota hai. Search icon left side input-group me hai, placeholder `Search pickup points...` hai, pagination reset ke liye hidden `page` input hai aur Clear button same pattern me show hota hai. Purana `Name` label aur alag text **Search** button hata diya. Card header me search left side aur **Add New Pick-up Point** right side par hai.
+
+**Files changed:**
+- `resources/views/admin/settings/pickup-points/index.blade.php` — shared search partial use kiya, purana custom search form/label hata diya
+
+**Verification:** `/admin/settings/pickup-points` `200`; input-group, search icon button aur placeholder render hue; purana text Search button aur filter icon absent; no query par Clear link nahi, `?search=test` par Clear link present; `php artisan view:cache` passed.
+
+## 383. (2026-11-13): Soft Deletes Across Remaining App Tables
+
+**Change:** App ke baaki 15 tables/models par Laravel soft delete enable kiya. `admins` aur `staff` ke models me `SoftDeletes` pehle se tha lekin tables me `deleted_at` column missing tha (schema drift) — ab column add ho gaya. Baaki 13 models (`ApiIntegration`, `Brand`, `CommissionHistory`, `Contact`, `Currency`, `HomePageSection`, `Language`, `PickupPoint`, `ReturnRequest`, `Setting`, `Subscriber`, `Tag`, `TaxType`) me `SoftDeletes` trait add kiya. `faqs` table me `is_deleted` column bhi add kiya kyunki `Faq` model `TracksIsDeleted` use karta hai lekin column missing tha (FAQ delete par SQL error aata tha).
+
+System tables (cache/jobs/sessions/migrations/password resets), pivot tables (`blog_tag`, `image_product`, `product_vehicle`, etc.) aur legacy/backup tables ko scope se bahar rakha.
+
+Unique-key tables ke liye restore-on-create handling add ki:
+- `Setting::set()` ab `withTrashed()` se row find karke restore karta hai.
+- Languages, currencies aur tax types ke admin `store()` me trashed record restore hota hai; validation `whereNull('deleted_at')` use karta hai taake same code/name dobara add ho sake.
+- Subscribers `Subscriber::firstOrCreateForEmail()` se restore hote hain (newsletter + registration).
+- Blog tags `withTrashed()` se find aur restore hote hain.
+- Homepage sections `HomePageSection::firstOrCreateRestored()` se restore hote hain.
+
+**Files changed:**
+- `database/migrations/2026_11_13_000000_add_soft_deletes_to_remaining_app_tables.php` — created
+- `app/Models/ApiIntegration.php`, `Brand.php`, `CommissionHistory.php`, `Contact.php`, `Currency.php`, `HomePageSection.php`, `Language.php`, `PickupPoint.php`, `ReturnRequest.php`, `Setting.php`, `Subscriber.php`, `Tag.php`, `TaxType.php` — `SoftDeletes` trait/import; HomePageSection aur Subscriber me restore helpers
+- `app/Http/Controllers/Admin/LanguageController.php`, `TaxTypeController.php`, `CurrencySettingsController.php` — trashed unique records restore + validation update
+- `app/Http/Controllers/Admin/BlogController.php` — tag restore
+- `app/Http/Controllers/Admin/HomePageController.php` — services section restore
+- `app/Http/Controllers/HomeController.php` — top brands / buy with confidence sections restore before query
+- `app/Http/Controllers/NewsletterController.php`, `AuthController.php` — subscriber restore
+- `database/seeders/HomePageSectionSeeder.php`, `AdditionalHomePageSectionsSeeder.php` — homepage section seeding restore-safe
+
+**Verification:** `php artisan migrate --force` passed; audit me sab app models ke tables me `deleted_at` present, models me `SoftDeletes` present, aur `TracksIsDeleted` wale models ke tables me `is_deleted` present (`product_vehicle` pivot intentionally excluded). Transactional runtime test me Admin, Staff, ApiIntegration, Brand, CommissionHistory, Contact, Currency, Faq, HomePageSection, Language, PickupPoint, ReturnRequest, Setting, Subscriber, Tag aur TaxType sab soft delete + restore pass hue; unique-key restore tests (Setting, Subscriber, HomePageSection, Tag) bhi pass. `php artisan view:cache` passed; `route:list` clean (431 lines).
+
+## 384. (2026-11-13): Duplicate Account Prevention By Email, Login State, And Phone
+
+**Change:** Duplicate account creation ab teen level par block hoti hai:
+- **Email:** Registration aur admin customer/staff/user create-update paths me email ko `strtolower(trim())` se normalize kiya jata hai. Same email (case/space variation ke saath) par naya account nahi banta aur clear error show hota hai.
+- **Logged-in state:** Agar user already login hai to `POST /users/registration` dashboard par redirect ho jata hai; pehle sirf GET form redirect karta tha, POST se doosra account ban sakta tha.
+- **Phone:** Registration form me ab required phone field hai. Naya `App\Rules\UniquePhone` rule phone ko digits-only normalize karke compare karta hai, is liye `+1 (555) 555-5555` aur `+15555555555` same mane jate hain. Soft-deleted users ke phone bhi check hote hain, taake deleted account ke number par naya account na bane. Admin customer/staff/user management ke create aur update paths par bhi same rule laga hai.
+
+Legacy duplicate phone `99999999999` (admin id 5 aur customer id 8) ko untouched rakha aur `users.phone` par DB unique index nahi lagaya. Edit ke waqt agar phone unchanged hai to duplicate legacy number allow hota hai, lekin phone change karke kisi doosre user ka number daalne par validation fail hoti hai.
+
+**Files changed:**
+- `app/Rules/UniquePhone.php` — new normalized phone uniqueness rule (create + update, legacy unchanged phone allowance)
+- `app/Http/Controllers/AuthController.php` — logged-in POST block, email/phone normalization, required unique phone, clear messages, phone save
+- `app/Http/Controllers/UserController.php` — customer/staff create/update me email normalization + `UniquePhone`
+- `app/Http/Controllers/UserManagementController.php` — admin user create/update me email normalization + `UniquePhone`
+- `resources/views/auth/register.blade.php` — required phone input with `old('phone')`
+
+**Verification:** `php -l` sab changed PHP files par pass; `php vendor/bin/pint` pass; `php artisan view:cache` pass. Runtime checks pass: duplicate email (case/space variation) reject, duplicate formatted phone reject, logged-in POST registration dashboard redirect, admin customer/staff/user create duplicate email/phone reject, aur existing legacy duplicate phone unchanged edit par allow. Tests transaction me chalaye gaye aur rollback kiye gaye, is liye existing users data unchanged raha.
+
+## 385. (2026-11-13): Add/Edit Category Form Design Unification
+
+**Change:** Add Category aur Edit Category pages ko ek hi shared form partial (`admin.categories._form`) par shift kiya, taake dono pages ka design aur field layout bilkul same rahe. Dono forms ab baaki admin forms wale standard pattern par hain: `card border-0 shadow-sm`, `card-body`, `row g-3`, `form-label`, consistent spacing aur `steve-btn` Save/Update + Cancel buttons.
+
+Fields same set me arrange kiye:
+- Name (8 columns) + Status (4 columns)
+- Image manager picker (6 columns) + Image Download URL (6 columns)
+- Parent Category (6 columns)
+
+Edit page par current image ab image field ke andar thumbnail ke saath show hoti hai, aur picker/URL behaviour pehle jaisa hi hai. Create page ka `container-fluid` wrapper, purane `form-rows` classes, aur Edit page ka alag `category-edit-page-section` layout hata diya. Create page ka page title typo (`Create Cetegory`) bhi `Add Category` kar diya. Image manager picker dono pages me same partial se render hota hai.
+
+**Files changed:**
+- `resources/views/admin/categories/_form.blade.php` — new shared form partial (all fields, current image, image manager picker, submit/cancel buttons)
+- `resources/views/admin/categories/create.blade.php` — shared partial use kiya, title/design standard kiya
+- `resources/views/admin/categories/edit.blade.php` — shared partial use kiya, purana two-column custom layout hata diya
+
+**Verification:** `php artisan view:cache` pass; dono views runtime render kiye aur Name, Status, Image, Image URL, Parent Category, Browse button, form action, edit `_method=PUT` aur current image output verify kiya. `git diff --check` clean.
+
+## 386. (2026-11-13): Modern Two-Column Add/Edit Category Design
+
+**Change:** Add Category aur Edit Category forms ko modern two-column layout me redesign kiya, dono pages shared `admin.categories._form` partial se same design use karte hain.
+
+Layout:
+- Left (8 columns): "Category Details" card me Name, Parent Category, Status aur Image Download URL.
+- Right (4 columns): "Category Image" card me 1:1 image preview, current image ya placeholder, Browse Image Manager button aur recommended size hint.
+- Right sidebar desktop par sticky hai, jisme Save/Update + Cancel action card bhi hai.
+- Form controls ke liye rounded borders, focus ring, section header/subtitle, helper notes aur consistent spacing add ki.
+- Current image edit page par seedha preview box me dikhti hai; naya image select karne par wahi preview update hota hai.
+- Naya image select karne ke liye existing `admin.partials.image-manager-picker` hi use hota hai.
+
+**Files changed:**
+- `resources/views/admin/categories/_form.blade.php` — two-column layout, scoped category-form CSS, image preview, sticky action sidebar
+- `resources/views/admin/categories/create.blade.php` / `edit.blade.php` — same shared partial continue use karte hain (no separate layout)
+
+**Verification:** `php artisan view:cache` pass; create/edit views runtime render kiye aur two-column grid, image preview, browse button, hidden picker input, form action aur edit `_method=PUT` verify kiya. `git diff --check` clean.

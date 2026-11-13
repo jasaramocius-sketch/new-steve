@@ -107,7 +107,7 @@
                             <label class="col-md-3 col-form-label" for="mail-from-name">MAIL FROM NAME</label>
                             <div class="col-md-9"><input id="mail-from-name" name="mail_from_name" class="form-control" value="{{ old('mail_from_name', $mailFromName) }}" required></div>
                         </div>
-                        <div class="text-right"><button type="submit" class="btn btn-primary">Save Configuration</button></div>
+                        <div class="text-right"><button type="submit" class="btn btn-primary d-flex align-items-center gap-1"> <i class="fas fa-save"></i>Save Configuration</button></div>
                     </form>
                 </div>
             </div>
@@ -124,7 +124,7 @@
                             <input id="test-email" type="email" name="email" class="form-control" value="{{ old('email', $testEmail) }}" placeholder="Enter your email address" required>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Send test email</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fa-solid fa-paper-plane"></i>Send test email</button>
                     </form>
                 </div>
             </div>
