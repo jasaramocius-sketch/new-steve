@@ -5457,3 +5457,197 @@ Layout:
 - `resources/views/admin/categories/create.blade.php` / `edit.blade.php` — same shared partial continue use karte hain (no separate layout)
 
 **Verification:** `php artisan view:cache` pass; create/edit views runtime render kiye aur two-column grid, image preview, browse button, hidden picker input, form action aur edit `_method=PUT` verify kiya. `git diff --check` clean.
+
+## 387. (2026-11-13): Product Review Duplicate Rule Audit
+
+**Question:** Kya ek user same product par review already add kar chuka ho to dobara review add kar sakta hai, aur agar wahi product dobara purchase kare to?
+
+**Current behavior (verified):**
+- `ReviewController@store` product ke `reviews_data` JSON me same `user_id` ki non-deleted review check karta hai. Duplicate hone par `403` aur message aata hai: "You have already reviewed this product. You can edit your existing review."
+- Eligibility `hasPurchased()` sirf ye check karta hai ki user ke kisi non-cancelled order me product present hai. Isliye same product dobara purchase karne par bhi existing review ki wajah se naya review block rahega.
+- Existing review ko dashboard "My Reviews" > Edit se update kiya ja sakta hai (`PUT /product/{slug}/review/{reviewId}`).
+- Review delete karne ke baad (`deleted = true`) user dobara review submit kar sakta hai, kyunki duplicate check deleted reviews ignore karta hai.
+- Per account/product ek hi active review rehta hai; alag accounts alag reviews kar sakte hain.
+
+**No code change:** Current code already "one active review per user per product" rule enforce karta hai. Agar business rule repurchase par naya review allow karna ho, to duplicate check ko order/purchase based karna hoga.
+
+**Files reviewed:**
+- `app/Http/Controllers/ReviewController.php` — duplicate check, purchase eligibility, update/delete
+- `app/Http/Controllers/DashboardController.php` — My Reviews listing (reviewed/pending)
+- `resources/views/user/reviews.blade.php` — Add/View/Edit/Delete review modal
+- `resources/views/product/show.blade.php` — product page review form
+- `routes/web.php` — review store/update/delete routes
+
+## 388. (2026-11-13): Order-Wise Product Reviews (One Review Per Purchase)
+
+**Requirement:** A user who already reviewed a product can submit another review if they repurchase the same product. Rule changed from "one active review per user per product" to "one review per purchase/order".
+
+**Behavior:**
+- User can review once per non-cancelled purchase/order of the same product.
+- Submitting a review auto-assigns the earliest unreviewed purchase order.
+- Submitting with an explicit `order_id` reviews that specific order; blocked if already reviewed for that order.
+- Once all purchase orders of a product are reviewed, no new review allowed (must edit existing review).
+- Deleting a review frees its order so it can be reviewed again.
+- Legacy reviews (no `order_id`) map to purchases on/before review date; undated legacy covers only earliest purchase.
+- Dashboard "My Reviews" shows per-order pending/reviewed status with order number/date.
+- Order page "Write Review" button disabled when current order already reviewed; passes `order_id` on submit.
+
+**Decision rationale:** Repurchase should generate a new review opportunity because the customer's experience may differ with a fresh batch/delivery. Existing reviews remain editable/deletable.
+
+**New file:**
+- `app/Services/ProductReviewEligibility.php` — purchase order listing, review-to-order allocation, reviewed order IDs, next unreviewed order.
+
+**Files changed:**
+- `app/Http/Controllers/ReviewController.php` — `store()` uses eligibility service; accepts `order_id`; stores `order_id`/`order_number`/`purchase_date` on review; `hasPurchased()` delegated to service; update skips deleted reviews.
+- `app/Http/Controllers/DashboardController.php` — `reviews()` lists per-order pending/reviewed items with order details.
+- `app/Http/Controllers/OrderController.php` — `show()` checks if current order already reviewed for each product.
+- `resources/views/user/reviews.blade.php` — displays order number/date and pending count.
+- `resources/views/user/orders/show.blade.php` — cancelled orders show "—"; reviewed orders disabled; passes `data-order-id` and submits `order_id`.
+
+**Verification:** `php -l` clean on all changed files; `php artisan view:cache` pass; runtime tests confirm: auto-assign, explicit order allow/block, all-reviewed blocked, deleted review frees order, dashboard pending/reviewed per order.
+
+## 389. (2026-11-13): Review System Verification Across All Entry Points
+
+**Requirement:** Verify order-wise review logic works consistently across product page, order page, and dashboard; fix any UI/inconsistency issues found.
+
+**Scope:**
+- Test review submit flow from product page (`/product/{slug}/review`) with and without `order_id`.
+- Test review submit flow from order page modal passing `order_id`.
+- Test dashboard "My Reviews" listing shows correct pending/reviewed status per order.
+- Test edit review (`PUT /product/{slug}/review/{reviewId}`) still works and doesn't create duplicate.
+- Test delete review frees the order for re-review.
+- Verify cancelled orders show "—" and reviewed orders are disabled on order page.
+- Verify legacy reviews (no order_id) map correctly and don't block later repurchases.
+- Run `php artisan view:cache` and `git diff --check` after all changes.
+
+**Files to verify:**
+- `app/Http/Controllers/ReviewController.php`
+- `app/Http/Controllers/DashboardController.php`
+- `app/Http/Controllers/OrderController.php`
+- `app/Services/ProductReviewEligibility.php`
+- `resources/views/user/reviews.blade.php`
+- `resources/views/user/orders/show.blade.php`
+- `resources/views/product/show.blade.php`
+
+**Status:** Pending
+
+## 390. (2026-11-16): Admin Sidebar Design Fix — Submenu Icons, Auto-Expand, Collapsed Tooltips
+
+**Problem:** Admin sidebar submenus still looked plain after earlier fixes — submenu items had no icons, parent submenus didn't reliably auto-expand when a child route was active, and collapsed sidebar (72px) hover tooltips were missing because Bootstrap tooltips were initialized before `data-bs-original-title` was set by the sidebar inline JS.
+
+**Solution:** Rewrote sidebar styling and tooltip setup so the design is actually visible and functional.
+
+### Files changed
+- `resources/views/admin/partials/sidebar.blade.php`:
+  - Added `fas` icons to all submenu items: Products (All Products, Bulk Import/Export, Categories, Brands, Stock Management, Commission, Product Reviews), Shipping (Configuration, Countries, States, Cities, Zones, Carriers).
+  - Parent submenus now auto-expand (`expanded`/`show`) when any child route is active (`routeIs` wildcard), not just parent route match.
+  - Products parent also active for `admin.reviews.*`.
+  - JS sets `data-bs-original-title` on `.nav-item` and `.sidebar-link` from visible label text, then re-initializes Bootstrap tooltips so collapsed sidebar hover tooltips work.
+- `public/assets/front/css/backend.css`:
+  - `.nav-item-sub` styles: flex layout, padding/gap, font-size, hover (`rgba(255,255,255,.04)`), active state (`rgba(255,255,255,.08)` + left border `#4bc5e7`).
+  - `.submenu-arrow` rotate animation on expand.
+  - Section separator borders between nav sections.
+  - Collapsed state: hides submenu items, centers parent nav icons, shows hover tooltip via `::after` using `data-bs-original-title`.
+  - Tooltip arrow colors matched to dark sidebar theme.
+
+### Verification
+- `php -l` clean on sidebar Blade file.
+- `php artisan view:cache` compiled successfully.
+- Sidebar renders with submenu icons, auto-expanded active parent, active child highlighting, and collapsed hover tooltips.
+
+## 391. (2026-11-16): Homepage Latest Post — View More Button & Auto Latest Option
+
+**Status: Completed**
+
+- Fixed homepage Latest Post section so the **View More** button shows in non-slider layouts (2–3 posts) when more accessible blog posts exist than are currently displayed.
+- Updated `hasMoreLatestPosts` logic to compare total accessible blog posts against displayed posts, including sections configured with specific `post_ids`.
+- Added **Post Source** option in Admin → Home Page Sections → Edit Latest Post:
+  - **Show latest published posts automatically** — always displays the most recent published posts.
+  - **Select specific posts manually** — displays only selected posts.
+- Stored `use_latest_posts` in latest post section `extra_data`; frontend respects it and manual post selection UI toggles in admin.
+- Cleared compiled views; verified homepage renders View More for the current latest-post configuration and PHP/Blade syntax checks pass.
+
+## 392. (2026-11-16): Admin UX Tweaks — Site Logs, Subscribers, Stock Search, Product Part Number
+
+**Status: Completed**
+
+- **Site Logs:** Changed default pagination to 20 entries per page and added a **Show** filter (`10/20/50/100/All`) in the logs filter form. `per_page` is accepted/validated in `AdminController::logs()` and preserved in pagination/query params.
+- **Newsletter Subscribers:** Added a search clear (X) option next to the email search when a search term is present.
+- **Stock Management:** Standardized the search field to match other admin pages (input-group with search button and a clear-search option that preserves other stock filters).
+- **Product Part Number:** Made Part Number display-only/uneditable on Create and Edit Product forms (`readonly`, `disabled`, styled as display field); server-side product create/update already does not accept part number changes.
+
+## 393. (2026-11-16): Admin Settings Enhancements — File System & Cache, Shipping, Integrations & Sidebar
+
+**Status: Completed**
+
+- **File System & Cache settings:** Added admin settings page/controller/routes (`admin.settings.file-system-cache`) for filesystem driver (Local/Public/S3), AWS credentials/URL, cache & session drivers, and Redis configuration. Values stored in `settings` (secrets encrypted) and applied at runtime via `AppServiceProvider` where supported; linked from Settings hub and sidebar.
+  - Fixed S3 secret validation to treat existing `.env`/config secret as configured (no forced re-entry when saved/configured).
+- **Settings hub links:** Linked existing/implemented pages from `/admin/settings` — Shipping Countries/States/Cities and Google reCAPTCHA.
+- **Shipping Cities search:** Standardized "City name" search field to match other admin pages (input-group search button + clear-search that preserves other filters).
+- **Social & Google integration settings:** Added configurable settings pages/controller/routes/views for Social media Logins (Google, Facebook, Twitter, Apple credentials/toggles), Facebook Chat, Facebook Comment, Google Map, and Google Firebase (secrets encrypted; blank keeps existing). Linked from Settings hub.
+- **Setup & Configurations sidebar:** Updated sidebar menu to include File System & Cache and new Social/Google settings links, and removed outdated commented disabled/duplicate entries.
+- Cleared compiled views and verified PHP syntax/routes where applicable.
+
+## 394. (2026-11-16): System Menu — Update & Server Status
+
+**Status: Completed**
+
+- Added `SystemStatusController` with two admin pages under the **System** sidebar group:
+  - **Server Status** (`admin.system.server-status`): Laravel/PHP versions, server/OS, environment & debug mode, DB connection/version/table count, disk usage, writable storage/cache paths, cache/session/queue/filesystem drivers, pending/failed jobs, PHP limits, and required PHP extensions.
+  - **Update** (`admin.system.update`): app/Laravel/PHP versions, git branch/commit, migration status with pending migration list, config/route cache status, and safe cache-clear actions.
+- Added routes for `admin.system.update.clear-all`, `clear-cache`, `clear-view`, `clear-config`, and `clear-route`.
+- Sidebar **System** group now includes File System & Cache, Update, Server Status, Logs, Revisions, and File Revisions, with auto-expand/active state for `admin.system.*`.
+- Views: `resources/views/admin/system/server-status.blade.php`, `resources/views/admin/system/update.blade.php`.
+- Note: the Update page is informational only — it does not auto-download or apply code updates.
+
+## 395. (2026-11-16): Support Module — Tickets & Product Conversations
+
+**Status: Completed**
+
+- Added a full admin **Support** module with a collapsible sidebar group (Ticket + Product Conversations) and live open-item badges.
+- **Database:** new migrations and models for `support_tickets`, `support_ticket_replies`, `product_conversations`, and `product_conversation_messages`.
+- **Tickets:** admin list with search (subject/name/email), status filter, per-page selector, and reply counts; detail page with customer info, full message thread, admin reply, status update (open/pending/resolved/closed), and delete.
+- **Product Conversations:** admin list with search (product/customer), status filter, message counts and last activity; detail page with product/customer/seller info, full message thread, admin reply, open/close status update, and delete. Opening a conversation marks customer/seller messages as read.
+- Sidebar badge counts are shared via a view composer in `AppServiceProvider` (guarded with try/catch so a missing table never breaks the panel).
+- Cleared/compiled Blade views, ran migrations, and verified support routes plus PHP/Blade syntax.
+
+## 396. (2026-11-16): Support Module — Customer-Facing Wiring
+
+**Status: Completed**
+
+- **Contact form → Support Ticket:** `/contact-us` submissions now also create a `support_tickets` record (category `Contact Form`, status `open`, linked user when logged in). Contact submission still succeeds even if ticket creation fails (try/catch + log).
+- **Product page → Product Conversation:** the existing product **Ask a question / Contact Seller** modal now:
+  - Logged-in users: creates (or appends to) an open `product_conversations` thread for that product with the inquiry as the first customer message.
+  - Guests: creates a `support_tickets` record (category `Product`, includes product name + URL) so the inquiry still reaches the admin Support queue.
+- **Customer Dashboard → My Support** (`/user/support`):
+  - Lists the user's tickets and product conversations with status badges, reply/message counts and pagination.
+  - **New Ticket** modal (subject, category, priority, message).
+  - Ticket detail page with full thread and customer reply (customer reply re-opens the ticket).
+  - Conversation detail page with product/seller context and customer reply.
+- Added `UserSupportController` and routes under the existing `auth` user group; added **My Support** link to the dashboard sidebar.
+- Verified: contact form creates a ticket, product inquiry creates a conversation, all My Support pages render (HTTP 200), Blade compile + PHP lint clean.
+
+## 397. (2026-11-16): Support Tickets/Conversations — Action Button Design Standardized
+
+**Status: Completed**
+
+- Replaced the plain Bootstrap outline eye buttons in the Support **Ticket** and **Product Conversations** list action columns with the site-wide action button pattern used by other admin pages (Products, Contacts, Subscribers).
+- Action cells now use `table-action-col` + `.action-buttons` wrapper, circular `action-btn btn-view` (SVG eye) and `action-btn btn-cancel` (SVG trash) buttons with Bootstrap tooltips and confirm prompts.
+- Column headers changed from `pe-3 text-end` to the standard `pe-3`.
+- Verified: Blade compile/lint clean and Ticket list renders with `action-buttons` markup (HTTP 200).
+
+## 398. (2026-11-16): User "My Support" — Action Button Design Standardized
+
+**Status: Completed**
+
+- Replaced the plain outline **View** buttons in the user dashboard **My Support** list (tickets and product conversations) with the same circular action button used on other user pages (Orders, Reviews, Inquiries): `.action-buttons` wrapper + `action-btn btn-view` with SVG eye and Bootstrap tooltip.
+- Tooltips: "View Ticket" and "View Conversation".
+- Verified: Blade compile/lint clean, `/user/support` renders HTTP 200 with `action-buttons` markup.
+
+## 399. (2026-11-16): Global Go-to-Page Pagination Summary
+
+**Status: Completed**
+
+- Added the current page, total pages, total results, and page size to the shared Go-to-page control across paginated pages.
+- Made the control wrap on narrow screens so the summary remains readable.
+- Verified the shared pagination view renders the requested page summary and Blade compilation passes.
