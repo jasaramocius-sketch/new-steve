@@ -73,7 +73,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="text-right"><button class="btn btn-sm btn-primary d-flex align-items-center gap-1" type="submit"><i class="fas fa-save"></i>Save</button></div>
+                        <div class="text-right"><button class="btn btn-primary d-flex align-items-center gap-1" type="submit"><i class="fas fa-save"></i>Save</button></div>
                     </form>
                 </div>
             </div>
@@ -92,7 +92,7 @@
                         @csrf
                         <button type="submit" class="btn btn-primary mr-1"><i class="fas fa-sync" aria-hidden="true"></i> Update rates now</button>
                     </form>
-                    <a href="{{ route('admin.settings.currency.create') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add New Currency</a>
+                    <a href="{{ route('admin.settings.currency.create') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add New Currency</a>
                 </div>
             </div>
         </div>

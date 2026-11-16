@@ -80,7 +80,7 @@
                             @endif
 
                             <div class="form-group mb-0 text-right">
-                                <button type="submit" class="btn btn-sm btn-primary  d-flex align-items-center gap-1"> <i class="fas fa-save"></i>Save</button>
+                                <button type="submit" class="btn btn-primary  d-flex align-items-center gap-1"> <i class="fas fa-save"></i>Save</button>
                             </div>
                         </form>
                     </div>

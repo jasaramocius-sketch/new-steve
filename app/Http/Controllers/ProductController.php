@@ -9,7 +9,9 @@ use App\Models\CommissionHistory;
 use App\Models\Contact;
 use App\Models\Image;
 use App\Models\Product;
+use App\Models\ProductConversation;
 use App\Models\Seller;
+use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Wishlist;
@@ -713,11 +715,65 @@ class ProductController extends Controller
             'product_id' => $product->id,
         ]);
 
+        $this->createProductConversation($request, $product);
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Your message has been sent to the seller.']);
         }
 
         return back()->with('success', 'Your message has been sent to the seller.');
+    }
+
+    private function createProductConversation(Request $request, Product $product): void
+    {
+        try {
+            if (auth()->check()) {
+                $conversation = ProductConversation::query()
+                    ->where('product_id', $product->id)
+                    ->where('user_id', auth()->id())
+                    ->where('status', 'open')
+                    ->latest()
+                    ->first();
+
+                if (! $conversation) {
+                    $conversation = ProductConversation::create([
+                        'product_id' => $product->id,
+                        'user_id' => auth()->id(),
+                        'seller_id' => $product->seller_id,
+                        'subject' => 'Product inquiry: '.$product->name,
+                        'status' => 'open',
+                        'last_message_at' => now(),
+                    ]);
+                }
+
+                $conversation->messages()->create([
+                    'sender_id' => auth()->id(),
+                    'sender_type' => 'customer',
+                    'message' => $request->input('message'),
+                ]);
+
+                $conversation->update([
+                    'status' => 'open',
+                    'last_message_at' => now(),
+                ]);
+
+                return;
+            }
+
+            SupportTicket::create([
+                'user_id' => null,
+                'name' => $request->input('name'),
+                'email' => $request->input('email'),
+                'subject' => 'Product inquiry: '.($product->name ?? 'Product'),
+                'category' => 'Product',
+                'priority' => 'medium',
+                'status' => 'open',
+                'message' => "Product: {$product->name}\nProduct URL: ".route('product', $product->slug)."\n\n{$request->input('message')}",
+            ]);
+        } catch (\Throwable $e) {
+            // Never block a product inquiry if the support module is unavailable.
+            logger()->warning('Support conversation could not be created from product inquiry: '.$e->getMessage());
+        }
     }
 
     public function importForm()

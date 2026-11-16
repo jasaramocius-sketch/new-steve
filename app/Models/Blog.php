@@ -20,6 +20,7 @@ class Blog extends Model
         'image',
         'details',
         'author',
+        'author_id',
         'status',
         'published_at',
         'blog_category_id',
@@ -36,6 +37,11 @@ class Blog extends Model
     public function category()
     {
         return $this->belongsTo(BlogCategory::class, 'blog_category_id');
+    }
+
+    public function authorUser()
+    {
+        return $this->belongsTo(User::class, 'author_id');
     }
 
     public function additionalCategories()

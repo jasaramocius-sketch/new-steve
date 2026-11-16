@@ -878,7 +878,9 @@
                         <td><strong>{{ currency_format($item->price ?? 0) }}</strong></td>
 
                         <td>
-                            @if(!empty($reviewedSlugs[$item->product_id]))
+                            @if($order->status === 'cancelled')
+                                <span class="text-muted">—</span>
+                            @elseif(!empty($reviewedSlugs[$item->product_id]))
                                 <button type="button"
                                         class="btn btn-sm btn-outline-success rounded-pill px-3 order-review-btn"
                                         disabled>
@@ -889,6 +891,7 @@
                                    class="btn btn-sm btn-outline-dark rounded-pill px-3 write-review-btn order-review-btn"
                                    data-product-slug="{{ $item->product->slug }}"
                                    data-product-name="{{ $item->product->name }}"
+                                   data-order-id="{{ $order->id }}"
                                    data-bs-toggle="modal"
                                    data-bs-target="#orderReviewModal"
                                    onclick="openOrderReview(this)">
@@ -979,6 +982,7 @@
 <script>
 (function () {
     var currentSlug = null;
+    var currentOrderId = null;
     var orderReviewImages = [];
     var starPicker = document.getElementById('orderStarPicker');
     var ratingInput = document.getElementById('orderReviewRating');
@@ -1048,6 +1052,7 @@
 
     window.openOrderReview = function (el) {
         currentSlug = el.getAttribute('data-product-slug');
+        currentOrderId = el.getAttribute('data-order-id');
         var label = document.getElementById('orderReviewProductLabel');
         if (label) label.textContent = 'Product: ' + el.getAttribute('data-product-name');
         ratingInput.value = 0;
@@ -1080,6 +1085,7 @@
             var formData = new FormData();
             formData.append('rating', rating);
             formData.append('text', text);
+            if (currentOrderId) { formData.append('order_id', currentOrderId); }
             orderReviewImages.forEach(function (file) { formData.append('images[]', file); });
 
             fetch('{{ route("product.review", "__SLUG__") }}'.replace('__SLUG__', currentSlug), {

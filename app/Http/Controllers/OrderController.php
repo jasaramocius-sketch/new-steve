@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Services\InvoiceSettingsService;
+use App\Services\ProductReviewEligibility;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -55,17 +56,20 @@ class OrderController extends Controller
         }
 
         // If it passes everything, let's see if it successfully loads the view
-        $userId = auth()->id();
+        $userId = (int) auth()->id();
+        $eligibility = app(ProductReviewEligibility::class);
         $reviewedSlugs = [];
+
         foreach ($order->items as $item) {
-            if (! $item->product || empty($item->product->reviews_data)) {
+            if (! $item->product) {
                 continue;
             }
-            foreach ($item->product->reviews_data as $review) {
-                if (($review['user_id'] ?? null) == $userId && ! ($review['deleted'] ?? false)) {
-                    $reviewedSlugs[$item->product->id] = true;
-                    break;
-                }
+
+            $reviews = is_array($item->product->reviews_data) ? $item->product->reviews_data : [];
+            $coveredOrderIds = $eligibility->reviewedOrderIds($reviews, $userId, collect([$order]));
+
+            if (in_array((int) $order->id, $coveredOrderIds, true)) {
+                $reviewedSlugs[$item->product->id] = true;
             }
         }
 

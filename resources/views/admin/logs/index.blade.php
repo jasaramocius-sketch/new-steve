@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 {{-- Add your custom page ID and classes right here --}}
 @include('partials.page-attributes', ['pageId' => 'admin-logs-index-page', 'pageClass' => 'admin-logs-index-page'])
-@section('page-title', 'Logs')
+@section('page-title', 'Site Logs')
 @section('meta_tags')
     @include('partials.meta-tags', [
         'pageTitle' => 'Logs - Admin Panel',
@@ -26,27 +26,25 @@
 @endphp
 
 <div class="card border-0 shadow-sm logs-page-table">
-    <div class="card-header bg-white border-bottom d-grid gap-2 justify-content-between align-items-start align-items-xl-center p-2">
-        <div class="d-flex flex-row flex-xl-row flex-wrap align-items-center gap-2">
+    <div class="card-header bg-white border-bottom d-grid gap-2 justify-content-between align-items-end p-2">
+        <!-- <div class="d-flex flex-row flex-xl-row flex-wrap align-items-center gap-2">
         <h5 class="mb-0 fw-bold p-2"><i class="fas fa-file-alt me-2"></i>Site Logs</h5>
-        <div class="text-muted small p-2">
-            Showing: {{ $selectedFile }}
-            @if($selectedFile)
-                <span class="mx-1">|</span> {{ $entries->total() }} entries
-            @endif
-        </div>
-        @if($selectedFile && Auth::check() && in_array(Auth::user()->role, ['master_admin', 'admin']))
-            <form method="POST" action="{{ route('admin.logs.clear', $selectedFile) }}" 
-                  onsubmit="return confirm('Move the entire {{ basename($selectedFile) }} log file to trash? It will auto-delete after 15 days.')">
-                @csrf @method('DELETE')
-                <button type="submit" class="btn btn-outline-danger steve-btn gap-1"><i class="fas fa-trash me-1"></i> Clear Log File</button>
-            </form>
-            <a href="{{ route('admin.logs.trash') }}" class="btn btn-outline-secondary mt-xl-0"><i class="fas fa-trash-alt me-1"></i> Log Trash</a>
-        @endif
+        
+        </div> -->
+        <div class="d-flex flex-wrap flex-row align-items-center justify-content-start gap-2">
+        <div style="flex:0 1 auto; min-width:140px">
+            <label class="form-label small mb-1 d-block">Show</label>
+            @php $currentPerPage = request('per_page', '20'); @endphp
+            <select name="per_page" class="form-select" onchange="this.form.submit()">
+                @foreach([10, 20, 50, 100] as $n)
+                    <option value="{{ $n }}" {{ (string) $currentPerPage === (string) $n ? 'selected' : '' }}>{{ $n }} per page</option>
+                @endforeach
+                <option value="all" {{ (string) $currentPerPage === 'all' ? 'selected' : '' }}>All</option>
+            </select>
         </div>
         <form method="GET" action="{{ route('admin.logs.index') }}" class="d-flex flex-wrap align-items-end gap-2" onsubmit="return stAutoPartsLogsSubmit(this)">
-            <div style="flex:1 1 auto; min-width:170px">
-                <label class="form-label small mb-1 d-block">Log File</label>
+            <div style="flex:1 1 auto;">
+                <label FOR="Log_File" class="form-label small mb-1 d-block">Log File</label>
                 <select name="file" class="form-select" onchange="this.form.submit()">
                     <option value="">Select log file</option>
                     @foreach($files as $file)
@@ -54,7 +52,7 @@
                     @endforeach
                 </select>
             </div>
-            <div style="flex:1 1 auto; min-width:170px">
+            <div style="flex:1 1 auto;">
                 <label class="form-label small mb-1 d-block">Type</label>
                 <select name="type" class="form-select" onchange="this.form.submit()">
                     <option value="all" {{ ($typeParam ?? 'change') === 'all' ? 'selected' : '' }}>All types</option>
@@ -63,10 +61,10 @@
                     @endforeach
                 </select>
             </div>
-            <div style="flex:1 1 auto; min-width:220px">
+            <div style="flex:1 1 auto;">
                 <label class="form-label small mb-1 d-block">Search</label>
                 <div class="input-group">
-                    <input type="text" name="search" value="{{ $search ?? '' }}" class="form-control" placeholder="Search logs..." style="min-width:130px" id="logs-search-input">
+                    <input type="text" name="search" value="{{ $search ?? '' }}" class="form-control" placeholder="Search logs..." style="min-width:168px" id="logs-search-input">
                     @php $hasLogFilter = !empty($search) || (!empty($typeParam) && !in_array($typeParam, ['change', 'all'], true)); @endphp
                     <button type="submit" id="logs-search-toggle" class="btn {{ $hasLogFilter ? 'btn-outline-secondary' : 'btn-primary' }} steve-btn gap-1" data-bs-toggle="tooltip" data-bs-original-title="{{ $hasLogFilter ? 'Clear' : 'Search' }}" aria-label="{{ $hasLogFilter ? 'Clear' : 'Search' }}">
                         <i class="fas {{ $hasLogFilter ? 'fa-times' : 'fa-search' }}"></i>
@@ -74,6 +72,17 @@
                 </div>
             </div>
         </form>
+        </div>
+        <div class="d-flex flex-wrap flex-row align-items-center justify-content-end gap-2">
+        @if($selectedFile && Auth::check() && in_array(Auth::user()->role, ['master_admin', 'admin']))
+            <form method="POST" action="{{ route('admin.logs.clear', $selectedFile) }}" 
+                onsubmit="return confirm('Move the entire {{ basename($selectedFile) }} log file to trash? It will auto-delete after 15 days.')">
+                @csrf @method('DELETE')
+                <button type="submit" class="btn btn-outline-danger steve-btn gap-1"><i class="fas fa-trash me-1"></i> Clear Log File</button>
+            </form>
+            <a href="{{ route('admin.logs.trash') }}" class="btn btn-outline-secondary steve-btn mt-xl-0"><i class="fas fa-trash-alt me-1"></i> Log Trash</a>
+        @endif
+        </div>
     </div>
     <div class="card-body p-0">
         @if($selectedFile)
@@ -151,6 +160,14 @@
         @else
             <div class="alert alert-warning mb-0">No log files found yet.</div>
         @endif
+        <div class="d-flex flex-wrap flex-row justify-content-between align-items-center gap-2 p-2 border-top bg-light">
+            <div class="text-muted small p-2">
+                Showing: {{ $selectedFile }}
+                @if($selectedFile)
+                    <span class="mx-1">|</span> {{ $entries->total() }} entries
+                @endif
+            </div>
+        </div>
     </div>
 </div>
 
@@ -161,9 +178,11 @@
         var file = form.querySelector('[name="file"]').value;
         var type = form.querySelector('[name="type"]').value;
         var search = form.querySelector('[name="search"]').value;
+        var perPage = form.querySelector('[name="per_page"]').value;
         if (file) params.set('file', file);
         if (type && type !== 'change' && type !== 'all') params.set('type', type);
         if (search) params.set('search', search);
+        if (perPage && perPage !== '20') params.set('per_page', perPage);
         var qs = params.toString();
         window.location.href = qs ? (form.getAttribute('action') + '?' + qs) : form.getAttribute('action');
         return false;

@@ -52,7 +52,7 @@
 
                     @if($section->section_name === 'latest_post')
                         <div class="alert alert-info">
-                            <strong>Latest Post section:</strong> <strong>Title</strong> = section heading, <strong>Description</strong> = intro text. The posts themselves come from published blog posts (manage them under the Blog menu); use the posts-count field below to control how many are shown.
+                            <strong>Latest Post section:</strong> <strong>Title</strong> = section heading, <strong>Description</strong> = intro text. Choose whether to show the latest published blog posts automatically or pick specific posts. Use the posts-count field below to control how many are shown.
                         </div>
                     @endif
 
@@ -471,7 +471,17 @@
                             $extra = $section->extra_data ?? [];
                             $allPosts = \App\Models\Blog::where('status', 'published')->orderByDesc('created_at')->get();
                             $selectedPostIds = collect($extra['post_ids'] ?? [])->map(fn($id) => (int) $id)->all();
+                            $useLatestPosts = (bool) ($extra['use_latest_posts'] ?? false);
                         @endphp
+                        <div class="form-group mb-3">
+                            <label for="use_latest_posts" class="form-label"><strong>Post Source</strong></label>
+                            <select name="use_latest_posts" id="use_latest_posts" class="form-control form-select">
+                                <option value="1" {{ $useLatestPosts ? 'selected' : '' }}>Show latest published posts automatically</option>
+                                <option value="0" {{ ! $useLatestPosts ? 'selected' : '' }}>Select specific posts manually</option>
+                            </select>
+                            <small class="text-muted d-block">Automatic mode always shows the most recent published posts. Manual mode shows only the posts you select below.</small>
+                        </div>
+
                         <div class="form-group mb-3">
                             <label for="posts_count" class="form-label"><strong>Number of Posts to Show</strong></label>
                             <select name="posts_count" id="posts_count" class="form-control form-select">
@@ -479,19 +489,19 @@
                                     <option value="{{ $n }}" {{ (int)($extra['posts_count'] ?? 2) === $n ? 'selected' : '' }}>{{ $n }} Posts</option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block">How many latest published blog posts to display on the home page.</small>
+                            <small class="text-muted d-block">How many blog posts to display in this section on the home page.</small>
                         </div>
 
-                        <div class="form-group mb-3">
+                        <div class="form-group mb-3" id="latest-post-manual-wrap">
                             <label for="post_ids" class="form-label"><strong>Select Specific Posts for Home Page</strong></label>
-                            <select name="post_ids[]" id="post_ids" class="form-control" multiple size="8">
+                            <select name="post_ids[]" id="post_ids" class="form-control h-100" multiple size="8">
                                 @foreach($allPosts as $post)
                                     <option value="{{ $post->id }}" {{ in_array($post->id, $selectedPostIds) ? 'selected' : '' }}>
                                         {{ $post->title }}
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block">Hold Ctrl/Cmd to select multiple posts and choose exactly which ones appear (shown in the order selected). Leave empty to use the count-based setting above.</small>
+                            <small class="text-muted d-block">Hold Ctrl/Cmd to select multiple posts and choose exactly which ones appear (shown in the order selected). Used only when "Select specific posts manually" is chosen.</small>
                         </div>
                         @endif
 
@@ -882,11 +892,20 @@ function enforcePostLimit() {
         }
     }
 }
+function toggleLatestPostMode() {
+    var modeSel = document.getElementById('use_latest_posts');
+    var manualWrap = document.getElementById('latest-post-manual-wrap');
+    if (!modeSel || !manualWrap) return;
+    manualWrap.style.display = modeSel.value === '1' ? 'none' : '';
+}
 document.addEventListener('DOMContentLoaded', function () {
     var countSel = document.getElementById('posts_count');
     var postSel = document.getElementById('post_ids');
+    var modeSel = document.getElementById('use_latest_posts');
     if (countSel) countSel.addEventListener('change', enforcePostLimit);
     if (postSel) postSel.addEventListener('change', enforcePostLimit);
+    if (modeSel) modeSel.addEventListener('change', toggleLatestPostMode);
+    toggleLatestPostMode();
 });
 </script>
 

@@ -57,6 +57,21 @@
                         @endif
                         <div class="review-page-table-product-name">
                             <a href="{{ route('product', $item['product_slug']) }}" class="fw-semibold text-decoration-none">{{ $item['product_name'] }}</a>
+                            @if($item['status'] === 'pending')
+                                <div class="small text-muted">
+                                    @if(($item['pending_count'] ?? 1) > 1)
+                                        {{ $item['pending_count'] }} purchases pending review
+                                    @elseif(!empty($item['order_number']))
+                                        Order #{{ $item['order_number'] }}
+                                    @else
+                                        Purchase pending review
+                                    @endif
+                                </div>
+                            @elseif(!empty($item['order_number']))
+                                <div class="small text-muted">
+                                    Order #{{ $item['order_number'] }}@if(!empty($item['order_date'])) · {{ $item['order_date'] }}@endif
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </td>

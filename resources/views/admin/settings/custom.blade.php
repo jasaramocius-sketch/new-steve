@@ -18,7 +18,7 @@
                 <h5 class="mb-1">Tax Types</h5>
                 <p class="text-muted mb-0">Manage the tax types available in your store.</p>
             </div>
-            <a href="{{ route('admin.settings.tax-types.create') }}" class="btn btn-primary">
+            <a href="{{ route('admin.settings.tax-types.create') }}" class="btn btn-primary d-flex align-items-center gap-1">
                 <i class="fas fa-plus mr-1" aria-hidden="true"></i> Add Tax Type
             </a>
         </div>

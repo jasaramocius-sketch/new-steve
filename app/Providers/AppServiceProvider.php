@@ -51,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
             (string) config('services.microsoft_mail.client_secret'),
         ));
         $this->applyMailSettings();
+        $this->applyFileSystemCacheSettings();
 
         try {
             $databaseCurrencies = Currency::where('is_active', true)->get()->mapWithKeys(fn ($currency) => [
@@ -165,6 +166,20 @@ class AppServiceProvider extends ServiceProvider
             $view->with($sharedData);
         });
 
+        View::composer('admin.partials.sidebar', function ($view) {
+            try {
+                $view->with([
+                    'supportOpenTickets' => \App\Models\SupportTicket::whereIn('status', ['open', 'pending'])->count(),
+                    'supportOpenConversations' => \App\Models\ProductConversation::where('status', 'open')->count(),
+                ]);
+            } catch (\Throwable) {
+                $view->with([
+                    'supportOpenTickets' => 0,
+                    'supportOpenConversations' => 0,
+                ]);
+            }
+        });
+
         if (app()->runningInConsole()) {
             // (console boot logging intentionally removed — it was pure noise)
         }
@@ -208,6 +223,55 @@ class AppServiceProvider extends ServiceProvider
             ]);
         } catch (Throwable $exception) {
             logger()->warning('Stored mail configuration could not be applied: '.$exception->getMessage());
+        }
+    }
+
+    private function applyFileSystemCacheSettings(): void
+    {
+        try {
+            $settings = Setting::getAllAsArray();
+
+            $filesystemDriver = $settings['filesystem_driver'] ?? null;
+            if (in_array($filesystemDriver, ['local', 'public', 's3'], true)) {
+                config(['filesystems.default' => $filesystemDriver]);
+            }
+
+            $awsSecret = $this->decryptMailSecret($settings['aws_secret_access_key'] ?? null);
+            if (($settings['aws_access_key_id'] ?? '') !== '' || $awsSecret || ($settings['aws_bucket'] ?? '') !== '') {
+                config([
+                    'filesystems.disks.s3.key' => $settings['aws_access_key_id'] ?? config('filesystems.disks.s3.key'),
+                    'filesystems.disks.s3.secret' => $awsSecret ?? config('filesystems.disks.s3.secret'),
+                    'filesystems.disks.s3.region' => $settings['aws_default_region'] ?? config('filesystems.disks.s3.region'),
+                    'filesystems.disks.s3.bucket' => $settings['aws_bucket'] ?? config('filesystems.disks.s3.bucket'),
+                    'filesystems.disks.s3.url' => $settings['aws_url'] ?? config('filesystems.disks.s3.url'),
+                ]);
+            }
+
+            $cacheDriver = $settings['cache_driver'] ?? null;
+            if (in_array($cacheDriver, ['file', 'database', 'redis', 'array'], true)) {
+                config(['cache.default' => $cacheDriver]);
+            }
+
+            $sessionDriver = $settings['session_driver'] ?? null;
+            if (in_array($sessionDriver, ['file', 'cookie', 'database', 'redis', 'array'], true)) {
+                config(['session.driver' => $sessionDriver]);
+            }
+
+            $redisHost = $settings['redis_host'] ?? null;
+            $redisPort = $settings['redis_port'] ?? null;
+            $redisPassword = $this->decryptMailSecret($settings['redis_password'] ?? null);
+            if ($redisHost || $redisPort || $redisPassword) {
+                config([
+                    'database.redis.default.host' => $redisHost ?: config('database.redis.default.host'),
+                    'database.redis.default.port' => $redisPort ? (int) $redisPort : config('database.redis.default.port'),
+                    'database.redis.default.password' => $redisPassword ?: config('database.redis.default.password'),
+                    'database.redis.cache.host' => $redisHost ?: config('database.redis.cache.host'),
+                    'database.redis.cache.port' => $redisPort ? (int) $redisPort : config('database.redis.cache.port'),
+                    'database.redis.cache.password' => $redisPassword ?: config('database.redis.cache.password'),
+                ]);
+            }
+        } catch (Throwable $exception) {
+            logger()->warning('Stored file system/cache configuration could not be applied: '.$exception->getMessage());
         }
     }
 

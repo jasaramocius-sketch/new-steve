@@ -38,7 +38,7 @@
                                 <label class="form-check-label" for="shipping-type-{{ $value }}">{{ $label }}</label>
                             </div>
                         @endforeach
-                        <button type="submit" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                     </form>
                 </div>
             </div>
@@ -77,7 +77,7 @@
                             <input id="flat-rate-shipping-cost" type="number" min="0" step="0.01" name="flat_rate_shipping_cost"
                                    class="form-control" value="{{ old('flat_rate_shipping_cost', $flatRateShippingCost) }}">
                         </div>
-                        <button type="submit" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                     </div>
                 </form>
             </div>
@@ -112,7 +112,7 @@
                             <input id="shipping-cost-admin" type="number" min="0" step="0.01" name="shipping_cost_admin"
                                    class="form-control" value="{{ old('shipping_cost_admin', $shippingCostAdmin) }}">
                         </div>
-                        <button type="submit" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                     </div>
                 </form>
             </div>
@@ -148,7 +148,7 @@
                                    class="custom-control-input" @checked(old('home_delivery_enabled', $homeDeliveryEnabled))>
                             <label class="custom-control-label" for="home-delivery-enabled">Enable home delivery at checkout</label>
                         </div>
-                        <button type="submit" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                     </div>
                 </form>
             </div>

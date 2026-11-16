@@ -21,7 +21,10 @@
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap">
             <form method="GET" action="{{ route('admin.subscribers.index') }}" class="d-flex align-items-center gap-2">
                 <input type="text" name="email" value="{{ request('email') }}" class="form-control" placeholder="Search by email..." style="min-width:220px;">
-                <button class="btn btn-sm btn-primary"><i class="fas fa-search"></i></button>
+                <button type="submit" class="btn btn-primary" title="Search"><i class="fas fa-search"></i></button>
+                @if(request()->filled('email'))
+                    <a href="{{ route('admin.subscribers.index') }}" class="btn btn-outline-secondary" title="Clear search"><i class="fas fa-times"></i></a>
+                @endif
             </form>
             <div class="text-muted small">
                 Showing {{ $subscribers->firstItem() }}-{{ $subscribers->lastItem() }} of {{ $subscribers->total() }}

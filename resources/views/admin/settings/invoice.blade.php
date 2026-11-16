@@ -13,7 +13,7 @@
     </div>
 
     <div class="row">
-        <div class="col-xl-8">
+        <div class="col-xl-8 mb-2">
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-4">
                     @if (session('success'))

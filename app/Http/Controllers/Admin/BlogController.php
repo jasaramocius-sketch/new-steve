@@ -84,6 +84,7 @@ class BlogController extends Controller
 
         $data = $request->only(['title', 'details', 'author', 'status']);
         $data['author'] = trim((string) $request->input('author'));
+        $data['author_id'] = $this->resolveAuthorId($data['author']);
         $data['blog_category_id'] = $this->resolveCategory($request);
         $data['published_at'] = $request->filled('published_at')
             ? Carbon::parse($request->input('published_at'))->format('Y-m-d H:i:s')
@@ -172,6 +173,7 @@ class BlogController extends Controller
 
         $data = $request->only(['title', 'details', 'author', 'status']);
         $data['author'] = trim((string) $request->input('author'));
+        $data['author_id'] = $this->resolveAuthorId($data['author']);
         $data['blog_category_id'] = $this->resolveCategory($request);
         $data['published_at'] = $request->filled('published_at')
             ? Carbon::parse($request->input('published_at'))->format('Y-m-d H:i:s')
@@ -251,6 +253,24 @@ class BlogController extends Controller
             ->filter()
             ->unique()
             ->values();
+    }
+
+    /**
+     * Resolve the selected author name to a user id, falling back to the
+     * currently logged-in user when the name matches no staff user.
+     */
+    protected function resolveAuthorId(string $authorName): ?int
+    {
+        $authorName = trim($authorName);
+        if ($authorName === '') {
+            return auth()->id();
+        }
+
+        $user = User::whereIn('role', ['master_admin', 'admin', 'staff'])
+            ->where('name', $authorName)
+            ->first();
+
+        return $user?->id ?? auth()->id();
     }
 
     protected function syncTags(Request $request, Blog $blog)

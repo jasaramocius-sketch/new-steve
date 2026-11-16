@@ -51,7 +51,7 @@
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
                             <label class="form-label mt-2">Part Number</label>
-                            <input type="text" class="form-control" value="Generated automatically when saved" readonly>
+                            <input type="text" class="form-control bg-light" value="Generated automatically when saved" readonly disabled>
                             <small class="form-text text-muted">The Part Number is generated automatically and cannot be entered manually.</small>
                         </div>
 
@@ -220,7 +220,7 @@
                     <div class="row g-3">
                         <div class="col">
                             <label class="form-label fw-bold">Primary Image</label>
-                            <div class="card p-3 border-dashed">
+                            <div class="media-card">
                                 <input type="file" name="image" class="form-control mb-2 @error('image') is-invalid @enderror" accept="image/*">
                                 @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     @php $selectedImageFromManager = old('image_from_manager'); @endphp

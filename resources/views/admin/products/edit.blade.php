@@ -54,7 +54,7 @@
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
                             <label class="form-label mt-2" for="product-part-number">Part Number</label>
-                            <input type="text" id="product-part-number" class="form-control" value="{{ $product->part_number }}" readonly>
+                            <input type="text" id="product-part-number" class="form-control bg-light" value="{{ $product->part_number }}" readonly disabled>
                             <small class="form-text text-muted">Part Number is generated automatically and cannot be changed.</small>
                         </div>
 
@@ -300,7 +300,7 @@
             <!-- Form Actions -->
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary steve-btn px-4"><i class="fas fa-save me-1"></i> Update Product</button>
-                <a href="{{ route('admin.products.index') }}" class="btn btn-primary steve-btn px-4">Cancel</a>
+                <a href="{{ route('admin.products.index') }}" class="btn btn-primary steve-btn px-4 gap-1"><i class="fas fa-times"></i>Cancel</a>
             </div>
             
         </form>

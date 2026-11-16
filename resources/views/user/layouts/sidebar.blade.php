@@ -52,6 +52,7 @@
 
             <li><a class="nav-link {{ request()->routeIs('user.notifications') ? 'active' : '' }}" href="{{ route('user.notifications') }}"><i class="fas fa-bell me-2"></i>Notifications</a></li>
             <li><a class="nav-link {{ request()->routeIs('user.inquiries') ? 'active' : '' }}" href="{{ route('user.inquiries') }}"><i class="fas fa-question-circle me-2"></i>My Inquiries</a></li>
+            <li><a class="nav-link {{ request()->routeIs('user.support.*') ? 'active' : '' }}" href="{{ route('user.support.index') }}"><i class="fas fa-headset me-2"></i>My Support</a></li>
             <li class="nav-item user-sidebar-my-profile">
                 <a class="nav-link {{ request()->routeIs('user.profile') ? 'active' : '' }}" href="{{ route('user.profile') }}"><i class="fas fa-user-cog"></i>My Profile</a>
             </li>

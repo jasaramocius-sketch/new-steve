@@ -3927,6 +3927,7 @@ body .admin-sidebar .shipping-settings-submenu > .sidebar-link.active {
   -webkit-transition: all .3s ease-in;
   -o-transition: all .3s ease-in;
   transition: all .3s ease-in;
+  top: 80%;
 }
 
 @media (max-width:991.97px) {
@@ -3980,6 +3981,7 @@ body .admin-sidebar .shipping-settings-submenu > .sidebar-link.active {
 
 .gs-latest-post-section .single-post.h2-single-post:hover .post-content {
   bottom: 0;
+  top: 30%;
 }
 
 .gs-latest-post-section .single-post.h2-single-post:hover .date,
@@ -4017,9 +4019,9 @@ body .admin-sidebar .shipping-settings-submenu > .sidebar-link.active {
   text-transform: uppercase;
 }
 
-.gs-latest-post-section .single-post .post-content .post-desc {
+/* .gs-latest-post-section .single-post .post-content .post-desc {
   margin-bottom: 24px;
-}
+} */
 
 .gs-latest-post-section .single-post .post-content .read-more {
   font-size: 20px;
@@ -5077,7 +5079,12 @@ tbody tr:last-child {
 .form-select-wrapper:has(.form-select:disabled)::after {
   display: none;
 }
-
+@media (max-width:1024px) {
+  .admin-product-index-filter-bar form {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
 @media (max-width:767.98px) {
   .gs-contact-section .leave-reply-section .form-area .form-group {
     margin-bottom: 10px;
@@ -8246,6 +8253,12 @@ ul.mobile-nav-menu {
 @media (max-width:1199.97px) {
   .mobile-menu.active {
     left: 0;
+  }
+}
+
+@media (max-width:767px) {
+  .mobile-menu .mobile-menu-account {
+    flex-direction: column !important;
   }
 }
 
@@ -13015,8 +13028,8 @@ form#home-vehicle-filter-form {
   width: 180px;
 }
 .product-nav-wrapper .filter-sort-brand-wrapper div select{
-  border: 1px solid #c7c0bf !important;
-  border-radius: 4px;
+  /* border: 1px solid #c7c0bf !important; */
+  border-radius: 6px;
 }
 .category-toolbar-top {
   background-color: #fff;
@@ -18322,9 +18335,28 @@ td.admin-product-name a {
 }
 
 .logs-page-table .card-header {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr auto;
 }
-
+.blog-categories-nav-action {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+}
+.pages-index-page-nav-action {
+  grid-template-columns: 1fr auto;
+}
+.grid-column-1auto{
+  grid-template-columns: 1fr auto;
+}
+@media (max-width:767px) {
+  .logs-page-table .card-header {
+    grid-template-columns: 1fr;
+  }
+  .blog-categories-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
 .gs-similar-compare-area .similar-col {
   position: relative;
   min-width: 295px;

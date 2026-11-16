@@ -533,9 +533,9 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal"><i class="fas fa-times"></i>Close</button>
-          <button type="submit" class="btn btn-primary" id="contactSellerSubmitBtn">
-            <span id="contactSellerBtnText">Send Message</span>
+          <button type="button" class="btn btn-primary steve-btn" data-bs-dismiss="modal"><i class="fas fa-times"></i>Close</button>
+          <button type="submit" class="btn btn-primary steve-btn" id="contactSellerSubmitBtn">
+            <span id="contactSellerBtnText" class="d-inline-flex align-items-center gap-1"><i class="fas fa-save"></i>Send Message</span>
             <span id="contactSellerBtnSpinner" class="d-none">
               <span class="spinner-border spinner-border-sm" role="status"></span> Sending...
             </span>

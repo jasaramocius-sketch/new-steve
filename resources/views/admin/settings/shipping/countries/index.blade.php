@@ -27,7 +27,7 @@
                         </select>
                     </div>
                     <div class="col-md-auto d-flex gap-1">
-                        <button type="submit" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
                         @if ($search !== '' || $status !== null)
                             <a href="{{ route('admin.settings.shipping-countries.index') }}" class="btn btn-outline-secondary w-40px d-flex align-items-center justify-content-center"><i class="fas fa-times"></i></a>
                         @endif

@@ -14,7 +14,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
-        <h4 class="fw-bold mb-1">Page Builder</h4>
+        <!-- <h4 class="fw-bold mb-1">Page Builder</h4> -->
         <p class="text-muted mb-0 small">Pick a page or blog post to edit its content blocks.</p>
     </div>
 </div>
@@ -44,7 +44,7 @@
     }
 @endphp
 
-<ul class="nav nav-tabs flex-wrap flex-md-nowrap mb-3">
+<ul class="nav nav-tabs flex-wrap flex-md-nowrap">
     <li class="nav-item">
         <a class="nav-link {{ !$selectedType ? 'active' : '' }}" href="{{ route('page-builder.index') }}">All ({{ $totalAll }})</a>
     </li>

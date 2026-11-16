@@ -11,14 +11,7 @@
 @section('content')
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
-    <h4 class="fw-bold mb-0">Questions / Inquiries</h4>
-    <form method="GET" class="d-flex gap-2 align-items-center">
-        <select name="source" class="form-select w-auto" onchange="this.form.submit()">
-            <option value="">All Sources</option>
-            <option value="product" {{ request('source') === 'product' ? 'selected' : '' }}>Questions</option>
-            <option value="contact" {{ request('source') === 'contact' ? 'selected' : '' }}>Inquiries</option>
-        </select>
-    </form>
+    <!-- <h4 class="fw-bold mb-0">Questions / Inquiries</h4> -->
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -26,12 +19,21 @@
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap flex-wrap flex-md-nowrap">
             <div class="d-flex align-items-center gap-2">
                 <span class="text-muted small">Show</span>
-                <select class="form-select w-auto" onchange="window.location.href=this.value">
+                <select class="form-select w-100" onchange="window.location.href=this.value">
                     @foreach([10, 20, 50, 100] as $n)
                         <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }}</option>
                     @endforeach
                 </select>
                 <span class="text-muted small">per page</span>
+                <div class="">
+                    <form method="GET" class="d-flex gap-2 align-items-center">
+                        <select name="source" class="form-select w-auto" onchange="this.form.submit()">
+                            <option value="">All Sources</option>
+                            <option value="product" {{ request('source') === 'product' ? 'selected' : '' }}>Questions</option>
+                            <option value="contact" {{ request('source') === 'contact' ? 'selected' : '' }}>Inquiries</option>
+                        </select>
+                    </form>
+                </div>
             </div>
             <div class="text-muted small">
                 Showing {{ $contacts->firstItem() }}-{{ $contacts->lastItem() }} of {{ $contacts->total() }}

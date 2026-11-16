@@ -7,11 +7,11 @@
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 h6">Edit State</h5>
-                    <a href="{{ route('admin.settings.shipping-states.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
+                    <!-- <a href="{{ route('admin.settings.shipping-states.index') }}" class="btn btn-sm btn-outline-secondary">Back</a> -->
                 </div>
                 <div class="card-body">
                     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
@@ -39,7 +39,7 @@
                                 <label class="form-check-label" for="state-status">Active</label>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                        <button type="submit" class="btn btn-primary">Update</button>
                     </form>
                 </div>
             </div>

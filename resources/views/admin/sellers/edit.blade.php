@@ -39,7 +39,7 @@
                     @error('shipping_cost') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-6 d-flex flex-column align-items-start">
                     <label class="form-label">Image</label>
                     @if($seller->image)
                         <div class="mb-2">
@@ -70,7 +70,7 @@
 
             <div class="mt-4 d-flex gap-1">
                 <button class="btn btn-primary steve-btn gap-1"><i class="fas fa-save"></i> Update</button>
-                <a href="{{ route('admin.sellers.index') }}" class="btn btn-primary gap-1">Cancel</a>
+                <a href="{{ route('admin.sellers.index') }}" class="btn btn-primary steve-btn gap-1"><i class="fas fa-times"></i>Cancel</a>
             </div>
         </form>
     </div>

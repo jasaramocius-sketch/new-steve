@@ -27,7 +27,7 @@
                         <input type="hidden" name="status" value="{{ $status }}">
                     @endif
                     <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Search product, reviewer, review..." style="min-width:220px;">
-                    <button class="btn btn-sm btn-primary"><i class="fas fa-search"></i></button>
+                    <button class="btn steve-btn btn-primary"><i class="fas fa-search"></i></button>
                 </form>
                 @if($status || $search)
                     <a href="{{ route('admin.reviews.index') }}" class="btn steve-btn btn-outline-danger"

@@ -155,6 +155,10 @@ class HomePageController extends Controller
             $existing['post_ids'] = $ids;
         }
 
+        if ($section->section_name === 'latest_post') {
+            $existing['use_latest_posts'] = $request->boolean('use_latest_posts');
+        }
+
         if ($request->has('category_ids')) {
             $existing['category_ids'] = array_values(array_filter(array_map('intval', (array) $request->input('category_ids', []))));
         }
@@ -306,7 +310,8 @@ class HomePageController extends Controller
             || ($section->section_name === 'partners_heading' && $request->has('partners'))
             || ($section->section_name === 'buy_with_confidence' && $request->has('items'))
             || ($section->section_name === 'buy_with_confidence' && ($request->has('hotline_heading') || $request->has('hotline_description')))
-            || ($section->section_name === 'deal_of_day' && ($request->filled('deal_bg_image_from_manager') || $request->has('remove_deal_bg_image')));
+            || ($section->section_name === 'deal_of_day' && ($request->filled('deal_bg_image_from_manager') || $request->has('remove_deal_bg_image')))
+            || ($section->section_name === 'latest_post' && $request->has('use_latest_posts'));
 
         if ($extraChanged) {
             $validated['extra_data'] = $existing;

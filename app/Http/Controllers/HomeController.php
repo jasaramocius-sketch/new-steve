@@ -222,8 +222,11 @@ class HomeController extends Controller
 
         $selectedPostIds = $latestPostSection?->extra_data['post_ids'] ?? [];
         $selectedPostIds = is_array($selectedPostIds) ? array_filter(array_map('intval', $selectedPostIds)) : [];
+        $useLatestPosts = (bool) ($latestPostSection?->extra_data['use_latest_posts'] ?? false);
 
-        if (! empty($selectedPostIds)) {
+        $totalAccessiblePosts = Blog::accessible()->count();
+
+        if (! $useLatestPosts && ! empty($selectedPostIds)) {
             $latestPosts = Blog::accessible()
                 ->whereIn('id', $selectedPostIds)
                 ->orderByRaw('FIELD(id, '.implode(',', $selectedPostIds).')')
@@ -232,6 +235,8 @@ class HomeController extends Controller
         } else {
             $latestPosts = Blog::accessible()->latest()->take($latestPostLimit)->get();
         }
+
+        $hasMoreLatestPosts = $totalAccessiblePosts > $latestPosts->count();
 
         $brandsSection = $sections->get('top_brands_heading');
         $brandsExtra = $brandsSection?->extra_data ?? [];
@@ -263,7 +268,7 @@ class HomeController extends Controller
         $makes = collect();
         $models = collect();
 
-        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
+        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'hasMoreLatestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
     }
 
     private function buildExploreTabs($section): array

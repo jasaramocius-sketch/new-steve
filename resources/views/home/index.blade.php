@@ -427,13 +427,14 @@
                         </a>
                         <button class="latest-posts-next steve-btn"><i class="fas fa-chevron-right"></i></button>
                     </div>
-                    @endif
-                    <!-- <div class="flex-column" data-wow-delay=".2s">
+                    @elseif($latestPosts->isNotEmpty() && ($hasMoreLatestPosts ?? false))
+                    <div class="flex-column" data-wow-delay=".2s">
                         <a href="{{ route('blog') }}" class="a-tag-hover-color">
                             {{ $sections->get('latest_post')?->button_text ??  'View More' }}
-                            <i class="fas fa-arrow-right ms-1"></i> 
+                            <i class="fas fa-arrow-right ms-1"></i>
                         </a>
-                    </div> -->
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

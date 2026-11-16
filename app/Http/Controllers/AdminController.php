@@ -263,7 +263,7 @@ class AdminController extends Controller
                     ['name' => 'Invoice Settings', 'description' => 'Manage invoice branding, content and PDF layout', 'icon' => 'fas fa-file-invoice', 'route' => 'admin.settings.invoice'],
                     ['name' => 'Features activation', 'description' => 'Turn store features on or off', 'icon' => 'fas fa-toggle-on', 'route' => 'admin.settings.features'],
                     ['name' => 'Order Configuration', 'description' => 'Minimum order amount', 'icon' => 'fas fa-shopping-bag', 'route' => 'admin.settings.order'],
-                    ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'fas fa-hdd'],
+                    ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'fas fa-hdd', 'route' => 'admin.settings.file-system-cache'],
                 ],
             ],
             [
@@ -296,9 +296,9 @@ class AdminController extends Controller
                 'items' => [
                     ['name' => 'Shipping Configuration', 'description' => 'Enable or disable home delivery', 'icon' => 'fas fa-truck-loading', 'route' => 'admin.settings.shipping'],
                     ['name' => 'Pickup point', 'description' => 'Collection locations', 'icon' => 'fas fa-store', 'route' => 'admin.settings.pickup-points.index'],
-                    ['name' => 'Shipping Countries', 'description' => 'Countries you ship to', 'icon' => 'fas fa-flag'],
-                    ['name' => 'Shipping States', 'description' => 'States within countries', 'icon' => 'fas fa-map'],
-                    ['name' => 'Shipping Cities', 'description' => 'Cities within states', 'icon' => 'fas fa-city'],
+                    ['name' => 'Shipping Countries', 'description' => 'Countries you ship to', 'icon' => 'fas fa-flag', 'route' => 'admin.settings.shipping-countries.index'],
+                    ['name' => 'Shipping States', 'description' => 'States within countries', 'icon' => 'fas fa-map', 'route' => 'admin.settings.shipping-states.index'],
+                    ['name' => 'Shipping Cities', 'description' => 'Cities within states', 'icon' => 'fas fa-city', 'route' => 'admin.settings.shipping-cities.index'],
                     ['name' => 'Shipping Zones', 'description' => 'Destinations and delivery rates', 'icon' => 'fas fa-map-marked', 'route' => 'admin.settings.shipping-zones.index'],
                     ['name' => 'Shipping Carrier', 'description' => 'Carriers and transit times', 'icon' => 'fas fa-shipping-fast', 'route' => 'admin.settings.shipping-carriers.index'],
                 ],
@@ -308,9 +308,9 @@ class AdminController extends Controller
                 'icon' => 'fas fa-envelope',
                 'items' => [
                     ['name' => 'SMTP Settings', 'description' => 'Outgoing mail server', 'icon' => 'fas fa-envelope', 'route' => 'admin.settings.smtp'],
-                    ['name' => 'Social media Logins', 'description' => 'Google and Facebook sign-in', 'icon' => 'fas fa-users'],
-                    ['name' => 'Facebook Chat', 'description' => 'Live chat widget', 'icon' => 'fab fa-facebook'],
-                    ['name' => 'Facebook Comment', 'description' => 'Comments on product pages', 'icon' => 'fas fa-comments'],
+                    ['name' => 'Social media Logins', 'description' => 'Google and Facebook sign-in', 'icon' => 'fas fa-users', 'route' => 'admin.settings.social-logins'],
+                    ['name' => 'Facebook Chat', 'description' => 'Live chat widget', 'icon' => 'fab fa-facebook', 'route' => 'admin.settings.facebook-chat'],
+                    ['name' => 'Facebook Comment', 'description' => 'Comments on product pages', 'icon' => 'fas fa-comments', 'route' => 'admin.settings.facebook-comment'],
                 ],
             ],
             [
@@ -318,9 +318,9 @@ class AdminController extends Controller
                 'icon' => 'fab fa-google',
                 'items' => [
                     ['name' => 'Analytics Tools', 'description' => 'Analytics and pixel tracking', 'icon' => 'fas fa-chart-line', 'route' => 'admin.settings.seo'],
-                    ['name' => 'Google reCAPTCHA', 'description' => 'Spam protection on forms', 'icon' => 'fas fa-shield-alt'],
-                    ['name' => 'Google Map', 'description' => 'Map API key', 'icon' => 'fas fa-map-marker'],
-                    ['name' => 'Google Firebase', 'description' => 'Push notification setup', 'icon' => 'fas fa-fire'],
+                    ['name' => 'Google reCAPTCHA', 'description' => 'Spam protection on forms', 'icon' => 'fas fa-shield-alt', 'route' => 'admin.settings.google-recaptcha'],
+                    ['name' => 'Google Map', 'description' => 'Map API key', 'icon' => 'fas fa-map-marker', 'route' => 'admin.settings.google-map'],
+                    ['name' => 'Google Firebase', 'description' => 'Push notification setup', 'icon' => 'fas fa-fire', 'route' => 'admin.settings.google-firebase'],
                 ],
             ],
         ];
@@ -772,9 +772,18 @@ class AdminController extends Controller
         }
 
         // Paginate.
-        $perPage = 50;
-        $currentPage = Paginator::resolveCurrentPage();
+        $perPage = $request->query('per_page', 20);
         $total = count($entries);
+        if ($perPage === 'all') {
+            $perPage = $total ?: 20;
+        } else {
+            $perPage = (int) $perPage;
+            if (! in_array($perPage, [10, 20, 50, 100], true)) {
+                $perPage = 20;
+            }
+        }
+
+        $currentPage = Paginator::resolveCurrentPage();
         $pageEntries = array_slice($entries, ($currentPage - 1) * $perPage, $perPage);
 
         $entries = new LengthAwarePaginator(

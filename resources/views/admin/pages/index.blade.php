@@ -20,26 +20,28 @@
     <li class="nav-item">
         <a class="nav-link {{ request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.pages.index', ['trashed' => 1]) }}">Trash ({{ $trashedCount }})</a>
     </li>
-    <li class="nav-item search-form ms-lg-auto d-flex justify-content-end gap-2">
-        @include('admin.partials.search-form', [
-            'route' => route('admin.pages.index'),
-            'placeholder' => 'Search pages...'
-        ])
-    <a href="{{ route('admin.pages.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Page</a>
-    </li>
 </ul>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap flex-wrap flex-md-nowrap">
-            <div class="d-flex align-items-center gap-2">
+        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-wrap">
+            <div class="pages-index-page-nav d-flex align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
                 <span class="text-muted small">Show</span>
                 <select class="form-select w-auto" onchange="window.location.href=this.value">
                     @foreach([10, 20, 50, 100] as $n)
                         <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }}</option>
                     @endforeach
                 </select>
-                <span class="text-muted small">per page</span>
+                <span class="text-muted small w-100">per page</span>
+                </div>
+                <div class="pages-index-page-nav-action d-grid align-items-center gap-2">
+                    @include('admin.partials.search-form', [
+                        'route' => route('admin.pages.index'),
+                        'placeholder' => 'Search pages...'
+                    ])
+                    <a href="{{ route('admin.pages.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Page</a>
+                </div>
             </div>
             <div class="text-muted small">
                 Showing {{ $pages->firstItem() }}-{{ $pages->lastItem() }} of {{ $pages->total() }}

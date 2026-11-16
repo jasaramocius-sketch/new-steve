@@ -16,11 +16,16 @@
                 <div class="card-header">
                     <form action="{{ route('admin.settings.shipping-cities.index') }}" method="GET">
                         <div class="row gutters-5 align-items-end">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fs-12 text-muted" for="city-search">City name</label>
-                                <input id="city-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Type city name">
+                                <div class="input-group">
+                                    <button type="submit" class="input-group-text btn btn-primary steve-btn gap-1" title="Search" data-bs-toggle="tooltip" data-bs-placement="top">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <input id="city-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Type city name">
+                                </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fs-12 text-muted" for="city-country">Country</label>
                                 <select id="city-country" name="country_id" class="form-select">
                                     <option value="">All countries</option>
@@ -29,7 +34,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <label class="form-label fs-12 text-muted" for="city-state">State</label>
                                 <select id="city-state" name="state_id" class="form-select">
                                     <option value="">All states</option>
@@ -38,19 +43,21 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fs-12 text-muted" for="city-status">Status</label>
-                                <select id="city-status" name="status" class="form-select">
-                                    <option value="">All</option>
-                                    <option value="active" @selected($status === true)>Active</option>
-                                    <option value="inactive" @selected($status === false)>Inactive</option>
-                                </select>
-                            </div>
-                            <div class="col-md-auto d-flex gap-1">
-                                <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
-                                @if ($search !== '' || $countryId > 0 || $stateId > 0 || $status !== null)
-                                    <a href="{{ route('admin.settings.shipping-cities.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-1"><i class="fas fa-times"></i></a>
+                            <div class="col-md-3 d-flex align-items-end gap-1">
+                                <div class="flex-grow-1">
+                                    <label class="form-label fs-12 text-muted" for="city-status">Status</label>
+                                    <select id="city-status" name="status" class="form-select">
+                                        <option value="">All</option>
+                                        <option value="active" @selected($status === true)>Active</option>
+                                        <option value="inactive" @selected($status === false)>Inactive</option>
+                                    </select>
+                                </div>
+                                @if ($search !== '')
+                                    <a href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}" class="btn btn-outline-danger d-flex align-items-center justify-content-center h-40px w-40px mb-0" title="Clear search" data-bs-toggle="tooltip" data-bs-placement="top">
+                                        <i class="fas fa-times"></i>
+                                    </a>
                                 @endif
+                                <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
                             </div>
                         </div>
                     </form>
@@ -80,7 +87,7 @@
                                         <form action="{{ route('admin.settings.shipping-cities.status', $city) }}" method="POST" class="d-inline">
                                             @csrf
                                             <input type="hidden" name="status" value="{{ $city->status ? 0 : 1 }}">
-                                            <button type="submit" class="btn btn-sm {{ $city->status ? 'btn-success' : 'btn-outline-secondary' }}">
+                                            <button type="submit" class="badge btn-sm {{ $city->status ? 'bg-success' : 'btn-outline-secondary' }}">
                                                 {{ $city->status ? 'Active' : 'Inactive' }}
                                             </button>
                                         </form>
