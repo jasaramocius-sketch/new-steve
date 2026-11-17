@@ -10,72 +10,11 @@
 @endsection
 @section('content')
 
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Edit Seller</h5>
-    </div>
-    <div class="card-body">
-        <form action="{{ route('admin.sellers.update', $seller->id) }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            @method('PUT')
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Name *</label>
-                    <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $seller->name) }}" required>
-                    @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">Location</label>
-                    <input type="text" name="location" class="form-control @error('location') is-invalid @enderror" value="{{ old('location', $seller->location) }}" placeholder="City, Country">
-                    @error('location') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">Shipping Cost</label>
-                    <input type="number" step="0.01" min="0" name="shipping_cost" class="form-control @error('shipping_cost') is-invalid @enderror" value="{{ old('shipping_cost', $seller->shipping_cost ?? 0) }}">
-                    <small class="text-muted">Used with Seller Wise Flat Shipping.</small>
-                    @error('shipping_cost') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="col-md-6 d-flex flex-column align-items-start">
-                    <label class="form-label">Image</label>
-                    @if($seller->image)
-                        <div class="mb-2">
-                            <img src="{{ storedImageUrl($seller->image, 'assets/images') }}" width="60" height="60" class="admin-image-thumb-bordered">
-                        </div>
-                    @endif
-                    <input type="hidden" name="image_from_manager" id="image_from_manager_seller_image">
-                    <div id="impPreview_seller_image" class="d-none mt-2"></div>
-                    <button type="button" class="btn btn-outline-primary" onclick="impOpen_seller_image()">
-                        <i class="fas fa-cloud-upload-alt me-1"></i> Browse
-                    </button>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="form-check mt-2">
-                        <input type="checkbox" name="status" value="1" class="form-check-input" id="status" {{ $seller->status ? 'checked' : '' }}>
-                        <label class="form-check-label" for="status">Active</label>
-                    </div>
-                </div>
-
-                <div class="col-md-12">
-                    <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control textarea-control texteditor @error('description') is-invalid @enderror" rows="4">{{ old('description', $seller->description) }}</textarea>
-                    @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-            </div>
-
-            <div class="mt-4 d-flex gap-1">
-                <button class="btn btn-primary steve-btn gap-1"><i class="fas fa-save"></i> Update</button>
-                <a href="{{ route('admin.sellers.index') }}" class="btn btn-primary steve-btn gap-1"><i class="fas fa-times"></i>Cancel</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-@include('admin.partials.image-manager-picker', ['pickerId' => 'seller_image', 'targetInput' => 'image_from_manager'])
+@include('admin.sellers._form', [
+    'action' => route('admin.sellers.update', $seller->id),
+    'method' => 'PUT',
+    'submitLabel' => 'Update',
+    'seller' => $seller,
+])
 
 @endsection

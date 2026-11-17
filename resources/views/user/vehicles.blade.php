@@ -115,8 +115,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary steve-btn">Save</button>
-                    <button class="btn btn-primary steve-btn" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary steve-btn gap-1"><i class="fas fa-save"></i>Save</button>
+                    <button class="btn btn-primary steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
                 </div>
             </div>
         </form>

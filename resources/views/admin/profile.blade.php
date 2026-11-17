@@ -68,18 +68,15 @@
                         <label class="form-label">Profile Photo</label>
                         <input type="hidden" name="image_from_manager" id="image_from_manager_avatar">
                         <div class="d-flex align-items-center gap-3">
-                            <div id="impPreview_avatar" class="rounded-circle overflow-hidden admin-avatar-80">
+                            <div id="impPreview_avatar" class="rounded-circle overflow-hidden admin-avatar-80 flex-column">
                                 @if(Auth::user()->avatar)
                                     <img src="{{ storedImageUrl(Auth::user()->avatar) }}" alt="Avatar">
                                 @else
                                     <span class="admin-avatar-initial">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
                                 @endif
-                            </div>
-                            <div>
-                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_avatar()">
-                                    <i class="fas fa-cloud-upload-alt me-1"></i>Browse
-                                </button>
-                                <div><small class="text-muted">Select a profile photo from Image Manager</small></div>
+                                <button type="button" class="btn btn-outline-primary w-100 border-radius-0" onclick="impOpen_avatar()" style="height: 30px;">
+                                    <i class="fas fa-cloud-upload-alt me-1"></i>
+                                </button>   
                             </div>
                         </div>
                     </div>
@@ -110,7 +107,7 @@
                         'zipName' => 'postal_code',
                     ])
 
-                    <button type="submit" class="btn btn-primary text-transform-capitalize steve-btn mt-3">Update Profile</button>
+                    <button type="submit" class="btn btn-primary text-transform-capitalize steve-btn mt-3 gap-1"><i class="fas fa-save"></i>Update Profile</button>
                 </form>
             </div>
         </div>
@@ -140,7 +137,7 @@
                         <input type="password" name="new_password_confirmation" class="form-control" required>
                     </div>
 
-                    <button type="submit" class="btn btn-warning steve-btn">Update</button>
+                    <button type="submit" class="btn btn-warning steve-btn gap-1"><i class="fas fa-save"></i>Update</button>
                 </form>
             </div>
         </div>

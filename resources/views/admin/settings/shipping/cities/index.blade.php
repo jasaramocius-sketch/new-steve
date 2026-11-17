@@ -18,12 +18,11 @@
                         <div class="row gutters-5 align-items-end">
                             <div class="col-md-3">
                                 <label class="form-label fs-12 text-muted" for="city-search">City name</label>
-                                <div class="input-group">
-                                    <button type="submit" class="input-group-text btn btn-primary steve-btn gap-1" title="Search" data-bs-toggle="tooltip" data-bs-placement="top">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                    <input id="city-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Type city name">
-                                </div>
+                                @include('admin.partials.search-form', [
+                                    'embedded' => true,
+                                    'placeholder' => 'Type city name',
+                                    'inputId' => 'city-search',
+                                ])
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fs-12 text-muted" for="city-country">Country</label>
@@ -52,11 +51,6 @@
                                         <option value="inactive" @selected($status === false)>Inactive</option>
                                     </select>
                                 </div>
-                                @if ($search !== '')
-                                    <a href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}" class="btn btn-outline-danger d-flex align-items-center justify-content-center h-40px w-40px mb-0" title="Clear search" data-bs-toggle="tooltip" data-bs-placement="top">
-                                        <i class="fas fa-times"></i>
-                                    </a>
-                                @endif
                                 <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
                             </div>
                         </div>

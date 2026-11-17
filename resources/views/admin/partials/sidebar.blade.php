@@ -122,9 +122,10 @@
 
         <div class="nav-section">Settings</div>
         @php
-            $setupConfigExpanded = request()->routeIs('admin.settings.*', 'admin.api-integrations.*', 'admin.home-page.*')
+            $setupConfigExpanded = request()->routeIs('admin.settings.*', 'admin.api-integrations.*')
                 && ! request()->routeIs('admin.settings.commission*')
-                && ! request()->routeIs('admin.settings.file-system-cache*');
+                && ! request()->routeIs('admin.settings.file-system-cache*')
+                && ! request()->routeIs('admin.settings.search-categories*');
         @endphp
         <ul class="admin-sidebar-drop submenu-sub list-unstyled">
             <li>
@@ -148,7 +149,7 @@
                     <li><a href="{{ route('admin.settings.features') }}" class="{{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}"><i class="fas fa-toggle-on" aria-hidden="true"></i> Features activation</a></li>
                     <li><a href="{{ route('admin.settings.languages.index') }}" class="{{ request()->routeIs('admin.settings.languages.*') ? 'active' : '' }}"><i class="fas fa-language" aria-hidden="true"></i> Languages</a></li>
                     <li><a href="{{ route('admin.settings.currency.index') }}" class="{{ request()->routeIs('admin.settings.currency.*') ? 'active' : '' }}"><i class="fas fa-coins" aria-hidden="true"></i> Currency</a></li>
-                    <li><a href="{{ route('admin.settings.custom') }}" class="{{ request()->routeIs('admin.settings.custom*') ? 'active' : '' }}"><i class="fas fa-percent" aria-hidden="true"></i> Vat &amp; TAX</a></li>
+                    <li><a href="{{ route('admin.settings.custom') }}" class="{{ request()->routeIs('admin.settings.custom*', 'admin.settings.tax-types*') ? 'active' : '' }}"><i class="fas fa-percent" aria-hidden="true"></i> Vat &amp; TAX</a></li>
                     <li><a href="{{ route('admin.settings.pickup-points.index') }}" class="{{ request()->routeIs('admin.settings.pickup-points.*') ? 'active' : '' }}"><i class="fas fa-store" aria-hidden="true"></i> Pickup point</a></li>
                     <li><a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'active' : '' }}"><i class="fas fa-envelope" aria-hidden="true"></i> SMTP Settings</a></li>
                     <li><a href="{{ route('admin.settings.payment-methods') }}" class="{{ request()->routeIs('admin.settings.payment-methods*') ? 'active' : '' }}"><i class="fas fa-credit-card" aria-hidden="true"></i> Payment Methods</a></li>

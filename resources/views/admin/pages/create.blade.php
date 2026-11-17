@@ -10,71 +10,6 @@
 @endsection
 @section('content')
 
-<!--
-.page-builder-nav {
-    width: 180px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 16px;
-}
-.nav-link-section {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    color: #6b7280 !important;
-    text-decoration: none !important;
-}
-.nav-link-section i { width: 16px; text-align: center; }
-.nav-link-section.active,
-.nav-link-section:hover {
-    background: rgba(52, 84, 209, 0.08);
-    color: #1c1e26 !important;
-}
-.min-width-0 { min-width: 0; }
-
-.tab-pane { display: none; }
-.tab-pane.active-pane { display: block; }
-
-.status-pill {
-    border: none;
-    font-size: 0.75rem;
-    padding: 6px 14px;
-    border-radius: 20px;
-    background: var(--primary);
-    color: #fff;
-    white-space: nowrap;
-    cursor: pointer;
-}
-.status-pill.is-active {
-    background: #028d5c;
-    color: #ffffff;
-}
-
-.banner-dropzone { position: relative; }
-.banner-dropzone .dz-placeholder {
-    display: block;
-    border: 1.5px dashed #cfcfca;
-    border-radius: 8px;
-    padding: 28px;
-    text-align: center;
-    color: #9a9992;
-    font-size: 0.85rem;
-}
-
-.serp-preview {
-    background: #f7f7f5;
-    border-radius: 8px;
-    padding: 14px 16px;
-    font-family: arial, sans-serif;
-}
-.serp-url { font-size: 13px; color: #4d5156; }
-.serp-title { font-size: 18px; color: #1a0dab; line-height: 1.3; margin: 2px 0; }
-.serp-desc { font-size: 13px; color: #4d5156; line-height: 1.4; }
--->
-
 <form action="{{ route('admin.pages.store') }}" method="POST" id="pageForm">
     @csrf
 
@@ -94,7 +29,7 @@
         <div class="flex-grow-1 min-width-0">
 
             {{-- Header bar: title + status + save --}}
-            <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom page-header-bar flex-wrap">
+            <div class="d-flex align-items-center gap-2 pb-3 border-bottom page-header-bar flex-wrap">
                 <div class="page-header-bar-first d-flex gap-2 align-items-center flex-grow-1 min-width-0">
                 <div class="w-auto flex-grow-1">
                 <input type="text" name="title" id="titleInput" class="page-title-input form-control form-control-lg border-0 fw-semibold flex-grow-1 @error('title') is-invalid @enderror"

@@ -189,8 +189,8 @@
 
                             <input type="hidden" name="image_from_manager" id="image_from_manager_category_image">
 
-                            <button type="button" class="btn btn-outline-primary w-100 mt-3" onclick="impOpen_category_image()">
-                                <i class="fas fa-cloud-upload-alt me-1"></i> Browse Image Manager
+                            <button type="button" class="btn btn-sm btn-outline-primary w-100 mt-3" onclick="impOpen_category_image()">
+                                <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                             </button>
                             <div class="form-text text-center mt-2">Recommended: 800 × 800px · JPG, PNG or WebP</div>
                         </div>

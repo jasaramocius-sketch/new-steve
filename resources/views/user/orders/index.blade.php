@@ -63,7 +63,7 @@
                         </a>
                     </td>
                     <td data-label="Date">
-                        <div>
+                        <div class="">
                         <span>{{ optional($order->created_at)->format('d-m-Y') }}</span>
                         <span class="d-block" style="font-size:0.8125rem;color:#8a7b79;">{{ optional($order->created_at)->format('h:i A') }}</span></div>
                     </td>

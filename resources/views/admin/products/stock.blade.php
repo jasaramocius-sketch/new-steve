@@ -27,31 +27,25 @@
     <div class="card-body p-0 products-stock-page-container">
         <div class="products-stock-page-header d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2">
             <form method="GET" action="{{ route('admin.products.stock') }}" class="products-stock-page-filters d-flex align-items-center gap-2 flex-nowrap flex-wrap">
-                <select name="per_page" class="form-select w-100 h-40px" aria-label="Products per page" onchange="this.form.submit()">
+                <select name="per_page" class="form-select w-auto h-40px" aria-label="Products per page" onchange="this.form.submit()">
                     @foreach([10, 20, 50, 100] as $count)
                         <option value="{{ $count }}" @selected((int) request('per_page', 20) === $count)>{{ $count }} page</option>
                     @endforeach
                 </select>
-                @if(request()->filled('search'))
-                    <a href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}" class="btn btn-outline-danger d-flex align-items-center h-40px w-40px" title="Clear search" data-bs-toggle="tooltip" data-bs-placement="top">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
-                <select name="stock_filter" class="form-select w-100 h-40px">
+                <select name="stock_filter" class="form-select w-auto h-40px">
                     <option value="low" {{ request('stock_filter', 'low') === 'low' ? 'selected' : '' }}>Low stock</option>
                     <option value="out_of_stock" {{ request('stock_filter') === 'out_of_stock' ? 'selected' : '' }}>Out of stock</option>
                 </select>
-                <select name="threshold" class="form-select w-100 h-40px" onchange="this.form.submit()">
+                <select name="threshold" class="form-select w-auto h-40px" onchange="this.form.submit()">
                     @foreach([3, 5, 10, 20] as $t)
                         <option value="{{ $t }}" {{ $threshold === $t ? 'selected' : '' }}>Show ≤ {{ $t }}</option>
                     @endforeach
                 </select>
-                <div class="input-group" style="width:auto;">
-                    <button type="submit" class="input-group-text btn btn-primary steve-btn gap-1" title="Search" data-bs-toggle="tooltip" data-bs-placement="top">
-                        <i class="fas fa-search"></i>
-                    </button>
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control h-40px" placeholder="Search name or Part Number...">
-                </div>
+                @include('admin.partials.search-form', [
+                    'embedded' => true,
+                    'placeholder' => 'Search name or Part Number...',
+                    'inputClass' => 'form-control h-40px',
+                ])
             </form>
             <div class="products-stock-page-actions">
                 <div class="d-flex align-items-center gap-2">

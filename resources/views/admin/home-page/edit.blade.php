@@ -23,7 +23,7 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white border-radius-0">
                     <h5 class="mb-0">Section Details</h5>
                 </div>
                 <div class="card-body">
@@ -116,7 +116,7 @@
                             $serviceItems = $section->extra_data['services'] ?? config('homepage.services', []);
                         @endphp
                         <div class="card mb-3 border-info">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-info text-white border-radius-0">
                                 <h5 class="mb-0">Service Cards</h5>
                             </div>
                             <div class="card-body">
@@ -272,7 +272,7 @@
                                     <div class="border rounded p-3 mb-3 service-item">
                                         <div class="d-flex justify-content-between mb-2">
                                             <strong>Service #{{ $i+1 }}</strong>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.service-item').remove();"><i class="fa fa-trash"></i></button>
+                                            <button type="button" class="btn btn-outline-danger" onclick="this.closest('.service-item').remove();"><i class="fa fa-trash"></i></button>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-4 mb-2">
@@ -285,7 +285,7 @@
                                                     <img src="{{ storedImageUrl($svc['image'], 'assets/images/services') }}" style="max-width:100px;height:60px;object-fit:contain;border:1px solid #ddd;">
                                                 </div>
                                                 @endif
-                                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_services_{{ $i }}()">Browse</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_services_{{ $i }}()"><i class="fas fa-cloud-upload-alt me-1"></i>Browse</button>
                                                 <button type="button" class="btn btn-sm btn-outline-danger {{ !empty($svc['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('services_image_from_manager_{{ $i }}','impPreview_services_{{ $i }}','.svc-current-{{ $i }}',null); this.classList.add('d-none');">Clear</button>
                                             </div>
                                             <div class="col-md-4 mb-2">
@@ -365,7 +365,7 @@
                             ];
                         @endphp
                         <div class="card mb-3 border-info">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-info text-white border-radius-0">
                                 <h5 class="mb-0">Hotline Copy</h5>
                             </div>
                             <div class="card-body">
@@ -380,7 +380,7 @@
                             </div>
                         </div>
                         <div class="card mb-3 border-info">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-info text-white border-radius-0">
                                 <h5 class="mb-0">Trust Cards</h5>
                             </div>
                             <div class="card-body">
@@ -562,7 +562,7 @@
                             $tabs = $extra['tabs'] ?? [];
                         @endphp
                         <div class="card mb-3 border-info">
-                            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center border-radius-0">
                                 <h5 class="mb-0">Tab-wise Product Selection</h5>
                                 <button type="button" class="btn btn-sm btn-light steve-btn" onclick="addTab()">+ Add Tab</button>
                             </div>
@@ -772,7 +772,7 @@
 
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-info text-white">
+                <div class="card-header bg-info text-white border-radius-0">
                     <h5 class="mb-0">Section Information</h5>
                 </div>
                 <div class="card-body">

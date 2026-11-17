@@ -135,3 +135,32 @@ Test Stripe payment is working
 Login page login form "I agree to the Privacy Policy and Terms & Conditions" chackbox add
 Registration page registration form "I agree to the Privacy Policy and Terms & Conditions" and "Subscribe to our newsletter for offers and updates" chackbox add
 Shipping Function add and manage by admin panal
+
+http://192.168.130.54/new-steve/admin/products/stock
+http://192.168.130.54/new-steve/admin/reviews
+http://192.168.130.54/new-steve/admin/orders
+http://192.168.130.54/new-steve/admin/images
+http://192.168.130.54/new-steve/admin/blogs
+http://192.168.130.54/new-steve/admin/blogs/34/edit
+http://192.168.130.54/new-steve/admin/blog-categories
+http://192.168.130.54/new-steve/admin/blog-categories/create
+http://192.168.130.54/new-steve/admin/blog-categories/33/edit
+http://192.168.130.54/new-steve/admin/pages
+http://192.168.130.54/new-steve/admin/faqs
+http://192.168.130.54/new-steve/admin/faqs/create
+http://192.168.130.54/new-steve/admin/faqs/12/edit
+http://192.168.130.54/new-steve/admin/contacts
+http://192.168.130.54/new-steve/admin/coupons
+http://192.168.130.54/new-steve/admin/settings/header
+http://192.168.130.54/new-steve/admin/settings/languages
+http://192.168.130.54/new-steve/admin/settings/languages/create
+http://192.168.130.54/new-steve/admin/settings/languages/4/edit
+http://192.168.130.54/new-steve/admin/settings/currency
+http://192.168.130.54/new-steve/admin/settings/tax-types/create
+http://192.168.130.54/new-steve/admin/settings/smtp
+http://192.168.130.54/new-steve/admin/api-integrations/3/edit
+http://192.168.130.54/new-steve/admin/settings/shipping-countries
+http://192.168.130.54/new-steve/admin/settings/shipping-states
+http://192.168.130.54/new-steve/admin/settings/shipping-cities
+http://192.168.130.54/new-steve/admin/home-page/12/edit
+http://192.168.130.54/new-steve/admin/settings/search-categories

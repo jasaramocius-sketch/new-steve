@@ -13,7 +13,9 @@ class SubscriberController extends Controller
     {
         $query = Subscriber::query();
 
-        if ($search = trim((string) $request->input('email'))) {
+        $search = trim((string) $request->input('search', $request->input('email')));
+
+        if ($search !== '') {
             $query->where('email', 'like', '%'.$search.'%');
         }
 

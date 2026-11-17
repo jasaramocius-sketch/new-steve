@@ -16,15 +16,13 @@
     <a href="{{ route('shop') }}" class="btn btn-primary steve-btn">Continue Shopping</a>
 </div>
 <div class="view-reviews-filter d-grid grid-template-columns-auto align-items-center justify-content-between mb-3 gap-2 flex-wrap">
-    <form method="GET" action="{{ route('user.reviews') }}" class="d-flex gap-2 align-items-center" id="reviewFilterForm">
-        @include('admin.partials.search-form', [
-            'route' => route('user.reviews'),
-            'placeholder' => 'Search...',
-            'size' => 'sm',
-            'showClear' => !empty($search),
-            'clearRoute' => route('user.reviews', array_filter(['status' => $statusFilter ?? '']))
-        ])
-    </form>
+    @include('admin.partials.search-form', [
+        'route' => route('user.reviews'),
+        'placeholder' => 'Search...',
+        'size' => 'sm',
+        'showClear' => !empty($search),
+        'clearRoute' => route('user.reviews', array_filter(['status' => $statusFilter ?? '']))
+    ])
     <form method="GET" action="{{ route('user.reviews') }}" id="statusFilterForm">
         <input type="hidden" name="search" value="{{ $search ?? '' }}">
         <select name="status" class="form-select" onchange="this.form.submit()">

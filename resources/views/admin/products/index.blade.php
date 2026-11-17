@@ -32,10 +32,8 @@
         $activeParams = request()->only(['search', 'category_id', 'brand_id', 'seller_id', 'product_type', 'stock_filter', 'status', 'featured']);
         $trashParams = array_merge(['trashed' => 1], $activeParams);
     @endphp
-    <li class="nav-item">
+    <li class="nav-item gap-2 d-flex flex-wrap">
         <a class="nav-link {{ !request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.products.index', $activeParams) }}">Active</a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link {{ request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.products.index', $trashParams) }}">Trash ({{ $trashedCount }})</a>
     </li>
     <li class="nav-item search-form ms-lg-auto">
@@ -224,7 +222,7 @@
                                         ? rtrim(rtrim(number_format((float) $product->commission, 2, '.', ''), '0'), '.')
                                         : '';
                                 @endphp
-                                <div class="input-group input-group-sm admin-commission-cell" style="width:80px;">
+                                <div class="input-group admin-commission-cell" style="width:100px;">
                                     <input type="number" step="0.01" min="0" max="100"
                                            class="form-control js-product-commission no-spinner"
                                            value="{{ $productCommissionLabel }}"
@@ -240,8 +238,16 @@
                         <td class="text-nowrap js-product-total">{{ currency_format(buyerPrice($product->price, $product)) }}</td>
                         <td>{{ $product->stock ?? 0 }}</td>
                         <td>
-                            @if($product->rating)
-                                <span class="text-warning"><i class="fas fa-star me-1"></i>{{ number_format($product->rating, 1) }}</span>
+                            @if($product->rating > 0)
+                                @php $ratingStars = (int) round((float) $product->rating); @endphp
+                                <div class="d-flex align-items-center gap-1" aria-label="{{ number_format($product->rating, 1) }} out of 5">
+                                    @for($i = 0; $i < 5; $i++)
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="13" viewBox="0 0 17 16" fill="none">
+                                            <path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="{{ $i < $ratingStars ? '#EEAE0B' : '#E2E8F0' }}" />
+                                        </svg>
+                                    @endfor
+                                    <span class="small text-muted ms-1">{{ number_format($product->rating, 1) }}</span>
+                                </div>
                             @else
                                 -
                             @endif

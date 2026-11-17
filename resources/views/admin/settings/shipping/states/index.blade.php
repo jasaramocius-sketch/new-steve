@@ -18,7 +18,13 @@
                         <div class="row gutters-5 align-items-end">
                             <div class="col-md-4">
                                 <label class="form-label fs-12 text-muted" for="state-search">State name</label>
-                                <input id="state-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Type state name">
+                                @include('admin.partials.search-form', [
+                                    'embedded' => true,
+                                    'placeholder' => 'Type state name',
+                                    'inputId' => 'state-search',
+                                    'showClear' => $search !== '' || $countryId > 0 || $status !== null,
+                                    'clearRoute' => route('admin.settings.shipping-states.index'),
+                                ])
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fs-12 text-muted" for="state-country">Country</label>
@@ -39,9 +45,6 @@
                             </div>
                             <div class="col-md-auto d-flex gap-1">
                                 <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
-                                @if ($search !== '' || $countryId > 0 || $status !== null)
-                                    <a href="{{ route('admin.settings.shipping-states.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-1"><i class="fas fa-times"></i>Clear</a>
-                                @endif
                             </div>
                         </div>
                     </form>

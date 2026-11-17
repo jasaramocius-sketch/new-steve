@@ -63,13 +63,15 @@
             </div>
             <div style="flex:1 1 auto;">
                 <label class="form-label small mb-1 d-block">Search</label>
-                <div class="input-group">
-                    <input type="text" name="search" value="{{ $search ?? '' }}" class="form-control" placeholder="Search logs..." style="min-width:168px" id="logs-search-input">
-                    @php $hasLogFilter = !empty($search) || (!empty($typeParam) && !in_array($typeParam, ['change', 'all'], true)); @endphp
-                    <button type="submit" id="logs-search-toggle" class="btn {{ $hasLogFilter ? 'btn-outline-secondary' : 'btn-primary' }} steve-btn gap-1" data-bs-toggle="tooltip" data-bs-original-title="{{ $hasLogFilter ? 'Clear' : 'Search' }}" aria-label="{{ $hasLogFilter ? 'Clear' : 'Search' }}">
-                        <i class="fas {{ $hasLogFilter ? 'fa-times' : 'fa-search' }}"></i>
-                    </button>
-                </div>
+                @php $hasLogFilter = !empty($search) || (!empty($typeParam) && !in_array($typeParam, ['change', 'all'], true)); @endphp
+                @include('admin.partials.search-form', [
+                    'embedded' => true,
+                    'placeholder' => 'Search logs...',
+                    'inputId' => 'logs-search-input',
+                    'inputGroupStyle' => 'min-width:168px',
+                    'showClear' => $hasLogFilter,
+                    'clearRoute' => request()->fullUrlWithQuery(['search' => null, 'type' => null, 'page' => null]),
+                ])
             </div>
         </form>
         </div>
@@ -187,26 +189,6 @@
         window.location.href = qs ? (form.getAttribute('action') + '?' + qs) : form.getAttribute('action');
         return false;
     }
-    (function () {
-        var toggleBtn = document.getElementById('logs-search-toggle');
-        if (!toggleBtn) return;
-        toggleBtn.addEventListener('click', function () {
-            if (toggleBtn.classList.contains('btn-outline-secondary')) {
-                var form = toggleBtn.closest('form');
-                var search = form.querySelector('[name="search"]');
-                var type = form.querySelector('[name="type"]');
-                if (search) search.value = '';
-                if (type) type.value = 'all';
-                toggleBtn.classList.remove('btn-outline-secondary');
-                toggleBtn.classList.add('btn-primary');
-                toggleBtn.innerHTML = '<i class="fas fa-search"></i>';
-                toggleBtn.setAttribute('aria-label', 'Search');
-                toggleBtn.setAttribute('data-bs-original-title', 'Search');
-                var tip = bootstrap.Tooltip.getInstance(toggleBtn);
-                if (tip) tip.setContent({ '.tooltip-inner': 'Search' });
-            }
-        });
-    })();
     document.querySelectorAll('[data-bs-target^="#log-context-"]').forEach(function(btn) {
         var target = document.querySelector(btn.getAttribute('data-bs-target'));
         if (!target) return;

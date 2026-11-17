@@ -560,11 +560,11 @@
         </div>
 
         <div class="row mt-5 justify-content-center py-4 mx-0" style="background: #f8f8f8; border-radius: 12px;">
-            <div class="col d-flex align-items-center justify-content-between flex-column flex-md-row gap-2">
+            <div class="buy-confidence-cta col d-flex align-items-center justify-content-between flex-column flex-md-row gap-2">
                 <p class="col d-flex gap-2 flex-column flex-md-row" style="margin:0; font-size:1rem; color:#333; line-height:1.7;">
-                    <i class="las la-search text-primary mr-2" style="font-size:26px;" aria-hidden="true"></i><strong>{{ $buyConfidenceExtra['hotline_heading'] ?? 'Not sure what fits?' }}</strong> {{ $buyConfidenceExtra['hotline_description'] ?? 'Call our parts hotline with your VIN and a real mechanic will match you. We read the diagrams so you don’t have to.' }}
+                    <i class="las la-search text-primary mr-2 d-flex align-items-center" style="font-size:26px;" aria-hidden="true"></i><strong>{{ $buyConfidenceExtra['hotline_heading'] ?? 'Not sure what fits?' }}</strong> {{ $buyConfidenceExtra['hotline_description'] ?? 'Call our parts hotline with your VIN and a real mechanic will match you. We read the diagrams so you don’t have to.' }}
                 </p>
-                <div class="">
+                <div class="d-flex justify-content-center w-auto">
                     <a href="{{ $buyConfidenceSection?->button_url ?? 'tel:1800555' }}" class="template-btn steve-btn w-100 wow-replaced" style="font-weight:700; font-size:1.15rem; color: #fff; text-decoration:none;">{{ $buyConfidenceSection?->button_text ?? '1-800-555-AUTO' }}</a>
                 </div>
             </div>

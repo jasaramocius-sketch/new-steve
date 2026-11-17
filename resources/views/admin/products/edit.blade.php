@@ -250,7 +250,7 @@
                                     @endif
                                 </div>
                                 <div>
-                                    <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_product_image()">
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="impOpen_product_image()">
                                         <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                     </button>
                                 </div>
@@ -283,7 +283,7 @@
                                 <div id="impPreview_gallery_images" class="d-none my-2"></div>
                                 
                                 <div>
-                                    <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
                                         <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                     </button>
                                     <small class="text-muted mt-2 d-block">Pick multiple from Image Manager, or upload files above.</small>

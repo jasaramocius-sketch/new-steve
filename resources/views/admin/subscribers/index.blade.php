@@ -9,25 +9,22 @@
 @endsection
 
 @section('content')
- <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class=""></div>
-    <a href="{{ route('admin.subscribers.export-csv') }}" class="btn btn-primary steve-btn">
-        <i class="fas fa-file-csv me-1"></i> Export CSV
-    </a>
-</div>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap">
-            <form method="GET" action="{{ route('admin.subscribers.index') }}" class="d-flex align-items-center gap-2">
-                <input type="text" name="email" value="{{ request('email') }}" class="form-control" placeholder="Search by email..." style="min-width:220px;">
-                <button type="submit" class="btn btn-primary" title="Search"><i class="fas fa-search"></i></button>
-                @if(request()->filled('email'))
-                    <a href="{{ route('admin.subscribers.index') }}" class="btn btn-outline-secondary" title="Clear search"><i class="fas fa-times"></i></a>
-                @endif
-            </form>
+        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2">
+            <div class="d-flex gap-2 flex-wrap">
+                @include('admin.partials.search-form', [
+                    'route' => route('admin.subscribers.index'),
+                    'placeholder' => 'Search by email...',
+                ])
+
+                <a href="{{ route('admin.subscribers.export-csv') }}" class="btn btn-primary steve-btn">
+                    <i class="fas fa-file-csv me-1"></i> Export CSV
+                </a>
+            </div>
             <div class="text-muted small">
-                Showing {{ $subscribers->firstItem() }}-{{ $subscribers->lastItem() }} of {{ $subscribers->total() }}
+                Showing {{ $subscribers->firstItem() ?? 0 }}-{{ $subscribers->lastItem() ?? 0 }} of {{ $subscribers->total() }}
             </div>
         </div>
         <div class="table-responsive">

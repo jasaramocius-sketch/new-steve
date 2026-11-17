@@ -7,27 +7,28 @@
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap gap-2">
-            <form method="GET" action="{{ route('admin.support.conversations.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
-                <div class="input-group" style="min-width:240px;">
-                    <button type="submit" class="input-group-text btn btn-primary steve-btn gap-1" title="Search"><i class="fas fa-search"></i></button>
-                    <input type="text" name="search" class="form-control" value="{{ $search }}" placeholder="Search product or customer...">
-                </div>
-                @if ($search !== '')
-                    <a href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}" class="btn btn-outline-danger d-flex align-items-center justify-content-center h-40px w-40px" title="Clear search"><i class="fas fa-times"></i></a>
-                @endif
-                <select name="status" class="form-select w-auto" onchange="this.form.submit()">
-                    <option value="">All statuses</option>
-                    @foreach (['open', 'closed'] as $s)
-                        <option value="{{ $s }}" @selected($status === $s)>{{ ucfirst($s) }}</option>
-                    @endforeach
-                </select>
-                <select name="per_page" class="form-select w-auto" onchange="this.form.submit()">
-                    @foreach ([10, 20, 50, 100] as $n)
-                        <option value="{{ $n }}" @selected((int) request('per_page', 20) === $n)>{{ $n }} / page</option>
-                    @endforeach
-                </select>
-            </form>
+        <div class="d-grid grid-template-columns justify-content-between align-items-center p-2 flex-wrap gap-2">
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <form method="GET" action="{{ route('admin.support.conversations.index') }}" class="support-conversations-search d-flex align-items-center gap-2 flex-lg-row">
+                    @include('admin.partials.search-form', [
+                        'embedded' => true,
+                        'placeholder' => 'Search product or customer...',
+                    ])
+                    <div class="support-conversations-filters d-grid grid-template-columns-auto align-items-center gap-2">
+                    <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+                        <option value="">All statuses</option>
+                        @foreach (['open', 'closed'] as $s)
+                            <option value="{{ $s }}" @selected($status === $s)>{{ ucfirst($s) }}</option>
+                        @endforeach
+                    </select>
+                    <select name="per_page" class="form-select w-auto" onchange="this.form.submit()">
+                        @foreach ([10, 20, 50, 100] as $n)
+                            <option value="{{ $n }}" @selected((int) request('per_page', 20) === $n)>{{ $n }} page</option>
+                        @endforeach
+                    </select>
+                    </div>
+                </form>
+            </div>
             <div class="text-muted small">
                 Showing {{ $conversations->firstItem() ?? 0 }}-{{ $conversations->lastItem() ?? 0 }} of {{ $conversations->total() }}
             </div>

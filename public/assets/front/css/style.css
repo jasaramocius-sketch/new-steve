@@ -1756,7 +1756,7 @@ p.text-lg {
   display: flex;
   -ms-flex-wrap: wrap;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 3px;
 }
 
 .gs-pagination li.active a {
@@ -3462,7 +3462,9 @@ body .admin-sidebar .shipping-settings-submenu > .sidebar-link.active {
 .grid-template-columns-auto{
   grid-template-columns: 1fr 1fr;
 }
-
+.grid-template-columns-1auto{
+  grid-template-columns: auto auto;
+}
 @media (max-width:1199.97px) {
   .single-blog-widget .gs-sm-recent-post-wrapper .post-title {
     font-size: 16px;
@@ -5079,7 +5081,7 @@ tbody tr:last-child {
 .form-select-wrapper:has(.form-select:disabled)::after {
   display: none;
 }
-@media (max-width:1024px) {
+@media (max-width:1032px) {
   .admin-product-index-filter-bar form {
     grid-auto-flow: row;
     grid-template-columns: 1fr 1fr 1fr;
@@ -19532,6 +19534,24 @@ a.single-blog-navigation-link:focus-visible {
 @media (max-width: 1024px) {
   .Tax-Rate-settings-container{
     grid-template-columns: 1fr;
+  }.support-conversations-search, .support-tickets-search {
+    flex-direction: column;
+}
+.support-conversations-search select, .support-tickets-search select {
+    width: 100% !important;
+}
+}
+
+@media (max-width: 768px) {  
+  .admin-product-index-nav-tabs{
+    display: grid !important;
+    grid-template-columns: 53% auto;
+  }
+  .buy-confidence-cta{
+    align-items: flex-start !important;
+  }
+  .item-pagination-container .Go-to-page{
+    justify-content: center !important;
   }
 }
 
@@ -19546,4 +19566,8 @@ a.single-blog-navigation-link:focus-visible {
   .single-blog-navigation-link {
     padding: 15px 16px;
   }
+}
+
+.border-radius-0{
+  border-radius: 0 !important;
 }

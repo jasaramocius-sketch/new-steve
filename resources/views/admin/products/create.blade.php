@@ -239,7 +239,7 @@
                                 <input type="hidden" name="gallery_images_from_manager" id="gallery_images_from_manager">
                                 <div id="impPreview_gallery_images" class="d-none my-2"></div>
                                 <div class="d-flex flex-wrap gap-2">
-                                    <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
                                         <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                     </button>
                                 </div>

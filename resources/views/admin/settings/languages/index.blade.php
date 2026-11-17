@@ -78,14 +78,16 @@
                 <div class="languages-table-nav gutters-5 align-items-end d-flex flex-wrap justify-content-start gap-2">
                     <div class="languages-table-nav-col d-flex flex-column flex-md-row gap-2 align-items-center">
                         <label for="language-search" class="fs-12 text-muted">Search</label>
-                        <input id="language-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Name or code">
+                        @include('admin.partials.search-form', [
+                            'embedded' => true,
+                            'placeholder' => 'Name or code',
+                            'inputId' => 'language-search',
+                            'clearRoute' => route('admin.settings.languages.index'),
+                        ])
                     </div>
                     <div class="languages-table-nav-col">
                         <div class="d-flex align-items-center gap-2">
                             <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
-                            @if ($search !== '')
-                                <a href="{{ route('admin.settings.languages.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-1"><i class="fas fa-times"></i>Clear</a>
-                            @endif
                         </div>
                     </div>
                 </div>

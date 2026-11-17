@@ -5651,3 +5651,123 @@ Layout:
 - Added the current page, total pages, total results, and page size to the shared Go-to-page control across paginated pages.
 - Made the control wrap on narrow screens so the summary remains readable.
 - Verified the shared pagination view renders the requested page summary and Blade compilation passes.
+
+## 400. (2026-11-17): Home Page Section Edit — Services Tab 500 Error
+
+**Status: Completed**
+
+- `resources/views/admin/home-page/edit.blade.php` services block contained a stray product **force-delete** form (a copy/paste from the Products list) inside the `@foreach($services ...)` loop, referencing an undefined `$product` and causing `Undefined variable $product` (HTTP 500) on `/admin/home-page/{id}/edit` for `services` sections.
+- Replaced the stray block with the standard per-row remove button used by the Partners rows (`btn btn-sm btn-outline-danger` → `this.closest('.service-item').remove()`), matching the `serviceRowHtml()` JS template used by **Add Service**.
+- Verified: PHP lint + Blade compile clean; the `services` section (id 11) and other section types now render without errors.
+
+## 401. (2026-11-17): Newsletter Subscribers — Search Field Matches Other Admin Pages
+
+**Status: Completed**
+
+- Replaced the ad-hoc search input (input + separate search/clear buttons, `name="email"`) on the admin **Newsletter Subscribers** page with the shared `admin.partials.search-form` partial used by Products, Blogs, Categories, Brands, FAQs, Pages, Images, Pickup Points, etc.
+- Search now uses the standard `search` query parameter and partial markup (`input-group` with search button first, standard clear button, tooltips).
+- `SubscriberController@index` reads `search` (falls back to legacy `email` param for old links/bookmarks).
+- Guarded the "Showing X-Y of Z" summary against null `firstItem()`/`lastItem()` on empty results.
+- Verified: PHP lint + Blade compile clean, page renders with the shared search markup, and filtering works (non-matching term → 0, empty → all).
+
+## 402. (2026-11-17): Shared Search Field — Clear Button Replaces Search When Filled
+
+**Status: Completed**
+
+- The shared `admin.partials.search-form` partial now swaps the leading input-group button between **Search** (magnifier, primary) and **Clear** (×, outline-danger) depending on whether the search input has a value.
+  - Server-side: when `search` is present in the query string the button renders in clear state, so a page reload keeps the correct icon.
+  - Client-side: a single delegated script (rendered once via `@once`, safe when multiple search forms exist) toggles the button, and updates the Bootstrap tooltip title.
+  - **Fix:** Clear mode only activates when the typed value matches the value already applied in the URL (`data-submitted`). A freshly typed/new term keeps the **Search** button so clicking submits the search; once the filter is applied the button becomes **Clear** and clicking clears it (navigates to `$clearRoute`). This resolves the issue where typing flipped the button to Clear and clicking it cleared the field instead of searching.
+- The old standalone clear (×) link beside the input now only renders for non-search filters (`$showClear` && no search text), avoiding duplicate clear buttons.
+- Applies automatically to all pages using the shared partial: Newsletter Subscribers, Products, Blogs, Categories, Brands, FAQs, Pages, Images, Pickup Points, user Reviews, etc.
+- Verified: Blade compile (`view:cache`) clean, partial renders correct search state (empty) and clear state (filled), and the inline script is emitted only once per page.
+
+## 403. (2026-11-17): Shared Search Partial Rolled Out To Remaining Admin Pages
+
+**Status: Completed**
+
+- Extended `admin.partials.search-form` with an `embedded` mode so the same Search/Clear toggle can be used inside existing filter forms (no nested `<form>`): options `embedded`, `inputClass`, `inputId`, `inputGroupStyle`, `showClear`, `clearRoute`. The toggle script now works on any surrounding `<form>` containing `.admin-search-toggle`.
+- Migrated these pages to the shared partial (removed their ad-hoc search input-group + duplicate clear buttons):
+  - Support **Tickets** (also moved the status/per-page selects inside the search form so their `this.form.submit()` works).
+  - Support **Product Conversations**.
+  - Admin **Product Reviews** (clear resets status + search via `clearRoute`).
+  - **Stock** management.
+  - Settings **Shipping Cities**, **Countries**, **States** (clear resets the page filters via `clearRoute`).
+  - Settings **Currency** and **Languages**.
+  - **Site Logs** (replaced its bespoke search/clear button JS; clear now also resets the type filter and preserves the selected log file).
+  - User dashboard **My Reviews**: removed the nested `<form>` wrapper that previously wrapped the partial.
+- Remaining `name="search"` occurrences in views are hidden inputs that preserve the search term across sort/filter forms, plus the public site-header search (separate design).
+- Verified: `view:cache` clean; all migrated pages render (Tickets, Conversations, Reviews, Stock, Cities, Countries, States, Currency, Languages, Logs) and output the shared `admin-search-toggle` markup.
+
+## 404. (2026-11-17): All Products Table — Rating Stars Match Frontend
+
+**Status: Completed**
+
+- Replaced the single Font Awesome star + number in the admin **All Products** table Rating column with the frontend star design: five inline SVG stars using the same path/colors (`#EEAE0B` filled, `#E2E8F0` empty), matching the product card (`partials/product-card`) and the Admin Product Reviews rows.
+- Filled count uses `round(rating)` like the frontend; the numeric rating is shown next to the stars in muted small text.
+- Only renders stars when `rating > 0`; products with a stored `0.00` rating now show `-` instead of a meaningless star row (frontend also hides ratings when there are no reviews).
+- Verified: `view:cache` clean; sorting by rating renders 5 filled stars for each rated product (4 products → 20 yellow stars, 0 grey), and the default page shows `-` with no stars.
+
+## 405. (2026-11-17): Admin Add/Edit Brand Form — Category-Style Layout
+
+**Status: Completed**
+
+- Added `resources/views/admin/brands/_form.blade.php` mirroring the Category form: 8/4 responsive layout, rounded cards/sidebar, sticky image + action cards, labelled fields with `old()` values and validation feedback.
+- `create.blade.php` and `edit.blade.php` are now thin wrappers around the shared partial (POST/PUT, Save/Update labels, `admin.brands.index` cancel).
+- Brand Image now uses the Image Manager picker with a square preview (`impPreview_brand_image`) like the Category image card; `description` and `website` inputs are retained in the details card, and Status is now a select (Active/Inactive) matching the Category form (`boolean('status')` in the controller still applies).
+- Added migration `2026_11_17_000001_add_website_description_to_brands_table.php` and added both fields to `Brand::$fillable`, so the Website/Description inputs actually persist (they were previously silently ignored).
+- Verified: migration ran, `php -l`, `view:cache` clean; both `/admin/brands/create` and `/admin/brands/edit/{id}` render successfully with the picker markup.
+
+## 406. (2026-11-17): Admin Add/Edit Seller Form — Same Category/Brand Style
+
+**Status: Completed**
+
+- Added `resources/views/admin/sellers/_form.blade.php` using the same design as Category/Brand: 8/4 responsive layout, rounded cards, sticky Seller Image + action sidebar, labelled fields with `old()` values and validation feedback.
+- Kept all existing fields (Name, Location, Shipping Cost, Description) and converted the Active checkbox to a Status select (Active/Inactive), which the controller's `boolean('status')` still handles.
+- Seller Image now shows a square preview with placeholder (instead of the old 60px thumbnail / empty hidden div) and keeps the Image Manager picker (`seller_image`).
+- `create.blade.php` and `edit.blade.php` are now thin wrappers around the shared partial (POST/PUT, Save/Update labels, Cancel back to seller list).
+- Verified: `view:cache` clean; both `/admin/sellers/create` and `/admin/sellers/edit/{id}` render successfully.
+
+## 407. (2026-11-17): Admin Sidebar — Wrong "Setup & Configurations" Highlight
+
+**Status: Completed**
+
+- Fixed `resources/views/admin/partials/sidebar.blade.php`: `Setup & Configurations` was expanding/highlighting on **Manage Home** and **Search Categories** because its condition included `admin.home-page.*` and a broad `admin.settings.*` match.
+- Removed `admin.home-page.*` from the group condition and added `admin.settings.search-categories*` to the existing exclusions (alongside commission and file-system/cache), so those pages highlight only their own top-level nav items.
+- Verified by rendering the pages: Home Page → `Home Page` active, Search Categories → `Search Categories` active, Setup → `collapsed` on both; a real settings page (`/admin/settings/header`) still shows Setup as `active`.
+
+## 408. (2026-11-17): File Revisions — Tracking Stopped / Watcher Fixed
+
+**Status: Completed (temporary watcher running; systemd unit needs sudo fix)**
+
+- **Root cause:** `file-watcher.service` is active but its `WorkingDirectory` is still `/var/www/html/stautoparts` (old project), so the Node/chokidar watcher was watching the wrong folder. The older PHP watcher had also died (last revision 2026-10-23 13:34:44, rev 14491), and the Node watcher swallows audit errors (`stdio: 'ignore'`), so nothing was recorded in this project.
+- Ran `php artisan file:audit --max-archive-days=0 --per-file-limit=0` to backfill all changes since 2026-10-23: `file_revisions` count 13985 → 14282 (+297). Admin File Revisions page renders fine.
+- Started the correct project watcher with `bash file-watcher.sh start` (PID 236437; `php artisan file:audit --watch --interval=10`). Verified end-to-end with a temporary test file: `created` + `deleted` events appeared in `file_revisions`, then the two test revisions and backup/mirror files were removed.
+- **Permanent fix still requires sudo** (update the systemd unit to point at this project):
+  `sudo sed -i 's#WorkingDirectory=/var/www/html/stautoparts#WorkingDirectory=/var/www/html/new-steve#' /etc/systemd/system/file-watcher.service && sudo systemctl daemon-reload && sudo systemctl restart file-watcher`
+  After that, stop the temporary watcher with `bash file-watcher.sh stop`.
+
+## 409. (2026-11-17): User Edit Profile — Photo Upload Fixed
+
+**Status: Completed**
+
+- Fixed `resources/views/user/profile-edit.blade.php`: the avatar card had a dead `impOpen_avatar()` button/hidden `image_from_manager` input in a **separate form**, and the Image Manager picker partial was never included. Since that picker is admin-only (`role:master_admin,admin,staff`), it could never work for regular users; the main form also had no `avatar` file input.
+- Rebuilt the page as **one multipart form**: circular avatar preview + `Change photo` file input (`name="avatar"`) now live in the same form as the profile/password fields, so the existing `UserController@updateProfile` file handling (`validate + saveImageWithWebp + deleteImageFiles`) actually receives the upload.
+- Added instant client-side preview of the chosen image, kept validation errors and the 2 MB / JPG-PNG-WebP-GIF hint.
+- Verified: `view:cache` clean and `/user/profile/edit` renders with exactly one form, one `avatar` file input, `multipart/form-data`, and no dead `impOpen_avatar` references.
+
+## 410. (2026-11-17): User Sidebar — "My Profile" Active on Edit Page
+
+**Status: Completed**
+
+- Fixed `resources/views/user/layouts/sidebar.blade.php`: the `My Profile` item only checked `request()->routeIs('user.profile')`, so `/user/profile/edit` (and the update POST) left it unhighlighted.
+- Changed the condition to `request()->routeIs('user.profile*')` so the main profile page, edit page and update route all keep the item active.
+- Verified by rendering both `/user/profile` and `/user/profile/edit`: the sidebar `My Profile` link has the `active` class on both.
+
+## 411. (2026-11-17): Admin Sidebar — "Vat & TAX" Active on Tax Type Pages
+
+**Status: Completed**
+
+- Fixed `resources/views/admin/partials/sidebar.blade.php`: the `Vat & TAX` submenu item only matched `admin.settings.custom*`, so tax-type routes (`admin.settings.tax-types.*`, e.g. `/admin/settings/tax-types/create`) did not highlight it.
+- Added `admin.settings.tax-types*` to the same condition.
+- Verified by rendering `/admin/settings/tax-types/create` and `/admin/settings/custom`: `Vat & TAX` gets the `active` class on both.

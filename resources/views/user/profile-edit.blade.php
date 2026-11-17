@@ -17,37 +17,56 @@
     </div>
 </div>
 
-<div class="row gy-4">
-    <div class="col-lg-4">
-        <div class="card mb-4 text-center">
-            <div class="card-body">
-                {!! imgTag(storedPath($profile->avatar), $profile->name, 'rounded-circle mb-3', 'onerror="this.onerror=null;this.src=\''.asset('assets/images/avatar-place.png').'\'' . '"' . ' style="width:120px;height:120px;object-fit:cover;"') !!}
-                <h5 class="mb-1">{{ $profile->name }}</h5>
-                <p class="text-muted mb-0">{{ $profile->email }}</p>
+<form action="{{ route('user.profile.update') }}" method="POST" enctype="multipart/form-data" id="profileForm">
+    @csrf
+
+    <div class="row gy-4">
+        <div class="col-lg-4">
+            <div class="card mb-4 text-center">
+                <div class="card-body">
+                    <div id="profileAvatarPreview"
+                         class="mx-auto mb-3 rounded-circle overflow-hidden d-flex flex-column align-items-center justify-content-center"
+                         style="width:120px;height:120px;background:#f5f6f8;">
+                        @if($profile->avatar)
+                            <img src="{{ storedImageUrl($profile->avatar) }}"
+                                 alt="{{ $profile->name }}"
+                                 style="width:100%;height:77%;object-fit:cover;"
+                                 onerror="this.onerror=null;this.src='{{ asset('assets/images/avatar-place.png') }}'">
+                        @else
+                            <span style="font-size:2.5rem;color:#adb5bd;line-height:1;">{{ strtoupper(substr($profile->name, 0, 1)) }}</span>
+                        @endif
+                        <label for="avatar" class="btn btn-outline-primary d-flex align-items-center justify-content-center border-radius-0 mb-0" style="width:100%;height:100%;">
+                            <i class="fas fa-camera me-1"></i>
+                        </label>
+                        <input type="file"
+                            name="avatar"
+                            id="avatar"
+                            class="d-none @error('avatar') is-invalid @enderror"
+                            accept="image/jpeg,image/png,image/webp,image/gif">
+                        @error('avatar')
+                            <div class="text-danger fs-14 mt-2">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <h5 class="mb-1">{{ $profile->name }}</h5>
+                    <p class="text-muted mb-0">{{ $profile->email }}</p>
+
+                    
+                    <div class="form-text mt-1">JPG, PNG, WebP or GIF · Max 2 MB</div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-lg-8 profile-edit-form-wrapper">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Edit Profile</h5>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('user.profile.update') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-
+        <div class="col-lg-8 profile-edit-form-wrapper">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Edit Profile</h5>
+                </div>
+                <div class="card-body">
                     <div class="row g-3 mb-3">
-                        <div class="col-md-6">
+                        <div class="col">
                             <label class="form-label fs-14" for="pe_email">Email Address</label>
                             <input type="email" name="email" id="pe_email" class="form-control bg-light" value="{{ $profile->email }}" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fs-14" for="pe_avatar">Profile Photo</label>
-                            <input type="file" name="avatar" id="pe_avatar" class="form-control" accept="image/*">
-                            @error('avatar')
-                                <div class="text-danger fs-14 mt-1">{{ $message }}</div>
-                            @enderror
                         </div>
                     </div>
 
@@ -102,10 +121,37 @@
                         <button type="submit" class="btn btn-primary fs-14 fw-600 steve-btn">Save Changes</button>
                         <a href="{{ route('user.profile') }}" class="btn btn-primary fs-14 fw-600 steve-btn">Cancel</a>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</form>
+
+<script>
+(function() {
+    var input = document.getElementById('avatar');
+    var preview = document.getElementById('profileAvatarPreview');
+    if (!input || !preview) return;
+
+    input.addEventListener('change', function() {
+        var file = this.files && this.files[0];
+        if (!file || !/^image\//.test(file.type)) return;
+
+        var url = URL.createObjectURL(file);
+        var img = preview.querySelector('img');
+
+        if (img) {
+            img.src = url;
+        } else {
+            preview.innerHTML = '<img src="' + url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
+        }
+
+        img = preview.querySelector('img');
+        if (img) {
+            img.addEventListener('load', function() { URL.revokeObjectURL(url); }, { once: true });
+        }
+    });
+})();
+</script>
 
 @endsection
