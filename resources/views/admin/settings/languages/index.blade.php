@@ -15,20 +15,20 @@
             <div class=""></div>
             <div class="ap-page-actions mb-4"><a href="{{ route('admin.settings.languages.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add New Language</a></div>
         </div>
-        <div class="col-lg-6 mb-3">
+        <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Default Language</h2></div>
                 <div class="card-body">
                     <form action="{{ route('admin.settings.languages.default') }}" method="POST" class="form-inline">
                         @csrf
                         <label for="default-language" class="sr-only">Default Language</label>
-                        <div class=" d-grid gap-2 gap-md-3 flex-wrap flex-md-nowrap align-items-end grid-template-columns">
-                        <select id="default-language" name="default_language" class="form-control form-select mr-2" required>
-                            @foreach ($activeLanguages as $language)
-                                <option value="{{ $language->code }}" @selected($defaultLanguage === $language->code)>{{ $language->name }}</option>
-                            @endforeach
-                        </select>
-                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
+                        <div class=" d-grid gap-2  gap-md-3 grid-wrap flex-md-nowrap align-items-end grid-template-columns">
+                            <select id="default-language" name="default_language" class="form-control form-select mr-2" required>
+                                @foreach ($activeLanguages as $language)
+                                    <option value="{{ $language->code }}" @selected($defaultLanguage === $language->code)>{{ $language->name }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                         </div>
                     </form>
                 </div>
@@ -94,12 +94,12 @@
             </form>
         </div>
         <div class="card-body table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table admin-languages-table table-hover mb-0">
                 <thead><tr><th>#</th><th>Name</th><th>Code</th><th>Flutter App Lang Code</th><th>RTL</th><th>Status</th><th class="text-right">Options</th></tr></thead>
                 <tbody>
                     @forelse ($languages as $language)
                         <tr>
-                            <td>{{ $languages->firstItem() + $loop->index }}</td>
+                            <td class="w-auto admin-row-number">{{ $languages->firstItem() + $loop->index }}</td>
                             <td>{{ $language->name }}</td>
                             <td>{{ $language->code }}</td>
                             <td>{{ $language->flutter_code ?: '-' }}</td>

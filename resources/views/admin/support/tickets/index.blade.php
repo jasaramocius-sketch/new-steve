@@ -8,30 +8,33 @@
 @php($statusColors = ['open' => 'bg-warning text-dark', 'pending' => 'bg-info text-dark', 'resolved' => 'bg-success', 'closed' => 'bg-secondary'])
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-        <div class="d-grid grid-template-columns justify-content-between align-items-center p-2 flex-wrap gap-2">
-            <div class="d-flex align-items-center flex-wrap gap-2">
-                <form method="GET" action="{{ route('admin.support.tickets.index') }}" class="support-tickets-search d-flex align-items-center gap-2 flex-lg-row">
+        <div class="d-flex justify-content-between align-items-center border-bottom flex-wrap gap-2">
+            <div class="d-flex p-2 align-items-center flex-wrap gap-2">
+                <div class="show-per-page">
+                    <select name="per_page" class="form-select w-100" onchange="this.form.submit()">
+                        @foreach ([10, 20, 50, 100] as $n)
+                            <option value="{{ $n }}" @selected((int) request('per_page', 20) === $n)>{{ $n }} per page</option>
+                        @endforeach
+                    </select>
+                </div>
+                <form method="GET" action="{{ route('admin.support.tickets.index') }}" class="d-flex flex-wrap gap-2 flex-lg-row">
+                    <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+                        <option value="">All statuses</option>
+                        @foreach (['open', 'pending', 'resolved', 'closed'] as $s)
+                            <option value="{{ $s }}" @selected($status === $s)>{{ ucfirst($s) }}</option>
+                        @endforeach
+                    </select>
+                </form>
+                <div class="w-auto">
                     @include('admin.partials.search-form', [
                         'embedded' => true,
                         'placeholder' => 'Search subject, name or email...',
                     ])
-                    <div class="support-tickets-filters d-grid grid-template-columns-auto align-items-center gap-2">
-                        <select name="status" class="form-select w-auto" onchange="this.form.submit()">
-                            <option value="">All statuses</option>
-                            @foreach (['open', 'pending', 'resolved', 'closed'] as $s)
-                                <option value="{{ $s }}" @selected($status === $s)>{{ ucfirst($s) }}</option>
-                            @endforeach
-                        </select>
-                        <select name="per_page" class="form-select w-auto" onchange="this.form.submit()">
-                            @foreach ([10, 20, 50, 100] as $n)
-                                <option value="{{ $n }}" @selected((int) request('per_page', 20) === $n)>{{ $n }} page</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </form>
+                </div>
             </div>
-            <div class="text-muted small">
+                <div class="text-muted small" style="padding: 5px;">
                 Showing {{ $tickets->firstItem() ?? 0 }}-{{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }}
+                </div>
             </div>
         </div>
         <div class="table-responsive">
@@ -51,7 +54,7 @@
                 <tbody>
                     @forelse ($tickets as $ticket)
                         <tr>
-                            <td class="ps-3">{{ $tickets->firstItem() + $loop->index }}</td>
+                            <td class="ps-3 admin-row-number">{{ $tickets->firstItem() + $loop->index }}</td>
                             <td>
                                 <a href="{{ route('admin.support.tickets.show', $ticket) }}" class="fw-semibold text-decoration-none">{{ $ticket->subject }}</a>
                                 <div class="small text-muted text-truncate" style="max-width:320px;">{{ \Illuminate\Support\Str::limit($ticket->message, 70) }}</div>

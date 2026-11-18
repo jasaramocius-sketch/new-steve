@@ -485,6 +485,42 @@ document.addEventListener('DOMContentLoaded', function() {
             .admin-sidebar.icon-collapsed .sidebar-toggle-icon {
                 transform: rotate(180deg);
             }
+
+            /* Tablet/mobile: sidebar is off-canvas, so ignore desktop collapsed mode. */
+            @media (max-width:1024px) {
+                .admin-sidebar.icon-collapsed {
+                    width: 280px !important;
+                    overflow-y: auto;
+                }
+                .admin-sidebar.icon-collapsed .nav-label {
+                    opacity: 1;
+                    max-width: 200px;
+                }
+                .admin-sidebar.icon-collapsed .admin-sidebar-drop .submenu {
+                    opacity: 1;
+                    max-width: none;
+                    max-height: none;
+                }
+                .admin-sidebar.icon-collapsed .nav-section {
+                    height: auto;
+                }
+                .admin-sidebar.icon-collapsed .nav-section::before {
+                    opacity: 0;
+                }
+                .admin-sidebar.icon-collapsed .nav-section-text {
+                    opacity: 1;
+                }
+                .admin-sidebar.icon-collapsed .sidebar-toggle-icon {
+                    transform: none;
+                }
+                body.icon-collapsed-body .main-content {
+                    margin-left: 0 !important;
+                }
+                /* Navbar hamburger is the only toggle on small screens. */
+                #sidebarIconToggle {
+                    display: none !important;
+                }
+            }
         `;
         document.head.appendChild(style);
     }

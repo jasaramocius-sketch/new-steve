@@ -35,7 +35,7 @@
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Ticket Details</h2></div>
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
+                    <table class="table mb-0">
                         <tbody>
                             <tr><th class="w-50">Ticket</th><td>#{{ $ticket->id }}</td></tr>
                             <tr><th>Customer</th><td>{{ $ticket->name }}</td></tr>

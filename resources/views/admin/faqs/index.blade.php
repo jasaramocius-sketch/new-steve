@@ -34,22 +34,22 @@
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">Show</span>
-                    <select class="form-select w-auto" onchange="window.location.href=this.value">
+                    <select class="form-select show-per-page w-auto" onchange="window.location.href=this.value">
                         @foreach([10, 20, 50, 100] as $n)
-                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
                         @endforeach
                     </select>
-                    <span class="text-muted small w-100">per page</span>
                 </div>
-                <div class="d-grid grid-column-1auto align-items-center gap-2">
-                    @include('admin.partials.search-form', [
+                @include('admin.partials.search-form', [
                         'route' => route('admin.faqs.index'),
                         'placeholder' => 'Search FAQs...'
-                    ])
-                    <a href="{{ route('admin.faqs.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add FAQ</a>
+                ])
+                <a href="{{ route('admin.faqs.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add FAQ</a>
+                <div class="d-grid grid-column-1auto align-items-center gap-2">
+                    
                 </div>
             </div>
-            <div class="text-muted small">
+            <div class="text-muted small" style="padding: 5px 0;">
                 Showing {{ $faqs->firstItem() }}-{{ $faqs->lastItem() }} of {{ $faqs->total() }}
             </div>
         </div>
@@ -68,7 +68,7 @@
                 <tbody>
                     @forelse($faqs as $faq)
                     <tr>
-                        <td class="ps-3">{{ $faqs->firstItem() + $loop->index }}</td>
+                        <td class="ps-3 admin-row-number">{{ $faqs->firstItem() + $loop->index }}</td>
                         <td>{{ Str::limit($faq->question, 60) }}</td>
                         <td>{{ $faq->order }}</td>
                         <td>

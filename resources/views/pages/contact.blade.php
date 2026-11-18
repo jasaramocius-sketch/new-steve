@@ -51,7 +51,7 @@
                                 <div class="text-danger mb-3">{{ $message }}</div>
                             @enderror
                             @include('partials.recaptcha-field', ['form' => 'contact', 'wrapperClass' => 'mb-3'])
-                            <button type="submit" class="btn btn-primary steve-btn">
+                            <button type="submit" class="btn btn-primary steve-btn"><i class="fa-solid fa-paper-plane"></i>
                                 Submit
                             </button>
                         </form>

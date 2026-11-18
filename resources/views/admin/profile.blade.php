@@ -38,7 +38,7 @@
         <div class="col-md-3">        
         <ul class="list-unstyled d-flex flex-column gap-2">            
             <li><strong class="text-secondary admin-profile-label">Name:</strong> <span class="user-name text-transform-capitalize admin-profile-value">{{ $user['name'] }}</span></li>
-            <li><strong class="text-secondary admin-profile-label">Email Address:</strong> <span class="user-email text-transform-capitalize admin-profile-value">{{ $user['email'] }}</span></li>
+            <li><strong class="text-secondary admin-profile-label">Email Address:</strong> <span class="user-email admin-profile-value">{{ $user['email'] }}</span></li>
             <li><strong class="text-secondary admin-profile-label">Phone:</strong> <span class="user-phone text-transform-capitalize admin-profile-value">{{ $user['phone'] }}</span></li>
         </ul>
         </div>
@@ -88,7 +88,7 @@
                         </div>
                         <div class="w-100">
                             <label class="form-label">Email Address</label>
-                            <input type="email" name="email" class="form-control text-transform-capitalize" value="{{ $user->email }}" readonly>
+                            <input type="email" name="email" class="form-control" value="{{ $user->email }}" readonly>
                         </div>
                     </div>
 

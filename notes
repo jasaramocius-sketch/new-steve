@@ -136,31 +136,46 @@ Login page login form "I agree to the Privacy Policy and Terms & Conditions" cha
 Registration page registration form "I agree to the Privacy Policy and Terms & Conditions" and "Subscribe to our newsletter for offers and updates" chackbox add
 Shipping Function add and manage by admin panal
 
-http://192.168.130.54/new-steve/admin/products/stock
-http://192.168.130.54/new-steve/admin/reviews
-http://192.168.130.54/new-steve/admin/orders
-http://192.168.130.54/new-steve/admin/images
-http://192.168.130.54/new-steve/admin/blogs
-http://192.168.130.54/new-steve/admin/blogs/34/edit
-http://192.168.130.54/new-steve/admin/blog-categories
-http://192.168.130.54/new-steve/admin/blog-categories/create
-http://192.168.130.54/new-steve/admin/blog-categories/33/edit
-http://192.168.130.54/new-steve/admin/pages
-http://192.168.130.54/new-steve/admin/faqs
-http://192.168.130.54/new-steve/admin/faqs/create
-http://192.168.130.54/new-steve/admin/faqs/12/edit
-http://192.168.130.54/new-steve/admin/contacts
-http://192.168.130.54/new-steve/admin/coupons
-http://192.168.130.54/new-steve/admin/settings/header
-http://192.168.130.54/new-steve/admin/settings/languages
-http://192.168.130.54/new-steve/admin/settings/languages/create
-http://192.168.130.54/new-steve/admin/settings/languages/4/edit
-http://192.168.130.54/new-steve/admin/settings/currency
-http://192.168.130.54/new-steve/admin/settings/tax-types/create
-http://192.168.130.54/new-steve/admin/settings/smtp
-http://192.168.130.54/new-steve/admin/api-integrations/3/edit
-http://192.168.130.54/new-steve/admin/settings/shipping-countries
-http://192.168.130.54/new-steve/admin/settings/shipping-states
-http://192.168.130.54/new-steve/admin/settings/shipping-cities
-http://192.168.130.54/new-steve/admin/home-page/12/edit
-http://192.168.130.54/new-steve/admin/settings/search-categories
+
+
+
+
+12/11/2026
+- Introduced a shared feature-switch design, then migrated settings toggles to Bootstrap form-check-input switches.
+- Added admin-managed Contact Information settings; header, footer, and Contact Us now share phone/email/address. Added working hours and Google Map embed URL/iframe support.
+- Added Clear filter options to Default Languages and Stock Management.
+- Added currency symbol dropdown on currency add/edit.
+- Added Google reCAPTCHA v3 settings/service with keys, score, and action validation.
+- Added Invoice Settings and customer invoice eligibility rules; added checkout, payment, and order-confirmed pages.
+- Matched admin Product Reviews rating icons to the frontend SVG stars.
+
+13/11/2026
+- Added Page Builder All / Pages / Blog Posts tabs with counts and active states.
+- Made blog additional categories functional, including combined counts.
+- Deactivated reCAPTCHA because keys were unavailable, and added a Reset option.
+- Added Pickup Points search button and matched its search field to All Products.
+- Added soft deletes across the remaining app tables with restore-safe create handling.
+- Prevented duplicate accounts using normalized email, logged-in POST blocking, and UniquePhone.
+- Unified Add/Edit Category into _form.blade.php with a modern two-column layout.
+- Changed reviews to one review per purchased order; verification scope recorded under.
+
+16/11/2026
+- Fixed admin sidebar design: submenu icons, auto-expand for active children, collapsed hover tooltips, and styling.
+- Added admin-managed shipping.
+- Fixed Homepage Latest Post View More button and added auto-latest option.
+- Admin UX: logs per-page filter, subscribers clear button, stock search, readonly product part number.
+- Settings: File System & Cache, social logins, Facebook/Google integrations, shipping links, cities search.
+- Added System → Update and Server Status pages.
+- Added the full Support module: admin tickets, product conversations, customer-facing pages, My Support, and standardized action buttons.
+- Added global pagination go-to-page summary.
+
+17/11/2026
+- Added shared admin search partial with Search↔Clear toggle, rolled out to remaining pages including subscribers.
+- Matched All Products rating stars to the frontend.
+- Rebuilt Add/Edit Brand and Seller forms in Category style; restored brand website/description columns.
+- Fixed sidebar active states: Setup & Configurations, My Profile, VAT & TAX.
+- Fixed user Edit Profile photo upload using one multipart form with an avatar file input.
+
+
+
+http://192.168.130.54/new-steve/admin/orders/62

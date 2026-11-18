@@ -208,7 +208,7 @@
                             <button class="btn btn-primary steve-btn flex-fill">
                                 <i class="fas fa-save me-1"></i> {{ $submitLabel }}
                             </button>
-                            <a href="{{ route('admin.sellers.index') }}" class="btn btn-outline-secondary flex-fill">
+                            <a href="{{ route('admin.sellers.index') }}" class="btn btn-outline-secondary flex-fill steve-btn gap-1"><i class="fas fa-times"></i>
                                 Cancel
                             </a>
                         </div>

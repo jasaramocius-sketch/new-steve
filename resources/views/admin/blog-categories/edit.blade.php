@@ -51,7 +51,7 @@
 
             <div class="mt-4 d-flex gap-2">
                 <button class="btn btn-primary steve-btn gap-1"><i class="fas fa-save"></i> Update</button>
-                <a href="{{ route('admin.blog-categories.index') }}" class="btn btn-primary steve-btn gap-1">Cancel</a>
+                <a href="{{ route('admin.blog-categories.index') }}" class="btn btn-primary steve-btn gap-1"><i class="fas fa-times"></i>Cancel</a>
             </div>
         </form>
     </div>

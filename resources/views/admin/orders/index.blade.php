@@ -24,12 +24,11 @@
             <div class="d-flex align-items-center gap-3 flex-wrap">
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">Show</span>
-                    <select class="form-select w-auto" onchange="window.location.href=this.value">
+                    <select class="form-select show-per-page w-auto" onchange="window.location.href=this.value">
                         @foreach([10, 20, 50, 100] as $n)
-                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
                         @endforeach
                     </select>
-                    <span class="text-muted small">per page</span>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">Status</span>

@@ -66,7 +66,8 @@ class OrderController extends Controller
             }
 
             $reviews = is_array($item->product->reviews_data) ? $item->product->reviews_data : [];
-            $coveredOrderIds = $eligibility->reviewedOrderIds($reviews, $userId, collect([$order]));
+            $purchasedOrders = $eligibility->purchasedOrders($userId, (int) $item->product_id);
+            $coveredOrderIds = $eligibility->reviewedOrderIds($reviews, $userId, $purchasedOrders);
 
             if (in_array((int) $order->id, $coveredOrderIds, true)) {
                 $reviewedSlugs[$item->product->id] = true;

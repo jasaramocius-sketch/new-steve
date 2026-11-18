@@ -5529,7 +5529,13 @@ Layout:
 - `resources/views/user/orders/show.blade.php`
 - `resources/views/product/show.blade.php`
 
-**Status:** Pending
+**Verification (2026-11-18):**
+- Ran a DB-transaction verification script (`/tmp/opencode/verify_reviews.php`) with a temporary user, product, two non-cancelled orders, and one cancelled order. All data was rolled back. Result: **22 checks passed, 0 failed**.
+- Confirmed: cancelled orders are excluded; no purchase gets 403; first submit auto-assigns the earliest unreviewed order; repurchase gets the next order; third submit is blocked; explicit duplicate/cancelled/unknown `order_id` are blocked; delete frees the order; edit does not duplicate; dated and undated legacy reviews map correctly; dashboard My Reviews, product page and order detail pages render the right state; cancelled order page shows no review button.
+- **Bug found and fixed:** `OrderController@show` passed only the currently viewed order to `ProductReviewEligibility::reviewedOrderIds()`. For an undated legacy review, that collection's "earliest purchase" was the current order itself, so a later repurchase was incorrectly shown as **Reviewed** (disabled). It now passes `$eligibility->purchasedOrders($userId, (int) $item->product_id)` so the full purchase history is used. Verified by rendering the order detail page after the fix: repurchase shows **Write Review** and no disabled Reviewed button.
+- `php artisan view:cache` passed; `git diff --check` passed.
+
+**Status:** Completed
 
 ## 390. (2026-11-16): Admin Sidebar Design Fix — Submenu Icons, Auto-Expand, Collapsed Tooltips
 
@@ -5771,3 +5777,40 @@ Layout:
 - Fixed `resources/views/admin/partials/sidebar.blade.php`: the `Vat & TAX` submenu item only matched `admin.settings.custom*`, so tax-type routes (`admin.settings.tax-types.*`, e.g. `/admin/settings/tax-types/create`) did not highlight it.
 - Added `admin.settings.tax-types*` to the same condition.
 - Verified by rendering `/admin/settings/tax-types/create` and `/admin/settings/custom`: `Vat & TAX` gets the `active` class on both.
+
+## 412. (2026-11-18): Admin Sidebar — Tablet (768–1024px) Uses Mobile Off-Canvas Layout
+
+**Status: Completed**
+
+- Extended the mobile sidebar behavior to tablet widths in `public/assets/front/css/backend.css`: added `@media (max-width:1024px)` so `.admin-sidebar` is off-canvas (`translateX(-100%)`, `.open` → `translateX(0)`) and `.main-content { margin-left:0; }`. Removed those same rules from the old `max-width:767px` block; other mobile typography/padding rules remain unchanged.
+- Re-enabled the navbar hamburger and in-sidebar close button on tablet with ID-level overrides in the same media query (`#sidebarToggle { display:flex !important; }`, `#sidebarCloseBtn { display:inline-flex !important; }`), because Bootstrap's `d-md-none` hid them at ≥768px.
+- Scoped desktop collapsed-mode behavior to small screens in `resources/views/admin/partials/sidebar.blade.php`: when `icon-collapsed` / `icon-collapsed-body` is present on a tablet/mobile viewport, the sidebar stays a full 280px off-canvas drawer, `.main-content` keeps `margin-left:0`, labels/submenus stay visible, and the inner `#sidebarIconToggle` chevron is hidden (navbar hamburger is the only toggle).
+- Added safety handling in `public/assets/front/js/backend.js`: sidebar links close the drawer on tablet/mobile (submenu expand toggles excluded), and resizing above 1024px removes any stale `.open` / `body.sidebar-open` state.
+- Verified: `node --check` on `backend.js`, CSS brace balance, `view:cache`, `git diff --check`, and `/admin/dashboard` render all passed. Expected result: ≥1025px desktop keeps the fixed 280/72px sidebar with matching content offset; 768–1024px and below use off-canvas with zero content offset.
+
+## 413. (2026-11-18): Shipping Cities — Clear Button Beside Filter
+
+**Status: Completed**
+
+- Updated `resources/views/admin/settings/shipping/cities/index.blade.php`: left the embedded `admin.partials.search-form` untouched so its built-in Search↔Clear toggle keeps handling the `search` field on its own.
+- Added a separate `Clear` button immediately beside the `Filter` button in the filter row. It appears when any of the other filters is active (`country_id`, `state_id` or `status`) and links to `route('admin.settings.shipping-cities.index')`, resetting all filters and the page number in one click.
+- Search-only stays clean: no extra button is rendered because the search form already shows its own red ×; when search is combined with another filter, the new Clear button clears everything including the search text.
+- Verified with `view:cache` and Blade renders of `/admin/settings/shipping-cities`, `?search=Abbottabad`, `?country_id=1` and `?country_id=1&search=Abbottabad`: clear button count is 0/0/1/1 respectively, the old standalone search-partial clear link is never rendered, and the Filter button is present in every case. Full `git diff --check` still reports pre-existing whitespace warnings in other already-modified files, which were left untouched.
+
+## 414. (2026-11-18): Search Categories — "Available Categories" Search Field Restyled
+
+**Status: Completed**
+
+- Updated `resources/views/admin/settings/search-categories.blade.php`: replaced the plain `Filter categories...` text input above the Available Categories list with the same Bootstrap `input-group` search design used on other admin pages (`input-group-text btn steve-btn gap-1 btn-primary` icon button + `form-control`), and renamed the placeholder to `Search categories...`.
+- The new button is deliberately `type="button"` and does **not** use the shared `admin-search-toggle` class, so it never submits the surrounding `#searchCategoriesForm` and never triggers the shared server-side search/clear navigation.
+- Refactored the existing client-side filter into `applyCategoryFilter()` and added local button behavior matching the shared search UX: typing switches the icon to a red ×; clicking × clears the text, re-runs the local category filter and restores the search icon/tooltip; clicking an empty field just focuses the input.
+- Verified: `view:cache`, `node --check` on the extracted page script, and a Blade render of `/admin/settings/search-categories` — input group and search button render once, button is `type="button"`, no `admin-search-toggle` from the shared partial is present, and the new placeholder appears.
+
+## 415. (2026-11-18): Responsive Tables — Numeric First Cells Keep Auto Width
+
+**Status: Completed**
+
+- Fixed the `@media (max-width:991.98px)` block in `public/assets/front/css/style.css`: the global `td:first-child { width:100% !important; ... }` rule now has a following override for plain numeric row numbers — `td:first-child.admin-row-number, .admin-languages-table td:first-child { width:auto !important; }` — so cells such as `<td>1</td>` no longer stretch to full width on tablet/mobile.
+- Added the `admin-row-number` class to numeric first-column cells in 28 Blade views across admin listings and checkout/invoice tables (serial numbers generated via `firstItem() + $loop->index`, `$loop->iteration`, `$loop->index` or `$key + 1`). Non-numeric first cells were left untouched.
+- Consolidated the old standalone `.admin-languages-table td:first-child` override into the new override block so the ordering/specificity is unambiguous.
+- Verified: `view:cache`, CSS rule present, all added class lines free of trailing whitespace, and a `/admin/settings/shipping-cities` render showing 50 numbered cells with the new class. The `width:100%` rule still applies to non-numeric first cells as before.

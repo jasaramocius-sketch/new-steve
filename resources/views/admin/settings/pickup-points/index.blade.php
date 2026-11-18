@@ -45,7 +45,7 @@
                 <tbody>
                     @forelse ($pickupPoints as $pickupPoint)
                         <tr>
-                            <td>{{ $pickupPoints->firstItem() + $loop->index }}</td>
+                            <td class="admin-row-number">{{ $pickupPoints->firstItem() + $loop->index }}</td>
                             <td>{{ $pickupPoint->name }}</td>
                             <td>{{ $pickupPoint->manager }}</td>
                             <td>{{ $pickupPoint->location }}</td>

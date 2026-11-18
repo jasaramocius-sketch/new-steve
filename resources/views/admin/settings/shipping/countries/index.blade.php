@@ -13,28 +13,24 @@
     <div class="card">
         <div class="card-header">
             <form action="{{ route('admin.settings.shipping-countries.index') }}" method="GET">
-                <div class="row gutters-5 align-items-end gap-1">
-                    <div class="col-md-4">
-                        <label class="form-label fs-12 text-muted" for="country-search">Country name</label>
-                        @include('admin.partials.search-form', [
-                            'embedded' => true,
-                            'placeholder' => 'Type country name',
-                            'inputId' => 'country-search',
-                            'showClear' => $search !== '' || $status !== null,
-                            'clearRoute' => route('admin.settings.shipping-countries.index'),
-                        ])
+                <div class="d-flex flex-wrap flex-row flex-wrap align-items-end gap-1">
+                    <div class="w-auto">
+                    @include('admin.partials.search-form', [
+                        'embedded' => true,
+                        'placeholder' => 'Type country name',
+                        'inputId' => 'country-search',
+                        'showClear' => $search !== '' || $status !== null,
+                        'clearRoute' => route('admin.settings.shipping-countries.index'),
+                    ])
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label fs-12 text-muted" for="country-status">Status</label>
-                        <select id="country-status" name="status" class="form-select form-control">
+                    <div class="w-auto">
+                        <select id="country-status" name="status" class="form-select form-control w-auto">
                             <option value="">All statuses</option>
                             <option value="active" @selected($status === true)>Active</option>
                             <option value="inactive" @selected($status === false)>Inactive</option>
                         </select>
                     </div>
-                    <div class="col-md-auto d-flex gap-1">
-                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
-                    </div>
+                    <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
                 </div>
             </form>
         </div>
@@ -42,7 +38,7 @@
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
-                        <th width="8%">#</th>
+                        <th style="width: 5%;">#</th>
                         <th>Name</th>
                         <th>Code</th>
                         <th>Status</th>
@@ -51,7 +47,7 @@
                 <tbody>
                     @forelse ($countries as $country)
                         <tr>
-                            <td>{{ $countries->firstItem() + $loop->index }}</td>
+                            <td class="admin-row-number">{{ $countries->firstItem() + $loop->index }}</td>
                             <td>{{ $country->name }}</td>
                             <td>{{ $country->iso2 ?: '—' }}</td>
                             <td>

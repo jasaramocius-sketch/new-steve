@@ -35,7 +35,7 @@
         <div style="flex:0 1 auto; min-width:140px">
             <label class="form-label small mb-1 d-block">Show</label>
             @php $currentPerPage = request('per_page', '20'); @endphp
-            <select name="per_page" class="form-select" onchange="this.form.submit()">
+            <select name="per_page" class="form-select show-per-page" onchange="this.form.submit()">
                 @foreach([10, 20, 50, 100] as $n)
                     <option value="{{ $n }}" {{ (string) $currentPerPage === (string) $n ? 'selected' : '' }}>{{ $n }} per page</option>
                 @endforeach
@@ -105,7 +105,7 @@
                         <tbody>
                             @foreach($entries as $entry)
                             <tr>
-                                <td class="ps-3 text-muted">{{ $entries->firstItem() + $loop->index }}</td>
+                                <td class="ps-3 text-muted admin-row-number">{{ $entries->firstItem() + $loop->index }}</td>
                                 <td class="text-nowrap small">
                                     @if($entry['timestamp'])
                                         {{ \Illuminate\Support\Carbon::parse($entry['timestamp'])->format('Y-m-d H:i:s') }}

@@ -6,9 +6,9 @@
 @endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+    <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
-    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif -->
 
     @php
         $shippingMethods = [
@@ -19,10 +19,10 @@
             'carrier_wise_shipping' => 'Carrier Wise Shipping Cost',
         ];
     @endphp
-
-    <div class="row">
-        <div class="col-lg-6">
-            <div class="card mb-3">
+<div class="shipping-configuration-section">
+    <div class="shipping-configuration-inner-section">
+        <div class="grid-col">
+            <div class="card mb-3 h-100">
                 <div class="card-header">
                     <h5 class="mb-0 h6">Select Shipping Method</h5>
                 </div>
@@ -44,8 +44,8 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div class="card mb-3">
+        <div class="grid-col">
+            <div class="card mb-3 h-100">
                 <div class="card-header">
                     <h5 class="mb-0 h6">Note</h5>
                 </div>
@@ -62,9 +62,9 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-6">
-            <div class="card mb-3">
+    <div class="shipping-configuration-inner-section">
+        <div class="grid-col">
+            <div class="card mb-3 h-100">
                 <div class="card-header">
                     <h5 class="mb-0 h6">Flat Rate Cost</h5>
                 </div>
@@ -83,8 +83,8 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div class="card mb-3">
+        <div class="grid-col">
+            <div class="card mb-3 h-100">
                 <div class="card-header">
                     <h5 class="mb-0 h6">Note</h5>
                 </div>
@@ -97,9 +97,9 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-6">
-            <div class="card mb-3">
+    <div class="shipping-configuration-inner-section">
+        <div class="grid-col">
+            <div class="card mb-3 h-100">
                 <div class="card-header">
                     <h5 class="mb-0 h6">Shipping Cost for Admin Products</h5>
                 </div>
@@ -118,8 +118,8 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div class="card mb-3">
+        <div class="grid-col">
+            <div class="card mb-3 h-100">
                 <div class="card-header">
                     <h5 class="mb-0 h6">Note</h5>
                 </div>
@@ -132,9 +132,9 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-6">
-            <div class="card mb-3">
+    <div class="shipping-configuration-inner-section">
+        <div class="grid-col">
+            <div class="card mb-3 h-100">
                 <div class="card-header">
                     <h5 class="mb-0 h6">Home Delivery</h5>
                 </div>
@@ -154,5 +154,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 @endsection

@@ -41,24 +41,30 @@
                         <option value="{{ $t }}" {{ $threshold === $t ? 'selected' : '' }}>Show ≤ {{ $t }}</option>
                     @endforeach
                 </select>
-                @include('admin.partials.search-form', [
-                    'embedded' => true,
-                    'placeholder' => 'Search name or Part Number...',
-                    'inputClass' => 'form-control h-40px',
-                ])
+                <div class="w-auto">
+                    @include('admin.partials.search-form', [
+                        'embedded' => true,
+                        'placeholder' => 'Search name or Part Number...',
+                        'inputClass' => 'form-control h-40px',
+                    ])
+                </div>
+                <select name="mode" class="form-select w-auto h-40px" id="stockMode">
+                    <option value="add">Add to current stock</option>
+                    <option value="set">Set exact stock</option>
+                </select>
+                <div class="w-auto">
+                    <button type="submit" class="btn steve-btn btn-primary d-flex align-items-center gap-1 w-100" onclick="return confirm('Apply stock changes to checked products?');">
+                        <i class="fas fa-clipboard-check"></i> Apply to Checked
+                    </button>
+                </div>
             </form>
             <div class="products-stock-page-actions">
                 <div class="d-flex align-items-center gap-2">
                     <div class="d-flex align-items-center gap-2">
-                    <select name="mode" class="form-select w-100 h-40px" id="stockMode">
-                        <option value="add">Add to current stock</option>
-                        <option value="set">Set exact stock</option>
-                    </select>
-                    <button type="submit" class="btn steve-btn btn-primary d-flex align-items-center gap-1" onclick="return confirm('Apply stock changes to checked products?');">
-                        <i class="fas fa-clipboard-check"></i> Apply to Checked
-                    </button>
+                    
                     </div>
-                    <label class="small text-muted mb-0"><input type="checkbox" id="toggleAll"> Select all on page</label>
+                    
+                <label class="small text-muted mb-0 w-auto"><input type="checkbox" id="toggleAll"> Select all on page</label>
                 </div>
             </div>
             <!-- <div class="text-muted small">
@@ -128,6 +134,9 @@
     #admin-products-stock-page .products-stock-page-container {
         container-type: inline-size;
     }
+    #admin-products-stock-page .products-stock-page-filters .form-select-wrapper select{
+        min-width: 200px !important;
+    }
 
     @container (max-width: 1100px) {
         #admin-products-stock-page .products-stock-page-header {
@@ -148,6 +157,9 @@
         #admin-products-stock-page .products-stock-page-actions > div,
         #admin-products-stock-page .products-stock-page-actions > div > div {
             flex-wrap: wrap;
+        }
+        #admin-products-stock-page .products-stock-page-filters .form-select-wrapper{
+            width: auto;
         }
     }
 
@@ -180,7 +192,10 @@
         }
         #admin-products-stock-page .products-stock-page-filters{
             display: grid !important;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: 1fr 1fr;
+        }
+        #admin-products-stock-page .products-stock-page-filters .form-select-wrapper select{
+            width: 100% !important;
         }
     }
     .products-stock-page-top-header .top-header-column {
@@ -194,6 +209,11 @@
         }
         .products-stock-page-top-header {
             justify-content: start !important;
+        }
+    }
+    @media (max-width: 552px) {
+        #admin-products-stock-page .products-stock-page-filters{
+            grid-template-columns: 1fr;
         }
     }
 </style>

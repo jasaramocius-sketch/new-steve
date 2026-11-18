@@ -17,14 +17,13 @@
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap flex-wrap flex-md-nowrap">
-            <div class="d-flex align-items-center gap-2">
+            <div class="questions-page-filter d-flex flex-wrap align-items-center gap-2">
                 <span class="text-muted small">Show</span>
-                <select class="form-select w-100" onchange="window.location.href=this.value">
+                <select class="form-select show-per-page w-100" onchange="window.location.href=this.value">
                     @foreach([10, 20, 50, 100] as $n)
-                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
                     @endforeach
                 </select>
-                <span class="text-muted small">per page</span>
                 <div class="">
                     <form method="GET" class="d-flex gap-2 align-items-center">
                         <select name="source" class="form-select w-auto" onchange="this.form.submit()">
@@ -55,7 +54,7 @@
                 <tbody>
                 @forelse($contacts as $contact)
                     <tr>
-                        <td class="ps-3">{{ $contacts->firstItem() + $loop->index }}</td>
+                        <td class="ps-3 admin-row-number">{{ $contacts->firstItem() + $loop->index }}</td>
                         <td>
                             <div>{{ $contact->name }}</div>
                             <small class="text-muted">{{ $contact->phone ?? '' }}</small>

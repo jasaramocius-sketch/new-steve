@@ -29,7 +29,12 @@
                             {{-- Available categories --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold small text-muted text-uppercase">Available Categories</label>
-                                <input type="text" id="searchCategoriesFilter" class="form-control mb-2" placeholder="Filter categories...">
+                                <div class="input-group mb-2">
+                                    <button type="button" id="searchCategoriesFilterBtn" class="input-group-text btn steve-btn gap-1 btn-primary sc-filter-toggle" title="Search categories" data-bs-toggle="tooltip" data-bs-placement="top">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <input type="text" id="searchCategoriesFilter" class="form-control" placeholder="Search categories..." autocomplete="off">
+                                </div>
                                 <div class="border rounded p-3 available-categories-list" style="max-height:none;overflow-y:auto;background:#f8f9fa;height:100vh;">
                                     <ul class="list-unstyled mb-0">
                                         @forelse($categories as $cat)
@@ -145,6 +150,7 @@
     var selectedContainer = document.getElementById('scSelectedContainer');
     var emptyHint = document.getElementById('scEmptyHint');
     var filterInput = document.getElementById('searchCategoriesFilter');
+    var filterBtn = document.getElementById('searchCategoriesFilterBtn');
 
     function selectedItems() {
         return Array.prototype.map.call(selectedContainer.querySelectorAll('.sc-selected-item'), function(row) {
@@ -211,25 +217,58 @@
         syncHidden();
     });
 
+    function applyCategoryFilter() {
+        var q = (filterInput ? filterInput.value : '').toLowerCase();
+        document.querySelectorAll('.sc-category-cb').forEach(function(cb) {
+            var row = cb.closest('li');
+            var parentLi = row ? row.parentElement?.closest('li') : null;
+            var match = cb.getAttribute('data-label').toLowerCase().indexOf(q) !== -1;
+            if (row && parentLi) {
+                row.style.display = match ? '' : 'none';
+                var anyChildVisible = Array.prototype.some.call(parentLi.querySelectorAll(':scope > ul li'), function(li) {
+                    return li.style.display !== 'none';
+                });
+                if (parentLi.querySelector(':scope > ul')) {
+                    parentLi.style.display = (anyChildVisible || (match && parentLi === row)) ? '' : 'none';
+                }
+            } else if (row) {
+                row.style.display = match ? '' : 'none';
+            }
+        });
+    }
+
+    function setFilterBtnState() {
+        if (!filterBtn) return;
+        var hasValue = !!(filterInput && filterInput.value.trim() !== '');
+        filterBtn.classList.toggle('btn-primary', !hasValue);
+        filterBtn.classList.toggle('btn-outline-danger', hasValue);
+        filterBtn.innerHTML = hasValue ? '<i class="fas fa-times"></i>' : '<i class="fas fa-search"></i>';
+        var title = hasValue ? 'Clear search' : 'Search categories';
+        filterBtn.setAttribute('title', title);
+        if (window.bootstrap && window.bootstrap.Tooltip) {
+            var tip = window.bootstrap.Tooltip.getInstance(filterBtn);
+            if (tip && typeof tip.setContent === 'function') {
+                tip.setContent({'.tooltip-inner': title});
+            }
+        }
+    }
+
+    if (filterBtn) {
+        filterBtn.addEventListener('click', function() {
+            if (filterInput && filterInput.value.trim() !== '') {
+                filterInput.value = '';
+                applyCategoryFilter();
+            } else if (filterInput) {
+                filterInput.focus();
+            }
+            setFilterBtnState();
+        });
+    }
+
     if (filterInput) {
         filterInput.addEventListener('input', function() {
-            var q = filterInput.value.toLowerCase();
-            document.querySelectorAll('.sc-category-cb').forEach(function(cb) {
-                var row = cb.closest('li');
-                var parentLi = row ? row.parentElement?.closest('li') : null;
-                var match = cb.getAttribute('data-label').toLowerCase().indexOf(q) !== -1;
-                if (row && parentLi) {
-                    row.style.display = match ? '' : 'none';
-                    var anyChildVisible = Array.prototype.some.call(parentLi.querySelectorAll(':scope > ul li'), function(li) {
-                        return li.style.display !== 'none';
-                    });
-                    if (parentLi.querySelector(':scope > ul')) {
-                        parentLi.style.display = (anyChildVisible || (match && parentLi === row)) ? '' : 'none';
-                    }
-                } else if (row) {
-                    row.style.display = match ? '' : 'none';
-                }
-            });
+            applyCategoryFilter();
+            setFilterBtnState();
         });
     }
 

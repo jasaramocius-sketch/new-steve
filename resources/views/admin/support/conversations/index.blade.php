@@ -7,30 +7,33 @@
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-        <div class="d-grid grid-template-columns justify-content-between align-items-center p-2 flex-wrap gap-2">
+        <div class="d-flex justify-content-between align-items-center border-bottom flex-wrap gap-2 p-2">
             <div class="d-flex align-items-center flex-wrap gap-2">
-                <form method="GET" action="{{ route('admin.support.conversations.index') }}" class="support-conversations-search d-flex align-items-center gap-2 flex-lg-row">
+                <div class="show-per-page">
+                    <select name="per_page" class="form-select w-100" onchange="this.form.submit()">
+                    @foreach ([10, 20, 50, 100] as $n)
+                        <option value="{{ $n }}" @selected((int) request('per_page', 20) === $n)>{{ $n }} per page</option>
+                    @endforeach
+                </select>
+                </div>
+                <form method="GET" action="{{ route('admin.support.conversations.index') }}" class="d-flex flex-wrap gap-2 flex-lg-row">
+                <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+                    <option value="">All statuses</option>
+                    @foreach (['open', 'closed'] as $s)
+                        <option value="{{ $s }}" @selected($status === $s)>{{ ucfirst($s) }}</option>
+                    @endforeach
+                </select>
+                </form>
+                <div class="w-auto">
                     @include('admin.partials.search-form', [
                         'embedded' => true,
                         'placeholder' => 'Search product or customer...',
                     ])
-                    <div class="support-conversations-filters d-grid grid-template-columns-auto align-items-center gap-2">
-                    <select name="status" class="form-select w-auto" onchange="this.form.submit()">
-                        <option value="">All statuses</option>
-                        @foreach (['open', 'closed'] as $s)
-                            <option value="{{ $s }}" @selected($status === $s)>{{ ucfirst($s) }}</option>
-                        @endforeach
-                    </select>
-                    <select name="per_page" class="form-select w-auto" onchange="this.form.submit()">
-                        @foreach ([10, 20, 50, 100] as $n)
-                            <option value="{{ $n }}" @selected((int) request('per_page', 20) === $n)>{{ $n }} page</option>
-                        @endforeach
-                    </select>
-                    </div>
-                </form>
+                </div>
             </div>
             <div class="text-muted small">
                 Showing {{ $conversations->firstItem() ?? 0 }}-{{ $conversations->lastItem() ?? 0 }} of {{ $conversations->total() }}
+            </div>
             </div>
         </div>
         <div class="table-responsive">
@@ -50,7 +53,7 @@
                 <tbody>
                     @forelse ($conversations as $conversation)
                         <tr>
-                            <td class="ps-3">{{ $conversations->firstItem() + $loop->index }}</td>
+                            <td class="ps-3 admin-row-number">{{ $conversations->firstItem() + $loop->index }}</td>
                             <td>
                                 <a href="{{ route('admin.support.conversations.show', $conversation) }}" class="fw-semibold text-decoration-none">
                                     {{ $conversation->product?->name ?? 'Deleted product' }}

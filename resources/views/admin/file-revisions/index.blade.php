@@ -103,12 +103,11 @@
                 <div class="d-flex align-items-center flex-column flex-lg-row flex-direction-sm-column gap-1 show-per-page-select">
                     <div class="d-flex align-items-center gap-1">
                         <span class="text-muted small">Show</span>
-                        <select class="form-select" onchange="window.location.href=this.value">
+                        <select class="form-select show-per-page" onchange="window.location.href=this.value">
                             @foreach([10, 20, 50, 100] as $n)
-                                <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                                <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
                             @endforeach
                         </select>
-                        <span class="text-muted small">per page</span>
                     </div>
                     @if(empty($trashed))
                     <button type="submit" form="bulk-trash-form" class="btn btn-danger d-none" id="bulk-delete-btn" onclick="return confirm('Move the selected file revisions to trash? They will auto-delete after 15 days.')">
@@ -143,7 +142,7 @@
                         <td class="ps-3">
                             <input type="checkbox" class="form-check-input m-0 bulk-select-row" value="{{ $rev->id }}" aria-label="Select revision {{ $rev->id }}">
                         </td>
-                        <td>{{ $fileRevisions->firstItem() + $loop->index }}</td>
+                        <td class="admin-row-number">{{ $fileRevisions->firstItem() + $loop->index }}</td>
                         <td class="file-path-cell">
                             <code>{{ $rev->file_path }}</code>
                         </td>

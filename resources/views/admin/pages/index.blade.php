@@ -23,27 +23,27 @@
 </ul>
 
 <div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
+    <div class="card-body p-0 d-flex gap-1 flex-wrap justify-content-between align-items-center">
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-wrap">
             <div class="pages-index-page-nav d-flex align-items-center flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                 <span class="text-muted small">Show</span>
-                <select class="form-select w-auto" onchange="window.location.href=this.value">
+                <select class="form-select show-per-page w-auto" onchange="window.location.href=this.value">
                     @foreach([10, 20, 50, 100] as $n)
-                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
                     @endforeach
                 </select>
-                <span class="text-muted small w-100">per page</span>
                 </div>
-                <div class="pages-index-page-nav-action d-grid align-items-center gap-2">
                     @include('admin.partials.search-form', [
                         'route' => route('admin.pages.index'),
                         'placeholder' => 'Search pages...'
                     ])
                     <a href="{{ route('admin.pages.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Page</a>
                 </div>
+                <div class="pages-index-page-nav-action d-grid align-items-center gap-2">
+                </div>
             </div>
-            <div class="text-muted small">
+            <div class="text-muted small px-2">
                 Showing {{ $pages->firstItem() }}-{{ $pages->lastItem() }} of {{ $pages->total() }}
             </div>
         </div>
@@ -63,7 +63,7 @@
                 <tbody>
                     @forelse($pages as $page)
                     <tr>
-                        <td class="ps-3">{{ $pages->firstItem() + $loop->index }}</td>
+                        <td class="ps-3 admin-row-number">{{ $pages->firstItem() + $loop->index }}</td>
                         <td>
                             @if($page->image)
                                 <img src="{{ storedImageUrl($page->image, 'assets/images/pages') }}" width="50" height="50" class="admin-image-thumb">

@@ -25,15 +25,14 @@
 
     <!-- Toolbar -->
     <div class="category-toolbar mb-4">
-        <div class="row align-items-center">
-            <div class="col-md-4">
+        <div class="brands-page-toolbar row align-items-center justify-content-between gap-2">
+            <div class="brand-search-col w-auto">
                 @include('admin.partials.search-form', [
                     'route' => route('brands'),
                     'placeholder' => 'Search brands...'
                 ])
             </div>
-            <div class="col-md-8">
-                <div class="toolbar-right">
+                <div class="toolbar-right d-flex justify-content-md-end align-items-center gap-2 w-auto">
                     <span class="sort-label">Sort by:</span>
                     <form method="GET">
                         <input type="hidden" name="search" value="{{ $search }}">
@@ -47,7 +46,6 @@
                         </select>
                     </form>
                 </div>
-            </div>
         </div>
     </div>
 

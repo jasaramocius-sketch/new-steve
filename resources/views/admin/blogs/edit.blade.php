@@ -109,6 +109,7 @@
                                     </button>
                                     <a href="{{ route('admin.blogs.index') }}"
                                         class="btn btn-primary steve-btn gap-1">
+                                        <i class="fas fa-times"></i>
                                         Cancel
                                     </a>
                                 </div>

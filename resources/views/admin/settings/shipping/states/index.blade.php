@@ -15,8 +15,8 @@
             <div class="card h-100">
                 <div class="card-header">
                     <form action="{{ route('admin.settings.shipping-states.index') }}" method="GET">
-                        <div class="row gutters-5 align-items-end">
-                            <div class="col-md-4">
+                        <div class="d-flex flex-wrap flex-row flex-wrap align-items-end gap-2">
+                            <div class="w-auto">
                                 <label class="form-label fs-12 text-muted" for="state-search">State name</label>
                                 @include('admin.partials.search-form', [
                                     'embedded' => true,
@@ -26,7 +26,7 @@
                                     'clearRoute' => route('admin.settings.shipping-states.index'),
                                 ])
                             </div>
-                            <div class="col-md-4">
+                            <div class="w-auto">
                                 <label class="form-label fs-12 text-muted" for="state-country">Country</label>
                                 <select id="state-country" name="country_id" class="form-select">
                                     <option value="">All countries</option>
@@ -35,7 +35,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="w-auto">
                                 <label class="form-label fs-12 text-muted" for="state-status">Status</label>
                                 <select id="state-status" name="status" class="form-select">
                                     <option value="">All</option>
@@ -63,7 +63,7 @@
                         <tbody>
                             @forelse ($states as $state)
                                 <tr>
-                                    <td>{{ $states->firstItem() + $loop->index }}</td>
+                                    <td class="admin-row-number">{{ $states->firstItem() + $loop->index }}</td>
                                     <td>
                                         {{ $state->name }}
                                         @if ($state->cities_count > 0)

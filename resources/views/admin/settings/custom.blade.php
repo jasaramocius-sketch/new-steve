@@ -35,7 +35,7 @@
                 <tbody>
                     @forelse ($taxTypes as $taxType)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            <td class="admin-row-number">{{ $loop->iteration }}</td>
                             <td>{{ $taxType->name }}</td>
                             <td>
                                 <form action="{{ route('admin.settings.tax-types.status', $taxType) }}" method="POST">

@@ -5,11 +5,11 @@
     @include('partials.meta-tags', ['pageTitle' => 'Facebook Comment - Settings', 'robots' => 'noindex, nofollow'])
 @endsection
 @section('content')
-<div class="container-fluid px-15px px-lg-25px col row ap-facebook-comment-page d-flex flex-column flex-lg-row gap-3">
+<div class="facebook-comment-page-container d-grid gap-3">
     <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif -->
 
-    <div class="card col-xl-6">
+    <div class="facebook-comment-page-settings-card card">
         <div class="card-header bg-white"><h2 class="h6 mb-0">Facebook Comment Settings</h2></div>
         <div class="card-body">
             <form action="{{ route('admin.settings.facebook-comment.update') }}" method="POST" class="d-flex flex-column gap-3">
@@ -35,7 +35,7 @@
             </form>
         </div>
     </div>
-    <div class="card col-xl-5">
+    <div class="facebook-comment-page-instructions-card card">
         <div class="card-header bg-white">
             <h6 class="mb-0">Please be carefull when you are configuring Facebook Comment. For incorrect configuration you will not get comment section on your user-end site.</h6>
         </div>

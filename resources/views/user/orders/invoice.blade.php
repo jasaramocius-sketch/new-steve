@@ -191,7 +191,7 @@
             <tbody>
                 @foreach($order->items as $key => $item)
                 <tr>
-                    <td>{{ $key + 1 }}</td>
+                    <td class="admin-row-number">{{ $key + 1 }}</td>
                     <td>{{ $item->product->name ?? 'Product Unavailable' }}</td>
                     <td>{{ $item->quantity ?? $item->qty ?? 1 }}</td>
                     <td class="right">{{ $formatAmount($item->price ?? 0) }}</td>

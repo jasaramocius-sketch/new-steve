@@ -5050,7 +5050,8 @@ tbody tr:last-child {
   height: 40px;
 }
 .admin-product-index-filter-bar form {
-  grid-auto-flow: column;
+  display: flex !important;
+  flex-direction: row;
 }
 .admin-product-table-top-bar{
   display: grid !important;
@@ -5099,6 +5100,14 @@ tbody tr:last-child {
   grid-auto-flow: row;
   grid-template-columns: 50% 50%;
 }
+}
+@media (max-width:463px) {
+  .admin-product-index-filter-item{
+      width: 100% !important;
+      display: grid;
+      grid-template-columns: 20% auto;
+      align-items: center;
+  }
 }
 
 .gs-contact-section .leave-reply-section .form-area .form-group .form-control {
@@ -6612,13 +6621,17 @@ footer .footer-row .footer-col-title {
   color: var(--primary);
 }
 
-.admin-content .btn-primary {
+.admin-content .btn-primary, .page-blog.blog-page .btn-primary, .brand-search-col button.btn-primary {
   background-color: var(--primary);
   border: none;
   line-height: 1.5;
   padding: 8px 12px;
   min-height: 40px;
   font-size: 16px;
+}
+.single-blog-widget.search-widget button.btn-outline-danger, .brand-search-col button.btn-outline-danger {
+    border: 1px solid var(--primary);
+    padding: 8px 12px;
 }
 
 .wh-40 {
@@ -12131,9 +12144,13 @@ form#home-vehicle-filter-form {
 }
 .form-select{
   height: 40px;
+  min-width: 200px;
 }
 .home-vehicle-filter .form-select{
   width: 250px;
+}
+.form-select.show-per-page {
+    min-width: 100px;
 }
 /* .container-home-vehicle-filter{
   position: relative;
@@ -12215,9 +12232,15 @@ form#home-vehicle-filter-form {
     width: 100%;
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
   }
-.home-vehicle-filter .form-select{
-  width: 100%;
-}
+  .home-vehicle-filter .form-select{
+    width: 100%;
+  }
+  .form-select.show-per-page{
+    width: 150px !important;
+  }
+  .questions-page-filter .form-select-wrapper {
+    width: auto;
+  }
 }
 @media (max-width:399.98px) {
   form#home-vehicle-filter-form {
@@ -12738,7 +12761,7 @@ form#home-vehicle-filter-form {
 
 @media (max-width:767.98px) {
   .gs-blog-wrapper .gs-main-blog-wrapper .gs-main-single-blog {
-    margin-bottom: 20px;
+    margin-bottom: 0px;
   }
 }
 
@@ -13027,7 +13050,7 @@ form#home-vehicle-filter-form {
 .product-nav-wrapper .filter-sort-brand-wrapper div {
   flex-direction: column;
   align-items: flex-start !important;
-  width: 180px;
+  width: 200px;
 }
 .product-nav-wrapper .filter-sort-brand-wrapper div select{
   /* border: 1px solid #c7c0bf !important; */
@@ -13073,11 +13096,11 @@ form#home-vehicle-filter-form {
     gap: 20px;
   }
 }
-@media (max-width:767px) {
+/* @media (max-width:767px) {
   .product-nav-wrapper .filter-sort-brand-wrapper div{
     width: 160px;
   }
-}
+} */
 @media (max-width:399px) {
   .product-nav-wrapper .form-select-sm {
     width: 125px !important;
@@ -16590,11 +16613,16 @@ td.compare-col.compare-action-btn div {
     flex-direction: row;
     flex-wrap: wrap;
   }
-
   td:first-child {
     width: 100% !important;
     align-content: center;
     border-right: none;
+  }
+
+  /* Plain numeric row numbers (e.g. <td>1</td>) must stay narrow. */
+  td:first-child.admin-row-number,
+  .admin-languages-table td:first-child {
+    width: auto !important;
   }
 
   td:nth-child(2) {
@@ -18353,10 +18381,14 @@ td.admin-product-name a {
   .logs-page-table .card-header {
     grid-template-columns: 1fr;
   }
-  .blog-categories-nav {
-    display: flex;
+  .blog-categories-nav {    
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+@media (max-width:399px) {
+  .blog-categories-nav-action{
+    grid-template-columns: 1fr;
   }
 }
 .gs-similar-compare-area .similar-col {
@@ -19530,6 +19562,9 @@ a.single-blog-navigation-link:focus-visible {
     line-clamp: 1;
     overflow: hidden;
 }
+.social-logins-page-section, .facebook-chat-page-container, .facebook-comment-page-container{
+  grid-template-columns: 1fr 1fr;
+}
 
 @media (max-width: 1024px) {
   .Tax-Rate-settings-container{
@@ -19553,6 +19588,9 @@ a.single-blog-navigation-link:focus-visible {
   .item-pagination-container .Go-to-page{
     justify-content: center !important;
   }
+.social-logins-page-section{
+  grid-template-columns: 1fr;
+}
 }
 
 @media (max-width: 575.98px) {
@@ -19570,4 +19608,14 @@ a.single-blog-navigation-link:focus-visible {
 
 .border-radius-0{
   border-radius: 0 !important;
+}
+.shipping-configuration-inner-section{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.shipping-configuration-section {
+  display: flex;
+  flex-direction:column;
+  gap: 10px;
 }

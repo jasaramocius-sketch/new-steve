@@ -17,7 +17,7 @@
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Runtime</h2></div>
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
+                    <table class="table mb-0">
                         <tbody>
                             <tr><th class="w-50">Laravel Version</th><td>{{ $runtime['laravel'] }}</td></tr>
                             <tr><th>PHP Version</th><td>{{ $runtime['php'] }}</td></tr>
@@ -37,7 +37,7 @@
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Database</h2></div>
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
+                    <table class="table mb-0">
                         <tbody>
                             <tr><th class="w-50">Status</th><td><span class="badge {{ $database['connected'] ? 'bg-success' : 'bg-danger' }}">{{ $database['connected'] ? 'Connected' : 'Disconnected' }}</span></td></tr>
                             <tr><th>Driver</th><td>{{ $database['driver'] }}</td></tr>
@@ -58,7 +58,7 @@
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Storage</h2></div>
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
+                    <table class="table mb-0">
                         <tbody>
                             <tr><th class="w-50">Disk Total</th><td>{{ $formatBytes($storage['disk_total']) }}</td></tr>
                             <tr><th>Disk Used</th><td>{{ $formatBytes($storage['disk_used']) }}</td></tr>
@@ -75,7 +75,7 @@
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Drivers &amp; Queues</h2></div>
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
+                    <table class="table mb-0">
                         <tbody>
                             <tr><th class="w-50">Cache Driver</th><td>{{ $drivers['cache'] }}</td></tr>
                             <tr><th>Session Driver</th><td>{{ $drivers['session'] }}</td></tr>
@@ -93,7 +93,7 @@
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">PHP Limits</h2></div>
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
+                    <table class="table mb-0">
                         <tbody>
                             <tr><th class="w-50">Memory Limit</th><td>{{ $limits['memory_limit'] ?: '—' }}</td></tr>
                             <tr><th>Max Execution Time</th><td>{{ $limits['max_execution_time'] ?: '—' }}</td></tr>

@@ -11,12 +11,12 @@
     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
 
     <div class="row">
-        <div class="col-lg-8 mb-3">
+        <div class="col-lg-9 mb-3">
             <div class="card h-100">
                 <div class="card-header">
                     <form action="{{ route('admin.settings.shipping-cities.index') }}" method="GET">
-                        <div class="row gutters-5 align-items-end">
-                            <div class="col-md-3">
+                        <div class="d-flex flex-wrap flex-row flex-wrap align-items-end gap-2">
+                            <div class="w-auto">
                                 <label class="form-label fs-12 text-muted" for="city-search">City name</label>
                                 @include('admin.partials.search-form', [
                                     'embedded' => true,
@@ -24,7 +24,7 @@
                                     'inputId' => 'city-search',
                                 ])
                             </div>
-                            <div class="col-md-3">
+                            <div class="w-auto">
                                 <label class="form-label fs-12 text-muted" for="city-country">Country</label>
                                 <select id="city-country" name="country_id" class="form-select">
                                     <option value="">All countries</option>
@@ -33,7 +33,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="w-auto">
                                 <label class="form-label fs-12 text-muted" for="city-state">State</label>
                                 <select id="city-state" name="state_id" class="form-select">
                                     <option value="">All states</option>
@@ -42,17 +42,25 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3 d-flex align-items-end gap-1">
-                                <div class="flex-grow-1">
+                                
+                            <div class="w-auto">
                                     <label class="form-label fs-12 text-muted" for="city-status">Status</label>
                                     <select id="city-status" name="status" class="form-select">
                                         <option value="">All</option>
                                         <option value="active" @selected($status === true)>Active</option>
                                         <option value="inactive" @selected($status === false)>Inactive</option>
                                     </select>
-                                </div>
+                            </div>
+                            <div class="w-auto">
                                 <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
                             </div>
+                            @if ($countryId > 0 || $stateId > 0 || $status !== null)
+                                <div class="w-auto">
+                                    <a href="{{ route('admin.settings.shipping-cities.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Clear all filters">
+                                        <i class="fas fa-times"></i>Clear
+                                    </a>
+                                </div>
+                            @endif
                         </div>
                     </form>
                 </div>
@@ -72,7 +80,7 @@
                         <tbody>
                             @forelse ($cities as $city)
                                 <tr>
-                                    <td>{{ $cities->firstItem() + $loop->index }}</td>
+                                    <td class="admin-row-number">{{ $cities->firstItem() + $loop->index }}</td>
                                     <td>{{ $city->name }}</td>
                                     <td>{{ $city->state?->name ?? '—' }}</td>
                                     <td>{{ $city->state?->country?->name ?? '—' }}</td>
@@ -111,7 +119,7 @@
             </div>
         </div>
 
-        <div class="col-lg-4 mb-3">
+        <div class="col-lg-3 mb-3">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0 h6">Add New City</h5>

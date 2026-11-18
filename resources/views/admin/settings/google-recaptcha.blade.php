@@ -31,7 +31,7 @@
 
                 <div class="form-group row">
                     <label class="col-md-3 col-form-label" for="recaptcha-version">reCAPTCHA Version</label>
-                    <div class="col-md-9">
+                    <div class="col">
                         <select id="recaptcha-version" name="recaptcha_version" class="form-control form-select" required>
                             <option value="v2" @selected(old('recaptcha_version', $settings['recaptcha_version'] ?? 'v2') === 'v2')>v2 - Checkbox / challenge</option>
                             <option value="v3" @selected(old('recaptcha_version', $settings['recaptcha_version'] ?? 'v2') === 'v3')>v3 - Invisible score-based</option>

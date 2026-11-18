@@ -117,7 +117,7 @@
                   <tbody>
                     @foreach($order['items'] ?? [] as $item)
                     <tr>
-                      <td class="border-top-0 border-bottom pl-0">{{ $loop->iteration }}</td>
+                      <td class="border-top-0 border-bottom pl-0 admin-row-number">{{ $loop->iteration }}</td>
                       <td class="border-top-0 border-bottom">
                         <span class="text-reset">{{ $item['name'] ?? 'N/A' }}</span>
                       </td>

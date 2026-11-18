@@ -43,14 +43,14 @@
 
     <!-- Toolbar -->
     <div class="category-toolbar mb-4 gap-3 d-grid">
-        <div class="d-flex justify-content-between flex-md-row gap-2 flex-sm-row category-toolbar-top">
-            <div class="w-auto">
+        <div class="categories-page-filter d-flex justify-content-between flex-md-row gap-2 flex-sm-row category-toolbar-top">
+            <div class="w-auto categories-page-filter-col">
                 @include('admin.partials.search-form', [
                     'route' => route('categories.index'),
                     'placeholder' => 'Search category...'
                 ])
             </div>
-            <div class="w-auto">
+            <div class="w-auto categories-page-filter-col">
                 <div class="toolbar-right category-toolbar-right d-flex align-items-center justify-content-md-end gap- flex-wrap">
                     <div class="d-flex align-items-center gap-2">
                         <h5 class="mb-0 small fw-medium">Sort by</h5>

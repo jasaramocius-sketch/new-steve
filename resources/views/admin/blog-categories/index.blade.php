@@ -30,26 +30,23 @@
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap">
-            <div class="blog-categories-nav d-flex flex-md-column flex-lg-row gap-2">
+            <div class="blog-categories-nav d-flex flex-wrap flex-lg-row gap-2">
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">Show</span>
-                    <select class="form-select w-auto" onchange="window.location.href=this.value">
+                    <select class="form-select show-per-page w-auto" onchange="window.location.href=this.value">
                         @foreach([10, 20, 50, 100] as $n)
-                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
                         @endforeach
                     </select>
-                    <span class="text-muted small w-100">per page</span>
                 </div>
-                <div class="d-flex blog-categories-nav-action gap-2">
                 @include('admin.partials.search-form', [
                     'route' => route('admin.blog-categories.index'),
                     'placeholder' => 'Search categories...'
                 ])
                 <a href="{{ route('admin.blog-categories.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Blog Category</a>
-                </div>
             </div>
             
-            <div class="text-muted small">
+            <div class="text-muted small" style="padding: 5px 0;">
                 Showing {{ $categories->firstItem() }}-{{ $categories->lastItem() }} of {{ $categories->total() }}
             </div>
         </div>
@@ -69,7 +66,7 @@
                 <tbody>
                     @forelse($categories as $cat)
                     <tr>
-                        <td class="ps-3">{{ $categories->firstItem() + $loop->index }}</td>
+                        <td class="ps-3 admin-row-number">{{ $categories->firstItem() + $loop->index }}</td>
                         <td>{{ $cat->name }}</td>
                         <td>{{ $cat->parent?->name ?? "—" }}</td>
                         <td><code>{{ $cat->slug }}</code></td>

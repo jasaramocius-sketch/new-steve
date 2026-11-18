@@ -34,7 +34,7 @@
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Conversation Details</h2></div>
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
+                    <table class="table mb-0">
                         <tbody>
                             <tr><th class="w-50">Conversation</th><td>#{{ $conversation->id }}</td></tr>
                             <tr><th>Product</th><td>{{ $conversation->product?->name ?? 'Deleted product' }}</td></tr>

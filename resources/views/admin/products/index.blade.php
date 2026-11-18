@@ -54,7 +54,7 @@
             @if(request()->filled('search'))
                 <input type="hidden" name="search" value="{{ request('search') }}">
             @endif
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Category</label>
                 <select name="category_id" class="form-select">
                     <option value="">All Categories</option>
@@ -63,7 +63,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Brand</label>
                 <select name="brand_id" class="form-select">
                     <option value="">All Brands</option>
@@ -72,7 +72,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Seller</label>
                 <select name="seller_id" class="form-select">
                     <option value="">All Sellers</option>
@@ -81,7 +81,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Section</label>
                 <select name="product_type" class="form-select">
                     <option value="all" {{ request('product_type') === 'all' ? 'selected' : '' }}>All Sections</option>
@@ -90,7 +90,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Stock</label>
                 <select name="stock_filter" class="form-select">
                     <option value="all" {{ request('stock_filter') === 'all' ? 'selected' : '' }}>Any Stock</option>
@@ -98,7 +98,7 @@
                     <option value="out_of_stock" {{ request('stock_filter') === 'out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Status</label>
                 <select name="status" class="form-select">
                     <option value="">Any Status</option>
@@ -106,7 +106,7 @@
                     <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Inactive</option>
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Featured</label>
                 <select name="featured" class="form-select">
                     <option value="">Any</option>
@@ -114,7 +114,7 @@
                     <option value="0" {{ request('featured') === '0' ? 'selected' : '' }}>Not Featured</option>
                 </select>
             </div>
-            <div class="admin-product-index-filter-item d-flex gap-2 flex-wrap">
+            <div class="admin-product-index-filter-item d-flex gap-2 flex-wrap w-auto">
                 <button type="submit" class="btn btn-primary steve-btn"><i class="fas fa-filter me-1"></i> Filter</button>
                 @if($hasActiveFilters)
                     <a href="{{ route('admin.products.index', request()->has('trashed') ? ['trashed' => 1] : []) }}" class="btn btn-outline-danger steve-btn"><i class="fas fa-times"></i></a>
@@ -136,14 +136,13 @@
             <div class="d-flex align-items-center gap-2">
                 <div class="d-flex align-items-center gap-1">
                     <span class="text-muted small">Show</span>
-                    <select class="form-select w-auto" onchange="window.location.href=this.value">
+                    <select class="form-select show-per-page w-auto" onchange="window.location.href=this.value">
                         @php $currentPerPage = request('per_page', '10'); @endphp
                         @foreach([10, 20, 50, 100] as $n)
-                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ $currentPerPage == $n ? 'selected' : '' }}>{{ $n }}</option>
+                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ $currentPerPage == $n ? 'selected' : '' }}>{{ $n }} per page</option>
                         @endforeach
-                        <option value="{{ request()->fullUrlWithQuery(['per_page' => 'all', 'page' => null]) }}" {{ $currentPerPage === 'all' ? 'selected' : '' }}>All</option>
+                        <option value="{{ request()->fullUrlWithQuery(['per_page' => 'all', 'page' => null]) }}" {{ $currentPerPage === 'all' ? 'selected' : '' }}>All per page</option>
                     </select>
-                    <span class="text-muted small">per page</span>
                 </div>
                 @if(!request()->has('trashed'))
                     <button type="button" class="btn btn-danger steve-btn btn-sm d-none" id="bulk-delete-btn" data-bulk-action="{{ route('admin.products.bulk-delete') }}" onclick="if(confirm('Move the selected products to trash?')) bulkRun(this)"><i class="fas fa-trash me-1"></i> Delete (<span class="bulk-count">0</span>)</button>
@@ -201,7 +200,7 @@
                         <td class="">
                             <input type="checkbox" class="form-check-input m-0 bulk-select-row" value="{{ $product->id }}" aria-label="Select product {{ $product->name }}">
                         </td>
-                        <td>{{ $products->firstItem() + $loop->index }}</td>
+                        <td class="admin-row-number">{{ $products->firstItem() + $loop->index }}</td>
                         <td>
                             <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="50" height="50" class="admin-image-thumb" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                         </td>

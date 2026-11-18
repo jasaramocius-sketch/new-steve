@@ -11,10 +11,10 @@
 
     <div class="alert alert-info mb-3 mb-0">Credentials are stored for social login integration. Ensure corresponding OAuth routes/controllers are configured if you enable these providers.</div>
 
-    <form action="{{ route('admin.settings.social-logins.update') }}" method="POST" autocomplete="off">
+    <form action="{{ route('admin.settings.social-logins.update') }}" method="POST" autocomplete="off" class="social-logins-form">
         @csrf
-        <div class="row">
-            <div class="col-lg-6 mb-3">
+        <div class="social-logins-page-section d-grid gap-3 gap-lg-4">
+            <div class="grid-col">
                 <div class="card h-100">
                     <div class="card-header"><h2 class="h6 mb-0">Google Login Credential</h2></div>
                     <div class="card-body d-flex flex-column gap-2">
@@ -45,7 +45,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 mb-3">
+            <div class="grid-col">
                 <div class="card h-100">
                     <div class="card-header"><h2 class="h6 mb-0">Facebook Login Credential</h2></div>
                     <div class="card-body d-flex flex-column gap-2">
@@ -76,7 +76,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 mb-3">
+            <div class="grid-col">
                 <div class="card h-100">
                     <div class="card-header"><h2 class="h6 mb-0">Twitter Login Credential</h2></div>
                     <div class="card-body d-flex flex-column gap-2">
@@ -107,7 +107,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 mb-3">
+            <div class="grid-col">
                 <div class="card h-100">
                     <div class="card-header"><h2 class="h6 mb-0">Apple Login Credential</h2></div>
                     <div class="card-body d-flex flex-column gap-2">
@@ -147,7 +147,7 @@
                 </div>
             </div>
         </div>
-        <div class="text-right"><button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1"><i class="fas fa-save"></i> Save</button></div>
+        <div class="text-right pt-2"><button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1"><i class="fas fa-save"></i> Save</button></div>
     </form>
 </div>
 @endsection

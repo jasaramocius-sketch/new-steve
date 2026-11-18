@@ -53,7 +53,7 @@
           </div>
 
           <!-- Search Widget -->
-          <div class="single-blog-widget">
+          <div class="single-blog-widget search-widget">
             @include('admin.partials.search-form', [
                 'route' => route('blog'),
                 'placeholder' => 'Search blogs...',
