@@ -10,61 +10,11 @@
 @endsection
 @section('content')
 
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Add Brand</h5>
-    </div>
-    <div class="card-body">
-        <form action="{{ route('admin.brands.store') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Name *</label>
-                    <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
-                    @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">Website</label>
-                    <input type="url" name="website" class="form-control @error('website') is-invalid @enderror" value="{{ old('website') }}" placeholder="https://example.com">
-                    @error('website') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">Image</label>
-                    <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/jpeg,image/png,image/webp">
-                    @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    <input type="hidden" name="image_from_manager" id="image_from_manager_brand_image">
-                    <div id="impPreview_brand_image" class="d-none mt-2"></div>
-                    <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_brand_image()">
-                        <i class="fas fa-images me-1"></i> Browse Image Manager
-                    </button>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">&nbsp;</label>
-                    <div class="form-check mt-2">
-                        <input type="checkbox" name="status" value="1" class="form-check-input" id="status" checked>
-                        <label class="form-check-label" for="status">Active</label>
-                    </div>
-                </div>
-
-                <div class="col-md-12">
-                    <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control textarea-control texteditor @error('description') is-invalid @enderror" rows="4">{{ old('description') }}</textarea>
-                    @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-            </div>
-
-            <div class="mt-4 d-flex gap-1">
-                <button class="btn btn-primary steve-btn gap-1"><i class="fas fa-save"></i> Save</button>
-                <a href="{{ route('admin.brands.index') }}" class="btn btn-primary steve-btn gap-1">Cancel</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-@include('admin.partials.image-manager-picker', ['pickerId' => 'brand_image', 'targetInput' => 'image_from_manager'])
+@include('admin.brands._form', [
+    'action' => route('admin.brands.store'),
+    'method' => 'POST',
+    'submitLabel' => 'Save',
+    'brand' => null,
+])
 
 @endsection

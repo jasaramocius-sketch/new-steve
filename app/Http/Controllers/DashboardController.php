@@ -13,8 +13,10 @@ use App\Models\Seller;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Wishlist;
+use App\Services\ProductReviewEligibility;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -667,53 +669,153 @@ class DashboardController extends Controller
 
     public function reviews(Request $request)
     {
-        $userId = auth()->id();
+        $userId = (int) auth()->id();
+        $eligibility = app(ProductReviewEligibility::class);
 
-        // Fetch user's existing reviews
+        // Collect all non-deleted reviews by this user, grouped by product.
         $products = Product::whereNotNull('reviews_data')->get();
+        $reviewsByProduct = [];
 
-        $reviewedSlugs = [];
-        $items = [];
         foreach ($products as $product) {
             $reviews = is_array($product->reviews_data) ? $product->reviews_data : [];
-            foreach ($reviews as $review) {
-                if (($review['user_id'] ?? null) == $userId && ! ($review['deleted'] ?? false)) {
-                    $reviewedSlugs[] = $product->slug;
-                    $items[] = [
-                        'product_name' => $product->name,
-                        'product_slug' => $product->slug,
-                        'product_image' => $product->image,
-                        'status' => 'reviewed',
-                        'review_id' => $review['id'] ?? '',
-                        'rating' => $review['rating'] ?? 0,
-                        'text' => $review['text'] ?? '',
-                        'images' => $review['images'] ?? [],
-                        'date' => $review['date'] ?? '',
-                    ];
-                }
+            $userReviews = array_values(array_filter($reviews, function ($review) use ($userId) {
+                return is_array($review)
+                    && (int) ($review['user_id'] ?? 0) === $userId
+                    && ! ($review['deleted'] ?? false);
+            }));
+
+            if (! empty($userReviews)) {
+                $reviewsByProduct[(int) $product->id] = [
+                    'product' => $product,
+                    'reviews' => $userReviews,
+                ];
             }
         }
 
-        // Fetch purchased products not yet reviewed
-        $purchasedProducts = OrderItem::whereHas('order', function ($q) use ($userId) {
-            $q->where('user_id', $userId);
-        })
-            ->with('product')
+        // Purchased line items (non-cancelled) grouped by product.
+        $purchasedItems = OrderItem::query()
+            ->whereHas('order', function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                    ->where('status', '!=', 'cancelled');
+            })
+            ->with([
+                'product',
+                'order' => function ($q) {
+                    $q->select('id', 'order_number', 'user_id', 'status', 'created_at');
+                },
+            ])
             ->get()
-            ->pluck('product')
-            ->filter()
-            ->unique('id');
+            ->filter(fn ($item) => $item->product)
+            ->unique(fn ($item) => $item->order_id.'-'.$item->product_id)
+            ->values();
 
-        foreach ($purchasedProducts as $product) {
-            if (! in_array($product->slug, $reviewedSlugs)) {
+        $items = [];
+        $handledProductIds = [];
+
+        foreach ($purchasedItems->groupBy('product_id') as $productId => $orderItems) {
+            $product = $orderItems->first()->product;
+
+            if (! $product) {
+                continue;
+            }
+
+            $orders = $orderItems
+                ->pluck('order')
+                ->filter()
+                ->unique('id')
+                ->sortBy(fn ($order) => $order->created_at?->timestamp ?? 0)
+                ->values();
+
+            $reviews = $reviewsByProduct[(int) $productId]['reviews'] ?? [];
+            $allocated = $eligibility->allocateReviews($reviews, $userId, $orders);
+            $reviewedOrderIds = $eligibility->reviewedOrderIds($reviews, $userId, $orders);
+            $ordersById = $orders->keyBy('id');
+
+            foreach ($reviews as $review) {
+                $reviewKey = (string) ($review['id'] ?? '');
+                $orderId = $reviewKey !== '' && isset($allocated[$reviewKey])
+                    ? (int) $allocated[$reviewKey]
+                    : (int) ($review['order_id'] ?? 0);
+                $order = $orderId > 0 ? $ordersById->get($orderId) : null;
+
+                $items[] = [
+                    'product_name' => $product->name,
+                    'product_slug' => $product->slug,
+                    'product_image' => $product->image,
+                    'status' => 'reviewed',
+                    'review_id' => $review['id'] ?? '',
+                    'rating' => $review['rating'] ?? 0,
+                    'text' => $review['text'] ?? '',
+                    'images' => $review['images'] ?? [],
+                    'date' => $review['date'] ?? '',
+                    'order_id' => $order?->id ?? ($review['order_id'] ?? null),
+                    'order_number' => $order?->order_number ?? ($review['order_number'] ?? null),
+                    'order_date' => $order?->created_at?->format('M d, Y')
+                        ?? (! empty($review['purchase_date']) ? Carbon::parse($review['purchase_date'])->format('M d, Y') : null),
+                    'pending_count' => 0,
+                ];
+            }
+
+            $pendingOrders = $orders->reject(
+                fn ($order) => in_array((int) $order->id, $reviewedOrderIds, true)
+            )->values();
+
+            if ($pendingOrders->isNotEmpty()) {
+                $latest = $pendingOrders->last();
+
                 $items[] = [
                     'product_name' => $product->name,
                     'product_slug' => $product->slug,
                     'product_image' => $product->image,
                     'status' => 'pending',
+                    'review_id' => '',
                     'rating' => 0,
                     'text' => '',
+                    'images' => [],
                     'date' => '',
+                    'order_id' => $latest->id,
+                    'order_number' => $pendingOrders->count() === 1 ? $latest->order_number : null,
+                    'order_date' => $latest->created_at?->format('M d, Y'),
+                    'pending_count' => $pendingOrders->count(),
+                ];
+            }
+
+            $handledProductIds[(int) $productId] = true;
+        }
+
+        // Reviews for products without a current non-cancelled purchase (legacy/cancelled orders).
+        foreach ($reviewsByProduct as $productId => $data) {
+            if (isset($handledProductIds[$productId])) {
+                continue;
+            }
+
+            $product = $data['product'];
+
+            foreach ($data['reviews'] as $review) {
+                $purchaseDate = null;
+
+                if (! empty($review['purchase_date'])) {
+                    try {
+                        $purchaseDate = Carbon::parse($review['purchase_date'])->format('M d, Y');
+                    } catch (\Throwable) {
+                        $purchaseDate = null;
+                    }
+                }
+
+                $items[] = [
+                    'product_name' => $product->name,
+                    'product_slug' => $product->slug,
+                    'product_image' => $product->image,
+                    'status' => 'reviewed',
+                    'review_id' => $review['id'] ?? '',
+                    'rating' => $review['rating'] ?? 0,
+                    'text' => $review['text'] ?? '',
+                    'images' => $review['images'] ?? [],
+                    'date' => $review['date'] ?? '',
+                    'order_id' => $review['order_id'] ?? null,
+                    'order_number' => $review['order_number'] ?? null,
+                    'order_date' => $purchaseDate,
+                    'pending_count' => 0,
                 ];
             }
         }

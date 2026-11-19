@@ -32,10 +32,8 @@
         $activeParams = request()->only(['search', 'category_id', 'brand_id', 'seller_id', 'product_type', 'stock_filter', 'status', 'featured']);
         $trashParams = array_merge(['trashed' => 1], $activeParams);
     @endphp
-    <li class="nav-item">
+    <li class="nav-item gap-2 d-flex flex-wrap">
         <a class="nav-link {{ !request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.products.index', $activeParams) }}">Active</a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link {{ request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.products.index', $trashParams) }}">Trash ({{ $trashedCount }})</a>
     </li>
     <li class="nav-item search-form ms-lg-auto">
@@ -56,7 +54,7 @@
             @if(request()->filled('search'))
                 <input type="hidden" name="search" value="{{ request('search') }}">
             @endif
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Category</label>
                 <select name="category_id" class="form-select">
                     <option value="">All Categories</option>
@@ -65,7 +63,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Brand</label>
                 <select name="brand_id" class="form-select">
                     <option value="">All Brands</option>
@@ -74,7 +72,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Seller</label>
                 <select name="seller_id" class="form-select">
                     <option value="">All Sellers</option>
@@ -83,7 +81,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Section</label>
                 <select name="product_type" class="form-select">
                     <option value="all" {{ request('product_type') === 'all' ? 'selected' : '' }}>All Sections</option>
@@ -92,7 +90,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Stock</label>
                 <select name="stock_filter" class="form-select">
                     <option value="all" {{ request('stock_filter') === 'all' ? 'selected' : '' }}>Any Stock</option>
@@ -100,7 +98,7 @@
                     <option value="out_of_stock" {{ request('stock_filter') === 'out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Status</label>
                 <select name="status" class="form-select">
                     <option value="">Any Status</option>
@@ -108,7 +106,7 @@
                     <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Inactive</option>
                 </select>
             </div>
-            <div class="admin-product-index-filter-item">
+            <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Featured</label>
                 <select name="featured" class="form-select">
                     <option value="">Any</option>
@@ -116,7 +114,7 @@
                     <option value="0" {{ request('featured') === '0' ? 'selected' : '' }}>Not Featured</option>
                 </select>
             </div>
-            <div class="admin-product-index-filter-item d-flex gap-2 flex-wrap">
+            <div class="admin-product-index-filter-item d-flex gap-2 flex-wrap w-auto">
                 <button type="submit" class="btn btn-primary steve-btn"><i class="fas fa-filter me-1"></i> Filter</button>
                 @if($hasActiveFilters)
                     <a href="{{ route('admin.products.index', request()->has('trashed') ? ['trashed' => 1] : []) }}" class="btn btn-outline-danger steve-btn"><i class="fas fa-times"></i></a>
@@ -134,8 +132,18 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2">
+        <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap gap-2 admin-product-table-top-bar">
             <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-1">
+                    <span class="text-muted small">Show</span>
+                    <select class="form-select show-per-page w-auto" onchange="window.location.href=this.value">
+                        @php $currentPerPage = request('per_page', '10'); @endphp
+                        @foreach([10, 20, 50, 100] as $n)
+                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ $currentPerPage == $n ? 'selected' : '' }}>{{ $n }} per page</option>
+                        @endforeach
+                        <option value="{{ request()->fullUrlWithQuery(['per_page' => 'all', 'page' => null]) }}" {{ $currentPerPage === 'all' ? 'selected' : '' }}>All per page</option>
+                    </select>
+                </div>
                 @if(!request()->has('trashed'))
                     <button type="button" class="btn btn-danger steve-btn btn-sm d-none" id="bulk-delete-btn" data-bulk-action="{{ route('admin.products.bulk-delete') }}" onclick="if(confirm('Move the selected products to trash?')) bulkRun(this)"><i class="fas fa-trash me-1"></i> Delete (<span class="bulk-count">0</span>)</button>
                     <button type="button" class="btn btn-success steve-btn btn-sm d-none" id="bulk-activate-btn" data-bulk-action="{{ route('admin.products.bulk-status') }}" data-field="status" data-value="1" onclick="bulkRunValue(this)"><i class="fas fa-check me-1"></i> Activate (<span class="bulk-count">0</span>)</button>
@@ -148,20 +156,11 @@
                             <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                         @endforeach
                     </select>
-                    <button type="button" class="btn btn-primary steve-btn btn-sm d-none" id="bulk-move-btn" data-bulk-action="{{ route('admin.products.bulk-category') }}" onclick="bulkRunCategory(this)"><i class="fas fa-folder-open me-1"></i> Move (<span class="bulk-count">0</span>)</button>
+                    <button type="button" class="btn btn-primary steve-btn btn-sm d-none" id="bulk-move-btn" data-bulk-action="{{ route('admin.products.bulk-category') }}" onclick="bulkRunCategory(this)"><i class="fas fa-cloud-upload-alt me-1"></i> Move (<span class="bulk-count">0</span>)</button>
                 @else
                     <button type="button" class="btn btn-success steve-btn btn-sm d-none" id="bulk-restore-btn" data-bulk-action="{{ route('admin.products.bulk-restore') }}" onclick="bulkRun(this)"><i class="fas fa-undo me-1"></i> Restore (<span class="bulk-count">0</span>)</button>
                     <button type="button" class="btn btn-danger steve-btn btn-sm d-none" id="bulk-force-btn" data-bulk-action="{{ route('admin.products.bulk-force-delete') }}" onclick="if(confirm('Permanently delete the selected products from trash? This cannot be undone.')) bulkRun(this)"><i class="fas fa-trash-alt me-1"></i> Delete Permanently (<span class="bulk-count">0</span>)</button>
                 @endif
-                <span class="text-muted small">Show</span>
-                <select class="form-select w-auto" onchange="window.location.href=this.value">
-                    @php $currentPerPage = request('per_page', '10'); @endphp
-                    @foreach([10, 20, 50, 100] as $n)
-                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ $currentPerPage == $n ? 'selected' : '' }}>{{ $n }}</option>
-                    @endforeach
-                    <option value="{{ request()->fullUrlWithQuery(['per_page' => 'all', 'page' => null]) }}" {{ $currentPerPage === 'all' ? 'selected' : '' }}>All</option>
-                </select>
-                <span class="text-muted small">per page</span>
             </div>
         </div>
         <div class="table-responsive">
@@ -201,13 +200,13 @@
                         <td class="">
                             <input type="checkbox" class="form-check-input m-0 bulk-select-row" value="{{ $product->id }}" aria-label="Select product {{ $product->name }}">
                         </td>
-                        <td>{{ $products->firstItem() + $loop->index }}</td>
+                        <td class="admin-row-number">{{ $products->firstItem() + $loop->index }}</td>
                         <td>
                             <img src="{{ storedImageUrl($product->image, 'assets/images/thumbnails') }}" width="50" height="50" class="admin-image-thumb" onerror="this.onerror=null;this.src='{{ asset('assets/images/placeholder.png') }}'">
                         </td>
                         <td class="admin-product-name">
                             <a href="{{ route('product', $product->slug) }}" target="_blank">{{ Str::words($product->name, 3, '...') }}</a>
-                            <div class="small text-muted"><code>#{{ $product->sku ?: '—' }}</code></div>
+                            <div class="small text-muted">Part Number: <code>{{ $product->part_number ?: '—' }}</code></div>
                         </td>
                         <td>{{ $product->category->name ??  'N/A' }}</td>
                         <td>{{ $product->seller->name ?? 'N/A' }}</td>
@@ -222,7 +221,7 @@
                                         ? rtrim(rtrim(number_format((float) $product->commission, 2, '.', ''), '0'), '.')
                                         : '';
                                 @endphp
-                                <div class="input-group input-group-sm admin-commission-cell" style="width:80px;">
+                                <div class="input-group admin-commission-cell" style="width:100px;">
                                     <input type="number" step="0.01" min="0" max="100"
                                            class="form-control js-product-commission no-spinner"
                                            value="{{ $productCommissionLabel }}"
@@ -238,8 +237,16 @@
                         <td class="text-nowrap js-product-total">{{ currency_format(buyerPrice($product->price, $product)) }}</td>
                         <td>{{ $product->stock ?? 0 }}</td>
                         <td>
-                            @if($product->rating)
-                                <span class="text-warning"><i class="fas fa-star me-1"></i>{{ number_format($product->rating, 1) }}</span>
+                            @if($product->rating > 0)
+                                @php $ratingStars = (int) round((float) $product->rating); @endphp
+                                <div class="d-flex align-items-center gap-1" aria-label="{{ number_format($product->rating, 1) }} out of 5">
+                                    @for($i = 0; $i < 5; $i++)
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="13" viewBox="0 0 17 16" fill="none">
+                                            <path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="{{ $i < $ratingStars ? '#EEAE0B' : '#E2E8F0' }}" />
+                                        </svg>
+                                    @endfor
+                                    <span class="small text-muted ms-1">{{ number_format($product->rating, 1) }}</span>
+                                </div>
                             @else
                                 -
                             @endif

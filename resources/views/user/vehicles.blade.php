@@ -11,7 +11,7 @@
 @section('dashboard-content')
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="h4-style mb-0">My Vehicles</h4>
-    <button class="btn btn-primary btn-sm steve-btn" data-bs-toggle="modal" data-bs-target="#addVehicleModal">+ Add Vehicle</button>
+    <button class="btn btn-primary btn-sm steve-btn d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addVehicleModal">+ Add Vehicle</button>
 </div>
 
 <section>
@@ -115,8 +115,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary steve-btn">Save</button>
-                    <button class="btn btn-primary steve-btn" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary steve-btn gap-1"><i class="fas fa-save"></i>Save</button>
+                    <button class="btn btn-primary steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
                 </div>
             </div>
         </form>

@@ -2,11 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Country extends Model
 {
-    protected $fillable = ['name'];
+    use SoftDeletes;
+
+    protected $fillable = ['name', 'status'];
+
+    protected $casts = [
+        'status' => 'boolean',
+    ];
 
     public function states()
     {
@@ -16,5 +24,10 @@ class Country extends Model
     public function cities()
     {
         return $this->hasManyThrough(City::class, State::class);
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', true);
     }
 }

@@ -34,7 +34,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media-details" type="button" role="tab" aria-controls="media-details" aria-selected="false">
-                        <i class="fas fa-images me-1"></i> Media
+                        <i class="fas fa-cloud-upload-alt me-1"></i> Media
                     </button>
                 </li>
             </ul>
@@ -50,12 +50,9 @@
                             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
-                            <label class="form-label mt-2">SKU / Part Number</label>
-                            <div class="input-group">
-                                <input type="text" name="sku" id="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku') }}" placeholder="e.g. am-6113">
-                                <button type="button" class="btn btn-outline-secondary" id="sku-generate-btn" title="Generate SKU"><i class="fas fa-dice"></i> Auto</button>
-                                @error('sku') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
+                            <label class="form-label mt-2">Part Number</label>
+                            <input type="text" class="form-control bg-light" value="Generated automatically when saved" readonly disabled>
+                            <small class="form-text text-muted">The Part Number is generated automatically and cannot be entered manually.</small>
                         </div>
 
                         <div class="col-md-3">
@@ -67,6 +64,12 @@
                         <div class="col-md-3">
                             <label class="form-label">Old Price</label>
                             <input type="number" step="0.01" name="old_price" class="form-control" value="{{ old('old_price') }}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Shipping Cost</label>
+                            <input type="number" step="0.01" min="0" name="shipping_cost" class="form-control" value="{{ old('shipping_cost', 0) }}">
+                            <small class="text-muted">Used with Product Wise Shipping.</small>
                         </div>
 
                         <div class="col-md-3">
@@ -135,9 +138,9 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label d-block">&nbsp;</label>
-                            <div class="form-check form-switch mt-1">
+                            <div class="form-check form-switch mt-3">
                                 <input type="checkbox" name="featured" value="1" class="form-check-input" id="featured" {{ old('featured') ? 'checked' : '' }}>
                                 <label class="form-check-label" for="featured">Featured Product</label>
                             </div>
@@ -215,9 +218,9 @@
                 <!-- Tab 4: Media -->
                 <div class="tab-pane fade" id="media-details" role="tabpanel" aria-labelledby="media-tab">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col">
                             <label class="form-label fw-bold">Primary Image</label>
-                            <div class="card p-3 border-dashed">
+                            <div class="media-card">
                                 <input type="file" name="image" class="form-control mb-2 @error('image') is-invalid @enderror" accept="image/*">
                                 @error('image') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     @php $selectedImageFromManager = old('image_from_manager'); @endphp
@@ -229,15 +232,17 @@
                                         @endif
                                     </div>
 
-                        <div class="col-md-6">
+                        <div class="col">
                             <label class="form-label fw-bold">Gallery Images</label>
                             <div class="card p-3 border-dashed">
                                 <input type="file" name="gallery_images[]" class="form-control mb-2" multiple accept="image/*">
                                 <input type="hidden" name="gallery_images_from_manager" id="gallery_images_from_manager">
                                 <div id="impPreview_gallery_images" class="d-none my-2"></div>
-                                <button type="button" class="btn btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
-                                    <i class="fas fa-folder-open me-1"></i> Browse Image Manager
-                                </button>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="impOpen_gallery_images()">
+                                        <i class="fas fa-cloud-upload-alt me-1"></i> Browse
+                                    </button>
+                                </div>
                                 <small class="text-muted mt-2 d-block">Pick multiple images from Image Manager, or upload files above.</small>
                             </div>
                         </div>
@@ -260,15 +265,5 @@
 
 @include('admin.partials.image-manager-picker', ['pickerId' => 'product_image', 'targetInput' => 'image_from_manager'])
 @include('admin.partials.image-manager-picker', ['pickerId' => 'gallery_images', 'targetInput' => 'gallery_images_from_manager', 'multiple' => true])
-
-<script>
-document.getElementById('sku-generate-btn').addEventListener('click', function () {
-    const name = (document.querySelector('input[name="name"]')?.value || '').trim();
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    const prefix = ('SKU-' + slug.substring(0, 6)).toUpperCase();
-    const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
-    document.getElementById('sku').value = prefix + '-' + rand;
-});
-</script>
 
 @endsection

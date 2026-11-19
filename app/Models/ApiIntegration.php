@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Crypt;
 
 class ApiIntegration extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'type',
         'provider',
@@ -45,16 +48,18 @@ class ApiIntegration extends Model
 
     public function getCredentialsAttribute($value)
     {
-        if (!$value) {
+        if (! $value) {
             return [];
         }
 
         try {
             $decrypted = Crypt::decryptString($value);
             $decoded = json_decode($decrypted, true);
+
             return is_array($decoded) ? $decoded : [];
         } catch (\Throwable $e) {
             $decoded = json_decode($value, true);
+
             return is_array($decoded) ? $decoded : [];
         }
     }
@@ -72,10 +77,11 @@ class ApiIntegration extends Model
 
     public function getEndpointsAttribute($value)
     {
-        if (!$value) {
+        if (! $value) {
             return [];
         }
         $decoded = json_decode($value, true);
+
         return is_array($decoded) ? $decoded : [];
     }
 
@@ -92,10 +98,11 @@ class ApiIntegration extends Model
 
     public function getConfigAttribute($value)
     {
-        if (!$value) {
+        if (! $value) {
             return [];
         }
         $decoded = json_decode($value, true);
+
         return is_array($decoded) ? $decoded : [];
     }
 

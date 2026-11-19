@@ -18,7 +18,7 @@
                     <p class="text-muted mb-1 small text-uppercase fw-semibold">Total Orders</p>
                     <h3 class="mb-0 fw-bold font-vw">{{ $totalOrders }}</h3>
                 </div>
-                <div class="rounded-3 p-3 admin-dashboard-icon-blue">
+                <div class="rounded-3 p-3 admin-dashboard-icon-blue wh-68px d-flex align-items-center justify-content-center">
                     <i class="fas fa-shopping-cart fa-2x"></i>
                 </div>
             </div>
@@ -31,7 +31,7 @@
                     <p class="text-muted mb-1 small text-uppercase fw-semibold">Total Revenue</p>
                     <h3 class="mb-0 fw-bold font-vw">{{ currency_format($totalRevenue) }}</h3>
                 </div>
-                <div class="rounded-3 p-3 admin-dashboard-icon-green">
+                <div class="rounded-3 p-3 admin-dashboard-icon-green wh-68px d-flex align-items-center justify-content-center">
                     <i class="fas fa-dollar-sign fa-2x"></i>
                 </div>
             </div>
@@ -44,7 +44,7 @@
                     <p class="text-muted mb-1 small text-uppercase fw-semibold">Total Products</p>
                     <h3 class="mb-0 fw-bold font-vw">{{ $totalProducts }}</h3>
                 </div>
-                <div class="rounded-3 p-3 admin-dashboard-icon-orange">
+                <div class="rounded-3 p-3 admin-dashboard-icon-orange wh-68px d-flex align-items-center justify-content-center">
                     <i class="fas fa-box fa-2x"></i>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                     <p class="text-muted mb-1 small text-uppercase fw-semibold">Total Customers</p>
                     <h3 class="mb-0 fw-bold font-vw">{{ $totalCustomers }}</h3>
                 </div>
-                <div class="rounded-3 p-3 admin-dashboard-icon-cyan">
+                <div class="rounded-3 p-3 admin-dashboard-icon-cyan wh-68px d-flex align-items-center justify-content-center">
                     <i class="fas fa-users fa-2x"></i>
                 </div>
             </div>
@@ -70,7 +70,7 @@
                     <p class="text-muted mb-1 small text-uppercase fw-semibold">Pending Orders</p>
                     <h3 class="mb-0 fw-bold">{{ $pendingOrders }}</h3>
                 </div>
-                <div class="rounded-3 p-3 admin-dashboard-icon-red">
+                <div class="rounded-3 p-3 admin-dashboard-icon-red wh-68px d-flex align-items-center justify-content-center">
                     <i class="fas fa-clock fa-2x"></i>
                 </div>
             </div>
@@ -135,7 +135,7 @@
     <div class="col-md-5">
         <div id="orders-status-chart-card" class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-bottom py-3">
-                <h5 class="mb-0 fw-bold"><i class="fas fa-chart-pie me-2"></i>Orders by Status</h5>
+                <h5 class="mb-0 fw-bold d-flex align-items-center" style="height: 28px;"><i class="fas fa-chart-pie me-2"></i>Orders by Status</h5>
             </div>
             <div class="card-body d-flex align-items-center justify-content-center admin-dashboard-chart-card">
                 @if($ordersByStatus->isEmpty())

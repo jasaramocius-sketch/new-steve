@@ -5,10 +5,25 @@ namespace App\Models;
 use App\Traits\Revisable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class HomePageSection extends Model
 {
-    use HasFactory, Revisable;
+    use HasFactory, Revisable, SoftDeletes;
+
+    /**
+     * Find a section by its natural key, restoring it first when it is in the trash.
+     */
+    public static function firstOrCreateRestored(array $attributes, array $values = []): self
+    {
+        $section = static::withTrashed()->firstOrCreate($attributes, $values);
+
+        if ($section->trashed()) {
+            $section->restore();
+        }
+
+        return $section;
+    }
 
     protected $fillable = [
         'section_name',

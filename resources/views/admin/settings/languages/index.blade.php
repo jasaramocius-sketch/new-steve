@@ -11,21 +11,24 @@
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
     <div class="row mb-3">
-        <div class="ap-page-actions mb-4"><a href="{{ route('admin.settings.languages.create') }}" class="btn btn-info">Add New Language</a></div>
-        <div class="col-lg-6 mb-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class=""></div>
+            <div class="ap-page-actions mb-4"><a href="{{ route('admin.settings.languages.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add New Language</a></div>
+        </div>
+        <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Default Language</h2></div>
                 <div class="card-body">
                     <form action="{{ route('admin.settings.languages.default') }}" method="POST" class="form-inline">
                         @csrf
                         <label for="default-language" class="sr-only">Default Language</label>
-                        <div class=" d-grid gap-2 gap-md-3 flex-wrap flex-md-nowrap align-items-end grid-template-columns">
-                        <select id="default-language" name="default_language" class="form-control form-select mr-2" required>
-                            @foreach ($activeLanguages as $language)
-                                <option value="{{ $language->code }}" @selected($defaultLanguage === $language->code)>{{ $language->name }}</option>
-                            @endforeach
-                        </select>
-                        <button type="submit" class="btn btn-info">Save</button>
+                        <div class=" d-grid gap-2  gap-md-3 grid-wrap flex-md-nowrap align-items-end grid-template-columns">
+                            <select id="default-language" name="default_language" class="form-control form-select mr-2" required>
+                                @foreach ($activeLanguages as $language)
+                                    <option value="{{ $language->code }}" @selected($defaultLanguage === $language->code)>{{ $language->name }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>
                         </div>
                     </form>
                 </div>
@@ -33,13 +36,12 @@
         </div>
         <div class="col-lg-6 mb-3">
             <div class="card h-100">
-                <div class="card-header"><h2 class="h6 mb-0">Import App Translations</h2></div>
+                <div class="card-header"><h2 class="h6 mb-0">Import App Translations (Import into language)</h2></div>
                 <div class="card-body">
                     <form id="language-import-form" action="{{ $activeLanguages->isNotEmpty() ? route('admin.settings.languages.import', $activeLanguages->first()) : '#' }}" method="POST" enctype="multipart/form-data" class="">
                         <div class="d-flex flex-wrap align-items-end">
                         @csrf
                         <div class="form-group mb-2 mr-2 flex-grow-1">
-                            <label for="language-import-target">Import into language</label>
                             <select id="language-import-target" class="form-control form-select" @disabled($activeLanguages->isEmpty())>
                                 @foreach ($activeLanguages as $language)
                                     <option value="{{ route('admin.settings.languages.import', $language) }}">{{ $language->name }}</option>
@@ -48,7 +50,7 @@
                             <input id="lang-file" type="file" name="lang_file" class="form-control-file mt-2" accept=".arb,application/json" required>
                         </div>
                         </div>
-                        <button type="submit" class="btn btn-info mb-2" @disabled($activeLanguages->isEmpty())>Import</button>
+                        <button type="submit" class="btn btn-primary mb-2 d-flex align-items-center gap-1" @disabled($activeLanguages->isEmpty())><i class="fas fa-file-import"></i>Import</button>
                     </form>
                 </div>
             </div>
@@ -73,35 +75,44 @@
     <div class="card">
         <div class="card-header">
             <form action="{{ route('admin.settings.languages.index') }}" method="GET" class="w-100">
-                <div class="row gutters-5 align-items-end">
-                    <div class="col-lg-3 col-md-4 col-8 mb-2">
-                        <label for="language-search" class="fs-12 text-muted mb-1">Search</label>
-                        <input id="language-search" type="text" class="form-control" name="search" value="{{ $search }}" placeholder="Name or code">
+                <div class="languages-table-nav gutters-5 align-items-end d-flex flex-wrap justify-content-start gap-2">
+                    <div class="languages-table-nav-col d-flex flex-column flex-md-row gap-2 align-items-center">
+                        <label for="language-search" class="fs-12 text-muted">Search</label>
+                        @include('admin.partials.search-form', [
+                            'embedded' => true,
+                            'placeholder' => 'Name or code',
+                            'inputId' => 'language-search',
+                            'clearRoute' => route('admin.settings.languages.index'),
+                        ])
                     </div>
-                    <div class="col-auto mb-2"><button type="submit" class="btn btn-primary btn-sm">Filter</button></div>
+                    <div class="languages-table-nav-col">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-filter"></i>Filter</button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
         <div class="card-body table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table admin-languages-table table-hover mb-0">
                 <thead><tr><th>#</th><th>Name</th><th>Code</th><th>Flutter App Lang Code</th><th>RTL</th><th>Status</th><th class="text-right">Options</th></tr></thead>
                 <tbody>
                     @forelse ($languages as $language)
                         <tr>
-                            <td>{{ $languages->firstItem() + $loop->index }}</td>
+                            <td class="w-auto admin-row-number">{{ $languages->firstItem() + $loop->index }}</td>
                             <td>{{ $language->name }}</td>
                             <td>{{ $language->code }}</td>
                             <td>{{ $language->flutter_code ?: '-' }}</td>
                             <td>
                                 <form action="{{ route('admin.settings.languages.rtl', $language) }}" method="POST" class="language-toggle-form">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm {{ $language->rtl ? 'btn-success' : 'btn-outline-secondary' }}" aria-label="Toggle RTL for {{ $language->name }}">{{ $language->rtl ? 'RTL' : 'LTR' }}</button>
+                                    <button type="submit" class="badge admin-clickable {{ $language->rtl ? 'bg-success' : 'btn-outline-secondary' }}" aria-label="Toggle RTL for {{ $language->name }}">{{ $language->rtl ? 'RTL' : 'LTR' }}</button>
                                 </form>
                             </td>
                             <td>
                                 <form action="{{ route('admin.settings.languages.status', $language) }}" method="POST" class="language-toggle-form">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm {{ $language->is_active ? 'btn-success' : 'btn-outline-secondary' }}">{{ $language->is_active ? 'Active' : 'Inactive' }}</button>
+                                    <button type="submit" class="badge admin-clickable {{ $language->is_active ? 'bg-success' : 'bg-danger' }}">{{ $language->is_active ? 'Active' : 'Inactive' }}</button>
                                 </form>
                             </td>
                             <td class="pe-3 table-action-col">

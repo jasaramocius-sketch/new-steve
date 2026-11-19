@@ -13,7 +13,9 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Tag;
 use App\Services\VehicleCatalog;
- 
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+
 class HomeController extends Controller
 {
     private const SITEMAP_CHUNK_SIZE = 1000;
@@ -50,7 +52,7 @@ class HomeController extends Controller
         $selectedIds = $categorySection?->extra_data['category_ids'] ?? [];
         $selectedIds = is_array($selectedIds) ? array_values(array_filter(array_map('intval', $selectedIds))) : [];
 
-        $counts = \Illuminate\Support\Facades\Cache::remember('home.category_counts', 3600, function () {
+        $counts = Cache::remember('home.category_counts', 3600, function () {
             return Product::statusCountsByCategoryId();
         });
 
@@ -141,31 +143,20 @@ class HomeController extends Controller
 
     public function index()
     {
-        $sections = HomePageSection::where('status', true)
-            ->orderBy('order')
-            ->get()
-            ->keyBy('section_name');
-
-        $categories = $this->getCategories($sections->get('categories_heading'));
-
-        if (! HomePageSection::where('section_name', 'top_brands_heading')->exists()) {
-            HomePageSection::create([
-                'section_name' => 'top_brands_heading',
+        HomePageSection::firstOrCreateRestored(
+            ['section_name' => 'top_brands_heading'],
+            [
                 'title' => 'Top Brands',
                 'description' => 'Explore our curated selection of premium auto part brands known for quality and reliability.',
                 'order' => 999,
                 'status' => true,
                 'extra_data' => ['brands_limit' => '6'],
-            ]);
-            $sections = HomePageSection::where('status', true)
-                ->orderBy('order')
-                ->get()
-                ->keyBy('section_name');
-        }
+            ]
+        );
 
-        if (! HomePageSection::where('section_name', 'buy_with_confidence')->exists()) {
-            HomePageSection::create([
-                'section_name' => 'buy_with_confidence',
+        HomePageSection::firstOrCreateRestored(
+            ['section_name' => 'buy_with_confidence'],
+            [
                 'title' => 'Buy With Confidence',
                 'description' => '40 years of getting it right. Here’s how we make sure you get the right part, every time.',
                 'button_text' => '1-800-555-AUTO',
@@ -178,12 +169,15 @@ class HomeController extends Controller
                     ['icon' => 'fa-solid fa-rotate-left', 'title' => '30-Day Returns', 'description' => 'Parts don’t fit or change your mind? Return within 30 days. No restocking fee on most items.'],
                     ['icon' => 'fa-solid fa-user-gear', 'title' => 'Mechanic Tested', 'description' => 'Every brand we carry is vetted by ASE-certified technicians. No junk, no knock-offs, no surprises.'],
                 ]],
-            ]);
-            $sections = HomePageSection::where('status', true)
-                ->orderBy('order')
-                ->get()
-                ->keyBy('section_name');
-        }
+            ]
+        );
+
+        $sections = HomePageSection::where('status', true)
+            ->orderBy('order')
+            ->get()
+            ->keyBy('section_name');
+
+        $categories = $this->getCategories($sections->get('categories_heading'));
 
         $exploreSection = $sections->get('explore_products');
         $exploreTabs = $this->buildExploreTabs($exploreSection);
@@ -228,8 +222,11 @@ class HomeController extends Controller
 
         $selectedPostIds = $latestPostSection?->extra_data['post_ids'] ?? [];
         $selectedPostIds = is_array($selectedPostIds) ? array_filter(array_map('intval', $selectedPostIds)) : [];
+        $useLatestPosts = (bool) ($latestPostSection?->extra_data['use_latest_posts'] ?? false);
 
-        if (! empty($selectedPostIds)) {
+        $totalAccessiblePosts = Blog::accessible()->count();
+
+        if (! $useLatestPosts && ! empty($selectedPostIds)) {
             $latestPosts = Blog::accessible()
                 ->whereIn('id', $selectedPostIds)
                 ->orderByRaw('FIELD(id, '.implode(',', $selectedPostIds).')')
@@ -238,6 +235,8 @@ class HomeController extends Controller
         } else {
             $latestPosts = Blog::accessible()->latest()->take($latestPostLimit)->get();
         }
+
+        $hasMoreLatestPosts = $totalAccessiblePosts > $latestPosts->count();
 
         $brandsSection = $sections->get('top_brands_heading');
         $brandsExtra = $brandsSection?->extra_data ?? [];
@@ -269,7 +268,7 @@ class HomeController extends Controller
         $makes = collect();
         $models = collect();
 
-        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
+        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'hasMoreLatestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
     }
 
     private function buildExploreTabs($section): array
@@ -487,9 +486,9 @@ class HomeController extends Controller
         return response()->stream(function () use ($entries, $stylesheet) {
             $out = fopen('php://output', 'w');
 
-            fwrite($out, '<?xml version="1.0" encoding="UTF-8"?>' . "\n");
-            fwrite($out, '<?xml-stylesheet type="text/xsl" href="'.$stylesheet.'"?>' . "\n");
-            fwrite($out, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n");
+            fwrite($out, '<?xml version="1.0" encoding="UTF-8"?>'."\n");
+            fwrite($out, '<?xml-stylesheet type="text/xsl" href="'.$stylesheet.'"?>'."\n");
+            fwrite($out, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n");
             foreach ($entries as $entry) {
                 fwrite($out, "  <url>\n");
                 fwrite($out, '    <loc>'.$this->xmlEscape($entry['loc'])."</loc>\n");
@@ -534,7 +533,7 @@ class HomeController extends Controller
     {
         $updatedAt = $this->sitemapQuery($type)->max('updated_at');
 
-        return $updatedAt ? \Illuminate\Support\Carbon::parse($updatedAt)->toAtomString() : null;
+        return $updatedAt ? Carbon::parse($updatedAt)->toAtomString() : null;
     }
 
     private function sitemapEntries(string $type, int $page, string $base): array

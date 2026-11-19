@@ -9,7 +9,9 @@ use App\Models\CommissionHistory;
 use App\Models\Contact;
 use App\Models\Image;
 use App\Models\Product;
+use App\Models\ProductConversation;
 use App\Models\Seller;
+use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Wishlist;
@@ -96,8 +98,12 @@ class ProductController extends Controller
 
     public static function resolveImportedSku(array $data, string $name, ?Product $existing = null): string
     {
-        if (! empty($data['sku'])) {
-            return trim($data['sku']);
+        $partNumber = trim((string) ($data['part_number'] ?? ''));
+        if ($partNumber === '') {
+            $partNumber = trim((string) ($data['sku'] ?? ''));
+        }
+        if ($partNumber !== '') {
+            return $partNumber;
         }
 
         if ($existing?->sku) {
@@ -319,10 +325,10 @@ class ProductController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
+            'shipping_cost' => 'nullable|numeric|min:0|max:99999999.99',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
@@ -340,19 +346,18 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
+        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
             (string) ($data['description'] ?? ''),
             (string) ($data['policy_text'] ?? '')
         );
-        $data['sku'] = $request->filled('sku') ? trim($request->sku) : null;
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
         $data['specifications'] = $this->parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
-        $data['slug'] = Str::slug($request->name).'-'.time();
-        $data['sku'] = $data['sku'] ?: Product::generateSku((string) $request->name);
+        $data['part_number'] = Product::generateSku((string) $request->name);
+        $data['slug'] = Str::slug($request->name.'-'.$data['part_number']);
 
         if ($request->hasFile('image')) {
             $data['main_image'] = saveImageWithWebp($request->file('image'));
@@ -411,10 +416,10 @@ class ProductController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
+            'shipping_cost' => 'nullable|numeric|min:0|max:99999999.99',
             'stock' => 'nullable|integer|min:0',
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
@@ -432,14 +437,13 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
+        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
             (string) ($data['description'] ?? ''),
             (string) ($data['policy_text'] ?? '')
         );
-        $data['sku'] = $request->filled('sku') ? trim($request->sku) : ($product->sku ?: Product::generateSku((string) $request->name, (int) $product->id));
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
         $data['specifications'] = $this->parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
@@ -711,11 +715,65 @@ class ProductController extends Controller
             'product_id' => $product->id,
         ]);
 
+        $this->createProductConversation($request, $product);
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Your message has been sent to the seller.']);
         }
 
         return back()->with('success', 'Your message has been sent to the seller.');
+    }
+
+    private function createProductConversation(Request $request, Product $product): void
+    {
+        try {
+            if (auth()->check()) {
+                $conversation = ProductConversation::query()
+                    ->where('product_id', $product->id)
+                    ->where('user_id', auth()->id())
+                    ->where('status', 'open')
+                    ->latest()
+                    ->first();
+
+                if (! $conversation) {
+                    $conversation = ProductConversation::create([
+                        'product_id' => $product->id,
+                        'user_id' => auth()->id(),
+                        'seller_id' => $product->seller_id,
+                        'subject' => 'Product inquiry: '.$product->name,
+                        'status' => 'open',
+                        'last_message_at' => now(),
+                    ]);
+                }
+
+                $conversation->messages()->create([
+                    'sender_id' => auth()->id(),
+                    'sender_type' => 'customer',
+                    'message' => $request->input('message'),
+                ]);
+
+                $conversation->update([
+                    'status' => 'open',
+                    'last_message_at' => now(),
+                ]);
+
+                return;
+            }
+
+            SupportTicket::create([
+                'user_id' => null,
+                'name' => $request->input('name'),
+                'email' => $request->input('email'),
+                'subject' => 'Product inquiry: '.($product->name ?? 'Product'),
+                'category' => 'Product',
+                'priority' => 'medium',
+                'status' => 'open',
+                'message' => "Product: {$product->name}\nProduct URL: ".route('product', $product->slug)."\n\n{$request->input('message')}",
+            ]);
+        } catch (\Throwable $e) {
+            // Never block a product inquiry if the support module is unavailable.
+            logger()->warning('Support conversation could not be created from product inquiry: '.$e->getMessage());
+        }
     }
 
     public function importForm()
@@ -734,7 +792,7 @@ class ProductController extends Controller
         $header = fgetcsv($handle, 0, ',');
 
         $header = array_map('trim', $header);
-        $expected = ['id', 'name', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'buy_return_policy', 'return_policy', 'features', 'feature_list', 'reviews', 'reviews_data', 'specifications', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $expected = ['id', 'name', 'part_number', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'buy_return_policy', 'return_policy', 'features', 'feature_list', 'reviews', 'reviews_data', 'specifications', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
 
         $colMap = [];
         foreach ($header as $i => $col) {
@@ -875,11 +933,11 @@ class ProductController extends Controller
 
             if ($existingProduct) {
                 $insertData['slug'] = $existingProduct->slug;
-                $insertData['sku'] = self::resolveImportedSku($data, $data['name'], $existingProduct);
+                $insertData['part_number'] = self::resolveImportedSku($data, $data['name'], $existingProduct);
             } else {
-                $insertData['slug'] = Str::slug($data['name']).'-'.time().'-'.$imported;
                 $insertData['added_by'] = 'admin';
-                $insertData['sku'] = self::resolveImportedSku($data, $data['name']);
+                $insertData['part_number'] = self::resolveImportedSku($data, $data['name']);
+                $insertData['slug'] = Str::slug($data['name']).'-'.time().'-'.$imported;
             }
 
             if (! empty($data['image']) && filter_var($data['image'], FILTER_VALIDATE_URL)) {
@@ -984,7 +1042,7 @@ class ProductController extends Controller
 
     public function downloadSampleCsv()
     {
-        $headers = ['id', 'name', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $headers = ['id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
         $rows = [
             ['', 'Brake Pads Set', 'bp-1001', '49.99', '69.99', 'Brakes', '100', 'High quality ceramic brake pads', 'New', 'none', '1', '1', 'https://example.com/images/brake-pads.jpg', 'Duralast', 'AutoZone Seller', '2020', 'Toyota', 'Camry', 'https://example.com/images/brake-pads-2.jpg|https://example.com/images/brake-pads-3.jpg', '<p>We offer a 30-day return policy for unused items in original packaging.</p>', "Premium quality\nEasy installation", "Material::Ceramic\nFriction::Low dust", '[{"name":"Ava","rating":5,"text":"Perfect fit and fast delivery.","deleted":false}]', 'Overview', 'Specifications', 'Reviews'],
             ['', 'Oil Filter', '', '12.99', '', 'Engine', '250', '', 'Sale', 'none', '1', '0', '', 'Apex Gasket', 'AutoZone Seller', '2019', 'Honda', 'Civic', '', '<p>Items can be returned within 14 days if they are not installed or damaged.</p>', '', 'Thread::M20x1.5', '[{"name":"Noah","rating":4,"text":"Works well and shipped quickly.","deleted":false}]', '', '', ''],
@@ -1008,7 +1066,7 @@ class ProductController extends Controller
 
     public function exportCsv()
     {
-        $headers = ['id', 'name', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $headers = ['id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
 
         $callback = function () use ($headers) {
             set_time_limit(0);
@@ -1037,7 +1095,7 @@ class ProductController extends Controller
                         fputcsv($handle, [
                             $p->id,
                             $p->name,
-                            $p->sku ?? '',
+                            $p->part_number ?? '',
                             $p->price,
                             $p->old_price ?? '',
                             $p->category->name ?? '',

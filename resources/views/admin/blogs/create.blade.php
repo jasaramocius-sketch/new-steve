@@ -102,9 +102,29 @@
                                     </button>
                                     <a href="{{ route('admin.blogs.index') }}"
                                         class="btn btn-primary steve-btn gap-1">
+                                        <i class="fas fa-times"></i>
                                         Cancel
                                     </a>
                                 </div>
+                            </div>
+                        </div>
+                        {{-- Author --}}
+                        <div class="card border shadow-none mb-3">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0">Author</h6>
+                            </div>
+                            <div class="card-body">
+                                <select
+                                    name="author"
+                                    class="form-select @error('author') is-invalid @enderror">
+                                    @foreach($blogAuthors as $author)
+                                        <option value="{{ $author }}" @selected(old('author', $defaultAuthor) === $author)>{{ $author }}</option>
+                                    @endforeach
+                                </select>
+                                @error('author')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Shown on the blog page as "By: ...". Your logged-in name is selected by default.</small>
                             </div>
                         </div>
                         {{-- Category --}}
@@ -146,8 +166,8 @@
                                 <button type="button"
                                     class="btn btn-outline-primary"
                                     onclick="impOpen_blog_image()">
-                                    <i class="fas fa-images me-1"></i>
-                                    Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i>
+                                    Browse
                                 </button>
                                 @error('image')
                                     <div class="text-danger small mt-2">

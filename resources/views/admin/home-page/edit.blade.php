@@ -23,7 +23,7 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white border-radius-0">
                     <h5 class="mb-0">Section Details</h5>
                 </div>
                 <div class="card-body">
@@ -52,7 +52,7 @@
 
                     @if($section->section_name === 'latest_post')
                         <div class="alert alert-info">
-                            <strong>Latest Post section:</strong> <strong>Title</strong> = section heading, <strong>Description</strong> = intro text. The posts themselves come from published blog posts (manage them under the Blog menu); use the posts-count field below to control how many are shown.
+                            <strong>Latest Post section:</strong> <strong>Title</strong> = section heading, <strong>Description</strong> = intro text. Choose whether to show the latest published blog posts automatically or pick specific posts. Use the posts-count field below to control how many are shown.
                         </div>
                     @endif
 
@@ -116,7 +116,7 @@
                             $serviceItems = $section->extra_data['services'] ?? config('homepage.services', []);
                         @endphp
                         <div class="card mb-3 border-info">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-info text-white border-radius-0">
                                 <h5 class="mb-0">Service Cards</h5>
                             </div>
                             <div class="card-body">
@@ -132,7 +132,7 @@
                                     <input type="hidden" name="services[{{ $i }}][image_from_manager]" id="service_image_from_manager_{{ $i }}">
                                     <div id="impPreview_service_{{ $i }}" class="d-none mt-2"></div>
                                     <button type="button" class="btn btn-sm btn-outline-primary mt-2 mb-3" onclick="impOpen_service_{{ $i }}()">
-                                        <i class="fas fa-images me-1"></i> Change Image
+                                        <i class="fas fa-cloud-upload-alt me-1"></i> Change Image
                                     </button>
                                     <div class="row g-2">
                                         <div class="col-md-6">
@@ -190,7 +190,7 @@
                                                 <div id="impPreview_banner_{{ $i }}" class="d-none mt-1"></div>
                                                 <div class="d-flex gap-2 mt-1 flex-wrap">
                                                     <button type="button" class="btn btn-outline-primary" onclick="impOpen_banner_{{ $i }}()">
-                                                        <i class="fas fa-images me-1"></i> Browse Image Manager
+                                                        <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                                     </button>
                                                     <button type="button" id="clear_btn_banner_{{ $i }}" data-preview="impPreview_banner_{{ $i }}" class="btn btn-sm btn-outline-danger {{ !empty($banner['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('banners_image_from_manager_{{ $i }}','impPreview_banner_{{ $i }}','.banner-image-current-{{ $i }}')">
                                                         <i class="fas fa-times me-1"></i> Clear
@@ -272,7 +272,7 @@
                                     <div class="border rounded p-3 mb-3 service-item">
                                         <div class="d-flex justify-content-between mb-2">
                                             <strong>Service #{{ $i+1 }}</strong>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.service-item').remove();"><i class="fa fa-trash"></i></button>
+                                            <button type="button" class="btn btn-outline-danger" onclick="this.closest('.service-item').remove();"><i class="fa fa-trash"></i></button>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-4 mb-2">
@@ -285,7 +285,7 @@
                                                     <img src="{{ storedImageUrl($svc['image'], 'assets/images/services') }}" style="max-width:100px;height:60px;object-fit:contain;border:1px solid #ddd;">
                                                 </div>
                                                 @endif
-                                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_services_{{ $i }}()">Browse Image Manager</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_services_{{ $i }}()"><i class="fas fa-cloud-upload-alt me-1"></i>Browse</button>
                                                 <button type="button" class="btn btn-sm btn-outline-danger {{ !empty($svc['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('services_image_from_manager_{{ $i }}','impPreview_services_{{ $i }}','.svc-current-{{ $i }}',null); this.classList.add('d-none');">Clear</button>
                                             </div>
                                             <div class="col-md-4 mb-2">
@@ -332,7 +332,7 @@
                                                     <img src="{{ storedImageUrl($p['image'], 'assets/images/partner') }}" style="max-width:120px;height:60px;object-fit:contain;border:1px solid #ddd;background:#fff;">
                                                 </div>
                                                 @endif
-                                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_{{ $i }}()">Browse Image Manager</button>
+                                                <button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_{{ $i }}()">Browse</button>
                                                 <button type="button" class="btn btn-sm btn-outline-danger {{ !empty($p['image']) ? '' : 'd-none' }}" onclick="clearPickerImage('partners_image_from_manager_{{ $i }}','impPreview_partners_{{ $i }}','.partner-current-{{ $i }}',null); this.classList.add('d-none');">Clear</button>
                                             </div>
                                             <div class="col-md-4 mb-2">
@@ -365,7 +365,7 @@
                             ];
                         @endphp
                         <div class="card mb-3 border-info">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-info text-white border-radius-0">
                                 <h5 class="mb-0">Hotline Copy</h5>
                             </div>
                             <div class="card-body">
@@ -380,7 +380,7 @@
                             </div>
                         </div>
                         <div class="card mb-3 border-info">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-info text-white border-radius-0">
                                 <h5 class="mb-0">Trust Cards</h5>
                             </div>
                             <div class="card-body">
@@ -430,7 +430,7 @@
                             <div id="impPreview_deal_of_day_image" class="d-none mt-2"></div>
                             <div class="d-flex gap-2 mt-1">
                                 <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_section_image').value='0'; impOpen_deal_of_day_image()">
-                                    <i class="fas fa-images me-1"></i> Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                 </button>
                                 <button type="button" id="clear_btn_deal_of_day_image" data-preview="impPreview_deal_of_day_image" data-current=".deal-image-current" class="btn btn-outline-danger {{ $section->image ? '' : 'd-none' }}" onclick="clearPickerImage('image_from_manager_deal_of_day_image','impPreview_deal_of_day_image','.deal-image-current','remove_section_image')">
                                     <i class="fas fa-times me-1"></i> Clear Image
@@ -456,7 +456,7 @@
                             <div id="impPreview_deal_bg_image" class="d-none mt-2"></div>
                             <div class="d-flex gap-2 mt-1">
                                 <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_deal_bg_image').value='0'; impOpen_deal_bg_image()">
-                                    <i class="fas fa-images me-1"></i> Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                 </button>
                                 <button type="button" id="clear_btn_deal_bg_image" data-preview="impPreview_deal_bg_image" data-current=".home-image-current" class="btn btn-sm btn-outline-danger {{ $dealBgImage ? '' : 'd-none' }}" onclick="clearPickerImage('deal_bg_image_from_manager_deal_of_day','impPreview_deal_bg_image','.home-image-current','remove_deal_bg_image')">
                                     <i class="fas fa-times me-1"></i> Clear Image
@@ -471,7 +471,17 @@
                             $extra = $section->extra_data ?? [];
                             $allPosts = \App\Models\Blog::where('status', 'published')->orderByDesc('created_at')->get();
                             $selectedPostIds = collect($extra['post_ids'] ?? [])->map(fn($id) => (int) $id)->all();
+                            $useLatestPosts = (bool) ($extra['use_latest_posts'] ?? false);
                         @endphp
+                        <div class="form-group mb-3">
+                            <label for="use_latest_posts" class="form-label"><strong>Post Source</strong></label>
+                            <select name="use_latest_posts" id="use_latest_posts" class="form-control form-select">
+                                <option value="1" {{ $useLatestPosts ? 'selected' : '' }}>Show latest published posts automatically</option>
+                                <option value="0" {{ ! $useLatestPosts ? 'selected' : '' }}>Select specific posts manually</option>
+                            </select>
+                            <small class="text-muted d-block">Automatic mode always shows the most recent published posts. Manual mode shows only the posts you select below.</small>
+                        </div>
+
                         <div class="form-group mb-3">
                             <label for="posts_count" class="form-label"><strong>Number of Posts to Show</strong></label>
                             <select name="posts_count" id="posts_count" class="form-control form-select">
@@ -479,19 +489,19 @@
                                     <option value="{{ $n }}" {{ (int)($extra['posts_count'] ?? 2) === $n ? 'selected' : '' }}>{{ $n }} Posts</option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block">How many latest published blog posts to display on the home page.</small>
+                            <small class="text-muted d-block">How many blog posts to display in this section on the home page.</small>
                         </div>
 
-                        <div class="form-group mb-3">
+                        <div class="form-group mb-3" id="latest-post-manual-wrap">
                             <label for="post_ids" class="form-label"><strong>Select Specific Posts for Home Page</strong></label>
-                            <select name="post_ids[]" id="post_ids" class="form-control" multiple size="8">
+                            <select name="post_ids[]" id="post_ids" class="form-control h-100" multiple size="8">
                                 @foreach($allPosts as $post)
                                     <option value="{{ $post->id }}" {{ in_array($post->id, $selectedPostIds) ? 'selected' : '' }}>
                                         {{ $post->title }}
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block">Hold Ctrl/Cmd to select multiple posts and choose exactly which ones appear (shown in the order selected). Leave empty to use the count-based setting above.</small>
+                            <small class="text-muted d-block">Hold Ctrl/Cmd to select multiple posts and choose exactly which ones appear (shown in the order selected). Used only when "Select specific posts manually" is chosen.</small>
                         </div>
                         @endif
 
@@ -552,7 +562,7 @@
                             $tabs = $extra['tabs'] ?? [];
                         @endphp
                         <div class="card mb-3 border-info">
-                            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center border-radius-0">
                                 <h5 class="mb-0">Tab-wise Product Selection</h5>
                                 <button type="button" class="btn btn-sm btn-light steve-btn" onclick="addTab()">+ Add Tab</button>
                             </div>
@@ -726,7 +736,7 @@
                             <div id="impPreview_home_image" class="d-none mt-2"></div>
                             <div class="d-flex gap-2 mt-1">
                                 <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_section_image').value='0'; impOpen_home_image()">
-                                    <i class="fas fa-images me-1"></i> Browse Image Manager
+                                    <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                 </button>
                                 <button type="button" id="clear_btn_home_image" data-preview="impPreview_home_image" data-current=".home-image-current" class="btn btn-outline-danger {{ $section->image ? '' : 'd-none' }}" onclick="clearPickerImage('image_from_manager_home_image','impPreview_home_image','.home-image-current','remove_section_image')">
                                     <i class="fas fa-times me-1"></i> Clear Image
@@ -762,7 +772,7 @@
 
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-info text-white">
+                <div class="card-header bg-info text-white border-radius-0">
                     <h5 class="mb-0">Section Information</h5>
                 </div>
                 <div class="card-body">
@@ -882,11 +892,20 @@ function enforcePostLimit() {
         }
     }
 }
+function toggleLatestPostMode() {
+    var modeSel = document.getElementById('use_latest_posts');
+    var manualWrap = document.getElementById('latest-post-manual-wrap');
+    if (!modeSel || !manualWrap) return;
+    manualWrap.style.display = modeSel.value === '1' ? 'none' : '';
+}
 document.addEventListener('DOMContentLoaded', function () {
     var countSel = document.getElementById('posts_count');
     var postSel = document.getElementById('post_ids');
+    var modeSel = document.getElementById('use_latest_posts');
     if (countSel) countSel.addEventListener('change', enforcePostLimit);
     if (postSel) postSel.addEventListener('change', enforcePostLimit);
+    if (modeSel) modeSel.addEventListener('change', toggleLatestPostMode);
+    toggleLatestPostMode();
 });
 </script>
 
@@ -918,7 +937,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     '<input type="hidden" name="partners[' + i + '][existing_image]" value="">' +
                     '<input type="hidden" name="partners[' + i + '][image_from_manager]" id="partners_image_from_manager_' + i + '">' +
                     '<div id="impPreview_partners_' + i + '" class="d-none mb-2"></div>' +
-                    '<button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse Image Manager</button>' +
+                    '<button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse</button>' +
                     '<button type="button" class="btn btn-outline-danger d-none" onclick="clearPickerImage(\'partners_image_from_manager_' + i + '\',\'impPreview_partners_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button>' +
                 '</div>' +
                 '<div class="col-md-4 mb-2">' +
@@ -945,7 +964,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     '<input type="hidden" name="services[' + i + '][existing_image]" value="">' +
                     '<input type="hidden" name="services[' + i + '][image_from_manager]" id="services_image_from_manager_' + i + '">' +
                     '<div id="impPreview_services_' + i + '" class="d-none mb-2"></div>' +
-                    '<button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_services_' + i + '()">Browse Image Manager</button>' +
+                    '<button type="button" class="btn btn-sm btn-outline-primary" onclick="impOpen_services_' + i + '()">Browse</button>' +
                     '<button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'services_image_from_manager_' + i + '\',\'impPreview_services_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button>' +
                 '</div>' +
                 '<div class="col-md-4 mb-2">' +
@@ -1000,7 +1019,7 @@ if (typeof window.addPartner !== 'function') {
         var items = container.querySelectorAll('.partner-item');
         if (items.length >= 20) { alert('Maximum 20 partners allowed.'); return; }
         var i = items.length;
-        var html = '<div class="border rounded p-3 mb-3 partner-item"><div class="d-flex justify-content-between mb-2"><strong>Partner #' + (i+1) + '</strong><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'.partner-item\').remove();"><i class="fa fa-trash"></i></button></div><div class="row"><div class="col-md-4 mb-2"><label class="form-label">Logo</label><input type="hidden" name="partners[' + i + '][existing_image]" value=""><input type="hidden" name="partners[' + i + '][image_from_manager]" id="partners_image_from_manager_' + i + '"><div id="impPreview_partners_' + i + '" class="d-none mb-2"></div><button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse Image Manager</button><button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'partners_image_from_manager_' + i + '\',\'impPreview_partners_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button></div><div class="col-md-4 mb-2"><label class="form-label">Name</label><input type="text" name="partners[' + i + '][name]" class="form-control"></div><div class="col-md-4 mb-2"><label class="form-label">URL (optional)</label><input type="text" name="partners[' + i + '][url]" class="form-control"></div></div></div>';
+        var html = '<div class="border rounded p-3 mb-3 partner-item"><div class="d-flex justify-content-between mb-2"><strong>Partner #' + (i+1) + '</strong><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'.partner-item\').remove();"><i class="fa fa-trash"></i></button></div><div class="row"><div class="col-md-4 mb-2"><label class="form-label">Logo</label><input type="hidden" name="partners[' + i + '][existing_image]" value=""><input type="hidden" name="partners[' + i + '][image_from_manager]" id="partners_image_from_manager_' + i + '"><div id="impPreview_partners_' + i + '" class="d-none mb-2"></div><button type="button" class="btn btn-outline-primary" onclick="impOpen_partners_' + i + '()">Browse</button><button type="button" class="btn btn-sm btn-outline-danger d-none" onclick="clearPickerImage(\'partners_image_from_manager_' + i + '\',\'impPreview_partners_' + i + '\',null,null); this.classList.add(\'d-none\');">Clear</button></div><div class="col-md-4 mb-2"><label class="form-label">Name</label><input type="text" name="partners[' + i + '][name]" class="form-control"></div><div class="col-md-4 mb-2"><label class="form-label">URL (optional)</label><input type="text" name="partners[' + i + '][url]" class="form-control"></div></div></div>';
         var d = document.createElement('div');
         d.innerHTML = html;
         container.appendChild(d.firstElementChild);

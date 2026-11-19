@@ -16,9 +16,10 @@ class LocationController extends Controller
             return response()->json(['states' => []]);
         }
 
-        $states = Cache::rememberForever('address_states_'.mb_strtolower($countryName), function () use ($countryName) {
+        $states = Cache::rememberForever('address_states_v2_'.mb_strtolower($countryName), function () use ($countryName) {
             return State::query()
-                ->whereHas('country', fn ($q) => $q->whereRaw('LOWER(name) = ?', [mb_strtolower($countryName)]))
+                ->where('status', true)
+                ->whereHas('country', fn ($q) => $q->where('status', true)->whereRaw('LOWER(name) = ?', [mb_strtolower($countryName)]))
                 ->orderBy('name')
                 ->pluck('name')
                 ->all();
@@ -36,12 +37,14 @@ class LocationController extends Controller
         }
 
         $cities = Cache::rememberForever(
-            'address_cities_'.mb_strtolower($countryName).'_'.mb_strtolower($stateName),
+            'address_cities_v2_'.mb_strtolower($countryName).'_'.mb_strtolower($stateName),
             function () use ($countryName, $stateName) {
                 return City::query()
+                    ->where('status', true)
                     ->whereHas('state', function ($q) use ($countryName, $stateName) {
-                        $q->whereRaw('LOWER(name) = ?', [mb_strtolower($stateName)])
-                            ->whereHas('country', fn ($cq) => $cq->whereRaw('LOWER(name) = ?', [mb_strtolower($countryName)]));
+                        $q->where('status', true)
+                            ->whereRaw('LOWER(name) = ?', [mb_strtolower($stateName)])
+                            ->whereHas('country', fn ($cq) => $cq->where('status', true)->whereRaw('LOWER(name) = ?', [mb_strtolower($countryName)]));
                     })
                     ->orderBy('name')
                     ->pluck('name')

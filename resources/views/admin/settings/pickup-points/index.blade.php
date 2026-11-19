@@ -8,6 +8,7 @@
     ])
 @endsection
 @section('content')
+
 <div class="container-fluid px-15px px-lg-25px">
     <div class="ap-page-header mb-3">
         <!-- <nav class="ap-breadcrumb" aria-label="Breadcrumb">
@@ -26,16 +27,17 @@
 
     <div class="card">
         <div class="card-header">
-            <form action="{{ route('admin.settings.pickup-points.index') }}" method="GET">
-                <div class="d-flex flex-wrap gap-3 align-items-end">
-                    <div class="col d-flex d-sm-flex flex-row align-items-center gap-2">
-                        <label class="fs-12 text-muted" for="pickup-search">Name</label>
-                        <input id="pickup-search" type="text" class="form-select" name="search" value="{{ $search }}" placeholder="Name, manager or location">
-                    <div class="col"><button type="submit" class="btn btn-sm btn-primary">Filter</button></div>
-                    </div>
-                    <div class=""><a href="{{ route('admin.settings.pickup-points.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add New Pick-up Point</a></div>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div style="width: 100%; max-width: 360px;">
+                    @include('admin.partials.search-form', [
+                        'route' => route('admin.settings.pickup-points.index'),
+                        'placeholder' => 'Search pickup points...',
+                    ])
                 </div>
-            </form>
+                <div>
+                    <a href="{{ route('admin.settings.pickup-points.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add New Pick-up Point</a>
+                </div>
+            </div>
         </div>
         <div class="card-body table-responsive">
             <table class="table table-hover mb-0">
@@ -43,7 +45,7 @@
                 <tbody>
                     @forelse ($pickupPoints as $pickupPoint)
                         <tr>
-                            <td>{{ $pickupPoints->firstItem() + $loop->index }}</td>
+                            <td class="admin-row-number">{{ $pickupPoints->firstItem() + $loop->index }}</td>
                             <td>{{ $pickupPoint->name }}</td>
                             <td>{{ $pickupPoint->manager }}</td>
                             <td>{{ $pickupPoint->location }}</td>
@@ -51,7 +53,7 @@
                             <td>
                                 <form action="{{ route('admin.settings.pickup-points.status', $pickupPoint) }}" method="POST" class="pickup-status-form">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm {{ $pickupPoint->is_open ? 'btn-success' : 'btn-outline-secondary' }}">{{ $pickupPoint->is_open ? 'Open' : 'Closed' }}</button>
+                                    <button type="submit" class="badge btn-sm {{ $pickupPoint->is_open ? 'bg-success' : 'bg-danger' }}">{{ $pickupPoint->is_open ? 'Open' : 'Closed' }}</button>
                                 </form>
                             </td>
                             <td class="pe-3 table-action-col">

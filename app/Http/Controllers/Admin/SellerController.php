@@ -35,11 +35,12 @@ class SellerController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'nullable|string|max:255',
+            'shipping_cost' => 'nullable|numeric|min:0|max:99999999.99',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'location', 'description']);
+        $data = $request->only(['name', 'location', 'shipping_cost', 'description']);
         $data['slug'] = Str::slug($request->name).'-'.time();
         $data['status'] = $request->boolean('status');
 
@@ -72,11 +73,12 @@ class SellerController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'nullable|string|max:255',
+            'shipping_cost' => 'nullable|numeric|min:0|max:99999999.99',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'location', 'description']);
+        $data = $request->only(['name', 'location', 'shipping_cost', 'description']);
         $data['slug'] = Str::slug($request->name).'-'.$seller->id;
         $data['status'] = $request->boolean('status');
 

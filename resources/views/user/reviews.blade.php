@@ -15,16 +15,14 @@
     <h4 class="h4-style mb-0">My Reviews</h4>
     <a href="{{ route('shop') }}" class="btn btn-primary steve-btn">Continue Shopping</a>
 </div>
-<div class="view-reviews-filter d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
-    <form method="GET" action="{{ route('user.reviews') }}" class="d-flex gap-2 align-items-center" id="reviewFilterForm">
-        @include('admin.partials.search-form', [
-            'route' => route('user.reviews'),
-            'placeholder' => 'Search...',
-            'size' => 'sm',
-            'showClear' => !empty($search),
-            'clearRoute' => route('user.reviews', array_filter(['status' => $statusFilter ?? '']))
-        ])
-    </form>
+<div class="view-reviews-filter d-grid grid-template-columns-auto align-items-center justify-content-between mb-3 gap-2 flex-wrap">
+    @include('admin.partials.search-form', [
+        'route' => route('user.reviews'),
+        'placeholder' => 'Search...',
+        'size' => 'sm',
+        'showClear' => !empty($search),
+        'clearRoute' => route('user.reviews', array_filter(['status' => $statusFilter ?? '']))
+    ])
     <form method="GET" action="{{ route('user.reviews') }}" id="statusFilterForm">
         <input type="hidden" name="search" value="{{ $search ?? '' }}">
         <select name="status" class="form-select" onchange="this.form.submit()">
@@ -57,6 +55,21 @@
                         @endif
                         <div class="review-page-table-product-name">
                             <a href="{{ route('product', $item['product_slug']) }}" class="fw-semibold text-decoration-none">{{ $item['product_name'] }}</a>
+                            @if($item['status'] === 'pending')
+                                <div class="small text-muted">
+                                    @if(($item['pending_count'] ?? 1) > 1)
+                                        {{ $item['pending_count'] }} purchases pending review
+                                    @elseif(!empty($item['order_number']))
+                                        Order #{{ $item['order_number'] }}
+                                    @else
+                                        Purchase pending review
+                                    @endif
+                                </div>
+                            @elseif(!empty($item['order_number']))
+                                <div class="small text-muted">
+                                    Order #{{ $item['order_number'] }}@if(!empty($item['order_date'])) · {{ $item['order_date'] }}@endif
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </td>
@@ -205,7 +218,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary fw-600 steve-btn" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary fw-600 steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Close</button>
         </div>
       </div>
 
@@ -245,8 +258,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary fw-600 w-100px steve-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary fw-600 w-100px steve-btn" id="reviewModalSubmitBtn">Submit Review</button>
+          <button type="button" class="btn btn-primary fw-600 w-100px steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
+          <button type="button" class="btn btn-primary fw-600 w-100px steve-btn gap-1" id="reviewModalSubmitBtn"><i class="fa-solid fa-paper-plane"></i>Submit Review</button>
         </div>
       </form>
     </div>

@@ -27,7 +27,7 @@
     <table class="table table--custom table--responsive-lg table-hover">
         <thead>
             <tr>
-                <th>Return No.</th>
+                <th>Rtn No.</th>
                 <th>Order</th>
                 <th>Product</th>
                 <th>Qty</th>

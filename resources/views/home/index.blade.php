@@ -427,13 +427,14 @@
                         </a>
                         <button class="latest-posts-next steve-btn"><i class="fas fa-chevron-right"></i></button>
                     </div>
-                    @endif
-                    <!-- <div class="flex-column" data-wow-delay=".2s">
+                    @elseif($latestPosts->isNotEmpty() && ($hasMoreLatestPosts ?? false))
+                    <div class="flex-column" data-wow-delay=".2s">
                         <a href="{{ route('blog') }}" class="a-tag-hover-color">
                             {{ $sections->get('latest_post')?->button_text ??  'View More' }}
-                            <i class="fas fa-arrow-right ms-1"></i> 
+                            <i class="fas fa-arrow-right ms-1"></i>
                         </a>
-                    </div> -->
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -506,9 +507,9 @@
                 </div>
             </div>
         </div>
-        <div class="gs-brands row justify-content-center">
+        <div class="gs-brands gs-brands-inner-section row justify-content-center">
             @foreach($brands as $brand)
-            <div class="col-lg-4 col-md-6 col-sm-6 wow-replaced p-0" data-wow-delay=".1s">
+            <div class="gs-brands-col wow-replaced p-0" data-wow-delay=".1s">
                 <a href="{{ $brand->website ?: (filled($brand->slug) ? route('brand', ['slug' => $brand->slug]) : route('brands')) }}">
                     <div class="single-brands">
                         {!! imgTag(storedPath($brand->image, 'assets/images/brands'), $brand->name) !!}
@@ -559,11 +560,11 @@
         </div>
 
         <div class="row mt-5 justify-content-center py-4 mx-0" style="background: #f8f8f8; border-radius: 12px;">
-            <div class="col d-flex align-items-center justify-content-between flex-column flex-md-row gap-2">
+            <div class="buy-confidence-cta col d-flex align-items-center justify-content-between flex-column flex-md-row gap-2">
                 <p class="col d-flex gap-2 flex-column flex-md-row" style="margin:0; font-size:1rem; color:#333; line-height:1.7;">
-                    <i class="las la-search text-primary mr-2" style="font-size:26px;" aria-hidden="true"></i><strong>{{ $buyConfidenceExtra['hotline_heading'] ?? 'Not sure what fits?' }}</strong> {{ $buyConfidenceExtra['hotline_description'] ?? 'Call our parts hotline with your VIN and a real mechanic will match you. We read the diagrams so you don’t have to.' }}
+                    <i class="las la-search text-primary mr-2 d-flex align-items-center" style="font-size:26px;" aria-hidden="true"></i><strong>{{ $buyConfidenceExtra['hotline_heading'] ?? 'Not sure what fits?' }}</strong> {{ $buyConfidenceExtra['hotline_description'] ?? 'Call our parts hotline with your VIN and a real mechanic will match you. We read the diagrams so you don’t have to.' }}
                 </p>
-                <div class="">
+                <div class="d-flex justify-content-center w-auto">
                     <a href="{{ $buyConfidenceSection?->button_url ?? 'tel:1800555' }}" class="template-btn steve-btn w-100 wow-replaced" style="font-weight:700; font-size:1.15rem; color: #fff; text-decoration:none;">{{ $buyConfidenceSection?->button_text ?? '1-800-555-AUTO' }}</a>
                 </div>
             </div>

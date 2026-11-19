@@ -19,8 +19,8 @@
         <div class="ap-page-header-row"><h1 class="ap-page-title">Payment Methods</h1></div>
     </div> -->
 
-    @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
-    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+    <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif -->
     <div class="alert alert-info">
         Credentials are encrypted when saved. The Stripe keys are used by the hosted Stripe Checkout at checkout (enable Stripe Payment in System Settings). The other gateways are stored for future use and are not yet active at checkout.
     </div>
@@ -58,6 +58,9 @@
                                             @if ($isSecret) data-lpignore="true" data-1p-ignore @endif
                                             @required(($field['required'] ?? false) && ! $hasSavedValue)
                                         >
+                                    </div>
+                                    <div class="col">
+
                                         @error($field['name']) <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                                         @if ($hasSavedValue) <small class="text-muted d-block mt-1">Saved securely. Leave blank to keep the current secret; the full value is never displayed.</small> @endif
                                         @if (!empty($field['help'])) <div class="alert alert-primary mt-2 mb-0" role="note">{{ $field['help'] }}</div> @endif
@@ -69,16 +72,15 @@
                                 <div class="form-group row">
                                     <div class="col-md-4"><label class="col-form-label" for="{{ $method['provider'] }}-sandbox">{{ $method['title'] }} Sandbox Mode</label></div>
                                     <div class="col-md-8 d-flex align-items-center">
-                                        <div class="custom-control custom-switch">
-                                            <input id="{{ $method['provider'] }}-sandbox" type="checkbox" class="custom-control-input" name="{{ $method['sandbox'] }}" value="1" @checked($method['sandboxEnabled'])>
-                                            <label class="custom-control-label" for="{{ $method['provider'] }}-sandbox">Sandbox</label>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" id="{{ $method['provider'] }}-sandbox" type="checkbox" role="switch" name="{{ $method['sandbox'] }}" value="1" @checked($method['sandboxEnabled'])>
                                         </div>
                                     </div>
                                 </div>
                             @endif
 
                             <div class="form-group mb-0 text-right">
-                                <button type="submit" class="btn btn-sm btn-primary  d-flex align-items-center gap-1"> <i class="fas fa-save"></i>Save</button>
+                                <button type="submit" class="btn btn-primary  d-flex align-items-center gap-1"> <i class="fas fa-save"></i>Save</button>
                             </div>
                         </form>
                     </div>

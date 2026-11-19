@@ -106,69 +106,53 @@
 </style>
 
 <!-- Banner Hero Section -->
-<section class="gs-breadcrumb-section" style="background-image: url('{{ asset('assets/images/1724480495Imagexxxxxpng.png') }}'); background-size: cover; background-position: center;">
-  <div class="container">
-    <div class="content-wrapper">
-      <h2 class="breadcrumb-title">
-        @if(isset($pageTitle))
-          {{ $pageTitle }}
-        @elseif(!empty($currentBrand))
-          {{ $currentBrand->name }}
-        @elseif(isset($currentChildcategory))
-          {{ $currentChildcategory->name }}
-        @elseif(isset($currentSubcategory))
-          {{ $currentSubcategory->name }}
-        @elseif(isset($currentCategory))
-          {{ $currentCategory->name }}
-        @else
-          Shop
-        @endif
-      </h2>
-      <ul class="bread-menu">
-        <li><a href="{{ route('home') }}">Home</a></li>
+@php
+    if (isset($pageTitle)) {
+        $breadcrumbTitle = $pageTitle;
+    } elseif (!empty($currentBrand)) {
+        $breadcrumbTitle = $currentBrand->name;
+    } elseif (isset($currentChildcategory)) {
+        $breadcrumbTitle = $currentChildcategory->name;
+    } elseif (isset($currentSubcategory)) {
+        $breadcrumbTitle = $currentSubcategory->name;
+    } elseif (isset($currentCategory)) {
+        $breadcrumbTitle = $currentCategory->name;
+    } else {
+        $breadcrumbTitle = 'Shop';
+    }
 
-        @if(!empty($currentBrand))
-            <li><a href="{{ route('brands') }}">Brands</a></li>
-            <li style="color: var(--primary);">{{ $currentBrand->name }}</li>
-        @else
-            @if(isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory))
-                <li><a href="{{ route('shop') }}">Shop</a></li>
-            @else
-                <li style="color: var(--primary);">Shop</li>
-            @endif
+    $breadcrumbItems = [['label' => 'Home', 'url' => route('home')]];
 
-            @if(isset($currentCategory))
-                @if(isset($currentSubcategory) || isset($currentChildcategory))
-                    <li>
-                        <a href="{{ route('category', ['slug' => $currentCategory->slug]) }}">
-                            {{ $currentCategory->name }}
-                        </a>
-                    </li>
-                @else
-                    <li style="color: var(--primary);">{{ $currentCategory->name }}</li>
-                @endif
-            @endif
+    if (!empty($currentBrand)) {
+        $breadcrumbItems[] = ['label' => 'Brands', 'url' => route('brands')];
+        $breadcrumbItems[] = ['label' => $currentBrand->name];
+    } else {
+        $breadcrumbItems[] = (isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory))
+            ? ['label' => 'Shop', 'url' => route('shop')]
+            : ['label' => 'Shop'];
 
-            @if(isset($currentSubcategory))
-                @if(isset($currentChildcategory))
-                    <li>
-                        <a href="{{ route('category', ['slug' => $currentSubcategory->slug]) }}">
-                            {{ $currentSubcategory->name }}
-                        </a>
-                    </li>
-                @else
-                    <li style="color: var(--primary);">{{ $currentSubcategory->name }}</li>
-                @endif
-            @endif
+        if (isset($currentCategory)) {
+            $breadcrumbItems[] = (isset($currentSubcategory) || isset($currentChildcategory))
+                ? ['label' => $currentCategory->name, 'url' => route('category', ['slug' => $currentCategory->slug])]
+                : ['label' => $currentCategory->name];
+        }
 
-            @if(isset($currentChildcategory))
-                <li style="color: var(--primary);">{{ $currentChildcategory->name }}</li>
-            @endif
-        @endif
-      </ul>
-    </div>
-  </div>
-</section>
+        if (isset($currentSubcategory)) {
+            $breadcrumbItems[] = isset($currentChildcategory)
+                ? ['label' => $currentSubcategory->name, 'url' => route('category', ['slug' => $currentSubcategory->slug])]
+                : ['label' => $currentSubcategory->name];
+        }
+
+        if (isset($currentChildcategory)) {
+            $breadcrumbItems[] = ['label' => $currentChildcategory->name];
+        }
+    }
+@endphp
+
+@include('partials.breadcrumb', [
+    'title' => $breadcrumbTitle,
+    'items' => $breadcrumbItems,
+])
 
 <!-- Product Category Listing Section -->
 <section class="product-category py-120 shop-page-product-items" style="background-color: #F9F8F8;">
@@ -328,10 +312,14 @@
                     $sliderMin = (int) floor(($minProductPrice ?? 0) * $rate);
                     $sliderMax = (int) ceil(($maxProductPrice ?? 1000) * $rate);
                     $hasAppliedPrice = request()->filled('min_price') || request()->filled('max_price');
+                    // Preserve an explicit 0 (e.g. min_price=0&max_price=0) instead of
+                    // falling back to the full slider range.
+                    $initialMin = request()->filled('min_price') ? (int) request('min_price') : $sliderMin;
+                    $initialMax = request()->filled('max_price') ? (int) request('max_price') : $sliderMax;
                 @endphp
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <span class="text-muted" style="font-size: 14px;">Range:</span>
-                  <span id="price-range-label" style="font-weight: 600; color: #1f0300;">{{ $currencySymbol }}{{ number_format($sliderMin, 2) }} - {{ $currencySymbol }}{{ number_format($sliderMax, 2) }}</span>
+                  <span id="price-range-label" style="font-weight: 600; color: #1f0300;">{{ $currencySymbol }}{{ number_format($initialMin, 2) }} - {{ $currencySymbol }}{{ number_format($initialMax, 2) }}</span>
                 </div>
                 <input type="hidden" id="price-min" name="min_price" value="{{ request('min_price', $sliderMin) }}">
                 <input type="hidden" id="price-max" name="max_price" value="{{ request('max_price', $sliderMax) }}">
@@ -855,9 +843,23 @@ $(document).ready(function() {
     var priceSymbol = $("#price-currency-symbol").val() || '$';
     var sliderMinVal = parseInt($("#price-slider-min").val()) || 0;
     var sliderMaxVal = parseInt($("#price-slider-max").val()) || 1000;
-    var minPriceRaw = "{{ request('min_price', '') }}";
-    var minPrice = minPriceRaw === '' ? sliderMinVal : (parseInt(minPriceRaw) || sliderMinVal);
-    var maxPrice = parseInt("{{ request('max_price', 0) }}") || sliderMaxVal;
+    var minPriceRaw = "{{ request()->filled('min_price') ? request('min_price') : '' }}";
+    var maxPriceRaw = "{{ request()->filled('max_price') ? request('max_price') : '' }}";
+
+    function parseSliderValue(raw, fallback) {
+        if (raw === '') return fallback;
+        var parsed = parseInt(raw, 10);
+        return isNaN(parsed) ? fallback : Math.min(sliderMaxVal, Math.max(sliderMinVal, parsed));
+    }
+
+    var minPrice = parseSliderValue(minPriceRaw, sliderMinVal);
+    var maxPrice = parseSliderValue(maxPriceRaw, sliderMaxVal);
+
+    if (minPrice > maxPrice) {
+        var swap = minPrice;
+        minPrice = maxPrice;
+        maxPrice = swap;
+    }
 
     function priceSliderOptions(values) {
         return {

@@ -99,23 +99,26 @@
 <div class="card border-0 shadow-sm file-revisions-table">
     <div class="card-body p-0">
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap flex-wrap flex-md-nowrap">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                @if(empty($trashed))
-                <button type="submit" form="bulk-trash-form" class="btn btn-danger d-none" id="bulk-delete-btn" onclick="return confirm('Move the selected file revisions to trash? They will auto-delete after 15 days.')">
-                    <i class="fas fa-trash me-1"></i> Delete Selected (<span class="bulk-count" id="bulk-delete-count">0</span>)
-                </button>
-                @endif
-                <span class="text-muted small">Show</span>
-                <select class="form-select w-auto" onchange="window.location.href=this.value">
-                    @foreach([10, 20, 50, 100] as $n)
-                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }}</option>
-                    @endforeach
-                </select>
-                <span class="text-muted small">per page</span>
-            </div>
-            @include('admin.partials.date-range-filter', ['filterRoute' => 'admin.file-revisions.index'])
-            <div class="text-muted small">
-                Showing {{ $fileRevisions->firstItem() }}-{{ $fileRevisions->lastItem() }} of {{ $fileRevisions->total() }}
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap w-100">
+                <div class="d-flex align-items-center flex-column flex-lg-row flex-direction-sm-column gap-1 show-per-page-select">
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="text-muted small">Show</span>
+                        <select class="form-select show-per-page" onchange="window.location.href=this.value">
+                            @foreach([10, 20, 50, 100] as $n)
+                                <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @if(empty($trashed))
+                    <button type="submit" form="bulk-trash-form" class="btn btn-danger d-none" id="bulk-delete-btn" onclick="return confirm('Move the selected file revisions to trash? They will auto-delete after 15 days.')">
+                        <i class="fas fa-trash me-1"></i> Delete Selected (<span class="bulk-count" id="bulk-delete-count">0</span>)
+                    </button>
+                    @endif
+                </div>
+                @include('admin.partials.date-range-filter', ['filterRoute' => 'admin.file-revisions.index'])
+                <div class="text-muted small">
+                    Showing {{ $fileRevisions->firstItem() }}-{{ $fileRevisions->lastItem() }} of {{ $fileRevisions->total() }}
+                </div>
             </div>
         </div>
         <div class="table-responsive">
@@ -139,7 +142,7 @@
                         <td class="ps-3">
                             <input type="checkbox" class="form-check-input m-0 bulk-select-row" value="{{ $rev->id }}" aria-label="Select revision {{ $rev->id }}">
                         </td>
-                        <td>{{ $fileRevisions->firstItem() + $loop->index }}</td>
+                        <td class="admin-row-number">{{ $fileRevisions->firstItem() + $loop->index }}</td>
                         <td class="file-path-cell">
                             <code>{{ $rev->file_path }}</code>
                         </td>

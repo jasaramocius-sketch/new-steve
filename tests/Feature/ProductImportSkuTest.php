@@ -8,6 +8,13 @@ use Tests\TestCase;
 
 class ProductImportSkuTest extends TestCase
 {
+    public function test_import_uses_part_number_column_when_present(): void
+    {
+        $partNumber = ProductController::resolveImportedSku(['part_number' => '  bp-1001  '], 'Brake Pads Set');
+
+        $this->assertSame('bp-1001', $partNumber);
+    }
+
     public function test_import_uses_provided_sku_when_present(): void
     {
         $sku = ProductController::resolveImportedSku(['sku' => '  bp-1001  '], 'Brake Pads Set');

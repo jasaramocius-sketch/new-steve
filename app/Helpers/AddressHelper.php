@@ -10,12 +10,13 @@ class AddressHelper
     public static function countries(): array
     {
         try {
-            $names = Cache::rememberForever('address_countries', function () {
-                return Country::query()->orderBy('name')->pluck('name')->all();
+            return Cache::rememberForever('address_countries_v2', function () {
+                return Country::query()
+                    ->where('status', true)
+                    ->orderBy('name')
+                    ->pluck('name')
+                    ->all();
             });
-            if (is_array($names) && count($names)) {
-                return $names;
-            }
         } catch (\Throwable $e) {
             // DB unavailable — fall through to the static list.
         }

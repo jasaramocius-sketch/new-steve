@@ -10,7 +10,7 @@
             <head>
                 <meta charset="UTF-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>XML Sitemap | StAutoParts</title>
+                <title>XML Sitemap | Steve AutoParts</title>
                 <style>
                     :root { color-scheme: light; --ink: #1d2927; --muted: #64716e; --line: #e2e8e6; --accent: #c93424; --wash: #f3f7f5; }
                     * { box-sizing: border-box; }
@@ -44,7 +44,7 @@
             <body>
                 <main>
                     <header>
-                        <p class="eyebrow">StAutoParts · Search index</p>
+                        <p class="eyebrow">Steve AutoParts · Search index</p>
                         <h1>XML Sitemap</h1>
                         <p class="intro">This sitemap is generated for search engines. Select a sitemap or URL below to open it.</p>
                     </header>

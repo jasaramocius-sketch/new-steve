@@ -10,17 +10,13 @@
 @endsection
 @section('content')
 
-<section class="gs-breadcrumb-section" style="background-image: url('{{ asset('assets/images/1724480495Imagexxxxxpng.png') }}'); background-size: cover; background-position: center;">
-    <div class="container">
-        <div class="content-wrapper">
-            <h2 class="breadcrumb-title">404</h2>
-            <ul class="bread-menu">
-                <li><a href="{{ route('home') }}">Home</a></li>
-                <li style="color: var(--primary)">404</li>
-            </ul>
-        </div>
-    </div>
-</section>
+@include('partials.breadcrumb', [
+    'title' => '404',
+    'items' => [
+        ['label' => 'Home', 'url' => route('home')],
+        ['label' => '404'],
+    ],
+])
 
 <section class="py-5" style="background-color: #F9F8F8;">
     <div class="container">

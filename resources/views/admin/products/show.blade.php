@@ -147,14 +147,14 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                <table class="table table-sm mb-0">
+                <table class="table mb-0">
                     <tr>
                         <th class="text-muted admin-table-value">Name</th>
                         <td>{{ $product->name }}</td>
                     </tr>
                     <tr>
-                        <th class="text-muted">SKU</th>
-                        <td>{{ $product->sku ?: '—' }}</td>
+                        <th class="text-muted">Part Number</th>
+                        <td>{{ $product->part_number ?: '—' }}</td>
                     </tr>
                     <tr>
                         <th class="text-muted">Price</th>
@@ -229,7 +229,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                <table class="table table-sm mb-0">
+                <table class="table mb-0">
                     <tr>
                         <th class="text-muted admin-table-value">Year</th>
                         <td>{{ $product->year ?? '—' }}</td>
@@ -253,7 +253,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                <table class="table table-sm mb-0">
+                <table class="table mb-0">
                     <tr>
                         <th class="text-muted admin-table-value">ID</th>
                         <td>#{{ $product->id }}</td>

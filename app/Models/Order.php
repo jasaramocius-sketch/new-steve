@@ -51,6 +51,29 @@ class Order extends Model
     }
 
     /**
+     * Whether the customer can download an invoice for this order.
+     *
+     * Invoices do not depend on delivery. They become available once the order
+     * is confirmed (processing/shipped/delivered) and the payment is settled.
+     * COD orders are eligible from processing onward because payment is
+     * collected on delivery.
+     */
+    public function canDownloadInvoice(): bool
+    {
+        $status = strtolower((string) $this->status);
+
+        if (! in_array($status, ['processing', 'shipped', 'delivered'], true)) {
+            return false;
+        }
+
+        if (strtolower((string) $this->payment_method) === 'cod') {
+            return true;
+        }
+
+        return strtolower((string) $this->payment_status) === 'paid';
+    }
+
+    /**
      * Decrement product stock by each item's qty.
      */
     public function deductStock(): void

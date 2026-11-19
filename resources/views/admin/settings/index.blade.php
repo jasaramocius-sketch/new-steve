@@ -10,10 +10,10 @@
 @section('content')
 
 <div class="container-fluid ap-settings-hub">
-    <div class="mb-4">
+    <!-- <div class="mb-4">
         <h4 class="mb-1">All Settings</h4>
         <p class="text-muted mb-0">Manage store configuration and integrations.</p>
-    </div>
+    </div> -->
 
     @foreach ($settingsGroups as $group)
         <section class="ap-settings-group">

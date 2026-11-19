@@ -14,7 +14,6 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
     <div class=""></div>
-    <a href="{{ route('admin.faqs.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add FAQ</a>
 </div>
 
 <ul class="nav nav-tabs flex-wrap flex-md-nowrap">
@@ -24,27 +23,33 @@
     <li class="nav-item">
         <a class="nav-link {{ request()->has('trashed') ? 'active' : '' }}" href="{{ route('admin.faqs.index', ['trashed' => 1]) }}">Trash ({{ $trashedCount }})</a>
     </li>
-    <li class="nav-item search-form ms-lg-auto">
-        @include('admin.partials.search-form', [
-            'route' => route('admin.faqs.index'),
-            'placeholder' => 'Search FAQs...'
-        ])
+    <li class="nav-item search-form ms-lg-auto d-flex justify-content-end gap-2">
+        
     </li>
 </ul>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <div class="d-flex justify-content-between align-items-center p-2 flex-wrap flex-md-nowrap flex-wrap flex-md-nowrap">
-            <div class="d-flex align-items-center gap-2">
-                <span class="text-muted small">Show</span>
-                <select class="form-select w-auto" onchange="window.location.href=this.value">
-                    @foreach([10, 20, 50, 100] as $n)
-                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }}</option>
-                    @endforeach
-                </select>
-                <span class="text-muted small">per page</span>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small">Show</span>
+                    <select class="form-select show-per-page w-auto" onchange="window.location.href=this.value">
+                        @foreach([10, 20, 50, 100] as $n)
+                            <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 10) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
+                        @endforeach
+                    </select>
+                </div>
+                @include('admin.partials.search-form', [
+                        'route' => route('admin.faqs.index'),
+                        'placeholder' => 'Search FAQs...'
+                ])
+                <a href="{{ route('admin.faqs.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add FAQ</a>
+                <div class="d-grid grid-column-1auto align-items-center gap-2">
+                    
+                </div>
             </div>
-            <div class="text-muted small">
+            <div class="text-muted small" style="padding: 5px 0;">
                 Showing {{ $faqs->firstItem() }}-{{ $faqs->lastItem() }} of {{ $faqs->total() }}
             </div>
         </div>
@@ -63,7 +68,7 @@
                 <tbody>
                     @forelse($faqs as $faq)
                     <tr>
-                        <td class="ps-3">{{ $faqs->firstItem() + $loop->index }}</td>
+                        <td class="ps-3 admin-row-number">{{ $faqs->firstItem() + $loop->index }}</td>
                         <td>{{ Str::limit($faq->question, 60) }}</td>
                         <td>{{ $faq->order }}</td>
                         <td>

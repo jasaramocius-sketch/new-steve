@@ -5078,3 +5078,739 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - `resources/views/layouts/app.blade.php` — dropdown links `url()` se render
 
 **Verification:** Migration ke baad `search_category_menu` URLs `/category/...`; `normalizeAppUrlPath()` legacy `/new-steve/new-steve/...` ko `/category/...` banata hai; `url()` live host ke saath full URL deta hai; `php -l` + `php artisan view:cache` passed.
+
+## 358. (2026-11-04): User Login URL Changed to `/users/login`
+
+**Change:** Public login GET/POST routes ab `/users/login` use karte hain. Existing `login` and `login.submit` route names preserve kiye, so internal links and authentication redirects use the new path. `/login` ka redirect route add nahi kiya. Logout and the product-review login link were updated to use the named route.
+
+**Files changed:**
+- `routes/web.php` — moved the public login GET/POST routes to `/users/login`; updated the legacy `/use/login` redirect target
+- `app/Http/Controllers/AuthController.php` — logout now redirects through the named login route
+- `resources/views/product/show.blade.php` — review authorization message links through the named login route
+
+**Verification:** `route:list` shows GET/POST `users/login` and no `/login` route; `route('login')` generates `/new-steve/users/login`; PHP syntax checks and `git diff --check` passed.
+
+## 359. (2026-11-04): Pickup Points Select/Filter Form Fix
+
+**Problem:** Admin → Pickup Points page ke "Name" search input par galti se `form-select` class lagi thi, is liye text input select/dropdown jaisa arrow ke saath render ho raha tha. Checkout delivery-info page par pickup-point select validation error ke baad reset ho jata tha aur selected pickup point retain nahi hota tha.
+
+**Fix:**
+- Admin pickup points filter input: `form-select` → `form-control`.
+- Checkout pickup select: `form-control` → `form-select` (baaki selects ke saath consistent; 10+ pickup points par searchable-select widget auto-enable hota hai).
+- `shipping_method` aur `pickup_point_id` ab `old()` / session se restore hote hain, is liye validation error ya back navigation ke baad bhi selection bani rehti hai.
+- Pickup point validation error form par inline show hota hai.
+- Home Delivery par switch karne par select clear hota hai aur searchable-select widget bhi sync hota hai.
+- Initial hidden state selected delivery method ke hisaab se set hota hai.
+
+**Files changed:**
+- `resources/views/admin/settings/pickup-points/index.blade.php` — filter input class fix
+- `resources/views/checkout/delivery-info.blade.php` — pickup select class, old-value retention, inline error, JS sync
+
+**Verification:** Dono Blade views ke compile checks passed. Note: DB me abhi 0 pickup points hain, is liye checkout par "Pickup point" option tab tak nahi dikhega jab tak Admin → Settings → Pickup Points se kam se kam ek **Open** point add na ho.
+
+## 360. (2026-11-05): Shipping Location Pages — Countries, States, Cities + Area-Wise Cost Integration
+
+**Problem:** Admin shipping had Configuration, Zones and Carriers pages but was missing Shipping Countries, Shipping States and Shipping Cities pages (referenced autoparts setup). Also `countries`/`states`/`cities` tables had no `status` column and `cities` had no `cost` column, so area-wise shipping couldn't use city cost as reference does.
+
+**Solution:** Added full CRUD for shipping countries/states/cities under Settings sidebar, wired status/cost into area-wise shipping, and kept existing checkout behavior unchanged (default method still `carrier_wise_shipping`).
+
+### Database
+- `database/migrations/2026_11_05_000003_add_status_and_cost_to_shipping_locations.php` — `status` (boolean default true) on `countries`/`states`/`cities`; `cost` (decimal 12,2) on `cities`. Migrated via `php artisan migrate --force`.
+
+### Models
+- `app/Models/Country.php` — `status` fillable/cast + `scopeActive()`
+- `app/Models/State.php` — `status` fillable/cast + `scopeActive()`
+- `app/Models/City.php` — `status`, `cost` fillable/cast + `scopeActive()` + `country()` relation
+
+### Backend
+- `app/Http/Controllers/Admin/ShippingLocationController.php` (NEW) — countries list+status toggle; states list/filter/create/edit/update/delete/status toggle (blocks delete if cities exist); cities list/filter/create/edit/update/delete/status toggle with cost field.
+- `routes/web.php` — 13 routes: `admin.settings.shipping-countries.index/status`, `shipping-states.*`, `shipping-cities.*` under admin group.
+- `app/Http/Controllers/LocationController.php` — states/cities AJAX now only return active records; cache keys versioned (`address_states_v2_*`, `address_cities_v2_*`).
+- `app/Helpers/AddressHelper.php` — `countries()` reads active countries from DB with `Cache::rememberForever('address_countries_v2')`, hardcoded fallback retained.
+- `app/Services/ShippingChargeService.php` — area-wise now matches active city (status=true, cost not null, city/state/country match) → uses `city.cost`; falls back to matching shipping zone `cost` if no city. Tests via tinker confirmed: city cost 55 applied, city null/inactive → zone cost fallback.
+- `resources/views/admin/settings/shipping/configuration.blade.php` — area-wise note updated to point to Shipping Cities (with zone fallback); quick links now include Countries/States/Cities.
+
+### Views (NEW)
+- `resources/views/admin/settings/shipping/countries/index.blade.php` — search/filter by name/status, status toggle button (Visible/Hidden).
+- `resources/views/admin/settings/shipping/states/index.blade.php` — search/filter by name/country/status, inline Add New State form, status toggle, edit/delete action buttons (`.action-btn` circular SVG style), delete blocked when cities exist.
+- `resources/views/admin/settings/shipping/states/edit.blade.php` — edit state name/country/status.
+- `resources/views/admin/settings/shipping/cities/index.blade.php` — search/filter by name/country/state/status, area-cost column, inline Add New City form with cost input.
+- `resources/views/admin/settings/shipping/cities/edit.blade.php` — edit city name/state/cost/status.
+
+### Sidebar
+- `resources/views/admin/partials/sidebar.blade.php` — replaced disabled Shipping block with active links: Shipping Configuration, Shipping Countries, Shipping States, Shipping Cities, Shipping Zones, Shipping Carriers.
+
+**Verification:** All new/changed PHP files pass `php -l`; migration ran OK; `php artisan view:clear && view:cache` OK; all routes registered (`route:list`); tinker verified area-wise quote returns city cost when set and zone cost when city missing/inactive.
+
+## 361. (2026-11-05): Admin Sidebar Design Fix
+
+**Problem:** Admin sidebar submenus looked plain — no icons on submenu items, parent submenus didn't auto-expand when a child was active, and collapsed sidebar (72px) showed no hover tooltips, making navigation unclear.
+
+**Solution:** Polished the admin sidebar with submenu styling, auto-expand on active child, and collapsed-state hover tooltips.
+
+### Files changed
+- `resources/views/admin/partials/sidebar.blade.php`:
+  - Added icons to all submenu items (`nav-item-sub` with `fas` icons): Products (All Products, Bulk Import/Export, Categories, Brands, Stock Management, Commission, Product Reviews), Shipping (Configuration, Countries, States, Cities, Zones, Carriers).
+  - Parent submenu now auto-expands (`expanded`/`show`) when any child route is active, not just when parent route matches.
+  - Products parent now also active for `admin.reviews.*`.
+  - JS: wraps nav labels in `.nav-label` spans and auto-sets `data-bs-original-title` from visible label text for hover tooltips.
+- `public/assets/front/css/backend.css`:
+  - `.nav-item-sub` styles: padding, gap, font-size, hover/active states, left border accent.
+  - `.submenu-arrow` rotate animation on expand.
+  - Section separator borders between nav sections.
+  - Collapsed state: hides submenu items, centers parent nav items, shows hover tooltip via `::after` using `data-bs-original-title`.
+
+### Verification
+- `php -l` clean on sidebar Blade file.
+- `php artisan view:cache` compiled successfully.
+- Sidebar renders with icons, active states, and collapsed tooltip hover.
+
+## 351. (2026-11-05): Admin Sidebar Layout Fix
+
+- Fixed content margin to match sidebar width (280px).
+- Set nav-wrap direction to LTR.
+- Added submenu arrow and moved it to far right.
+
+## 362. (2026-11-05): Soft Delete Support for Shipping Data
+
+- Added Laravel `SoftDeletes` support for countries, states, cities, shipping carriers, shipping zones, and shipping zone rates.
+- Added migration `2026_11_05_000004_add_soft_deletes_to_shipping_tables.php` and applied it to the configured `new_steve` database.
+- Deleting a shipping zone now soft-deletes its rates as well.
+- Carrier/state creation can restore matching soft-deleted records; deleted zone rates are restored when re-added.
+- Verified all six tables have `deleted_at`, shipping routes load, and PHP syntax checks pass. Feature tests could not run because PHP SQLite PDO is unavailable.
+
+## 363. (2026-11-06): Contact Us "Contact Information" managed from admin
+
+- Added `Settings > Contact Information` page (`admin.settings.contact` / `.update`) with address, phone, email, working hours, and Google Maps embed URL.
+- Phone, email, and address reuse `header_phone`, `header_email`, and `header_address`, so header, footer, and Contact Us stay in sync.
+- Added new settings `contact_working_hours` and `contact_map_embed`; defaults live in `config/contact.php`.
+- `resources/views/pages/contact.blade.php` now reads settings instead of hardcoded values, supports multi-line address/hours, builds `tel:`/`mailto:` links, and hides the map when the embed URL is blank.
+- Map field accepts either the Google Maps embed URL or the full iframe code (URL is extracted); only Google Maps hosts are accepted.
+- Added the Contact Information tile to the All Settings hub and a sidebar link. Existing admin middleware already allows `master_admin`, `admin`, and `staff`.
+- Verified Contact Us returns 200 with values from settings; admin view renders; map iframe extraction and invalid-URL rejection tested.
+
+## 364. (2026-11-06): Make blog additional categories functional
+
+- Blog category pages now include blogs where the category is either the primary category or an additional category (`blog_additional_category`).
+- Added combined category counts: primary blogs + additional blogs, exposed as `total_blogs_count` via `BlogCategory::scopeWithBlogCounts()` and `additionalBlogs()`.
+- Blog cards and the single blog page now list all assigned categories (primary + additional), deduplicated by `Blog::allCategories()`.
+- Frontend blog queries eager-load `additionalCategories` to avoid N+1 queries.
+- Admin blog create/edit now disables the primary category in the Additional Categories checkboxes and the server also filters it out before syncing.
+- Admin blog category list now shows combined primary + additional blog counts.
+- Deleted the existing redundant pivot row where the additional category matched the blog's primary category.
+- Verified `/blog`, category pages (including a blog assigned only through an additional category), blog show, and tag pages return 200; combined counts and admin sync filtering tested.
+
+## 365. (2026-11-06): Blog author change option
+
+- Added nullable `author` column to `blogs` (migration `2026_11_06_000001_add_author_to_blogs_table.php`) and added it to the `Blog` fillable fields.
+- Admin blog Create/Edit now has an **Author** field with suggestions from admin/staff users. Custom names are allowed; blank falls back to "Admin".
+- Admin blog list now shows an Author column and supports sorting by author.
+- Blog detail page shows the saved author ("By: ...") instead of the hardcoded "By: Admin".
+- Verified create/edit/admin index views render, custom author appears on the frontend, and null author falls back to "Admin".
+
+
+## 366. (2026-11-06): Add Admin-Managed Shipping Functionality
+
+- Add shipping functionality that administrators can configure and manage from the admin panel.
+
+## 367. (2026-11-06): Blog Author — Fetch Users + Logged-in User Default (NEW TASK)
+
+**Status: Pending**
+
+- Change the blog Author field to fetch/select users from the `users` table instead of free-text suggestions.
+- On blog create, default the author to the currently logged-in admin/staff user.
+- On blog edit, preselect the blog's saved author.
+- Keep the "Admin" fallback when no author is selected.
+- Decide whether to store `author_id` (FK to `users`) or keep the existing `author` name snapshot before implementation.
+
+## 368. (2026-11-06): Admin Invoice Management (NEW TASK)
+
+**Status: Completed**
+
+- Add admin controls for managing invoice generation and configuration. The current invoice is generated as a PDF from order data with a fixed template.
+- Implemented Invoice Settings in the admin panel to manage the logo, business details, primary color, standard/compact layout, invoice prefix/date format/title, note/terms/footer, display-only currency label, amount labels, and visibility of invoice sections.
+- Generated order invoice PDFs now apply these settings while preserving order amounts and customer/order records.
+
+## 369. (2026-11-06): Customer Invoice Availability Before Delivery
+
+- Added `Order::canDownloadInvoice()` to decouple invoice availability from delivery status.
+- Customer invoices are available for `processing`, `shipped`, and `delivered` orders; `pending` and `cancelled` orders are excluded.
+- Prepaid orders require `payment_status = paid`; COD orders are eligible from `processing` onward because payment is collected on delivery.
+- Order Details now shows a "Download Invoice" button only when eligible, and the Orders list hides the invoice action for ineligible orders.
+- `OrderController@invoice` now enforces the same rule server-side with a 403 response for direct access to an unavailable invoice.
+- Corrected the Orders list payment badge to use the actual `payment_status` instead of inferring paid/unpaid from the payment method.
+- Verified allowed orders return a PDF, while pending, cancelled, and unpaid card orders are blocked; Order Details and Orders list render correctly.
+
+## 370. (2026-11-06): Order Confirmation Email Delivery Setup (NEW TASK)
+
+**Status: Pending**
+
+- Order confirmation and order status emails are already implemented and queued to the customer's billing/account email.
+- Current `.env` uses `MAIL_MAILER=log`, so emails are written to the log instead of being delivered to the customer's inbox.
+- `QUEUE_CONNECTION=database` is enabled, but no queue worker is running; the `jobs` table currently has 25 pending order emails.
+- `MAIL_FROM_ADDRESS` is still the placeholder `hello@example.com`.
+- Configure real SMTP credentials and a valid sender address.
+- Run a queue worker (Supervisor for production) and clear config after updating `.env`.
+- Decide whether to discard the existing 25 stale queued order emails before starting the worker, so old order emails are not sent unexpectedly.
+- Send a test order confirmation email and verify inbox delivery.
+
+## 371. (2026-11-12): Shared Feature Switch Design via `_form-check.scss`
+
+**Change:** Feature toggle switch ka design ab shared `resources/scss/_form-check.scss` source se manage hota hai. Admin layout `assets/front/css/backend.css` load karta hai, jahan ye shared styles compiled hain. `order.blade.php` me duplicate inline CSS hata diya, is liye Order Settings bhi same shared design use karta hai.
+
+**Files changed:**
+- `resources/views/admin/settings/order.blade.php` — duplicate `.feature-switch` inline `<style>` block removed
+- `resources/scss/_form-check.scss` — source-of-truth note added
+
+**Verification:** `php artisan view:cache` passed; Order Settings se inline duplicate CSS hat gaya. (Baad me #372 me yeh switches Bootstrap `form-check-input` par migrate kiye gaye.)
+
+## 372. (2026-11-12): Feature Switches Migrated to Bootstrap `form-check-input`
+
+**Change:** Custom `feature-switch` / `feature-switch-track` toggle design ko Bootstrap ke standard `form-check form-switch` + `form-check-input` se replace kiya. Ab Order Settings, Features activation, Payment Methods, Shipping Countries aur Shipping States sab same native switch design use karte hain; checked state `style.css` ke `--primary` theme color se aata hai.
+
+**Files changed:**
+- `resources/views/admin/settings/features.blade.php`
+- `resources/views/admin/settings/order.blade.php`
+- `resources/views/admin/settings/payment-methods.blade.php`
+- `resources/views/admin/settings/shipping/countries/index.blade.php`
+- `resources/views/admin/settings/shipping/states/index.blade.php`
+- `public/assets/front/css/backend.css` — custom `.feature-switch` / `.feature-switch-track` styles removed
+- `resources/scss/_form-check.scss` — old custom styles replaced with migration note
+
+**Verification:** Authenticated render checks: Order Settings, Features, Payment Methods, Shipping Countries, Shipping States all `200`; har page par `form-check-input` present aur `feature-switch-track` count `0`; `php artisan view:cache` passed.
+
+## 373. (2026-11-12): Default Language List Filter Clear Option
+
+**Change:** Languages list ke search/filter form me active search hone par **Clear** button add kiya, jo bina query string ke languages index par wapas le jata hai. Button `Filter` ke saath inline hai aur baaki admin filter pages ke same `btn-outline-secondary` pattern ko follow karta hai.
+
+**Files changed:**
+- `resources/views/admin/settings/languages/index.blade.php` — filter action group me conditional Clear link added
+
+**Verification:** `/admin/settings/languages` renders `200` without Clear link (no active filter); `/admin/settings/languages?search=en` renders `200` with Clear link; `php artisan view:cache` passed.
+
+## 374. (2026-11-12): Currency Symbol Dropdown Options on Add/Edit Currency
+
+**Change:** Add/Edit Currency form ke **Currency symbol** field ko text input se native `<select>` dropdown me convert kiya. Dropdown me har currency ka apna alag option show hota hai, symbol + code + name ke saath (for example `$ - USD (US Dollar)`, `kr - DKK (Danish Krone)`, `kr - NOK (Norwegian Krone)`, `kr - SEK (Swedish Krone)`). Same symbol wali currencies ko group nahi kiya gaya, kyunki unki exchange rate/value alag hoti hai. Edit karte waqt currency code ke basis par sahi option selected hota hai.
+
+**Files changed:**
+- `app/Http/Controllers/Admin/CurrencySettingsController.php` — `create()` / `edit()` ko unique currency symbol options pass kiye; `currencySymbolOptions()` helper added
+- `resources/views/admin/settings/currency/form.blade.php` — symbol field ko `<select>` dropdown me convert kiya, selected value old input / edit currency se sync
+
+**Verification:** `/admin/settings/currency/create` aur `/admin/settings/currency/{id}/edit` dono `200`; create par placeholder selected, edit par currency code ke hisaab se sahi option selected (DKK, NOK, SEK teeno alag alag options se verify kiye); 25 currency options + placeholder render ho rahe hain; `php artisan view:cache` passed.
+
+## 375. (2026-11-12): Google reCAPTCHA v3 Support
+
+**Change:** Google reCAPTCHA settings me v3 support add kiya. Ab admin **reCAPTCHA Version** select se `v2` ya `v3` choose kar sakta hai. v2 aur v3 ke keys alag hote hain, is liye dono ke separate site/secret key fields hain. Admin form me sirf selected version ka keys section show hota hai; version change karte hi JS v2/v3 fields ko turant toggle karta hai, aur page load par saved version ke hisaab se sahi section visible hota hai. v3 ke liye minimum score threshold bhi configurable hai. Storefront (`login`, `register`, `contact`) par selected version ke hisaab se ya to v2 checkbox widget render hota hai, ya v3 invisible token automatically generate hota hai. Server-side verification v3 me score aur action (`login` / `register` / `contact`) dono validate karta hai.
+
+**Files changed:**
+- `app/Services/Recaptcha.php` — version selection, v2/v3 keys, score + action verification
+- `app/Http/Controllers/Admin/RecaptchaSettingsController.php` — version, v3 keys, v3 score fields save/validate
+- `resources/views/admin/settings/google-recaptcha.blade.php` — version selector, separate v2/v3 key sections, score field, missing-key warning
+- `app/Http/Controllers/AuthController.php` — login/register verification ko action pass kiya
+- `app/Http/Controllers/ContactController.php` — contact verification ko action pass kiya
+- `resources/views/partials/recaptcha-field.blade.php` — v2 widget / v3 hidden token render
+- `resources/views/partials/recaptcha-scripts.blade.php` — v2/v3 API script + v3 token generation
+- `resources/views/auth/login.blade.php`, `resources/views/auth/register.blade.php`, `resources/views/pages/contact.blade.php` — shared reCAPTCHA partials use kiye
+
+**Verification:** Admin Google reCAPTCHA page `200`; saved version `v2` par v2 keys section visible aur v3 section `d-none`; saved version `v3` par v3 keys section visible aur v2 section `d-none`; version change toggle script present; v2 mode par login/register/contact pages par checkbox widget + v2 API script render hua; v3 mode par hidden `g-recaptcha-response` input + v3 render script render hua (v2 widget absent); settings save test me v2/v3 keys, encrypted secrets, version aur score correctly persist hue; `php artisan view:cache` passed. Live Google siteverify call test nahi kiya gaya (needs real v3 keys).
+
+## 376. (2026-11-12): Stock Management Filter Clear Option
+
+**Change:** Stock Management page ke filter form me **Clear** button add kiya. Button sirf tab dikhta hai jab `search`, `stock_filter` ya `threshold` me se koi filter active ho. Click karne par bina query string ke stock management page reset ho jata hai (default threshold aur low/all stock view). Button search button ke saath inline hai aur baaki admin filter pages ke `btn-outline-secondary` + `fa-times` pattern ko follow karta hai.
+
+**Files changed:**
+- `resources/views/admin/products/stock.blade.php` — filter form me conditional Clear link added
+
+**Verification:** `/admin/products/stock` (no query) par Clear link nahi dikhta; `?search=test`, `?stock_filter=out_of_stock&threshold=10`, aur `?threshold=5` par Clear link dikhta hai aur base stock URL par point karta hai; sabhi requests `200`; `php artisan view:cache` passed.
+
+## 377. (2026-11-12): Admin Product Reviews Rating Icons Match My Reviews
+
+**Change:** Admin **Product Reviews** table ke Rating column me FontAwesome star icons ki jagah **My Reviews** page wale inline SVG stars use kiye. Har star `14×13` size, `viewBox="0 0 17 16"`, filled color `#EEAE0B` aur empty color `#E2E8F0` hai. Stars ko `d-flex align-items-center gap-1` wrapper me rakha, taake spacing My Reviews page jaisi consistent rahe.
+
+**Files changed:**
+- `resources/views/admin/reviews/index.blade.php` — Rating column ke `fas fa-star` icons ko inline SVG stars se replace kiya
+
+**Verification:** `/admin/reviews` `200` render hua; rating 5 par 5 filled SVG stars render hue aur FontAwesome rating stars remove ho gaye; temporary rating 3 test me 3 filled + 2 empty SVG stars render hue; original review data restore kar diya; `php artisan view:cache` passed.
+
+## 378. (2026-11-13): Page Builder Pages / Blog Posts Tabs
+
+**Change:** Admin **Page Builder** index par **All / Pages / Blog Posts** tabs add kiye. Har tab apne count ke saath render hota hai (`All (35)`, `Pages (17)`, `Blog Posts (18)`) aur selected tab active state dikhata hai. `?type=page` aur `?type=blog` query string se list filter hoti hai, aur All tab par dono types wapas show hote hain. Empty state message bhi selected tab ke hisaab se change hota hai. Saath hi published view ka broken header markup (`<div class="d`) fix kiya, jis ki wajah se index ka content render nahi ho raha tha.
+
+**Files changed:**
+- `resources/views/vendor/page-builder/admin/page-builder/index.blade.php` — tabs, counts, type filtering, active state, dynamic empty state, fixed header markup
+- `/var/www/html/laravel-page-builder/src/Http/Controllers/PageBuilderController.php`, `/var/www/html/laravel-page-builder/resources/views/admin/page-builder/index.blade.php` — package source me bhi same tabs/counts/filtering parity add ki (app ka active code published view hai)
+
+**Verification:** `/admin/page-builder` `200` with counts All `35`, Pages `17`, Blog Posts `18`; `?type=page` par sirf Pages card render hua (17 rows) aur Pages tab active; `?type=blog` par sirf Blog Posts card render hua (18 rows) aur Blog Posts tab active; no-query par dono cards aur All tab active; `php artisan view:cache` passed.
+
+## 379. (2026-11-13): reCAPTCHA Deactivated (No Keys Available)
+
+**Change:** Filhal reCAPTCHA keys available nahi hain, is liye storefront forms par reCAPTCHA verification band kar diya. Admin **Google reCAPTCHA** settings me Login/Register/Contact teeno form toggles `0` kar diye. v2 site key aur encrypted secret settings me saved hain, taake future me keys milne par sirf toggles on karke reCAPTCHA dobara enable ho sake. Code already keys missing hone par auto-disable karta hai (`Recaptcha::enabled()` site/secret key check karta hai), lekin ab explicit toggles off hain.
+
+**Files changed:** None (DB settings only: `recaptcha_login`, `recaptcha_register`, `recaptcha_contact` = `0`)
+
+**Verification:** `Recaptcha::enabled()` login/register/contact ke liye `false`; `/users/login`, `/users/registration`, `/contact-us` sab `200`; teeno pages par `g-recaptcha` widget, `recaptcha/api.js` script aur hidden `g-recaptcha-response` token render nahi hua; admin Google reCAPTCHA page par teeno checkboxes unchecked aur missing-key warning nahi.
+
+## 380. (2026-11-13): Google reCAPTCHA Reset Option
+
+**Change:** Admin **Google reCAPTCHA** settings page par **Reset** button add kiya. Confirm dialog ke baad reset action v2/v3 site aur secret keys clear karta hai, version ko `v2` par reset karta hai, v3 score ko `0.5` par aur Login/Register/Contact teeno toggles ko off kar deta hai. Is se reCAPTCHA turant disable ho jata hai aur form clean state me wapas aa jata hai. Reset ke baad success message show hota hai.
+
+**Files changed:**
+- `app/Http/Controllers/Admin/RecaptchaSettingsController.php` — `reset()` method
+- `routes/web.php` — `POST /admin/settings/google-recaptcha/reset` route
+- `resources/views/admin/settings/google-recaptcha.blade.php` — card header me Reset button + confirmation dialog
+
+**Verification:** `POST admin/settings/google-recaptcha/reset` route list me present; admin page `200` with Reset button, `_token` aur confirm dialog; transactional test me reset ke baad version `v2`, saari keys empty, score `0.5`, teeno toggles `0`, `Recaptcha::enabled()` false aur site/secret keys `null`; rollback ke baad original settings restore ho gayi; `php artisan view:cache` passed.
+
+## 381. (2026-11-13): Pickup Points Search Button
+
+**Change:** Pickup Points list ke search field ke saath **Filter** button ki jagah **Search** button kar diya (icon `fa-filter` se `fa-search`). Saath hi search form ka malformed markup fix kiya — search group aur button group ke missing closing `div`s the, jis ki wajah se layout nested ho raha tha. Ab search input + Search button + Clear button ek proper group me hain aur Add New button right side par alag hai. Search input ko `min-width: 240px` diya taake desktop/mobile par usable rahe.
+
+**Files changed:**
+- `resources/views/admin/settings/pickup-points/index.blade.php` — Filter button ko Search button banaya, form markup/layout fix kiya, Clear link ko proper group me rakha
+
+**Verification:** `/admin/settings/pickup-points` `200`; Search button render hua aur Filter button absent; no query par Clear link nahi, `?search=test` par Clear link present; search input render hua; `php artisan view:cache` passed.
+
+## 382. (2026-11-13): Pickup Points Search Field Match All Products
+
+**Change:** Pickup Points ka search field ab All Products page wale shared partial `admin.partials.search-form` se render hota hai. Search icon left side input-group me hai, placeholder `Search pickup points...` hai, pagination reset ke liye hidden `page` input hai aur Clear button same pattern me show hota hai. Purana `Name` label aur alag text **Search** button hata diya. Card header me search left side aur **Add New Pick-up Point** right side par hai.
+
+**Files changed:**
+- `resources/views/admin/settings/pickup-points/index.blade.php` — shared search partial use kiya, purana custom search form/label hata diya
+
+**Verification:** `/admin/settings/pickup-points` `200`; input-group, search icon button aur placeholder render hue; purana text Search button aur filter icon absent; no query par Clear link nahi, `?search=test` par Clear link present; `php artisan view:cache` passed.
+
+## 383. (2026-11-13): Soft Deletes Across Remaining App Tables
+
+**Change:** App ke baaki 15 tables/models par Laravel soft delete enable kiya. `admins` aur `staff` ke models me `SoftDeletes` pehle se tha lekin tables me `deleted_at` column missing tha (schema drift) — ab column add ho gaya. Baaki 13 models (`ApiIntegration`, `Brand`, `CommissionHistory`, `Contact`, `Currency`, `HomePageSection`, `Language`, `PickupPoint`, `ReturnRequest`, `Setting`, `Subscriber`, `Tag`, `TaxType`) me `SoftDeletes` trait add kiya. `faqs` table me `is_deleted` column bhi add kiya kyunki `Faq` model `TracksIsDeleted` use karta hai lekin column missing tha (FAQ delete par SQL error aata tha).
+
+System tables (cache/jobs/sessions/migrations/password resets), pivot tables (`blog_tag`, `image_product`, `product_vehicle`, etc.) aur legacy/backup tables ko scope se bahar rakha.
+
+Unique-key tables ke liye restore-on-create handling add ki:
+- `Setting::set()` ab `withTrashed()` se row find karke restore karta hai.
+- Languages, currencies aur tax types ke admin `store()` me trashed record restore hota hai; validation `whereNull('deleted_at')` use karta hai taake same code/name dobara add ho sake.
+- Subscribers `Subscriber::firstOrCreateForEmail()` se restore hote hain (newsletter + registration).
+- Blog tags `withTrashed()` se find aur restore hote hain.
+- Homepage sections `HomePageSection::firstOrCreateRestored()` se restore hote hain.
+
+**Files changed:**
+- `database/migrations/2026_11_13_000000_add_soft_deletes_to_remaining_app_tables.php` — created
+- `app/Models/ApiIntegration.php`, `Brand.php`, `CommissionHistory.php`, `Contact.php`, `Currency.php`, `HomePageSection.php`, `Language.php`, `PickupPoint.php`, `ReturnRequest.php`, `Setting.php`, `Subscriber.php`, `Tag.php`, `TaxType.php` — `SoftDeletes` trait/import; HomePageSection aur Subscriber me restore helpers
+- `app/Http/Controllers/Admin/LanguageController.php`, `TaxTypeController.php`, `CurrencySettingsController.php` — trashed unique records restore + validation update
+- `app/Http/Controllers/Admin/BlogController.php` — tag restore
+- `app/Http/Controllers/Admin/HomePageController.php` — services section restore
+- `app/Http/Controllers/HomeController.php` — top brands / buy with confidence sections restore before query
+- `app/Http/Controllers/NewsletterController.php`, `AuthController.php` — subscriber restore
+- `database/seeders/HomePageSectionSeeder.php`, `AdditionalHomePageSectionsSeeder.php` — homepage section seeding restore-safe
+
+**Verification:** `php artisan migrate --force` passed; audit me sab app models ke tables me `deleted_at` present, models me `SoftDeletes` present, aur `TracksIsDeleted` wale models ke tables me `is_deleted` present (`product_vehicle` pivot intentionally excluded). Transactional runtime test me Admin, Staff, ApiIntegration, Brand, CommissionHistory, Contact, Currency, Faq, HomePageSection, Language, PickupPoint, ReturnRequest, Setting, Subscriber, Tag aur TaxType sab soft delete + restore pass hue; unique-key restore tests (Setting, Subscriber, HomePageSection, Tag) bhi pass. `php artisan view:cache` passed; `route:list` clean (431 lines).
+
+## 384. (2026-11-13): Duplicate Account Prevention By Email, Login State, And Phone
+
+**Change:** Duplicate account creation ab teen level par block hoti hai:
+- **Email:** Registration aur admin customer/staff/user create-update paths me email ko `strtolower(trim())` se normalize kiya jata hai. Same email (case/space variation ke saath) par naya account nahi banta aur clear error show hota hai.
+- **Logged-in state:** Agar user already login hai to `POST /users/registration` dashboard par redirect ho jata hai; pehle sirf GET form redirect karta tha, POST se doosra account ban sakta tha.
+- **Phone:** Registration form me ab required phone field hai. Naya `App\Rules\UniquePhone` rule phone ko digits-only normalize karke compare karta hai, is liye `+1 (555) 555-5555` aur `+15555555555` same mane jate hain. Soft-deleted users ke phone bhi check hote hain, taake deleted account ke number par naya account na bane. Admin customer/staff/user management ke create aur update paths par bhi same rule laga hai.
+
+Legacy duplicate phone `99999999999` (admin id 5 aur customer id 8) ko untouched rakha aur `users.phone` par DB unique index nahi lagaya. Edit ke waqt agar phone unchanged hai to duplicate legacy number allow hota hai, lekin phone change karke kisi doosre user ka number daalne par validation fail hoti hai.
+
+**Files changed:**
+- `app/Rules/UniquePhone.php` — new normalized phone uniqueness rule (create + update, legacy unchanged phone allowance)
+- `app/Http/Controllers/AuthController.php` — logged-in POST block, email/phone normalization, required unique phone, clear messages, phone save
+- `app/Http/Controllers/UserController.php` — customer/staff create/update me email normalization + `UniquePhone`
+- `app/Http/Controllers/UserManagementController.php` — admin user create/update me email normalization + `UniquePhone`
+- `resources/views/auth/register.blade.php` — required phone input with `old('phone')`
+
+**Verification:** `php -l` sab changed PHP files par pass; `php vendor/bin/pint` pass; `php artisan view:cache` pass. Runtime checks pass: duplicate email (case/space variation) reject, duplicate formatted phone reject, logged-in POST registration dashboard redirect, admin customer/staff/user create duplicate email/phone reject, aur existing legacy duplicate phone unchanged edit par allow. Tests transaction me chalaye gaye aur rollback kiye gaye, is liye existing users data unchanged raha.
+
+## 385. (2026-11-13): Add/Edit Category Form Design Unification
+
+**Change:** Add Category aur Edit Category pages ko ek hi shared form partial (`admin.categories._form`) par shift kiya, taake dono pages ka design aur field layout bilkul same rahe. Dono forms ab baaki admin forms wale standard pattern par hain: `card border-0 shadow-sm`, `card-body`, `row g-3`, `form-label`, consistent spacing aur `steve-btn` Save/Update + Cancel buttons.
+
+Fields same set me arrange kiye:
+- Name (8 columns) + Status (4 columns)
+- Image manager picker (6 columns) + Image Download URL (6 columns)
+- Parent Category (6 columns)
+
+Edit page par current image ab image field ke andar thumbnail ke saath show hoti hai, aur picker/URL behaviour pehle jaisa hi hai. Create page ka `container-fluid` wrapper, purane `form-rows` classes, aur Edit page ka alag `category-edit-page-section` layout hata diya. Create page ka page title typo (`Create Cetegory`) bhi `Add Category` kar diya. Image manager picker dono pages me same partial se render hota hai.
+
+**Files changed:**
+- `resources/views/admin/categories/_form.blade.php` — new shared form partial (all fields, current image, image manager picker, submit/cancel buttons)
+- `resources/views/admin/categories/create.blade.php` — shared partial use kiya, title/design standard kiya
+- `resources/views/admin/categories/edit.blade.php` — shared partial use kiya, purana two-column custom layout hata diya
+
+**Verification:** `php artisan view:cache` pass; dono views runtime render kiye aur Name, Status, Image, Image URL, Parent Category, Browse button, form action, edit `_method=PUT` aur current image output verify kiya. `git diff --check` clean.
+
+## 386. (2026-11-13): Modern Two-Column Add/Edit Category Design
+
+**Change:** Add Category aur Edit Category forms ko modern two-column layout me redesign kiya, dono pages shared `admin.categories._form` partial se same design use karte hain.
+
+Layout:
+- Left (8 columns): "Category Details" card me Name, Parent Category, Status aur Image Download URL.
+- Right (4 columns): "Category Image" card me 1:1 image preview, current image ya placeholder, Browse Image Manager button aur recommended size hint.
+- Right sidebar desktop par sticky hai, jisme Save/Update + Cancel action card bhi hai.
+- Form controls ke liye rounded borders, focus ring, section header/subtitle, helper notes aur consistent spacing add ki.
+- Current image edit page par seedha preview box me dikhti hai; naya image select karne par wahi preview update hota hai.
+- Naya image select karne ke liye existing `admin.partials.image-manager-picker` hi use hota hai.
+
+**Files changed:**
+- `resources/views/admin/categories/_form.blade.php` — two-column layout, scoped category-form CSS, image preview, sticky action sidebar
+- `resources/views/admin/categories/create.blade.php` / `edit.blade.php` — same shared partial continue use karte hain (no separate layout)
+
+**Verification:** `php artisan view:cache` pass; create/edit views runtime render kiye aur two-column grid, image preview, browse button, hidden picker input, form action aur edit `_method=PUT` verify kiya. `git diff --check` clean.
+
+## 387. (2026-11-13): Product Review Duplicate Rule Audit
+
+**Question:** Kya ek user same product par review already add kar chuka ho to dobara review add kar sakta hai, aur agar wahi product dobara purchase kare to?
+
+**Current behavior (verified):**
+- `ReviewController@store` product ke `reviews_data` JSON me same `user_id` ki non-deleted review check karta hai. Duplicate hone par `403` aur message aata hai: "You have already reviewed this product. You can edit your existing review."
+- Eligibility `hasPurchased()` sirf ye check karta hai ki user ke kisi non-cancelled order me product present hai. Isliye same product dobara purchase karne par bhi existing review ki wajah se naya review block rahega.
+- Existing review ko dashboard "My Reviews" > Edit se update kiya ja sakta hai (`PUT /product/{slug}/review/{reviewId}`).
+- Review delete karne ke baad (`deleted = true`) user dobara review submit kar sakta hai, kyunki duplicate check deleted reviews ignore karta hai.
+- Per account/product ek hi active review rehta hai; alag accounts alag reviews kar sakte hain.
+
+**No code change:** Current code already "one active review per user per product" rule enforce karta hai. Agar business rule repurchase par naya review allow karna ho, to duplicate check ko order/purchase based karna hoga.
+
+**Files reviewed:**
+- `app/Http/Controllers/ReviewController.php` — duplicate check, purchase eligibility, update/delete
+- `app/Http/Controllers/DashboardController.php` — My Reviews listing (reviewed/pending)
+- `resources/views/user/reviews.blade.php` — Add/View/Edit/Delete review modal
+- `resources/views/product/show.blade.php` — product page review form
+- `routes/web.php` — review store/update/delete routes
+
+## 388. (2026-11-13): Order-Wise Product Reviews (One Review Per Purchase)
+
+**Requirement:** A user who already reviewed a product can submit another review if they repurchase the same product. Rule changed from "one active review per user per product" to "one review per purchase/order".
+
+**Behavior:**
+- User can review once per non-cancelled purchase/order of the same product.
+- Submitting a review auto-assigns the earliest unreviewed purchase order.
+- Submitting with an explicit `order_id` reviews that specific order; blocked if already reviewed for that order.
+- Once all purchase orders of a product are reviewed, no new review allowed (must edit existing review).
+- Deleting a review frees its order so it can be reviewed again.
+- Legacy reviews (no `order_id`) map to purchases on/before review date; undated legacy covers only earliest purchase.
+- Dashboard "My Reviews" shows per-order pending/reviewed status with order number/date.
+- Order page "Write Review" button disabled when current order already reviewed; passes `order_id` on submit.
+
+**Decision rationale:** Repurchase should generate a new review opportunity because the customer's experience may differ with a fresh batch/delivery. Existing reviews remain editable/deletable.
+
+**New file:**
+- `app/Services/ProductReviewEligibility.php` — purchase order listing, review-to-order allocation, reviewed order IDs, next unreviewed order.
+
+**Files changed:**
+- `app/Http/Controllers/ReviewController.php` — `store()` uses eligibility service; accepts `order_id`; stores `order_id`/`order_number`/`purchase_date` on review; `hasPurchased()` delegated to service; update skips deleted reviews.
+- `app/Http/Controllers/DashboardController.php` — `reviews()` lists per-order pending/reviewed items with order details.
+- `app/Http/Controllers/OrderController.php` — `show()` checks if current order already reviewed for each product.
+- `resources/views/user/reviews.blade.php` — displays order number/date and pending count.
+- `resources/views/user/orders/show.blade.php` — cancelled orders show "—"; reviewed orders disabled; passes `data-order-id` and submits `order_id`.
+
+**Verification:** `php -l` clean on all changed files; `php artisan view:cache` pass; runtime tests confirm: auto-assign, explicit order allow/block, all-reviewed blocked, deleted review frees order, dashboard pending/reviewed per order.
+
+## 389. (2026-11-13): Review System Verification Across All Entry Points
+
+**Requirement:** Verify order-wise review logic works consistently across product page, order page, and dashboard; fix any UI/inconsistency issues found.
+
+**Scope:**
+- Test review submit flow from product page (`/product/{slug}/review`) with and without `order_id`.
+- Test review submit flow from order page modal passing `order_id`.
+- Test dashboard "My Reviews" listing shows correct pending/reviewed status per order.
+- Test edit review (`PUT /product/{slug}/review/{reviewId}`) still works and doesn't create duplicate.
+- Test delete review frees the order for re-review.
+- Verify cancelled orders show "—" and reviewed orders are disabled on order page.
+- Verify legacy reviews (no order_id) map correctly and don't block later repurchases.
+- Run `php artisan view:cache` and `git diff --check` after all changes.
+
+**Files to verify:**
+- `app/Http/Controllers/ReviewController.php`
+- `app/Http/Controllers/DashboardController.php`
+- `app/Http/Controllers/OrderController.php`
+- `app/Services/ProductReviewEligibility.php`
+- `resources/views/user/reviews.blade.php`
+- `resources/views/user/orders/show.blade.php`
+- `resources/views/product/show.blade.php`
+
+**Verification (2026-11-18):**
+- Ran a DB-transaction verification script (`/tmp/opencode/verify_reviews.php`) with a temporary user, product, two non-cancelled orders, and one cancelled order. All data was rolled back. Result: **22 checks passed, 0 failed**.
+- Confirmed: cancelled orders are excluded; no purchase gets 403; first submit auto-assigns the earliest unreviewed order; repurchase gets the next order; third submit is blocked; explicit duplicate/cancelled/unknown `order_id` are blocked; delete frees the order; edit does not duplicate; dated and undated legacy reviews map correctly; dashboard My Reviews, product page and order detail pages render the right state; cancelled order page shows no review button.
+- **Bug found and fixed:** `OrderController@show` passed only the currently viewed order to `ProductReviewEligibility::reviewedOrderIds()`. For an undated legacy review, that collection's "earliest purchase" was the current order itself, so a later repurchase was incorrectly shown as **Reviewed** (disabled). It now passes `$eligibility->purchasedOrders($userId, (int) $item->product_id)` so the full purchase history is used. Verified by rendering the order detail page after the fix: repurchase shows **Write Review** and no disabled Reviewed button.
+- `php artisan view:cache` passed; `git diff --check` passed.
+
+**Status:** Completed
+
+## 390. (2026-11-16): Admin Sidebar Design Fix — Submenu Icons, Auto-Expand, Collapsed Tooltips
+
+**Problem:** Admin sidebar submenus still looked plain after earlier fixes — submenu items had no icons, parent submenus didn't reliably auto-expand when a child route was active, and collapsed sidebar (72px) hover tooltips were missing because Bootstrap tooltips were initialized before `data-bs-original-title` was set by the sidebar inline JS.
+
+**Solution:** Rewrote sidebar styling and tooltip setup so the design is actually visible and functional.
+
+### Files changed
+- `resources/views/admin/partials/sidebar.blade.php`:
+  - Added `fas` icons to all submenu items: Products (All Products, Bulk Import/Export, Categories, Brands, Stock Management, Commission, Product Reviews), Shipping (Configuration, Countries, States, Cities, Zones, Carriers).
+  - Parent submenus now auto-expand (`expanded`/`show`) when any child route is active (`routeIs` wildcard), not just parent route match.
+  - Products parent also active for `admin.reviews.*`.
+  - JS sets `data-bs-original-title` on `.nav-item` and `.sidebar-link` from visible label text, then re-initializes Bootstrap tooltips so collapsed sidebar hover tooltips work.
+- `public/assets/front/css/backend.css`:
+  - `.nav-item-sub` styles: flex layout, padding/gap, font-size, hover (`rgba(255,255,255,.04)`), active state (`rgba(255,255,255,.08)` + left border `#4bc5e7`).
+  - `.submenu-arrow` rotate animation on expand.
+  - Section separator borders between nav sections.
+  - Collapsed state: hides submenu items, centers parent nav icons, shows hover tooltip via `::after` using `data-bs-original-title`.
+  - Tooltip arrow colors matched to dark sidebar theme.
+
+### Verification
+- `php -l` clean on sidebar Blade file.
+- `php artisan view:cache` compiled successfully.
+- Sidebar renders with submenu icons, auto-expanded active parent, active child highlighting, and collapsed hover tooltips.
+
+## 391. (2026-11-16): Homepage Latest Post — View More Button & Auto Latest Option
+
+**Status: Completed**
+
+- Fixed homepage Latest Post section so the **View More** button shows in non-slider layouts (2–3 posts) when more accessible blog posts exist than are currently displayed.
+- Updated `hasMoreLatestPosts` logic to compare total accessible blog posts against displayed posts, including sections configured with specific `post_ids`.
+- Added **Post Source** option in Admin → Home Page Sections → Edit Latest Post:
+  - **Show latest published posts automatically** — always displays the most recent published posts.
+  - **Select specific posts manually** — displays only selected posts.
+- Stored `use_latest_posts` in latest post section `extra_data`; frontend respects it and manual post selection UI toggles in admin.
+- Cleared compiled views; verified homepage renders View More for the current latest-post configuration and PHP/Blade syntax checks pass.
+
+## 392. (2026-11-16): Admin UX Tweaks — Site Logs, Subscribers, Stock Search, Product Part Number
+
+**Status: Completed**
+
+- **Site Logs:** Changed default pagination to 20 entries per page and added a **Show** filter (`10/20/50/100/All`) in the logs filter form. `per_page` is accepted/validated in `AdminController::logs()` and preserved in pagination/query params.
+- **Newsletter Subscribers:** Added a search clear (X) option next to the email search when a search term is present.
+- **Stock Management:** Standardized the search field to match other admin pages (input-group with search button and a clear-search option that preserves other stock filters).
+- **Product Part Number:** Made Part Number display-only/uneditable on Create and Edit Product forms (`readonly`, `disabled`, styled as display field); server-side product create/update already does not accept part number changes.
+
+## 393. (2026-11-16): Admin Settings Enhancements — File System & Cache, Shipping, Integrations & Sidebar
+
+**Status: Completed**
+
+- **File System & Cache settings:** Added admin settings page/controller/routes (`admin.settings.file-system-cache`) for filesystem driver (Local/Public/S3), AWS credentials/URL, cache & session drivers, and Redis configuration. Values stored in `settings` (secrets encrypted) and applied at runtime via `AppServiceProvider` where supported; linked from Settings hub and sidebar.
+  - Fixed S3 secret validation to treat existing `.env`/config secret as configured (no forced re-entry when saved/configured).
+- **Settings hub links:** Linked existing/implemented pages from `/admin/settings` — Shipping Countries/States/Cities and Google reCAPTCHA.
+- **Shipping Cities search:** Standardized "City name" search field to match other admin pages (input-group search button + clear-search that preserves other filters).
+- **Social & Google integration settings:** Added configurable settings pages/controller/routes/views for Social media Logins (Google, Facebook, Twitter, Apple credentials/toggles), Facebook Chat, Facebook Comment, Google Map, and Google Firebase (secrets encrypted; blank keeps existing). Linked from Settings hub.
+- **Setup & Configurations sidebar:** Updated sidebar menu to include File System & Cache and new Social/Google settings links, and removed outdated commented disabled/duplicate entries.
+- Cleared compiled views and verified PHP syntax/routes where applicable.
+
+## 394. (2026-11-16): System Menu — Update & Server Status
+
+**Status: Completed**
+
+- Added `SystemStatusController` with two admin pages under the **System** sidebar group:
+  - **Server Status** (`admin.system.server-status`): Laravel/PHP versions, server/OS, environment & debug mode, DB connection/version/table count, disk usage, writable storage/cache paths, cache/session/queue/filesystem drivers, pending/failed jobs, PHP limits, and required PHP extensions.
+  - **Update** (`admin.system.update`): app/Laravel/PHP versions, git branch/commit, migration status with pending migration list, config/route cache status, and safe cache-clear actions.
+- Added routes for `admin.system.update.clear-all`, `clear-cache`, `clear-view`, `clear-config`, and `clear-route`.
+- Sidebar **System** group now includes File System & Cache, Update, Server Status, Logs, Revisions, and File Revisions, with auto-expand/active state for `admin.system.*`.
+- Views: `resources/views/admin/system/server-status.blade.php`, `resources/views/admin/system/update.blade.php`.
+- Note: the Update page is informational only — it does not auto-download or apply code updates.
+
+## 395. (2026-11-16): Support Module — Tickets & Product Conversations
+
+**Status: Completed**
+
+- Added a full admin **Support** module with a collapsible sidebar group (Ticket + Product Conversations) and live open-item badges.
+- **Database:** new migrations and models for `support_tickets`, `support_ticket_replies`, `product_conversations`, and `product_conversation_messages`.
+- **Tickets:** admin list with search (subject/name/email), status filter, per-page selector, and reply counts; detail page with customer info, full message thread, admin reply, status update (open/pending/resolved/closed), and delete.
+- **Product Conversations:** admin list with search (product/customer), status filter, message counts and last activity; detail page with product/customer/seller info, full message thread, admin reply, open/close status update, and delete. Opening a conversation marks customer/seller messages as read.
+- Sidebar badge counts are shared via a view composer in `AppServiceProvider` (guarded with try/catch so a missing table never breaks the panel).
+- Cleared/compiled Blade views, ran migrations, and verified support routes plus PHP/Blade syntax.
+
+## 396. (2026-11-16): Support Module — Customer-Facing Wiring
+
+**Status: Completed**
+
+- **Contact form → Support Ticket:** `/contact-us` submissions now also create a `support_tickets` record (category `Contact Form`, status `open`, linked user when logged in). Contact submission still succeeds even if ticket creation fails (try/catch + log).
+- **Product page → Product Conversation:** the existing product **Ask a question / Contact Seller** modal now:
+  - Logged-in users: creates (or appends to) an open `product_conversations` thread for that product with the inquiry as the first customer message.
+  - Guests: creates a `support_tickets` record (category `Product`, includes product name + URL) so the inquiry still reaches the admin Support queue.
+- **Customer Dashboard → My Support** (`/user/support`):
+  - Lists the user's tickets and product conversations with status badges, reply/message counts and pagination.
+  - **New Ticket** modal (subject, category, priority, message).
+  - Ticket detail page with full thread and customer reply (customer reply re-opens the ticket).
+  - Conversation detail page with product/seller context and customer reply.
+- Added `UserSupportController` and routes under the existing `auth` user group; added **My Support** link to the dashboard sidebar.
+- Verified: contact form creates a ticket, product inquiry creates a conversation, all My Support pages render (HTTP 200), Blade compile + PHP lint clean.
+
+## 397. (2026-11-16): Support Tickets/Conversations — Action Button Design Standardized
+
+**Status: Completed**
+
+- Replaced the plain Bootstrap outline eye buttons in the Support **Ticket** and **Product Conversations** list action columns with the site-wide action button pattern used by other admin pages (Products, Contacts, Subscribers).
+- Action cells now use `table-action-col` + `.action-buttons` wrapper, circular `action-btn btn-view` (SVG eye) and `action-btn btn-cancel` (SVG trash) buttons with Bootstrap tooltips and confirm prompts.
+- Column headers changed from `pe-3 text-end` to the standard `pe-3`.
+- Verified: Blade compile/lint clean and Ticket list renders with `action-buttons` markup (HTTP 200).
+
+## 398. (2026-11-16): User "My Support" — Action Button Design Standardized
+
+**Status: Completed**
+
+- Replaced the plain outline **View** buttons in the user dashboard **My Support** list (tickets and product conversations) with the same circular action button used on other user pages (Orders, Reviews, Inquiries): `.action-buttons` wrapper + `action-btn btn-view` with SVG eye and Bootstrap tooltip.
+- Tooltips: "View Ticket" and "View Conversation".
+- Verified: Blade compile/lint clean, `/user/support` renders HTTP 200 with `action-buttons` markup.
+
+## 399. (2026-11-16): Global Go-to-Page Pagination Summary
+
+**Status: Completed**
+
+- Added the current page, total pages, total results, and page size to the shared Go-to-page control across paginated pages.
+- Made the control wrap on narrow screens so the summary remains readable.
+- Verified the shared pagination view renders the requested page summary and Blade compilation passes.
+
+## 400. (2026-11-17): Home Page Section Edit — Services Tab 500 Error
+
+**Status: Completed**
+
+- `resources/views/admin/home-page/edit.blade.php` services block contained a stray product **force-delete** form (a copy/paste from the Products list) inside the `@foreach($services ...)` loop, referencing an undefined `$product` and causing `Undefined variable $product` (HTTP 500) on `/admin/home-page/{id}/edit` for `services` sections.
+- Replaced the stray block with the standard per-row remove button used by the Partners rows (`btn btn-sm btn-outline-danger` → `this.closest('.service-item').remove()`), matching the `serviceRowHtml()` JS template used by **Add Service**.
+- Verified: PHP lint + Blade compile clean; the `services` section (id 11) and other section types now render without errors.
+
+## 401. (2026-11-17): Newsletter Subscribers — Search Field Matches Other Admin Pages
+
+**Status: Completed**
+
+- Replaced the ad-hoc search input (input + separate search/clear buttons, `name="email"`) on the admin **Newsletter Subscribers** page with the shared `admin.partials.search-form` partial used by Products, Blogs, Categories, Brands, FAQs, Pages, Images, Pickup Points, etc.
+- Search now uses the standard `search` query parameter and partial markup (`input-group` with search button first, standard clear button, tooltips).
+- `SubscriberController@index` reads `search` (falls back to legacy `email` param for old links/bookmarks).
+- Guarded the "Showing X-Y of Z" summary against null `firstItem()`/`lastItem()` on empty results.
+- Verified: PHP lint + Blade compile clean, page renders with the shared search markup, and filtering works (non-matching term → 0, empty → all).
+
+## 402. (2026-11-17): Shared Search Field — Clear Button Replaces Search When Filled
+
+**Status: Completed**
+
+- The shared `admin.partials.search-form` partial now swaps the leading input-group button between **Search** (magnifier, primary) and **Clear** (×, outline-danger) depending on whether the search input has a value.
+  - Server-side: when `search` is present in the query string the button renders in clear state, so a page reload keeps the correct icon.
+  - Client-side: a single delegated script (rendered once via `@once`, safe when multiple search forms exist) toggles the button, and updates the Bootstrap tooltip title.
+  - **Fix:** Clear mode only activates when the typed value matches the value already applied in the URL (`data-submitted`). A freshly typed/new term keeps the **Search** button so clicking submits the search; once the filter is applied the button becomes **Clear** and clicking clears it (navigates to `$clearRoute`). This resolves the issue where typing flipped the button to Clear and clicking it cleared the field instead of searching.
+- The old standalone clear (×) link beside the input now only renders for non-search filters (`$showClear` && no search text), avoiding duplicate clear buttons.
+- Applies automatically to all pages using the shared partial: Newsletter Subscribers, Products, Blogs, Categories, Brands, FAQs, Pages, Images, Pickup Points, user Reviews, etc.
+- Verified: Blade compile (`view:cache`) clean, partial renders correct search state (empty) and clear state (filled), and the inline script is emitted only once per page.
+
+## 403. (2026-11-17): Shared Search Partial Rolled Out To Remaining Admin Pages
+
+**Status: Completed**
+
+- Extended `admin.partials.search-form` with an `embedded` mode so the same Search/Clear toggle can be used inside existing filter forms (no nested `<form>`): options `embedded`, `inputClass`, `inputId`, `inputGroupStyle`, `showClear`, `clearRoute`. The toggle script now works on any surrounding `<form>` containing `.admin-search-toggle`.
+- Migrated these pages to the shared partial (removed their ad-hoc search input-group + duplicate clear buttons):
+  - Support **Tickets** (also moved the status/per-page selects inside the search form so their `this.form.submit()` works).
+  - Support **Product Conversations**.
+  - Admin **Product Reviews** (clear resets status + search via `clearRoute`).
+  - **Stock** management.
+  - Settings **Shipping Cities**, **Countries**, **States** (clear resets the page filters via `clearRoute`).
+  - Settings **Currency** and **Languages**.
+  - **Site Logs** (replaced its bespoke search/clear button JS; clear now also resets the type filter and preserves the selected log file).
+  - User dashboard **My Reviews**: removed the nested `<form>` wrapper that previously wrapped the partial.
+- Remaining `name="search"` occurrences in views are hidden inputs that preserve the search term across sort/filter forms, plus the public site-header search (separate design).
+- Verified: `view:cache` clean; all migrated pages render (Tickets, Conversations, Reviews, Stock, Cities, Countries, States, Currency, Languages, Logs) and output the shared `admin-search-toggle` markup.
+
+## 404. (2026-11-17): All Products Table — Rating Stars Match Frontend
+
+**Status: Completed**
+
+- Replaced the single Font Awesome star + number in the admin **All Products** table Rating column with the frontend star design: five inline SVG stars using the same path/colors (`#EEAE0B` filled, `#E2E8F0` empty), matching the product card (`partials/product-card`) and the Admin Product Reviews rows.
+- Filled count uses `round(rating)` like the frontend; the numeric rating is shown next to the stars in muted small text.
+- Only renders stars when `rating > 0`; products with a stored `0.00` rating now show `-` instead of a meaningless star row (frontend also hides ratings when there are no reviews).
+- Verified: `view:cache` clean; sorting by rating renders 5 filled stars for each rated product (4 products → 20 yellow stars, 0 grey), and the default page shows `-` with no stars.
+
+## 405. (2026-11-17): Admin Add/Edit Brand Form — Category-Style Layout
+
+**Status: Completed**
+
+- Added `resources/views/admin/brands/_form.blade.php` mirroring the Category form: 8/4 responsive layout, rounded cards/sidebar, sticky image + action cards, labelled fields with `old()` values and validation feedback.
+- `create.blade.php` and `edit.blade.php` are now thin wrappers around the shared partial (POST/PUT, Save/Update labels, `admin.brands.index` cancel).
+- Brand Image now uses the Image Manager picker with a square preview (`impPreview_brand_image`) like the Category image card; `description` and `website` inputs are retained in the details card, and Status is now a select (Active/Inactive) matching the Category form (`boolean('status')` in the controller still applies).
+- Added migration `2026_11_17_000001_add_website_description_to_brands_table.php` and added both fields to `Brand::$fillable`, so the Website/Description inputs actually persist (they were previously silently ignored).
+- Verified: migration ran, `php -l`, `view:cache` clean; both `/admin/brands/create` and `/admin/brands/edit/{id}` render successfully with the picker markup.
+
+## 406. (2026-11-17): Admin Add/Edit Seller Form — Same Category/Brand Style
+
+**Status: Completed**
+
+- Added `resources/views/admin/sellers/_form.blade.php` using the same design as Category/Brand: 8/4 responsive layout, rounded cards, sticky Seller Image + action sidebar, labelled fields with `old()` values and validation feedback.
+- Kept all existing fields (Name, Location, Shipping Cost, Description) and converted the Active checkbox to a Status select (Active/Inactive), which the controller's `boolean('status')` still handles.
+- Seller Image now shows a square preview with placeholder (instead of the old 60px thumbnail / empty hidden div) and keeps the Image Manager picker (`seller_image`).
+- `create.blade.php` and `edit.blade.php` are now thin wrappers around the shared partial (POST/PUT, Save/Update labels, Cancel back to seller list).
+- Verified: `view:cache` clean; both `/admin/sellers/create` and `/admin/sellers/edit/{id}` render successfully.
+
+## 407. (2026-11-17): Admin Sidebar — Wrong "Setup & Configurations" Highlight
+
+**Status: Completed**
+
+- Fixed `resources/views/admin/partials/sidebar.blade.php`: `Setup & Configurations` was expanding/highlighting on **Manage Home** and **Search Categories** because its condition included `admin.home-page.*` and a broad `admin.settings.*` match.
+- Removed `admin.home-page.*` from the group condition and added `admin.settings.search-categories*` to the existing exclusions (alongside commission and file-system/cache), so those pages highlight only their own top-level nav items.
+- Verified by rendering the pages: Home Page → `Home Page` active, Search Categories → `Search Categories` active, Setup → `collapsed` on both; a real settings page (`/admin/settings/header`) still shows Setup as `active`.
+
+## 408. (2026-11-17): File Revisions — Tracking Stopped / Watcher Fixed
+
+**Status: Completed (temporary watcher running; systemd unit needs sudo fix)**
+
+- **Root cause:** `file-watcher.service` is active but its `WorkingDirectory` is still `/var/www/html/stautoparts` (old project), so the Node/chokidar watcher was watching the wrong folder. The older PHP watcher had also died (last revision 2026-10-23 13:34:44, rev 14491), and the Node watcher swallows audit errors (`stdio: 'ignore'`), so nothing was recorded in this project.
+- Ran `php artisan file:audit --max-archive-days=0 --per-file-limit=0` to backfill all changes since 2026-10-23: `file_revisions` count 13985 → 14282 (+297). Admin File Revisions page renders fine.
+- Started the correct project watcher with `bash file-watcher.sh start` (PID 236437; `php artisan file:audit --watch --interval=10`). Verified end-to-end with a temporary test file: `created` + `deleted` events appeared in `file_revisions`, then the two test revisions and backup/mirror files were removed.
+- **Permanent fix still requires sudo** (update the systemd unit to point at this project):
+  `sudo sed -i 's#WorkingDirectory=/var/www/html/stautoparts#WorkingDirectory=/var/www/html/new-steve#' /etc/systemd/system/file-watcher.service && sudo systemctl daemon-reload && sudo systemctl restart file-watcher`
+  After that, stop the temporary watcher with `bash file-watcher.sh stop`.
+
+## 409. (2026-11-17): User Edit Profile — Photo Upload Fixed
+
+**Status: Completed**
+
+- Fixed `resources/views/user/profile-edit.blade.php`: the avatar card had a dead `impOpen_avatar()` button/hidden `image_from_manager` input in a **separate form**, and the Image Manager picker partial was never included. Since that picker is admin-only (`role:master_admin,admin,staff`), it could never work for regular users; the main form also had no `avatar` file input.
+- Rebuilt the page as **one multipart form**: circular avatar preview + `Change photo` file input (`name="avatar"`) now live in the same form as the profile/password fields, so the existing `UserController@updateProfile` file handling (`validate + saveImageWithWebp + deleteImageFiles`) actually receives the upload.
+- Added instant client-side preview of the chosen image, kept validation errors and the 2 MB / JPG-PNG-WebP-GIF hint.
+- Verified: `view:cache` clean and `/user/profile/edit` renders with exactly one form, one `avatar` file input, `multipart/form-data`, and no dead `impOpen_avatar` references.
+
+## 410. (2026-11-17): User Sidebar — "My Profile" Active on Edit Page
+
+**Status: Completed**
+
+- Fixed `resources/views/user/layouts/sidebar.blade.php`: the `My Profile` item only checked `request()->routeIs('user.profile')`, so `/user/profile/edit` (and the update POST) left it unhighlighted.
+- Changed the condition to `request()->routeIs('user.profile*')` so the main profile page, edit page and update route all keep the item active.
+- Verified by rendering both `/user/profile` and `/user/profile/edit`: the sidebar `My Profile` link has the `active` class on both.
+
+## 411. (2026-11-17): Admin Sidebar — "Vat & TAX" Active on Tax Type Pages
+
+**Status: Completed**
+
+- Fixed `resources/views/admin/partials/sidebar.blade.php`: the `Vat & TAX` submenu item only matched `admin.settings.custom*`, so tax-type routes (`admin.settings.tax-types.*`, e.g. `/admin/settings/tax-types/create`) did not highlight it.
+- Added `admin.settings.tax-types*` to the same condition.
+- Verified by rendering `/admin/settings/tax-types/create` and `/admin/settings/custom`: `Vat & TAX` gets the `active` class on both.
+
+## 412. (2026-11-18): Admin Sidebar — Tablet (768–1024px) Uses Mobile Off-Canvas Layout
+
+**Status: Completed**
+
+- Extended the mobile sidebar behavior to tablet widths in `public/assets/front/css/backend.css`: added `@media (max-width:1024px)` so `.admin-sidebar` is off-canvas (`translateX(-100%)`, `.open` → `translateX(0)`) and `.main-content { margin-left:0; }`. Removed those same rules from the old `max-width:767px` block; other mobile typography/padding rules remain unchanged.
+- Re-enabled the navbar hamburger and in-sidebar close button on tablet with ID-level overrides in the same media query (`#sidebarToggle { display:flex !important; }`, `#sidebarCloseBtn { display:inline-flex !important; }`), because Bootstrap's `d-md-none` hid them at ≥768px.
+- Scoped desktop collapsed-mode behavior to small screens in `resources/views/admin/partials/sidebar.blade.php`: when `icon-collapsed` / `icon-collapsed-body` is present on a tablet/mobile viewport, the sidebar stays a full 280px off-canvas drawer, `.main-content` keeps `margin-left:0`, labels/submenus stay visible, and the inner `#sidebarIconToggle` chevron is hidden (navbar hamburger is the only toggle).
+- Added safety handling in `public/assets/front/js/backend.js`: sidebar links close the drawer on tablet/mobile (submenu expand toggles excluded), and resizing above 1024px removes any stale `.open` / `body.sidebar-open` state.
+- Verified: `node --check` on `backend.js`, CSS brace balance, `view:cache`, `git diff --check`, and `/admin/dashboard` render all passed. Expected result: ≥1025px desktop keeps the fixed 280/72px sidebar with matching content offset; 768–1024px and below use off-canvas with zero content offset.
+
+## 413. (2026-11-18): Shipping Cities — Clear Button Beside Filter
+
+**Status: Completed**
+
+- Updated `resources/views/admin/settings/shipping/cities/index.blade.php`: left the embedded `admin.partials.search-form` untouched so its built-in Search↔Clear toggle keeps handling the `search` field on its own.
+- Added a separate `Clear` button immediately beside the `Filter` button in the filter row. It appears when any of the other filters is active (`country_id`, `state_id` or `status`) and links to `route('admin.settings.shipping-cities.index')`, resetting all filters and the page number in one click.
+- Search-only stays clean: no extra button is rendered because the search form already shows its own red ×; when search is combined with another filter, the new Clear button clears everything including the search text.
+- Verified with `view:cache` and Blade renders of `/admin/settings/shipping-cities`, `?search=Abbottabad`, `?country_id=1` and `?country_id=1&search=Abbottabad`: clear button count is 0/0/1/1 respectively, the old standalone search-partial clear link is never rendered, and the Filter button is present in every case. Full `git diff --check` still reports pre-existing whitespace warnings in other already-modified files, which were left untouched.
+
+## 414. (2026-11-18): Search Categories — "Available Categories" Search Field Restyled
+
+**Status: Completed**
+
+- Updated `resources/views/admin/settings/search-categories.blade.php`: replaced the plain `Filter categories...` text input above the Available Categories list with the same Bootstrap `input-group` search design used on other admin pages (`input-group-text btn steve-btn gap-1 btn-primary` icon button + `form-control`), and renamed the placeholder to `Search categories...`.
+- The new button is deliberately `type="button"` and does **not** use the shared `admin-search-toggle` class, so it never submits the surrounding `#searchCategoriesForm` and never triggers the shared server-side search/clear navigation.
+- Refactored the existing client-side filter into `applyCategoryFilter()` and added local button behavior matching the shared search UX: typing switches the icon to a red ×; clicking × clears the text, re-runs the local category filter and restores the search icon/tooltip; clicking an empty field just focuses the input.
+- Verified: `view:cache`, `node --check` on the extracted page script, and a Blade render of `/admin/settings/search-categories` — input group and search button render once, button is `type="button"`, no `admin-search-toggle` from the shared partial is present, and the new placeholder appears.
+
+## 415. (2026-11-18): Responsive Tables — Numeric First Cells Keep Auto Width
+
+**Status: Completed**
+
+- Fixed the `@media (max-width:991.98px)` block in `public/assets/front/css/style.css`: the global `td:first-child { width:100% !important; ... }` rule now has a following override for plain numeric row numbers — `td:first-child.admin-row-number, .admin-languages-table td:first-child { width:auto !important; }` — so cells such as `<td>1</td>` no longer stretch to full width on tablet/mobile.
+- Added the `admin-row-number` class to numeric first-column cells in 28 Blade views across admin listings and checkout/invoice tables (serial numbers generated via `firstItem() + $loop->index`, `$loop->iteration`, `$loop->index` or `$key + 1`). Non-numeric first cells were left untouched.
+- Consolidated the old standalone `.admin-languages-table td:first-child` override into the new override block so the ordering/specificity is unambiguous.
+- Verified: `view:cache`, CSS rule present, all added class lines free of trailing whitespace, and a `/admin/settings/shipping-cities` render showing 50 numbered cells with the new class. The `width:100%` rule still applies to non-numeric first cells as before.

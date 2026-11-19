@@ -10,7 +10,7 @@
         <span class="fw-semibold">{{ $paginator->total() }}</span>
         {!! __('results') !!}
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-end align-items-center">
         <ul class="gs-pagination mb-0">
             {{-- First Page Link --}}
             @if ($paginator->onFirstPage())

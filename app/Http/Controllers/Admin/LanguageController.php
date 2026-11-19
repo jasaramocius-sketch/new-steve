@@ -29,7 +29,9 @@ class LanguageController extends Controller
 
     public function updateDefault(Request $request)
     {
-        $validated = $request->validate(['default_language' => 'required|string|exists:languages,code']);
+        $validated = $request->validate([
+            'default_language' => ['required', 'string', Rule::exists('languages', 'code')->whereNull('deleted_at')],
+        ]);
         $language = Language::where('code', $validated['default_language'])->firstOrFail();
         if (! $language->is_active) {
             return back()->withErrors(['default_language' => 'The default language must be active.'])->withInput();
@@ -42,26 +44,36 @@ class LanguageController extends Controller
 
     public function create()
     {
-        return view('admin.settings.languages.form', ['language' => new Language(), 'isEditing' => false]);
+        return view('admin.settings.languages.form', ['language' => new Language, 'isEditing' => false]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100',
-            'code' => ['required', 'string', 'max:12', 'regex:/^[a-z]{2,3}(?:_[A-Z]{2})?$/', 'unique:languages,code'],
+            'code' => ['required', 'string', 'max:12', 'regex:/^[a-z]{2,3}(?:_[A-Z]{2})?$/', Rule::unique('languages', 'code')->whereNull('deleted_at')],
             'flutter_code' => 'nullable|string|max:12|regex:/^[a-zA-Z_-]+$/',
             'rtl' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
         ]);
 
-        $language = Language::create([
+        $attributes = [
             'name' => $validated['name'],
             'code' => $validated['code'],
             'flutter_code' => $validated['flutter_code'] ?? null,
             'rtl' => $request->boolean('rtl'),
             'is_active' => $request->boolean('is_active'),
-        ]);
+        ];
+
+        $language = Language::withTrashed()->where('code', $validated['code'])->first();
+
+        if ($language) {
+            $language->restore();
+            $language->update($attributes);
+        } else {
+            $language = Language::create($attributes);
+        }
+
         $this->ensureTranslationFile($language);
 
         return redirect()->route('admin.settings.languages.index')->with('success', 'Language added.');

@@ -54,16 +54,15 @@
                 </button>
                 @endif
                 <span class="text-muted small">Show</span>
-                <select class="form-select w-auto" onchange="window.location.href=this.value">
+                <select class="form-select show-per-page w-auto" onchange="window.location.href=this.value">
                     @foreach([10, 20, 50, 100] as $n)
-                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }}</option>
+                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $n, 'page' => null]) }}" {{ (int)request('per_page', 20) === $n ? 'selected' : '' }}>{{ $n }} per page</option>
                     @endforeach
                 </select>
-                <span class="text-muted small">per page</span>
             </div>
             @include('admin.partials.date-range-filter', ['filterRoute' => 'admin.revisions.index'])
             @if($filterModelType || $filterModelId)
-                <a href="{{ route('admin.revisions.index') }}" class="btn btn-sm btn-outline-danger" title="Clear page filter">
+                <a href="{{ route('admin.revisions.index') }}" class="btn btn-outline-danger" title="Clear page filter">
                     <i class="fas fa-times me-1"></i> Filtered
                     @if($filterModelType)
                         {{ class_basename($filterModelType) }}
@@ -100,7 +99,7 @@
                         <td class="ps-3">
                             <input type="checkbox" class="form-check-input m-0 bulk-select-row" value="{{ $rev->id }}" aria-label="Select revision {{ $rev->id }}">
                         </td>
-                        <td>{{ $revisions->firstItem() + $loop->index }}</td>
+                        <td class="admin-row-number">{{ $revisions->firstItem() + $loop->index }}</td>
                         <td>
                             @if($rev->user)
                                 {{ $rev->user->name }}

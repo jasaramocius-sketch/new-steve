@@ -14,6 +14,8 @@ use App\Models\PickupPoint;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Vehicle;
+use App\Services\ShippingChargeService;
+use App\Services\ShippingRateService;
 use App\Services\StripeCheckoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -448,40 +450,128 @@ class CartController extends Controller
         $total = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
         $pickupPoints = PickupPoint::where('is_open', true)->orderBy('name')->get();
         $pickupEnabled = Setting::get('pickup_point', '1') === '1' && $pickupPoints->isNotEmpty();
+        $homeDeliveryEnabled = Setting::get('home_delivery_enabled', '1') === '1';
+        $shippingService = app(ShippingChargeService::class);
+        $shippingType = $shippingService->type();
+        $shippingRates = collect();
+        $standardShipping = null;
+        $homeDeliveryAvailable = false;
 
-        return view('checkout.delivery-info', compact('cart', 'total', 'billing', 'pickupEnabled', 'pickupPoints'));
+        if ($homeDeliveryEnabled) {
+            if ($shippingService->isCarrierBased()) {
+                $shippingRates = app(ShippingRateService::class)->availableRatesFor($billing);
+                $homeDeliveryAvailable = $shippingRates->isNotEmpty();
+            } else {
+                $standardShipping = $shippingService->quote($cart, $billing);
+                $homeDeliveryAvailable = $standardShipping !== null;
+            }
+        }
+
+        return view('checkout.delivery-info', compact(
+            'cart',
+            'total',
+            'billing',
+            'pickupEnabled',
+            'pickupPoints',
+            'homeDeliveryEnabled',
+            'shippingRates',
+            'shippingType',
+            'standardShipping',
+            'homeDeliveryAvailable'
+        ));
     }
 
     public function deliveryInfoSubmit(Request $request)
     {
-        $allowedShippingMethods = ['free'];
-        if (Setting::get('pickup_point', '1') === '1' && PickupPoint::where('is_open', true)->exists()) {
-            $allowedShippingMethods[] = 'pickup';
+        $billing = session('billing_info');
+        if (! $billing) {
+            return redirect()->route('checkout');
         }
-
-        $request->validate([
-            'shipping_method' => 'required|in:'.implode(',', $allowedShippingMethods),
-            'pickup_point_id' => $request->input('shipping_method') === 'pickup'
-                ? 'required|integer|exists:pickup_points,id'
-                : 'nullable',
-        ]);
 
         $cart = $this->refreshCartPrices();
         if (count($cart) === 0) {
             return redirect()->route('cart')->with('error', 'Your cart is empty.');
         }
 
-        $shippingCosts = ['free' => 0, 'pickup' => 0];
-        $shippingCost = $shippingCosts[$request->shipping_method];
+        $homeDeliveryEnabled = Setting::get('home_delivery_enabled', '1') === '1';
+        $shippingService = app(ShippingChargeService::class);
+        $shippingType = $shippingService->type();
+        $shippingRates = collect();
+        $standardShipping = null;
+        $homeDeliveryAvailable = false;
+
+        if ($homeDeliveryEnabled) {
+            if ($shippingService->isCarrierBased()) {
+                $shippingRates = app(ShippingRateService::class)->availableRatesFor($billing);
+                $homeDeliveryAvailable = $shippingRates->isNotEmpty();
+            } else {
+                $standardShipping = $shippingService->quote($cart, $billing);
+                $homeDeliveryAvailable = $standardShipping !== null;
+            }
+        }
+
+        $allowedShippingMethods = [];
+        if ($homeDeliveryAvailable) {
+            $allowedShippingMethods[] = 'home_delivery';
+        }
+        if (Setting::get('pickup_point', '1') === '1' && PickupPoint::where('is_open', true)->exists()) {
+            $allowedShippingMethods[] = 'pickup';
+        }
+        if ($allowedShippingMethods === []) {
+            return back()->withInput()->withErrors([
+                'shipping_method' => 'No delivery option is available for this address. Contact the store for assistance.',
+            ]);
+        }
+
+        $requiresCarrierRate = $request->input('shipping_method') === 'home_delivery'
+            && $shippingService->isCarrierBased();
+
+        $request->validate([
+            'shipping_method' => 'required|in:'.implode(',', $allowedShippingMethods),
+            'shipping_rate_id' => $requiresCarrierRate ? 'required|integer' : 'nullable',
+            'pickup_point_id' => $request->input('shipping_method') === 'pickup'
+                ? 'required|integer|exists:pickup_points,id'
+                : 'nullable',
+        ]);
+
         $shippingInfo = [
             'method' => $request->shipping_method,
-            'cost' => $shippingCost,
         ];
-        if ($request->shipping_method === 'pickup') {
+        if ($request->shipping_method === 'home_delivery') {
+            if ($shippingService->isCarrierBased()) {
+                $rate = app(ShippingRateService::class)->resolveAvailableRate($billing, (int) $request->input('shipping_rate_id'));
+                if (! $rate) {
+                    return back()->withInput()->withErrors(['shipping_rate_id' => 'That carrier rate is no longer available for this address. Please choose another option.']);
+                }
+                $shippingInfo += [
+                    'cost' => (float) $rate->fee,
+                    'rate_id' => $rate->id,
+                    'zone_id' => $rate->shipping_zone_id,
+                    'zone_name' => $rate->zone->name,
+                    'carrier_id' => $rate->shipping_carrier_id,
+                    'carrier_name' => $rate->carrier->name,
+                    'delivery_estimate' => $rate->carrier->delivery_estimate,
+                ];
+            } else {
+                if (! $standardShipping) {
+                    return back()->withInput()->withErrors(['shipping_method' => 'No shipping charge is available for this address.']);
+                }
+                $shippingInfo += [
+                    'cost' => $standardShipping['cost'],
+                    'rate_id' => null,
+                    'zone_id' => null,
+                    'zone_name' => $standardShipping['zone_name'],
+                    'carrier_id' => null,
+                    'carrier_name' => $standardShipping['carrier_name'],
+                    'delivery_estimate' => $standardShipping['delivery_estimate'],
+                ];
+            }
+        } elseif ($request->shipping_method === 'pickup') {
             $pickupPoint = PickupPoint::whereKey($request->input('pickup_point_id'))->where('is_open', true)->first();
             if (! $pickupPoint) {
                 return back()->withInput()->withErrors(['pickup_point_id' => 'Choose an open pickup point.']);
             }
+            $shippingInfo['cost'] = 0;
             $shippingInfo['pickup_point_id'] = $pickupPoint->id;
         }
 
@@ -516,6 +606,17 @@ class CartController extends Controller
             }
             $shipping['pickup_point'] = $pickupDetails;
             session(['shipping_info' => $shipping]);
+        } elseif (($shipping['method'] ?? null) === 'home_delivery') {
+            $shipping = $this->refreshHomeDeliveryRate($shipping, $billing, $cart);
+            if (! $shipping) {
+                session()->forget('shipping_info');
+
+                return redirect()->route('checkout.delivery-info')->with('error', 'The selected shipping rate is no longer available. Choose a delivery option.');
+            }
+        } else {
+            session()->forget('shipping_info');
+
+            return redirect()->route('checkout.delivery-info')->with('error', 'Choose a valid shipping option to continue.');
         }
         $total = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
         $shippingCost = $shipping['cost'];
@@ -567,6 +668,17 @@ class CartController extends Controller
             }
             $shipping['pickup_point'] = $pickupDetails;
             session(['shipping_info' => $shipping]);
+        } elseif (($shipping['method'] ?? null) === 'home_delivery') {
+            $shipping = $this->refreshHomeDeliveryRate($shipping, $billing, $cart);
+            if (! $shipping) {
+                session()->forget('shipping_info');
+
+                return redirect()->route('checkout.delivery-info')->with('error', 'The selected shipping rate is no longer available. Choose a delivery option.');
+            }
+        } else {
+            session()->forget('shipping_info');
+
+            return redirect()->route('checkout.delivery-info')->with('error', 'Choose a valid shipping option to continue.');
         }
 
         $total = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
@@ -595,6 +707,12 @@ class CartController extends Controller
         $shippingDetails = $billing;
         if (($shipping['method'] ?? null) === 'pickup' && ! empty($shipping['pickup_point'])) {
             $shippingDetails['pickup_point'] = $shipping['pickup_point'];
+        } elseif (($shipping['method'] ?? null) === 'home_delivery') {
+            $shippingDetails['shipping'] = [
+                'carrier' => $shipping['carrier_name'],
+                'delivery_estimate' => $shipping['delivery_estimate'],
+                'zone' => $shipping['zone_name'],
+            ];
         }
 
         // Card payments are only marked paid after Stripe confirms the charge.
@@ -931,6 +1049,9 @@ class CartController extends Controller
             'db_id' => $order->id,
             'date' => $order->created_at->format('d M, Y'),
             'total' => (float) $order->total_amount,
+            'shipping_fee' => (float) $order->shipping_fee,
+            'delivery_type' => $order->delivery_type,
+            'shipping_carrier' => $billing['shipping']['carrier'] ?? null,
             'subtotal' => $subtotal,
             'status' => ucfirst($order->status),
             'payment_method' => $order->payment_method,
@@ -1006,6 +1127,50 @@ class CartController extends Controller
             ->first();
 
         return $pickupPoint?->only(['id', 'name', 'manager', 'location', 'contact']);
+    }
+
+    private function refreshHomeDeliveryRate(array $shipping, array $billing, array $cart): ?array
+    {
+        if (Setting::get('home_delivery_enabled', '1') !== '1') {
+            return null;
+        }
+
+        $shippingService = app(ShippingChargeService::class);
+
+        if ($shippingService->isCarrierBased()) {
+            if (empty($shipping['rate_id'])) {
+                return null;
+            }
+
+            $rate = app(ShippingRateService::class)->resolveAvailableRate($billing, (int) $shipping['rate_id']);
+            if (! $rate) {
+                return null;
+            }
+
+            $shipping['cost'] = (float) $rate->fee;
+            $shipping['zone_id'] = $rate->shipping_zone_id;
+            $shipping['zone_name'] = $rate->zone->name;
+            $shipping['carrier_id'] = $rate->shipping_carrier_id;
+            $shipping['carrier_name'] = $rate->carrier->name;
+            $shipping['delivery_estimate'] = $rate->carrier->delivery_estimate;
+        } else {
+            $quote = $shippingService->quote($cart, $billing);
+            if (! $quote) {
+                return null;
+            }
+
+            $shipping['cost'] = $quote['cost'];
+            $shipping['zone_id'] = null;
+            $shipping['zone_name'] = $quote['zone_name'];
+            $shipping['carrier_id'] = null;
+            $shipping['carrier_name'] = $quote['carrier_name'];
+            $shipping['delivery_estimate'] = $quote['delivery_estimate'];
+            $shipping['rate_id'] = null;
+        }
+
+        session(['shipping_info' => $shipping]);
+
+        return $shipping;
     }
 
     private function minimumOrderAmountRedirect()

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\ProductReviewEligibility;
 use App\Services\ProductReviewSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 
 class ReviewController extends Controller
 {
-    public function store(Request $request, $slug)
+    public function store(Request $request, $slug, ProductReviewEligibility $eligibility)
     {
         if ($request->isMethod('get')) {
             return redirect()->route('product', $slug);
@@ -24,20 +24,41 @@ class ReviewController extends Controller
             'text' => 'required|string|max:1000',
             'images' => 'nullable|array|max:5',
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
+            'order_id' => 'nullable|integer',
         ]);
 
-        $hasPurchased = $this->hasPurchased(auth()->id(), $product->id);
-        if (! $hasPurchased) {
+        $userId = (int) auth()->id();
+        $purchasedOrders = $eligibility->purchasedOrders($userId, $product->id);
+
+        if ($purchasedOrders->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'You must purchase this product to write a review.'], 403);
         }
 
         $reviews = $product->reviews_data ?? [];
+        $reviewedOrderIds = $eligibility->reviewedOrderIds($reviews, $userId, $purchasedOrders);
 
-        $existingReview = collect($reviews)->first(function ($r) {
-            return ($r['user_id'] ?? null) == auth()->id() && ! ($r['deleted'] ?? false);
-        });
-        if ($existingReview) {
-            return response()->json(['success' => false, 'message' => 'You have already reviewed this product. You can edit your existing review.'], 403);
+        $requestedOrderId = (int) ($validated['order_id'] ?? 0);
+
+        if ($requestedOrderId > 0) {
+            $order = $purchasedOrders->first(
+                fn ($purchase) => (int) $purchase->id === $requestedOrderId
+            );
+
+            if (! $order) {
+                return response()->json(['success' => false, 'message' => 'This order is not eligible for a review.'], 403);
+            }
+
+            if (in_array($requestedOrderId, $reviewedOrderIds, true)) {
+                return response()->json(['success' => false, 'message' => 'You have already reviewed this product for this order.'], 403);
+            }
+        } else {
+            $order = $purchasedOrders->first(
+                fn ($purchase) => ! in_array((int) $purchase->id, $reviewedOrderIds, true)
+            );
+
+            if (! $order) {
+                return response()->json(['success' => false, 'message' => 'You have already reviewed this product for all your purchases. You can edit your existing review.'], 403);
+            }
         }
 
         $imagePaths = [];
@@ -56,6 +77,9 @@ class ReviewController extends Controller
             'images' => $imagePaths,
             'date' => now()->format('M d, Y'),
             'review_date' => now()->toDateString(),
+            'order_id' => (int) $order->id,
+            'order_number' => $order->order_number,
+            'purchase_date' => $order->created_at?->toDateString(),
             'deleted' => false,
         ];
 
@@ -119,6 +143,9 @@ class ReviewController extends Controller
 
         foreach ($reviews as &$r) {
             if (($r['id'] ?? '') === $reviewId) {
+                if (($r['deleted'] ?? false)) {
+                    continue;
+                }
                 if (($r['user_id'] ?? null) != auth()->id()) {
                     return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
                 }
@@ -161,12 +188,9 @@ class ReviewController extends Controller
             return false;
         }
 
-        return OrderItem::where('product_id', $productId)
-            ->whereHas('order', function ($q) use ($userId) {
-                $q->where('user_id', $userId)
-                    ->where('status', '!=', 'cancelled');
-            })
-            ->exists();
+        return app(ProductReviewEligibility::class)
+            ->purchasedOrders((int) $userId, (int) $productId)
+            ->isNotEmpty();
     }
 
     private function recomputeRating(Product $product, array $reviews)

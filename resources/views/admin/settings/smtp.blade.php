@@ -34,7 +34,7 @@
                             </div>
                         </div>
 
-                        <div data-mail-driver="smtp">
+                        <div data-mail-driver="smtp" class="smtp-settings-fields d-flex flex-column gap-2">
                             <div class="form-group row">
                                 <label class="col-md-3 col-form-label" for="mail-host">MAIL HOST</label>
                                 <div class="col-md-9"><input id="mail-host" name="mail_host" class="form-control" value="{{ old('mail_host', $mailHost) }}" placeholder="smtp.example.com"></div>
@@ -107,7 +107,7 @@
                             <label class="col-md-3 col-form-label" for="mail-from-name">MAIL FROM NAME</label>
                             <div class="col-md-9"><input id="mail-from-name" name="mail_from_name" class="form-control" value="{{ old('mail_from_name', $mailFromName) }}" required></div>
                         </div>
-                        <div class="text-right"><button type="submit" class="btn btn-primary">Save Configuration</button></div>
+                        <div class="text-right"><button type="submit" class="btn btn-primary d-flex align-items-center gap-1"> <i class="fas fa-save"></i>Save Configuration</button></div>
                     </form>
                 </div>
             </div>
@@ -124,16 +124,16 @@
                             <input id="test-email" type="email" name="email" class="form-control" value="{{ old('email', $testEmail) }}" placeholder="Enter your email address" required>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Send test email</button>
+                        <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fa-solid fa-paper-plane"></i>Send test email</button>
                     </form>
                 </div>
             </div>
             <div class="card">
                 <div class="card-header"><h2 class="h6 mb-0">Configuration notes</h2></div>
-                <div class="card-body">
+                <div class="card-body d-flex flex-column gap-2">
                     <p class="text-danger">Incorrect mail settings can prevent order confirmations, registration messages, and newsletters from being delivered.</p>
                     <h3 class="h6 text-muted">SMTP</h3>
-                    <ul class="list-group mb-3">
+                    <ul class="list-group">
                         <li class="list-group-item">Use the host and port provided by your mail provider.</li>
                         <li class="list-group-item">Use TLS with port 587 or SSL with port 465 when required by your provider.</li>
                         <li class="list-group-item">The From Address should be authorized by your provider.</li>

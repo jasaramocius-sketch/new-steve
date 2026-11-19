@@ -141,6 +141,17 @@
                         <span class="fw-600">{{ currency_format($shippingCost) }}</span>
                       </td>
                     </tr>
+                    @if($shippingMethod === 'home_delivery')
+                    <tr class="cart-shipping">
+                      <th class="pl-0 fs-14 pb-2 text-dark fw-600 border-top-0">Shipping Method</th>
+                      <td class="text-right pr-0 fs-14 pb-2 text-primary border-top-0">
+                        <strong>{{ session('shipping_info.carrier_name') }}</strong>
+                        @if(session('shipping_info.delivery_estimate'))
+                          <br><small>{{ session('shipping_info.delivery_estimate') }}</small>
+                        @endif
+                      </td>
+                    </tr>
+                    @endif
                     @if($shippingMethod === 'pickup' && session('shipping_info.pickup_point'))
                     @php($pickupPoint = session('shipping_info.pickup_point'))
                     <tr class="cart-shipping">

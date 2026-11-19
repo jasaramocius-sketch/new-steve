@@ -9,13 +9,27 @@
 @endsection
 @section('content')
 <div class="container-fluid admin-settings-header">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Header Configuration</h5>
-                </div>
-                <div class="card-body">
+    <ul class="nav nav-tabs" id="settingsConfigurationTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ session('settings_tab') === 'footer' ? '' : 'active' }}" id="header-configuration-tab" data-bs-toggle="tab" data-bs-target="#header-configuration" type="button" role="tab" aria-controls="header-configuration" aria-selected="{{ session('settings_tab') === 'footer' ? 'false' : 'true' }}">Header Configuration</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ session('settings_tab') === 'footer' ? 'active' : '' }}" id="footer-configuration-tab" data-bs-toggle="tab" data-bs-target="#footer-configuration" type="button" role="tab" aria-controls="footer-configuration" aria-selected="{{ session('settings_tab') === 'footer' ? 'true' : 'false' }}">Footer Configuration</button>
+        </li>
+    </ul>
+    <div class="tab-content" id="settingsConfigurationTabContent">
+        <div class="tab-pane fade {{ session('settings_tab') === 'footer' ? '' : 'show active' }}" id="header-configuration" role="tabpanel" aria-labelledby="header-configuration-tab">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Header Configuration</h5>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#headerConfigurationCollapse" aria-expanded="true" aria-controls="headerConfigurationCollapse" aria-label="Collapse or expand Header Configuration">
+                                <i class="fas fa-chevron-up" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                <div class="collapse show" id="headerConfigurationCollapse">
+                    <div class="card-body">
                     <form action="{{ route('admin.settings.header.update') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="row header-settings-row">
@@ -31,7 +45,7 @@
                                         <input type="hidden" name="image_from_manager_header_logo" id="image_from_manager_header_logo">
                                         <div id="impPreview_header_logo" class="d-none mt-2"></div>
                                         <button type="button" class="btn btn-outline-primary" onclick="impOpen_header_logo()">
-                                            <i class="fas fa-images me-1"></i> Browse Image Manager
+                                            <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                         </button>
                                     </div>
                                 </div>
@@ -45,7 +59,7 @@
                                         <input type="hidden" name="image_from_manager_header_favicon" id="image_from_manager_header_favicon">
                                         <div id="impPreview_header_favicon" class="d-none mt-2"></div>
                                         <button type="button" class="btn btn-outline-primary" onclick="impOpen_header_favicon()">
-                                            <i class="fas fa-images me-1"></i> Browse Image Manager
+                                            <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                         </button>
                                     </div>
                                 </div>
@@ -62,7 +76,7 @@
                                         <input type="hidden" name="image_from_manager_mobile_logo" id="image_from_manager_mobile_logo">
                                         <div id="impPreview_mobile_logo" class="d-none mt-2"></div>
                                         <button type="button" class="btn btn-outline-primary" onclick="impOpen_mobile_logo()">
-                                            <i class="fas fa-images me-1"></i> Browse Image Manager
+                                            <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                         </button>
                                     </div>
                                 </div>
@@ -76,7 +90,7 @@
                                         <input type="hidden" name="image_from_manager_footer_logo" id="image_from_manager_footer_logo">
                                         <div id="impPreview_footer_logo" class="d-none mt-2"></div>
                                         <button type="button" class="btn btn-outline-primary" onclick="impOpen_footer_logo()">
-                                            <i class="fas fa-images me-1"></i> Browse Image Manager
+                                            <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                         </button>
                                     </div>
                                 </div>
@@ -98,7 +112,7 @@
                                         <div id="impPreview_admin_header_bg" class="d-none mt-2"></div>
                                         <div class="d-flex gap-2 mt-1">
                                             <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('remove_admin_header_bg').value='0'; impOpen_admin_header_bg()">
-                                                <i class="fas fa-images me-1"></i> Browse Image Manager
+                                                <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                                             </button>
                                             <button type="button" id="clear_btn_admin_header_bg" data-preview="impPreview_admin_header_bg" data-current=".admin-header-bg-current" class="btn btn-sm btn-outline-danger {{ !empty($settings['admin_header_bg']) ? '' : 'd-none' }}" onclick="clearPickerImage('image_from_manager_admin_header_bg','impPreview_admin_header_bg','.admin-header-bg-current','remove_admin_header_bg')">
                                                 <i class="fas fa-times me-1"></i> Clear Image
@@ -171,19 +185,11 @@
                             </button>
                         </div>
                     </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    {{-- ============================================================ --}}
-    {{-- FOOTER CONFIGURATION                                         --}}
-    {{-- ============================================================ --}}
-    <div class="row mt-4">
-        <div class="col-md-12">
-            @include('admin.settings.partials.footer-columns')
-        </div>
-    </div>
+            </div>
 
     {{-- ============================================================ --}}
     {{-- NAVIGATION MENU — Filament Menu Manager Ditto Copy           --}}
@@ -723,7 +729,55 @@
         /* Responsive */
         @media (max-width: 991px) {
             .fmm-wrapper { flex-direction: column-reverse; }
-            .fmm-panel { width: 100%; }
+            .fmm-panel { width: 100%; position: static; }
+        }
+        @media (max-width: 767.98px) {
+            .admin-settings-header,
+            .admin-settings-header .tab-content,
+            .admin-settings-header .tab-pane,
+            .admin-settings-header .tab-pane > .row,
+            .admin-settings-header .tab-pane [class*="col-"],
+            .fmm-wrapper,
+            .fmm-builder,
+            .fmm-panel,
+            .fmm-card,
+            .fmm-panel-card {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .fmm-item-card { flex-wrap: wrap; }
+            .fmm-item-actions {
+                flex: 1 1 100%;
+                justify-content: flex-end;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .fmm-action-btn {
+                --size: 32px;
+            }
+            .fmm-nested-list { margin-left: 0.75rem; }
+            .fmm-panel-tab {
+                min-width: 0;
+                padding: 0.5rem 0.25rem;
+                font-size: 0.72rem;
+            }
+            .fmm-panel-body { padding: 0.75rem; }
+            .fmm-edit-row { flex-wrap: wrap; }
+            .fmm-edit-row > div { flex: 1 1 100%; min-width: 0; }
+        }
+        @media (max-width: 575.98px) {
+            .admin-settings-header > .nav-tabs .nav-link {
+                padding: 0.5rem 0.65rem;
+                font-size: 0.875rem;
+            }
+            .fmm-card-header {
+                align-items: flex-start;
+                flex-wrap: wrap;
+                gap: 0.375rem;
+            }
+            .fmm-item-actions { justify-content: flex-start; }
+            .fmm-modal-content { width: calc(100% - 2rem); }
         }
     </style>
 
@@ -879,6 +933,16 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+        </div>
+        <div class="tab-pane fade {{ session('settings_tab') === 'footer' ? 'show active' : '' }}" id="footer-configuration" role="tabpanel" aria-labelledby="footer-configuration-tab">
+            <div class="row">
+                <div class="col-md-12">
+                    @include('admin.settings.partials.footer-columns')
+                </div>
+            </div>
         </div>
     </div>
 

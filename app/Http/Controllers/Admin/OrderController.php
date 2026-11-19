@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\OrderConfirmationMail;
 use App\Mail\OrderStatusChangedMail;
 use App\Models\Order;
+use App\Services\InvoiceSettingsService;
 use App\Services\Couriers\CourierManager;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -59,6 +60,35 @@ class OrderController extends Controller
 
         $order = Order::with('items.product')->findOrFail($id);
         $oldStatus = $order->status;
+        $requestedStatus = $validatedData['status'] ?? null;
+        $statusRanks = ['pending' => 0, 'processing' => 1, 'shipped' => 2, 'delivered' => 3];
+
+        if ($requestedStatus !== null && $requestedStatus !== $oldStatus) {
+            $isReopeningCancelledOrder = $oldStatus === 'cancelled';
+            $isMovingStatusBackward = isset($statusRanks[$oldStatus], $statusRanks[$requestedStatus])
+                && $statusRanks[$requestedStatus] < $statusRanks[$oldStatus];
+
+            if ($isReopeningCancelledOrder || $isMovingStatusBackward) {
+                return back()
+                    ->withErrors(['status' => 'Order status cannot be moved backward or changed after cancellation.'])
+                    ->withInput();
+            }
+        }
+
+        $requestedPaymentStatus = $validatedData['payment_status'] ?? null;
+        $oldPaymentStatus = $order->payment_status ?? 'unpaid';
+        $paymentStatusRanks = ['unpaid' => 0, 'paid' => 1, 'refunded' => 2];
+
+        if (
+            $requestedPaymentStatus !== null
+            && $requestedPaymentStatus !== $oldPaymentStatus
+            && isset($paymentStatusRanks[$oldPaymentStatus], $paymentStatusRanks[$requestedPaymentStatus])
+            && $paymentStatusRanks[$requestedPaymentStatus] < $paymentStatusRanks[$oldPaymentStatus]
+        ) {
+            return back()
+                ->withErrors(['payment_status' => 'Payment status cannot be moved backward.'])
+                ->withInput();
+        }
 
         $newPaymentStatus = $request->has('payment_status') && $request->filled('payment_status')
             ? $request->payment_status
@@ -183,8 +213,9 @@ class OrderController extends Controller
     public function invoice($id)
     {
         $order = Order::with('items.product')->findOrFail($id);
+        $invoiceData = app(InvoiceSettingsService::class)->forOrder($order);
 
-        $pdf = Pdf::loadView('user.orders.invoice', compact('order'))
+        $pdf = Pdf::loadView('user.orders.invoice', ['order' => $order] + $invoiceData)
             ->setPaper('a4');
 
         return $pdf->download('invoice-'.$order->order_number.'.pdf');

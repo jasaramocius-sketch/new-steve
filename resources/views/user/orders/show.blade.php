@@ -387,13 +387,13 @@
     white-space: nowrap;
 }
 
-.user-order-details-page .order-items-table thead th:first-child {
+/* .user-order-details-page .order-items-table thead th:first-child {
     border-radius: 8px 0 0 8px;
 }
 
 .user-order-details-page .order-items-table thead th:last-child {
     border-radius: 0 8px 8px 0;
-}
+} */
 
 .user-order-details-page .order-items-table tbody td {
     padding: 17px 14px;
@@ -421,9 +421,9 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    border-radius: 8px;
-    background: var(--order-primary);
-    color: #f8fafc;
+    border-radius: 20px;
+    background: #f1f5f9;
+    color: var(--order-primary);
     font-size: 12px;
     font-weight: 700;
 }
@@ -600,21 +600,23 @@
     </div>
 
     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-        <a href="{{ route('user.orders.invoice', $order->id) }}"
-           target="_blank"
-           class="template-btn outline-btn lg-btn steve-btn steve-btn-sm order-print-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round" style="margin-right:6px;">
-                <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-            Print Order
-        </a>
+        @if($order->canDownloadInvoice())
+            <a href="{{ route('user.orders.invoice', $order->id) }}"
+               target="_blank"
+               class="template-btn outline-btn lg-btn steve-btn steve-btn-sm order-print-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" style="margin-right:6px;">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Download Invoice
+            </a>
+        @endif
         @if($currentStatus === 'delivered')
             <a href="{{ route('user.returns.create', $order->id) }}"
-               class="template-btn lg-btn steve-btn steve-btn-sm order-print-btn"
+               class="template-btn lg-btn steve-btn steve-btn-sm d-flex align-items-center order-print-btn"
                style="background:var(--primary);color:#fff;">
                 <i class="fas fa-undo me-1"></i> Request Return
             </a>
@@ -804,10 +806,10 @@
             </h5>
 
             <div class="order-shipping-method">
-                <span class="order-shipping-icon">
-                    <i class="fas fa-truck"></i>
-                </span>
-                <div>
+                <!-- <span class="">
+                    <i class="fa fa-truck-fast"></i>
+                </span> -->
+                <div  class="d-flex flex-row align-items-center justify-content-between w-100 gap-4">
                     <p class="order-shipping-name">{{ ucfirst($order->delivery_type ?? 'Free Shipping') }}</p>
                     <p class="order-shipping-subtitle">
                         {{ $currentStatus === 'delivered' ? 'Order delivered successfully' : 'Delivery information' }}
@@ -876,7 +878,9 @@
                         <td><strong>{{ currency_format($item->price ?? 0) }}</strong></td>
 
                         <td>
-                            @if(!empty($reviewedSlugs[$item->product_id]))
+                            @if($order->status === 'cancelled')
+                                <span class="text-muted">—</span>
+                            @elseif(!empty($reviewedSlugs[$item->product_id]))
                                 <button type="button"
                                         class="btn btn-sm btn-outline-success rounded-pill px-3 order-review-btn"
                                         disabled>
@@ -887,6 +891,7 @@
                                    class="btn btn-sm btn-outline-dark rounded-pill px-3 write-review-btn order-review-btn"
                                    data-product-slug="{{ $item->product->slug }}"
                                    data-product-name="{{ $item->product->name }}"
+                                   data-order-id="{{ $order->id }}"
                                    data-bs-toggle="modal"
                                    data-bs-target="#orderReviewModal"
                                    onclick="openOrderReview(this)">
@@ -967,8 +972,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary fw-600 steve-btn" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary fw-600 steve-btn" id="orderSubmitReviewBtn">Submit Review</button>
+                <button type="button" class="btn btn-primary fw-600 steve-btn gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
+                <button type="button" class="btn btn-primary fw-600 steve-btn gap-1" id="orderSubmitReviewBtn"><i class="fas fa-paper-plane"></i>Submit Review</button>
             </div>
         </div>
     </div>
@@ -977,6 +982,7 @@
 <script>
 (function () {
     var currentSlug = null;
+    var currentOrderId = null;
     var orderReviewImages = [];
     var starPicker = document.getElementById('orderStarPicker');
     var ratingInput = document.getElementById('orderReviewRating');
@@ -1046,6 +1052,7 @@
 
     window.openOrderReview = function (el) {
         currentSlug = el.getAttribute('data-product-slug');
+        currentOrderId = el.getAttribute('data-order-id');
         var label = document.getElementById('orderReviewProductLabel');
         if (label) label.textContent = 'Product: ' + el.getAttribute('data-product-name');
         ratingInput.value = 0;
@@ -1078,6 +1085,7 @@
             var formData = new FormData();
             formData.append('rating', rating);
             formData.append('text', text);
+            if (currentOrderId) { formData.append('order_id', currentOrderId); }
             orderReviewImages.forEach(function (file) { formData.append('images[]', file); });
 
             fetch('{{ route("product.review", "__SLUG__") }}'.replace('__SLUG__', currentSlug), {

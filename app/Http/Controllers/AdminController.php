@@ -12,6 +12,7 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\Revision;
 use App\Models\Setting;
+use App\Models\TaxType;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
@@ -224,7 +226,9 @@ class AdminController extends Controller
     public function customSettings()
     {
         $settings = Setting::getAllAsArray();
-        return view('admin.settings.custom', compact('settings'));
+        $taxTypes = TaxType::orderBy('name')->get();
+
+        return view('admin.settings.custom', compact('settings', 'taxTypes'));
     }
 
     public function orderSettings()
@@ -255,9 +259,11 @@ class AdminController extends Controller
                 'icon' => 'fas la-sliders-h',
                 'items' => [
                     ['name' => 'General Settings', 'description' => 'Header, footer, logos and navigation', 'icon' => 'fas fa-cog', 'route' => 'admin.settings.header'],
+                    ['name' => 'Contact Information', 'description' => 'Address, phone, email, working hours and map', 'icon' => 'fas fa-address-book', 'route' => 'admin.settings.contact'],
+                    ['name' => 'Invoice Settings', 'description' => 'Manage invoice branding, content and PDF layout', 'icon' => 'fas fa-file-invoice', 'route' => 'admin.settings.invoice'],
                     ['name' => 'Features activation', 'description' => 'Turn store features on or off', 'icon' => 'fas fa-toggle-on', 'route' => 'admin.settings.features'],
                     ['name' => 'Order Configuration', 'description' => 'Minimum order amount', 'icon' => 'fas fa-shopping-bag', 'route' => 'admin.settings.order'],
-                    ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'fas fa-hdd'],
+                    ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'fas fa-hdd', 'route' => 'admin.settings.file-system-cache'],
                 ],
             ],
             [
@@ -288,13 +294,13 @@ class AdminController extends Controller
                 'title' => 'Shipping',
                 'icon' => 'fas fa-truck',
                 'items' => [
-                    ['name' => 'Shipping Configuration', 'description' => 'Shipping methods and costs', 'icon' => 'fas fa-truck-loading', 'route' => 'admin.api-integrations.index'],
+                    ['name' => 'Shipping Configuration', 'description' => 'Enable or disable home delivery', 'icon' => 'fas fa-truck-loading', 'route' => 'admin.settings.shipping'],
                     ['name' => 'Pickup point', 'description' => 'Collection locations', 'icon' => 'fas fa-store', 'route' => 'admin.settings.pickup-points.index'],
-                    ['name' => 'Shipping Countries', 'description' => 'Countries you ship to', 'icon' => 'fas fa-flag'],
-                    ['name' => 'Shipping States', 'description' => 'States within countries', 'icon' => 'fas fa-map'],
-                    ['name' => 'Shipping Cities', 'description' => 'Cities within states', 'icon' => 'fas fa-city'],
-                    ['name' => 'Shipping Zones', 'description' => 'Zone-based shipping', 'icon' => 'fas fa-map-marked'],
-                    ['name' => 'Shipping Carrier', 'description' => 'Carriers and transit times', 'icon' => 'fas fa-shipping-fast', 'route' => 'admin.api-integrations.index'],
+                    ['name' => 'Shipping Countries', 'description' => 'Countries you ship to', 'icon' => 'fas fa-flag', 'route' => 'admin.settings.shipping-countries.index'],
+                    ['name' => 'Shipping States', 'description' => 'States within countries', 'icon' => 'fas fa-map', 'route' => 'admin.settings.shipping-states.index'],
+                    ['name' => 'Shipping Cities', 'description' => 'Cities within states', 'icon' => 'fas fa-city', 'route' => 'admin.settings.shipping-cities.index'],
+                    ['name' => 'Shipping Zones', 'description' => 'Destinations and delivery rates', 'icon' => 'fas fa-map-marked', 'route' => 'admin.settings.shipping-zones.index'],
+                    ['name' => 'Shipping Carrier', 'description' => 'Carriers and transit times', 'icon' => 'fas fa-shipping-fast', 'route' => 'admin.settings.shipping-carriers.index'],
                 ],
             ],
             [
@@ -302,9 +308,9 @@ class AdminController extends Controller
                 'icon' => 'fas fa-envelope',
                 'items' => [
                     ['name' => 'SMTP Settings', 'description' => 'Outgoing mail server', 'icon' => 'fas fa-envelope', 'route' => 'admin.settings.smtp'],
-                    ['name' => 'Social media Logins', 'description' => 'Google and Facebook sign-in', 'icon' => 'fas fa-users'],
-                    ['name' => 'Facebook Chat', 'description' => 'Live chat widget', 'icon' => 'fab fa-facebook'],
-                    ['name' => 'Facebook Comment', 'description' => 'Comments on product pages', 'icon' => 'fas fa-comments'],
+                    ['name' => 'Social media Logins', 'description' => 'Google and Facebook sign-in', 'icon' => 'fas fa-users', 'route' => 'admin.settings.social-logins'],
+                    ['name' => 'Facebook Chat', 'description' => 'Live chat widget', 'icon' => 'fab fa-facebook', 'route' => 'admin.settings.facebook-chat'],
+                    ['name' => 'Facebook Comment', 'description' => 'Comments on product pages', 'icon' => 'fas fa-comments', 'route' => 'admin.settings.facebook-comment'],
                 ],
             ],
             [
@@ -312,9 +318,9 @@ class AdminController extends Controller
                 'icon' => 'fab fa-google',
                 'items' => [
                     ['name' => 'Analytics Tools', 'description' => 'Analytics and pixel tracking', 'icon' => 'fas fa-chart-line', 'route' => 'admin.settings.seo'],
-                    ['name' => 'Google reCAPTCHA', 'description' => 'Spam protection on forms', 'icon' => 'fas fa-shield-alt'],
-                    ['name' => 'Google Map', 'description' => 'Map API key', 'icon' => 'fas fa-map-marker'],
-                    ['name' => 'Google Firebase', 'description' => 'Push notification setup', 'icon' => 'fas fa-fire'],
+                    ['name' => 'Google reCAPTCHA', 'description' => 'Spam protection on forms', 'icon' => 'fas fa-shield-alt', 'route' => 'admin.settings.google-recaptcha'],
+                    ['name' => 'Google Map', 'description' => 'Map API key', 'icon' => 'fas fa-map-marker', 'route' => 'admin.settings.google-map'],
+                    ['name' => 'Google Firebase', 'description' => 'Push notification setup', 'icon' => 'fas fa-fire', 'route' => 'admin.settings.google-firebase'],
                 ],
             ],
         ];
@@ -432,13 +438,14 @@ class AdminController extends Controller
 
     public function updateCustomSettings(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'tax_rate' => 'required|numeric|min:0|max:100',
+            'custom_value' => 'nullable|string|max:255',
         ]);
-        foreach ($request->except('_token') as $key => $value) {
-            Setting::updateOrCreate(['key' => $key], ['value' => $value]);
-        }
-        return redirect()->route('admin.settings.custom')->with('success', 'Custom settings updated.');
+        Setting::set('tax_rate', (string) $validated['tax_rate']);
+        Setting::set('custom_value', (string) ($validated['custom_value'] ?? ''));
+
+        return redirect()->route('admin.settings.custom')->with('success', 'Tax rate and custom value updated.');
     }
 
     public function headerSettings()
@@ -453,6 +460,163 @@ class AdminController extends Controller
             ->orderBy('title')->get();
 
         return view('admin.settings.header', compact('settings', 'categories', 'pages', 'posts'));
+    }
+
+    public function contactSettings()
+    {
+        $settings = Setting::getAllAsArray();
+
+        return view('admin.settings.contact', compact('settings'));
+    }
+
+    public function updateContactSettings(Request $request)
+    {
+        $map = trim((string) $request->input('contact_map_embed', ''));
+        $map = html_entity_decode($map, ENT_QUOTES | ENT_HTML5);
+
+        // Allow admins to paste either the embed URL or the complete iframe code.
+        if ($map !== '' && preg_match('/<iframe[^>]*\bsrc\s*=\s*["\']([^"\']+)["\']/i', $map, $matches)) {
+            $map = html_entity_decode(trim($matches[1]), ENT_QUOTES | ENT_HTML5);
+        }
+
+        $request->merge(['contact_map_embed' => $map]);
+
+        $validated = $request->validate([
+            'header_address' => 'nullable|string|max:1000',
+            'header_phone' => 'nullable|string|max:50',
+            'header_email' => 'nullable|email|max:255',
+            'contact_working_hours' => 'nullable|string|max:1000',
+            'contact_map_embed' => [
+                'nullable',
+                'string',
+                'max:2000',
+                function ($attribute, $value, $fail) {
+                    if ($value === null || trim($value) === '') {
+                        return;
+                    }
+
+                    $parts = parse_url(trim($value));
+                    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+                    $host = strtolower((string) ($parts['host'] ?? ''));
+                    $path = (string) ($parts['path'] ?? '');
+
+                    $validHost = in_array($host, ['www.google.com', 'google.com', 'maps.google.com'], true);
+                    $validScheme = in_array($scheme, ['http', 'https'], true);
+
+                    if (! $validScheme || ! $validHost || ! str_starts_with($path, '/maps')) {
+                        $fail('Enter a valid Google Maps embed URL (the iframe src), or leave it blank.');
+                    }
+                },
+            ],
+        ]);
+
+        foreach (['header_address', 'header_phone', 'header_email', 'contact_working_hours', 'contact_map_embed'] as $key) {
+            Setting::set($key, (string) ($validated[$key] ?? ''));
+        }
+
+        return redirect()->route('admin.settings.contact')
+            ->with('success', 'Contact information updated successfully.');
+    }
+
+    public function invoiceSettings()
+    {
+        $settings = Setting::getAllAsArray();
+        $invoiceLogo = $settings['invoice_logo'] ?? config('invoice.logo');
+        $invoiceLogoUrl = null;
+
+        if ($invoiceLogo !== '') {
+            $invoiceLogoUrl = str_starts_with($invoiceLogo, 'invoices/')
+                ? asset('storage/'.$invoiceLogo)
+                : asset(ltrim($invoiceLogo, '/'));
+        }
+
+        $defaults = config('invoice.settings', []);
+        $invoiceSettings = [];
+        foreach ($defaults as $key => $default) {
+            $invoiceSettings[$key] = $settings[$key] ?? $default;
+        }
+        foreach (config('invoice.visible_sections', []) as $key) {
+            $invoiceSettings[$key] = ($settings[$key] ?? '1') === '1';
+        }
+
+        return view('admin.settings.invoice', compact('invoiceLogoUrl', 'invoiceSettings'));
+    }
+
+    public function updateInvoiceSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'invoice_logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'remove_invoice_logo' => 'nullable|boolean',
+            'invoice_business_name' => 'nullable|string|max:255',
+            'invoice_business_address' => 'nullable|string|max:1000',
+            'invoice_business_phone' => 'nullable|string|max:50',
+            'invoice_business_email' => 'nullable|email|max:255',
+            'invoice_business_tax_id' => 'nullable|string|max:100',
+            'invoice_primary_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'invoice_layout' => 'required|in:standard,compact',
+            'invoice_prefix' => 'nullable|string|max:30',
+            'invoice_date_format' => 'required|in:d M Y,M d Y,Y-m-d,d/m/Y',
+            'invoice_title' => 'required|string|max:100',
+            'invoice_note' => 'nullable|string|max:2000',
+            'invoice_terms' => 'nullable|string|max:2000',
+            'invoice_footer' => 'nullable|string|max:500',
+            'invoice_currency_label' => 'nullable|string|max:10',
+            'invoice_label_product' => 'required|string|max:50',
+            'invoice_label_quantity' => 'required|string|max:50',
+            'invoice_label_price' => 'required|string|max:50',
+            'invoice_label_line_total' => 'required|string|max:50',
+            'invoice_label_subtotal' => 'required|string|max:50',
+            'invoice_label_shipping' => 'required|string|max:50',
+            'invoice_label_tax' => 'required|string|max:50',
+            'invoice_label_discount' => 'required|string|max:50',
+            'invoice_label_total' => 'required|string|max:50',
+            'invoice_show_business' => 'required|boolean',
+            'invoice_show_billing' => 'required|boolean',
+            'invoice_show_payment' => 'required|boolean',
+            'invoice_show_delivery' => 'required|boolean',
+            'invoice_show_items' => 'required|boolean',
+            'invoice_show_subtotal' => 'required|boolean',
+            'invoice_show_shipping' => 'required|boolean',
+            'invoice_show_tax' => 'required|boolean',
+            'invoice_show_discount' => 'required|boolean',
+            'invoice_show_total' => 'required|boolean',
+        ]);
+
+        $currentLogo = Setting::get('invoice_logo');
+
+        if ($request->hasFile('invoice_logo')) {
+            $newLogo = $request->file('invoice_logo')->store('invoices', 'public');
+            if (! $newLogo) {
+                throw new \RuntimeException('The invoice logo could not be stored.');
+            }
+
+            Setting::set('invoice_logo', $newLogo);
+            $this->deleteStoredInvoiceLogo($currentLogo);
+        } elseif ($request->boolean('remove_invoice_logo')) {
+            Setting::set('invoice_logo', '');
+            $this->deleteStoredInvoiceLogo($currentLogo);
+        }
+
+        foreach (array_keys($validated) as $key) {
+            if (in_array($key, ['invoice_logo', 'remove_invoice_logo'], true)) {
+                continue;
+            }
+
+            $value = str_starts_with($key, 'invoice_show_')
+                ? ($request->boolean($key) ? '1' : '0')
+                : (string) ($validated[$key] ?? '');
+            Setting::set($key, $value);
+        }
+
+        return redirect()->route('admin.settings.invoice')
+            ->with('success', 'Invoice settings updated successfully.');
+    }
+
+    private function deleteStoredInvoiceLogo(?string $path): void
+    {
+        if ($path && str_starts_with($path, 'invoices/')) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     public function seoSettings()
@@ -608,9 +772,18 @@ class AdminController extends Controller
         }
 
         // Paginate.
-        $perPage = 50;
-        $currentPage = Paginator::resolveCurrentPage();
+        $perPage = $request->query('per_page', 20);
         $total = count($entries);
+        if ($perPage === 'all') {
+            $perPage = $total ?: 20;
+        } else {
+            $perPage = (int) $perPage;
+            if (! in_array($perPage, [10, 20, 50, 100], true)) {
+                $perPage = 20;
+            }
+        }
+
+        $currentPage = Paginator::resolveCurrentPage();
         $pageEntries = array_slice($entries, ($currentPage - 1) * $perPage, $perPage);
 
         $entries = new LengthAwarePaginator(
@@ -934,7 +1107,9 @@ class AdminController extends Controller
 
         Setting::set('webp_frontend', $request->boolean('webp_frontend') ? '1' : '0');
 
-        return redirect()->route('admin.settings.header')->with('success', 'Header settings updated successfully.');
+        return redirect()->route('admin.settings.header')
+            ->with('success', 'Header settings updated successfully.')
+            ->with('settings_tab', 'header');
     }
 
     public function commissionSettings()
@@ -972,7 +1147,9 @@ class AdminController extends Controller
         $data = json_decode((string) $request->input('footer_columns', '[]'), true);
 
         if (! is_array($data)) {
-            return back()->with('error', 'Invalid footer columns data.');
+            return back()
+                ->with('error', 'Invalid footer columns data.')
+                ->with('settings_tab', 'footer');
         }
 
         $allowedTypes = ['links', 'newsletter', 'contact'];
@@ -1019,7 +1196,9 @@ class AdminController extends Controller
 
         Setting::set('footer_columns', json_encode($columns));
 
-        return redirect()->route('admin.settings.header')->with('success', 'Footer settings updated successfully.');
+        return redirect()->route('admin.settings.header')
+            ->with('success', 'Footer settings updated successfully.')
+            ->with('settings_tab', 'footer');
     }
 
     public function searchCategorySettings()

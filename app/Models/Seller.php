@@ -16,6 +16,7 @@ class Seller extends Model
         'slug',
         'description',
         'location',
+        'shipping_cost',
         'image',
         'status',
         'is_deleted',
@@ -24,6 +25,7 @@ class Seller extends Model
     protected $casts = [
         'status' => 'boolean',
         'is_deleted' => 'boolean',
+        'shipping_cost' => 'decimal:2',
     ];
 
     public function followedBy()

@@ -42,6 +42,24 @@
         if (closeButton) closeButton.addEventListener('click', closeSidebar);
         if (overlay) overlay.addEventListener('click', closeSidebar);
 
+        function isOffCanvasSidebar() {
+            return window.matchMedia('(max-width:1024px)').matches;
+        }
+
+        // Close the off-canvas drawer after navigating (but not when expanding a submenu).
+        document.querySelectorAll('.admin-sidebar a:not([data-bs-toggle="collapse"])').forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (isOffCanvasSidebar()) closeSidebar();
+            });
+        });
+
+        // Don't leave a stale drawer/overlay behind when resizing back to desktop.
+        window.addEventListener('resize', function() {
+            if (!isOffCanvasSidebar() && sidebar && sidebar.classList.contains('open')) {
+                closeSidebar();
+            }
+        });
+
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 document.querySelectorAll('.tooltip.show').forEach(function(tooltip) {

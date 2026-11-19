@@ -19,6 +19,8 @@ class Blog extends Model
         'slug',
         'image',
         'details',
+        'author',
+        'author_id',
         'status',
         'published_at',
         'blog_category_id',
@@ -37,6 +39,11 @@ class Blog extends Model
         return $this->belongsTo(BlogCategory::class, 'blog_category_id');
     }
 
+    public function authorUser()
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
+
     public function additionalCategories()
     {
         return $this->belongsToMany(BlogCategory::class, 'blog_additional_category')->withTimestamps();
@@ -44,7 +51,11 @@ class Blog extends Model
 
     public function allCategories()
     {
-        return collect([$this->category])->filter()->merge($this->additionalCategories);
+        return collect([$this->category])
+            ->filter()
+            ->merge($this->additionalCategories)
+            ->unique('id')
+            ->values();
     }
 
     public function tags()

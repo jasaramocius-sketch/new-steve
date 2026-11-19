@@ -31,33 +31,26 @@
 </style>
 
 <!-- Banner Hero Section -->
-<section class="gs-breadcrumb-section"
-    style="background-image: url('{{ asset('/assets/images/1724480495Imagexxxxxpng.png') }}');
-    background-size: cover; background-position: center;">
-
-  <div class="container">
-    <div class="content-wrapper">
-      <h2 class="breadcrumb-title">All Categories</h2>
-      <ul class="bread-menu">
-        <li><a href="{{ route('home') }}">Home</a></li>
-        <li style="color: var(--primary)">Categories</li>
-      </ul>
-    </div>
-  </div>
-</section>
+@include('partials.breadcrumb', [
+    'title' => 'All Categories',
+    'items' => [
+        ['label' => 'Home', 'url' => route('home')],
+        ['label' => 'Categories'],
+    ],
+])
 <section class="product-category py-120 shop-page-product-items" style="background-color: #F9F8F8;">
 <div class="container">
 
     <!-- Toolbar -->
     <div class="category-toolbar mb-4 gap-3 d-grid">
-        <div class="d-flex justify-content-between flex-md-row gap-2 flex-sm-row category-toolbar-top">
-            <div class="w-auto">
+        <div class="categories-page-filter d-flex justify-content-between flex-md-row gap-2 flex-sm-row category-toolbar-top">
+            <div class="w-auto categories-page-filter-col">
                 @include('admin.partials.search-form', [
                     'route' => route('categories.index'),
                     'placeholder' => 'Search category...'
                 ])
             </div>
-            <div class="w-auto">
+            <div class="w-auto categories-page-filter-col">
                 <div class="toolbar-right category-toolbar-right d-flex align-items-center justify-content-md-end gap- flex-wrap">
                     <div class="d-flex align-items-center gap-2">
                         <h5 class="mb-0 small fw-medium">Sort by</h5>

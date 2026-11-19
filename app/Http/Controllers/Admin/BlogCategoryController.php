@@ -15,7 +15,7 @@ class BlogCategoryController extends Controller
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 10;
 
-        $query = BlogCategory::withCount('blogs')->with('parent');
+        $query = BlogCategory::withCount(['blogs', 'additionalBlogs'])->with('parent');
         if ($search = $request->query('search')) {
             $query->where('name', 'like', "%{$search}%");
         }

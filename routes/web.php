@@ -17,8 +17,17 @@ use App\Http\Controllers\Admin\PickupPointController;
 use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SellerController;
+use App\Http\Controllers\Admin\RecaptchaSettingsController;
 use App\Http\Controllers\Admin\SmtpSettingsController;
+use App\Http\Controllers\Admin\FileSystemCacheSettingsController;
+use App\Http\Controllers\Admin\IntegrationSettingsController;
+use App\Http\Controllers\Admin\SystemStatusController;
+use App\Http\Controllers\Admin\ShippingLocationController;
+use App\Http\Controllers\Admin\ShippingSettingsController;
+use App\Http\Controllers\Admin\TaxTypeController;
 use App\Http\Controllers\Admin\SubscriberController;
+use App\Http\Controllers\Admin\SupportTicketController;
+use App\Http\Controllers\Admin\ProductConversationController;
 use App\Http\Controllers\Admin\ApiIntegrationController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
@@ -30,6 +39,7 @@ use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserSupportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NewsletterController;
@@ -183,12 +193,12 @@ Route::delete('/compare/{id}', [CompareController::class, 'remove'])->name('comp
 |--------------------------------------------------------------------------
 */
 
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
+Route::get('/users/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/users/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/registration', [AuthController::class, 'registerForm'])->name('register');
-Route::post('/registration', [AuthController::class, 'register'])->name('register.post');
+Route::get('/users/registration', [AuthController::class, 'registerForm'])->name('register');
+Route::post('/users/registration', [AuthController::class, 'register'])->name('register.post');
 
 Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->middleware('throttle:5,1')->name('password.email');
@@ -219,7 +229,7 @@ Route::prefix('admin')->group(function () {
 });
 
 Route::get('/use/login', function () {
-    return redirect('/login');
+    return redirect()->route('login');
 });
 /*
 |--------------------------------------------------------------------------
@@ -253,6 +263,67 @@ Route::prefix('admin')
             ->name('admin.profile');
         Route::post('/profile', [AdminController::class, 'updateProfile'])
             ->name('admin.profile.update');
+
+        Route::get('/settings/shipping', [ShippingSettingsController::class, 'configuration'])
+            ->name('admin.settings.shipping');
+        Route::post('/settings/shipping', [ShippingSettingsController::class, 'updateConfiguration'])
+            ->name('admin.settings.shipping.update');
+
+        Route::get('/settings/shipping-countries', [ShippingLocationController::class, 'countries'])
+            ->name('admin.settings.shipping-countries.index');
+        Route::post('/settings/shipping-countries/{country}/status', [ShippingLocationController::class, 'updateCountryStatus'])
+            ->name('admin.settings.shipping-countries.status');
+
+        Route::get('/settings/shipping-states', [ShippingLocationController::class, 'states'])
+            ->name('admin.settings.shipping-states.index');
+        Route::post('/settings/shipping-states', [ShippingLocationController::class, 'storeState'])
+            ->name('admin.settings.shipping-states.store');
+        Route::get('/settings/shipping-states/{state}/edit', [ShippingLocationController::class, 'editState'])
+            ->name('admin.settings.shipping-states.edit');
+        Route::put('/settings/shipping-states/{state}', [ShippingLocationController::class, 'updateState'])
+            ->name('admin.settings.shipping-states.update');
+        Route::delete('/settings/shipping-states/{state}', [ShippingLocationController::class, 'destroyState'])
+            ->name('admin.settings.shipping-states.destroy');
+        Route::post('/settings/shipping-states/{state}/status', [ShippingLocationController::class, 'updateStateStatus'])
+            ->name('admin.settings.shipping-states.status');
+
+        Route::get('/settings/shipping-cities', [ShippingLocationController::class, 'cities'])
+            ->name('admin.settings.shipping-cities.index');
+        Route::post('/settings/shipping-cities', [ShippingLocationController::class, 'storeCity'])
+            ->name('admin.settings.shipping-cities.store');
+        Route::get('/settings/shipping-cities/{city}/edit', [ShippingLocationController::class, 'editCity'])
+            ->name('admin.settings.shipping-cities.edit');
+        Route::put('/settings/shipping-cities/{city}', [ShippingLocationController::class, 'updateCity'])
+            ->name('admin.settings.shipping-cities.update');
+        Route::delete('/settings/shipping-cities/{city}', [ShippingLocationController::class, 'destroyCity'])
+            ->name('admin.settings.shipping-cities.destroy');
+        Route::post('/settings/shipping-cities/{city}/status', [ShippingLocationController::class, 'updateCityStatus'])
+            ->name('admin.settings.shipping-cities.status');
+
+        Route::get('/settings/shipping-carriers', [ShippingSettingsController::class, 'carriers'])
+            ->name('admin.settings.shipping-carriers.index');
+        Route::get('/settings/shipping-carriers/create', [ShippingSettingsController::class, 'createCarrier'])
+            ->name('admin.settings.shipping-carriers.create');
+        Route::post('/settings/shipping-carriers', [ShippingSettingsController::class, 'storeCarrier'])
+            ->name('admin.settings.shipping-carriers.store');
+        Route::get('/settings/shipping-carriers/{carrier}/edit', [ShippingSettingsController::class, 'editCarrier'])
+            ->name('admin.settings.shipping-carriers.edit');
+        Route::put('/settings/shipping-carriers/{carrier}', [ShippingSettingsController::class, 'updateCarrier'])
+            ->name('admin.settings.shipping-carriers.update');
+        Route::delete('/settings/shipping-carriers/{carrier}', [ShippingSettingsController::class, 'destroyCarrier'])
+            ->name('admin.settings.shipping-carriers.destroy');
+        Route::get('/settings/shipping-zones', [ShippingSettingsController::class, 'zones'])
+            ->name('admin.settings.shipping-zones.index');
+        Route::get('/settings/shipping-zones/create', [ShippingSettingsController::class, 'createZone'])
+            ->name('admin.settings.shipping-zones.create');
+        Route::post('/settings/shipping-zones', [ShippingSettingsController::class, 'storeZone'])
+            ->name('admin.settings.shipping-zones.store');
+        Route::get('/settings/shipping-zones/{zone}/edit', [ShippingSettingsController::class, 'editZone'])
+            ->name('admin.settings.shipping-zones.edit');
+        Route::put('/settings/shipping-zones/{zone}', [ShippingSettingsController::class, 'updateZone'])
+            ->name('admin.settings.shipping-zones.update');
+        Route::delete('/settings/shipping-zones/{zone}', [ShippingSettingsController::class, 'destroyZone'])
+            ->name('admin.settings.shipping-zones.destroy');
         Route::post('/profile/password', [AdminController::class, 'updatePassword'])
             ->name('admin.profile.password');
 
@@ -329,6 +400,18 @@ Route::prefix('admin')
         Route::get('/subscribers', [SubscriberController::class, 'index'])->name('admin.subscribers.index');
         Route::delete('/subscribers/{id}', [SubscriberController::class, 'destroy'])->name('admin.subscribers.destroy');
         Route::get('/subscribers/export/csv', [SubscriberController::class, 'exportCsv'])->name('admin.subscribers.export-csv');
+
+        Route::get('/support/tickets', [SupportTicketController::class, 'index'])->name('admin.support.tickets.index');
+        Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('admin.support.tickets.show');
+        Route::post('/support/tickets/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('admin.support.tickets.reply');
+        Route::post('/support/tickets/{ticket}/status', [SupportTicketController::class, 'updateStatus'])->name('admin.support.tickets.status');
+        Route::delete('/support/tickets/{ticket}', [SupportTicketController::class, 'destroy'])->name('admin.support.tickets.destroy');
+
+        Route::get('/support/conversations', [ProductConversationController::class, 'index'])->name('admin.support.conversations.index');
+        Route::get('/support/conversations/{conversation}', [ProductConversationController::class, 'show'])->name('admin.support.conversations.show');
+        Route::post('/support/conversations/{conversation}/reply', [ProductConversationController::class, 'reply'])->name('admin.support.conversations.reply');
+        Route::post('/support/conversations/{conversation}/status', [ProductConversationController::class, 'updateStatus'])->name('admin.support.conversations.status');
+        Route::delete('/support/conversations/{conversation}', [ProductConversationController::class, 'destroy'])->name('admin.support.conversations.destroy');
         Route::get('/orders/export/csv', [AdminOrderController::class, 'exportCsv'])->name('admin.orders.export-csv');
         Route::post('/orders/{id}/email-customer', [AdminOrderController::class, 'emailCustomer'])->name('admin.orders.email-customer');
         Route::get('/orders/{id}/invoice', [AdminOrderController::class, 'invoice'])->name('admin.orders.invoice');
@@ -538,12 +621,47 @@ Route::prefix('admin')
             ->name('admin.settings.pickup-points.update');
         Route::delete('/settings/pickup-points/{pickupPoint}', [PickupPointController::class, 'destroy'])
             ->name('admin.settings.pickup-points.destroy');
+        Route::get('/settings/google-recaptcha', [RecaptchaSettingsController::class, 'index'])
+            ->name('admin.settings.google-recaptcha');
+        Route::post('/settings/google-recaptcha', [RecaptchaSettingsController::class, 'update'])
+            ->name('admin.settings.google-recaptcha.update');
+        Route::post('/settings/google-recaptcha/reset', [RecaptchaSettingsController::class, 'reset'])
+            ->name('admin.settings.google-recaptcha.reset');
+
+        Route::get('/settings/social-logins', [IntegrationSettingsController::class, 'socialLogins'])
+            ->name('admin.settings.social-logins');
+        Route::post('/settings/social-logins', [IntegrationSettingsController::class, 'updateSocialLogins'])
+            ->name('admin.settings.social-logins.update');
+        Route::get('/settings/facebook-chat', [IntegrationSettingsController::class, 'facebookChat'])
+            ->name('admin.settings.facebook-chat');
+        Route::post('/settings/facebook-chat', [IntegrationSettingsController::class, 'updateFacebookChat'])
+            ->name('admin.settings.facebook-chat.update');
+        Route::get('/settings/facebook-comment', [IntegrationSettingsController::class, 'facebookComment'])
+            ->name('admin.settings.facebook-comment');
+        Route::post('/settings/facebook-comment', [IntegrationSettingsController::class, 'updateFacebookComment'])
+            ->name('admin.settings.facebook-comment.update');
+        Route::get('/settings/google-map', [IntegrationSettingsController::class, 'googleMap'])
+            ->name('admin.settings.google-map');
+        Route::post('/settings/google-map', [IntegrationSettingsController::class, 'updateGoogleMap'])
+            ->name('admin.settings.google-map.update');
+        Route::get('/settings/google-firebase', [IntegrationSettingsController::class, 'googleFirebase'])
+            ->name('admin.settings.google-firebase');
+        Route::post('/settings/google-firebase', [IntegrationSettingsController::class, 'updateGoogleFirebase'])
+            ->name('admin.settings.google-firebase.update');
+
         Route::get('/settings/smtp', [SmtpSettingsController::class, 'index'])
             ->name('admin.settings.smtp');
         Route::post('/settings/smtp', [SmtpSettingsController::class, 'update'])
             ->name('admin.settings.smtp.update');
         Route::post('/settings/smtp/test', [SmtpSettingsController::class, 'test'])
             ->name('admin.settings.smtp.test');
+
+        Route::get('/settings/file-system-cache', [FileSystemCacheSettingsController::class, 'index'])
+            ->name('admin.settings.file-system-cache');
+        Route::post('/settings/file-system-cache/filesystem', [FileSystemCacheSettingsController::class, 'updateFilesystem'])
+            ->name('admin.settings.file-system-cache.filesystem.update');
+        Route::post('/settings/file-system-cache/cache', [FileSystemCacheSettingsController::class, 'updateCache'])
+            ->name('admin.settings.file-system-cache.cache.update');
         Route::get('/settings/payment-methods', [PaymentMethodSettingsController::class, 'index'])
             ->name('admin.settings.payment-methods');
         Route::post('/settings/payment-methods/{provider}', [PaymentMethodSettingsController::class, 'update'])
@@ -560,11 +678,31 @@ Route::prefix('admin')
             ->name('admin.settings.custom');
         Route::post('/settings/custom', [AdminController::class, 'updateCustomSettings'])
             ->name('admin.settings.custom.update');
+        Route::get('/settings/tax-types/create', [TaxTypeController::class, 'create'])
+            ->name('admin.settings.tax-types.create');
+        Route::post('/settings/tax-types', [TaxTypeController::class, 'store'])
+            ->name('admin.settings.tax-types.store');
+        Route::get('/settings/tax-types/{taxType}/edit', [TaxTypeController::class, 'edit'])
+            ->name('admin.settings.tax-types.edit');
+        Route::put('/settings/tax-types/{taxType}', [TaxTypeController::class, 'update'])
+            ->name('admin.settings.tax-types.update');
+        Route::post('/settings/tax-types/{taxType}/status', [TaxTypeController::class, 'toggleStatus'])
+            ->name('admin.settings.tax-types.status');
+        Route::delete('/settings/tax-types/{taxType}', [TaxTypeController::class, 'destroy'])
+            ->name('admin.settings.tax-types.destroy');
 
         Route::get('/settings/header', [AdminController::class, 'headerSettings'])
             ->name('admin.settings.header');
         Route::post('/settings/header', [AdminController::class, 'updateHeaderSettings'])
             ->name('admin.settings.header.update');
+        Route::get('/settings/contact', [AdminController::class, 'contactSettings'])
+            ->name('admin.settings.contact');
+        Route::post('/settings/contact', [AdminController::class, 'updateContactSettings'])
+            ->name('admin.settings.contact.update');
+        Route::get('/settings/invoice', [AdminController::class, 'invoiceSettings'])
+            ->name('admin.settings.invoice');
+        Route::post('/settings/invoice', [AdminController::class, 'updateInvoiceSettings'])
+            ->name('admin.settings.invoice.update');
         Route::get('/settings/seo', [AdminController::class, 'seoSettings'])
             ->name('admin.settings.seo');
         Route::post('/settings/seo', [AdminController::class, 'updateSeoSettings'])
@@ -579,6 +717,20 @@ Route::prefix('admin')
             ->name('admin.settings.search-categories');
         Route::post('/settings/search-categories', [AdminController::class, 'updateSearchCategorySettings'])
             ->name('admin.settings.search-categories.update');
+        Route::get('/system/server-status', [SystemStatusController::class, 'serverStatus'])
+            ->name('admin.system.server-status');
+        Route::get('/system/update', [SystemStatusController::class, 'update'])
+            ->name('admin.system.update');
+        Route::post('/system/update/clear-all', [SystemStatusController::class, 'clearAll'])
+            ->name('admin.system.update.clear-all');
+        Route::post('/system/update/clear-cache', [SystemStatusController::class, 'clearCache'])
+            ->name('admin.system.update.clear-cache');
+        Route::post('/system/update/clear-view', [SystemStatusController::class, 'clearView'])
+            ->name('admin.system.update.clear-view');
+        Route::post('/system/update/clear-config', [SystemStatusController::class, 'clearConfig'])
+            ->name('admin.system.update.clear-config');
+        Route::post('/system/update/clear-route', [SystemStatusController::class, 'clearRoute'])
+            ->name('admin.system.update.clear-route');
         Route::get('/logs', [AdminController::class, 'logs'])
             ->name('admin.logs.index');
         Route::get('/revisions', [AdminController::class, 'revisions'])
@@ -834,6 +986,12 @@ Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(fun
     Route::get('/inquiries', [DashboardController::class, 'inquiries'])->name('inquiries');
     Route::put('/inquiries/{id}', [DashboardController::class, 'updateInquiry'])->name('inquiries.update');
     Route::delete('/inquiries/{id}', [DashboardController::class, 'destroyInquiry'])->name('inquiries.destroy');
+    Route::get('/support', [UserSupportController::class, 'index'])->name('support.index');
+    Route::post('/support', [UserSupportController::class, 'storeTicket'])->name('support.store');
+    Route::get('/support/tickets/{ticket}', [UserSupportController::class, 'showTicket'])->name('support.ticket');
+    Route::post('/support/tickets/{ticket}/reply', [UserSupportController::class, 'replyTicket'])->name('support.ticket.reply');
+    Route::get('/support/conversations/{conversation}', [UserSupportController::class, 'showConversation'])->name('support.conversation');
+    Route::post('/support/conversations/{conversation}/reply', [UserSupportController::class, 'replyConversation'])->name('support.conversation.reply');
     Route::get('/profile', [UserController::class, 'profile'])->name('profile');
     Route::get('/profile/edit', [UserController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile/update', [UserController::class, 'updateProfile'])->name('profile.update');

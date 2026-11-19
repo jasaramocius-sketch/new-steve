@@ -7,15 +7,17 @@ use App\Models\Blog;
 use App\Models\BlogCategory;
 use App\Models\Image;
 use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class BlogController extends Controller
 {
     public function index(Request $request)
     {
-        $sortBy = in_array($request->sort_by, ['id', 'title', 'status', 'created_at']) ? $request->sort_by : 'created_at';
+        $sortBy = in_array($request->sort_by, ['id', 'title', 'author', 'status', 'created_at']) ? $request->sort_by : 'created_at';
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 10;
 
@@ -54,8 +56,10 @@ class BlogController extends Controller
             ->where('status', 'active')
             ->get();
         $allTagsString = Tag::pluck('name')->implode(',');
+        $defaultAuthor = auth()->user()?->name ?? 'Admin';
+        $blogAuthors = $this->availableBlogAuthors();
 
-        return view('admin.blogs.create', compact('blogCategories', 'allTagsString'));
+        return view('admin.blogs.create', compact('blogCategories', 'allTagsString', 'blogAuthors', 'defaultAuthor'));
     }
 
     public function store(Request $request)
@@ -63,6 +67,7 @@ class BlogController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'details' => 'nullable|string',
+            'author' => ['required', 'string', 'max:255', Rule::in($this->availableBlogAuthors()->all())],
             'status' => 'required|in:published,draft,scheduled',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'image_url' => 'nullable|url',
@@ -77,7 +82,9 @@ class BlogController extends Controller
                 'published_at.required_if' => 'Post Date is required when status is Scheduled.',
             ]);
 
-        $data = $request->only(['title', 'details', 'status']);
+        $data = $request->only(['title', 'details', 'author', 'status']);
+        $data['author'] = trim((string) $request->input('author'));
+        $data['author_id'] = $this->resolveAuthorId($data['author']);
         $data['blog_category_id'] = $this->resolveCategory($request);
         $data['published_at'] = $request->filled('published_at')
             ? Carbon::parse($request->input('published_at'))->format('Y-m-d H:i:s')
@@ -131,8 +138,10 @@ class BlogController extends Controller
             ->get();
         $tagsString = $blog->tags()->pluck('name')->join(',');
         $allTagsString = Tag::pluck('name')->implode(',');
+        $defaultAuthor = $blog->author ?: 'Admin';
+        $blogAuthors = $this->availableBlogAuthors($defaultAuthor, false);
 
-        return view('admin.blogs.edit', compact('blog', 'blogCategories', 'tagsString', 'allTagsString'));
+        return view('admin.blogs.edit', compact('blog', 'blogCategories', 'tagsString', 'allTagsString', 'blogAuthors', 'defaultAuthor'));
     }
 
     public function update(Request $request, $id)
@@ -142,6 +151,12 @@ class BlogController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'details' => 'nullable|string',
+            'author' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::in($this->availableBlogAuthors($blog->author ?: 'Admin', false)->all()),
+            ],
             'status' => 'required|in:published,draft,scheduled',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'image_url' => 'nullable|url',
@@ -156,7 +171,9 @@ class BlogController extends Controller
                 'published_at.required_if' => 'Post Date is required when status is Scheduled.',
             ]);
 
-        $data = $request->only(['title', 'details', 'status']);
+        $data = $request->only(['title', 'details', 'author', 'status']);
+        $data['author'] = trim((string) $request->input('author'));
+        $data['author_id'] = $this->resolveAuthorId($data['author']);
         $data['blog_category_id'] = $this->resolveCategory($request);
         $data['published_at'] = $request->filled('published_at')
             ? Carbon::parse($request->input('published_at'))->format('Y-m-d H:i:s')
@@ -218,6 +235,44 @@ class BlogController extends Controller
         return $request->filled('blog_category_id') ? (int) $request->input('blog_category_id') : null;
     }
 
+    protected function availableBlogAuthors(?string $existingAuthor = null, bool $includeCurrentUser = true)
+    {
+        $authors = User::whereIn('role', ['master_admin', 'admin', 'staff'])
+            ->orderBy('name')
+            ->pluck('name')
+            ->filter()
+            ->unique();
+
+        $currentUserName = auth()->user()?->name;
+        if (! $includeCurrentUser && $currentUserName) {
+            $authors = $authors->reject(fn ($author) => $author === $currentUserName);
+        }
+
+        return $authors
+            ->prepend($existingAuthor ?: ($includeCurrentUser ? ($currentUserName ?? 'Admin') : 'Admin'))
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
+    /**
+     * Resolve the selected author name to a user id, falling back to the
+     * currently logged-in user when the name matches no staff user.
+     */
+    protected function resolveAuthorId(string $authorName): ?int
+    {
+        $authorName = trim($authorName);
+        if ($authorName === '') {
+            return auth()->id();
+        }
+
+        $user = User::whereIn('role', ['master_admin', 'admin', 'staff'])
+            ->where('name', $authorName)
+            ->first();
+
+        return $user?->id ?? auth()->id();
+    }
+
     protected function syncTags(Request $request, Blog $blog)
     {
         $names = collect(explode(',', (string) $request->input('tags')))
@@ -228,21 +283,31 @@ class BlogController extends Controller
 
         $tagIds = [];
         foreach ($names as $name) {
-            $tag = Tag::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+            $tag = Tag::withTrashed()->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
             if (! $tag) {
                 $tag = Tag::create(['name' => $name]);
+            } elseif ($tag->trashed()) {
+                $tag->restore();
             }
             $tagIds[] = $tag->id;
         }
 
-            $blog->tags()->sync($tagIds);
+        $blog->tags()->sync($tagIds);
     }
 
     protected function syncAdditionalCategories(Request $request, Blog $blog)
     {
-        $blog->additionalCategories()->sync(
-            collect($request->input('additional_categories', []))->filter()->unique()->values()->all()
-        );
+        $primaryCategoryId = $blog->blog_category_id ? (int) $blog->blog_category_id : null;
+
+        $categoryIds = collect($request->input('additional_categories', []))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $primaryCategoryId !== null && $id === $primaryCategoryId)
+            ->unique()
+            ->values()
+            ->all();
+
+        $blog->additionalCategories()->sync($categoryIds);
     }
 
     public function toggleStatus($id)

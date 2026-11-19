@@ -13,8 +13,7 @@ class HomePageSectionSeeder extends Seeder
     public function run(): void
     {
         // Hero Section
-        HomePageSection::create([
-            'section_name' => 'hero',
+        HomePageSection::firstOrCreateRestored(['section_name' => 'hero'], [
             'title' => 'Start Shopping Now!',
             'subtitle' => 'Dive In and Explore',
             'description' => 'Explore our curated collections and find the perfect item that speaks to your style and needs. With just a click, begin your journey.',
@@ -25,8 +24,7 @@ class HomePageSectionSeeder extends Seeder
         ]);
 
         // Offer Section (banners are managed inside the offers section)
-        HomePageSection::create([
-            'section_name' => 'offers',
+        HomePageSection::firstOrCreateRestored(['section_name' => 'offers'], [
             'title' => 'Best Month Offer',
             'description' => 'Discover outstanding deals on high-quality auto parts. Upgraded selection and special savings this month only.',
             'order' => 5,

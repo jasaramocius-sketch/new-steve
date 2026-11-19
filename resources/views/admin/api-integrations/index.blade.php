@@ -9,15 +9,12 @@
 @endsection
 
 @section('content')
-<div class="d-flex flex-wrap align-items-center justify-content-between pb-3 border-bottom gap-3 mb-4">
-    <div>
-        <h4 class="mb-0 fw-bold">API Integrations</h4>
-        <p class="text-muted mb-0 small">Configure Courier, Payment, SMS, WhatsApp & other APIs from one place</p>
-    </div>
+<div class="d-flex flex-wrap align-items-center justify-content-between pb-3 gap-3">
+    <div class=""></div>
     <a href="{{ route('admin.api-integrations.create') }}" class="btn btn-primary steve-btn"><i class="fas fa-plus me-1"></i> Add New Integration</a>
 </div>
 
-@if(session('success'))
+<!-- @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         {{ session('success') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -34,7 +31,7 @@
         {{ session('info') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-@endif
+@endif -->
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
@@ -79,7 +76,7 @@
                             <td>
                                 <form action="{{ route('admin.api-integrations.toggle', $integration->id) }}" method="POST" class="d-inline">
                                     @csrf
-                                    <button class="btn btn-sm {{ $integration->is_active ? 'btn-success' : 'btn-outline-secondary' }}">
+                                    <button class="badge btn-sm {{ $integration->is_active ? 'bg-success' : 'bg-danger' }}">
                                         {{ $integration->is_active ? 'Active' : 'Inactive' }}
                                     </button>
                                 </form>

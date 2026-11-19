@@ -231,7 +231,7 @@
                         </ul>
                     </div>
                     <div class="nav-right d-flex align-items-center gap-3">
-                        <div class="icon-circle">
+                        <div class="icon-circle d-flex">
                             <button id="searchIcon" class="p-0" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Search" data-bs-original-title="Search">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                                     <path d="M21 21L17.5001 17.5M20 11.5C20 16.1944 16.1944 20 11.5 20C6.80558 20 3 16.1944 3 11.5C3 6.80558 6.80558 3 11.5 3C16.1944 3 20 6.80558 20 11.5Z" stroke="#1F0300" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -278,7 +278,7 @@
                 <path d="M18 6L6 18M6 6L18 18" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
         </div>
-        <div class="mobile-menu-account px-3 py-3 border-bottom mobile-view-auth-btns mb-2">
+        <div class="mobile-menu-account d-flex flex-row justify-content-between px-3 py-3 border-bottom mobile-view-auth-btns mb-2 gap-3">
             @if(Auth::check())
                 <div class="d-flex align-items-center gap-2">
                     @if(Auth::user()->avatar)
