@@ -2,8 +2,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-support-conversation-page', 'pageClass' => 'user-support-conversation-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Conversation #'.$conversation->id.' - StAutoparts',
-        'metaTitle' => 'Product Conversation | StAutoparts',
+        'pageTitle' => 'Conversation #'.$conversation->id.' - Steve Autoparts',
+        'metaTitle' => 'Product Conversation | Steve Autoparts',
         'metaDescription' => 'View your product conversation and replies at StAutoparts.',
     ])
 @endsection

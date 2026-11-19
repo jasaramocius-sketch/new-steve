@@ -1,3 +1,18 @@
+Application (client) ID:
+338f1530-4608-4cbe-a56b-1e3f7d0c5abe
+
+Object ID:
+78389b61-ce4b-422d-802b-bf11a97a0731
+
+Directory (tenant) ID:
+5dd5060d-c265-470a-bd6a-496142115010
+
+
+add and enable mail service jisje users ko bhi mail send ho ske
+
+
+
+
 $2y$12$5uBS3u6Rr3DNRa.6iPqh0e2djvaW4E/Wphhc./0cygMMM.OmSolBi
 
 wp-core-ui wp-editor-wrap html-active
@@ -136,6 +151,45 @@ Login page login form "I agree to the Privacy Policy and Terms & Conditions" cha
 Registration page registration form "I agree to the Privacy Policy and Terms & Conditions" and "Subscribe to our newsletter for offers and updates" chackbox add
 Shipping Function add and manage by admin panal
 
+http://192.168.130.54/new-steve/admin/products/stock
+http://192.168.130.54/new-steve/admin/reviews
+http://192.168.130.54/new-steve/admin/orders
+http://192.168.130.54/new-steve/admin/images
+http://192.168.130.54/new-steve/admin/blogs
+http://192.168.130.54/new-steve/admin/blogs/34/edit
+http://192.168.130.54/new-steve/admin/blog-categories
+http://192.168.130.54/new-steve/admin/blog-categories/create
+http://192.168.130.54/new-steve/admin/blog-categories/33/edit
+http://192.168.130.54/new-steve/admin/pages
+http://192.168.130.54/new-steve/admin/faqs
+http://192.168.130.54/new-steve/admin/faqs/create
+http://192.168.130.54/new-steve/admin/faqs/12/edit
+http://192.168.130.54/new-steve/admin/contacts
+http://192.168.130.54/new-steve/admin/coupons
+http://192.168.130.54/new-steve/admin/settings/header
+http://192.168.130.54/new-steve/admin/settings/languages
+http://192.168.130.54/new-steve/admin/settings/languages/create
+http://192.168.130.54/new-steve/admin/settings/languages/4/edit
+http://192.168.130.54/new-steve/admin/settings/currency
+http://192.168.130.54/new-steve/admin/settings/tax-types/create
+http://192.168.130.54/new-steve/admin/settings/smtp
+http://192.168.130.54/new-steve/admin/api-integrations/3/edit
+http://192.168.130.54/new-steve/admin/settings/shipping-countries
+http://192.168.130.54/new-steve/admin/settings/shipping-states
+http://192.168.130.54/new-steve/admin/settings/shipping-cities
+http://192.168.130.54/new-steve/admin/home-page/12/edit
+http://192.168.130.54/new-steve/admin/settings/search-categories
+
+
+
+
+Google reCAPTCHA v3 Support
+Duplicate Account Prevention By Email, Login State, And Phone
+Homepage Latest Post — View More Button & Auto Latest Option
+System Menu — Update & Server Status
+Support Module — Tickets & Product Conversations
+
+
 
 
 
@@ -178,4 +232,15 @@ Shipping Function add and manage by admin panal
 
 
 
-http://192.168.130.54/new-steve/admin/orders/62
+input-group-text btn steve-btn gap-1 admin-search-toggle btn-primary
+input-group-text btn steve-btn gap-1 admin-search-toggle btn-primary
+
+
+alert ke liye toster use kr rhe he to alg se alert ki jarurt he ya nhi
+
+
+StAutoparts_Full_QA_Report_Admin_and_Frontend_2026-11-19(Admin Issues).csv me jo sheet no. 4 "New Features me jo point he ve add kr skte he 
+
+
+
+

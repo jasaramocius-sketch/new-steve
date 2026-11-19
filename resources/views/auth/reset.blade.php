@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'auth-reset-page', 'pageClass' => 'auth-reset-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Reset Password - StAutoparts',
-        'metaTitle' => 'Reset Password | StAutoparts',
+        'pageTitle' => 'Reset Password - Steve Autoparts',
+        'metaTitle' => 'Reset Password | Steve Autoparts',
         'metaDescription' => 'Set a new password for your StAutoparts account.',
     ])
 @endsection

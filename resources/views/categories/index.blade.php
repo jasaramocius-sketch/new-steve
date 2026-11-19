@@ -242,6 +242,9 @@
   #categoryContainer {
     grid-template-columns: repeat(3, 1fr);
   }
+  .category-image {
+    height: 170px;
+  }
 }
 @media (max-width: 767px) {
   #categoryContainer {

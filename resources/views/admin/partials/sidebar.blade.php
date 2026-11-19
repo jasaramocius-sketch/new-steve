@@ -152,6 +152,7 @@
                     <li><a href="{{ route('admin.settings.custom') }}" class="{{ request()->routeIs('admin.settings.custom*', 'admin.settings.tax-types*') ? 'active' : '' }}"><i class="fas fa-percent" aria-hidden="true"></i> Vat &amp; TAX</a></li>
                     <li><a href="{{ route('admin.settings.pickup-points.index') }}" class="{{ request()->routeIs('admin.settings.pickup-points.*') ? 'active' : '' }}"><i class="fas fa-store" aria-hidden="true"></i> Pickup point</a></li>
                     <li><a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'active' : '' }}"><i class="fas fa-envelope" aria-hidden="true"></i> SMTP Settings</a></li>
+                    <li><a href="{{ route('admin.settings.two-factor') }}" class="{{ request()->routeIs('admin.settings.two-factor*') ? 'active' : '' }}"><i class="fas fa-lock" aria-hidden="true"></i> Two-Factor Auth</a></li>
                     <li><a href="{{ route('admin.settings.payment-methods') }}" class="{{ request()->routeIs('admin.settings.payment-methods*') ? 'active' : '' }}"><i class="fas fa-credit-card" aria-hidden="true"></i> Payment Methods</a></li>
                     <li><a href="{{ route('admin.api-integrations.index') }}" class="{{ request()->routeIs('admin.api-integrations*') ? 'active' : '' }}">
                         <i class="fas fa-plug" aria-hidden="true"></i> API Integrations

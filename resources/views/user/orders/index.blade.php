@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-orders-page', 'pageClass' => 'user-orders-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'My Orders - StAutoparts',
-        'metaTitle' => 'My Orders | StAutoparts',
+        'pageTitle' => 'My Orders - Steve Autoparts',
+        'metaTitle' => 'My Orders | Steve Autoparts',
         'metaDescription' => 'View and manage your orders at StAutoparts.',
     ])
 @endsection

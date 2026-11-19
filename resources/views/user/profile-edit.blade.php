@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-profile-edit-page', 'pageClass' => 'user-profile-edit-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Edit Profile - StAutoparts',
-        'metaTitle' => 'Edit Profile | StAutoparts',
+        'pageTitle' => 'Edit Profile - Steve Autoparts',
+        'metaTitle' => 'Edit Profile | Steve Autoparts',
         'metaDescription' => 'Update your profile information at StAutoparts.',
     ])
 @endsection

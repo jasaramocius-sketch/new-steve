@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-reviews-page', 'pageClass' => 'user-reviews-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'My Reviews - StAutoparts',
-        'metaTitle' => 'My Reviews | StAutoparts',
+        'pageTitle' => 'My Reviews - Steve Autoparts',
+        'metaTitle' => 'My Reviews | Steve Autoparts',
         'metaDescription' => 'View and manage your product reviews at StAutoparts.',
     ])
 @endsection

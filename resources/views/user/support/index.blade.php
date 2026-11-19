@@ -2,8 +2,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-support-page', 'pageClass' => 'user-support-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'My Support - StAutoparts',
-        'metaTitle' => 'My Support | StAutoparts',
+        'pageTitle' => 'My Support - Steve Autoparts',
+        'metaTitle' => 'My Support | Steve Autoparts',
         'metaDescription' => 'Create support tickets and view your product conversations at StAutoparts.',
     ])
 @endsection

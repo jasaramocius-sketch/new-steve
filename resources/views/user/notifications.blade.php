@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-notifications-page', 'pageClass' => 'user-notifications-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Notifications - StAutoparts',
-        'metaTitle' => 'Notifications | StAutoparts',
+        'pageTitle' => 'Notifications - Steve Autoparts',
+        'metaTitle' => 'Notifications | Steve Autoparts',
         'metaDescription' => 'View your notifications at StAutoparts.',
     ])
 @endsection

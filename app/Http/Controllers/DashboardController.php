@@ -29,7 +29,7 @@ class DashboardController extends Controller
 
         $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -39,7 +39,7 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', [
             'totalOrders' => Order::count(),
-            'totalRevenue' => Order::sum('total_amount'),
+            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
             'pendingOrders' => Order::where('status', 'pending')->count(),
@@ -154,7 +154,7 @@ class DashboardController extends Controller
 
         $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -164,7 +164,7 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', [
             'totalOrders' => Order::count(),
-            'totalRevenue' => Order::sum('total_amount'),
+            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
             'pendingOrders' => Order::where('status', 'pending')->count(),

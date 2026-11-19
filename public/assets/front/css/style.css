@@ -6621,7 +6621,7 @@ footer .footer-row .footer-col-title {
   color: var(--primary);
 }
 
-.admin-content .btn-primary, .page-blog.blog-page .btn-primary, .brand-search-col button.btn-primary {
+.admin-content .btn-primary, .page-blog.blog-page .btn-primary, .brand-search-col button.btn-primary, .categories-page-filter-col button.btn-primary, .single-blog-widget.search-widget button.btn-primary {
   background-color: var(--primary);
   border: none;
   line-height: 1.5;
@@ -6629,7 +6629,7 @@ footer .footer-row .footer-col-title {
   min-height: 40px;
   font-size: 16px;
 }
-.single-blog-widget.search-widget button.btn-outline-danger, .brand-search-col button.btn-outline-danger {
+.single-blog-widget.search-widget button.btn-outline-danger, .brand-search-col button.btn-outline-danger, .categories-page-filter-col button.btn-outline-danger {
     border: 1px solid var(--primary);
     padding: 8px 12px;
 }
@@ -19566,6 +19566,11 @@ a.single-blog-navigation-link:focus-visible {
   grid-template-columns: 1fr 1fr;
 }
 
+.shipping-configuration-inner-section{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
 @media (max-width: 1024px) {
   .Tax-Rate-settings-container{
     grid-template-columns: 1fr;
@@ -19604,15 +19609,13 @@ a.single-blog-navigation-link:focus-visible {
   .single-blog-navigation-link {
     padding: 15px 16px;
   }
+  .shipping-configuration-inner-section{
+    grid-template-columns: 1fr;
+  }
 }
 
 .border-radius-0{
   border-radius: 0 !important;
-}
-.shipping-configuration-inner-section{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
 }
 .shipping-configuration-section {
   display: flex;

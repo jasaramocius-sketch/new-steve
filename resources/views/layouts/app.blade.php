@@ -88,6 +88,9 @@
     @stack('page-builder-css')
 
     @include('partials.seo-analytics')
+    @if (\App\Services\Recaptcha::isV3() && \App\Services\Recaptcha::anyEnabled())
+        <script src="https://www.google.com/recaptcha/api.js?render={{ urlencode(\App\Services\Recaptcha::siteKey()) }}" async defer></script>
+    @endif
 </head>
 <body id="@yield('page-id', 'default-page-id')" class="site-root @yield('page-class', 'default-body-class')">
 

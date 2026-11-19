@@ -48,6 +48,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\WishlistController;
@@ -195,6 +196,8 @@ Route::delete('/compare/{id}', [CompareController::class, 'remove'])->name('comp
 
 Route::get('/users/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/users/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.submit');
+Route::get('/users/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+Route::post('/users/two-factor-challenge', [TwoFactorController::class, 'verify'])->middleware('throttle:5,1')->name('two-factor.verify');
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/users/registration', [AuthController::class, 'registerForm'])->name('register');
@@ -674,6 +677,12 @@ Route::prefix('admin')
             ->name('admin.settings.features');
         Route::post('/settings/features', [AdminController::class, 'updateFeatureSetting'])
             ->name('admin.settings.features.update');
+        Route::get('/settings/two-factor', [TwoFactorController::class, 'setup'])
+            ->name('admin.settings.two-factor');
+        Route::post('/settings/two-factor/confirm', [TwoFactorController::class, 'confirm'])
+            ->name('admin.settings.two-factor.confirm');
+        Route::post('/settings/two-factor/disable', [TwoFactorController::class, 'disable'])
+            ->name('admin.settings.two-factor.disable');
         Route::get('/settings/custom', [AdminController::class, 'customSettings'])
             ->name('admin.settings.custom');
         Route::post('/settings/custom', [AdminController::class, 'updateCustomSettings'])

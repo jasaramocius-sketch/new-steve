@@ -13,6 +13,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
@@ -53,9 +54,36 @@ class OrderController extends Controller
         $validatedData = $request->validate([
             'status' => 'nullable|in:pending,processing,shipped,delivered,cancelled',
             'payment_status' => 'nullable|in:unpaid,paid,refunded',
-            'transaction_id' => 'nullable|string|max:255',
+            'transaction_id' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::requiredIf(function () use ($request, $id) {
+                    $order = Order::find($id);
+
+                    if (! $order) {
+                        return false;
+                    }
+
+                    $effectivePaymentStatus = $request->has('payment_status')
+                        ? $request->input('payment_status')
+                        : ($order->payment_status ?? 'unpaid');
+
+                    if ($effectivePaymentStatus !== 'paid') {
+                        return false;
+                    }
+
+                    $details = $order->payment_details;
+                    $details = is_array($details) ? $details : (is_string($details) ? json_decode($details, true) : []);
+                    $details = is_array($details) ? $details : [];
+
+                    return empty($details['transaction_id'] ?? '');
+                }),
+            ],
             'tracking_number' => 'nullable|string|max:255',
             'tracking_carrier' => 'nullable|string|max:100',
+        ], [
+            'transaction_id.required' => 'Transaction ID is required when payment status is Paid.',
         ]);
 
         $order = Order::with('items.product')->findOrFail($id);
@@ -138,6 +166,24 @@ class OrderController extends Controller
 
                 $details['transaction_id'] = $transactionId;
                 $update['payment_details'] = json_encode($details);
+            }
+        }
+
+        // A paid order should not stay Pending. COD is different: payment is
+        // collected on delivery, so marking it Paid means it is Delivered.
+        // Never reopen a cancelled order or override an explicit cancellation.
+        if ($paidOrder && $oldStatus !== 'cancelled') {
+            $statusAfterInput = $update['status'] ?? $oldStatus;
+            $isCod = strtolower((string) ($order->payment_method ?? '')) === 'cod';
+
+            if ($statusAfterInput !== 'cancelled') {
+                if ($isCod) {
+                    if ($statusAfterInput !== 'delivered') {
+                        $update['status'] = 'delivered';
+                    }
+                } elseif ($statusAfterInput === 'pending') {
+                    $update['status'] = 'processing';
+                }
             }
         }
 

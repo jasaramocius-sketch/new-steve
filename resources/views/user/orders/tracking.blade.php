@@ -4,8 +4,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-order-tracking-page', 'pageClass' => 'user-order-tracking-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Order Tracking - StAutoparts',
-        'metaTitle' => 'Order Tracking | StAutoparts',
+        'pageTitle' => 'Order Tracking - Steve Autoparts',
+        'metaTitle' => 'Order Tracking | Steve Autoparts',
         'metaDescription' => 'Track your orders and view their status at StAutoparts.',
     ])
 @endsection

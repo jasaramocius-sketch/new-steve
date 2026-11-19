@@ -277,11 +277,11 @@
 .shop-sidebar-toggle-float {
   display: none;
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 80px;
+  right: 12px;
   z-index: 1040;
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px  ;
   border-radius: 50%;
   background: var(--primary, #ee5316);
   color: #fff;
@@ -301,8 +301,8 @@
 .blog-sidebar-toggle-float {
   display: none;
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 80px;
+  right: 12px;
   z-index: 1040;
   width: 56px;
   height: 56px;

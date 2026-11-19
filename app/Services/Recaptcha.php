@@ -9,11 +9,30 @@ use Illuminate\Support\Facades\Http;
 
 class Recaptcha
 {
+    public static function globallyEnabled(): bool
+    {
+        return Setting::get('recaptcha_enabled', '1') == '1';
+    }
+
     public static function enabled(string $form): bool
     {
         $key = 'recaptcha_' . $form;
 
-        return Setting::get($key) == '1' && self::siteKey() && self::secretKey();
+        return self::globallyEnabled()
+            && Setting::get($key) == '1'
+            && self::siteKey()
+            && self::secretKey();
+    }
+
+    public static function anyEnabled(): bool
+    {
+        foreach (['login', 'register', 'contact'] as $form) {
+            if (self::enabled($form)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function version(): string

@@ -10,8 +10,8 @@
 @php $shopTitle = isset($pageTitle) ? $pageTitle : (!empty($currentBrand) ? $currentBrand->name : (isset($currentChildcategory) ? $currentChildcategory->name : (isset($currentSubcategory) ? $currentSubcategory->name : (isset($currentCategory) ? $currentCategory->name : 'Shop')))); $shopMeta = (isset($page) && $page->meta_title) ? $page->meta_title : null; $shopDesc = (isset($page) && $page->meta_description) ? $page->meta_description : null; @endphp
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $shopMeta ?: ($shopTitle . ' - StAutoparts'),
-        'metaTitle' => $shopMeta ?: ($shopTitle . ' | StAutoparts'),
+        'pageTitle' => $shopMeta ?: ($shopTitle . ' - Steve Autoparts'),
+        'metaTitle' => $shopMeta ?: ($shopTitle . ' | Steve Autoparts'),
         'metaDescription' => $shopDesc ?: ($shopTitle . ' — browse auto spare parts and accessories at StAutoparts.'),
         'robots' => 'index, follow',
     ])

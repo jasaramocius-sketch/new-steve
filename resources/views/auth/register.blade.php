@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'auth-register-page', 'pageClass' => 'auth-register-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Register - StAutoparts',
-        'metaTitle' => 'Register | StAutoparts',
+        'pageTitle' => 'Register - Steve Autoparts',
+        'metaTitle' => 'Register | Steve Autoparts',
         'metaDescription' => 'Create your StAutoparts account.',
     ])
 @endsection
@@ -46,14 +46,14 @@
                 <label for="create-password">Password</label>
                 <div class="pass-wrapper" style="position:relative">
                     <input type="password" name="password" class="form-control" id="create-password" placeholder="Enter your password" required>
-                    <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:5" onclick="togglePassword('create-password',this)">
+                    <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:5" aria-label="Show password" title="Show password" onclick="togglePassword('create-password',this)">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </span>
                 </div>
                 <label for="confirm-password">Confirm Password</label>
                 <div class="pass-wrapper" style="position:relative">
                     <input type="password" name="password_confirmation" class="form-control" id="confirm-password" placeholder="Confirm your password" required>
-                    <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:5" onclick="togglePassword('confirm-password',this)">
+                    <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:5" aria-label="Show password" title="Show password" onclick="togglePassword('confirm-password',this)">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </span>
                 </div>
@@ -95,8 +95,9 @@
 
 @endsection
 
-@if(\App\Services\Recaptcha::enabled('register'))
 @section('scripts')
-    @include('partials.recaptcha-scripts', ['form' => 'register'])
+    @include('partials.password-toggle-script')
+    @if(\App\Services\Recaptcha::enabled('register'))
+        @include('partials.recaptcha-scripts', ['form' => 'register'])
+    @endif
 @endsection
-@endif

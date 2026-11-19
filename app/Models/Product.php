@@ -107,7 +107,7 @@ class Product extends Model
         $image = trim((string) ($this->attributes['main_image'] ?? ''));
 
         // Product images must come from the AWS source bucket. Anything else
-        // (legacy stautoparts filenames, assets/images/thumbnails paths, or
+        // (legacy steve autoparts filenames, assets/images/thumbnails paths, or
         // third-party URLs) is intentionally treated as "no image" so the
         // placeholder is shown instead of an outdated image.
         if ($image !== '' && isSourceS3ImageReference($image)) {

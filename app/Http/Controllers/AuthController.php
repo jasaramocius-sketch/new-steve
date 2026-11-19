@@ -13,8 +13,10 @@ use App\Services\Recaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AuthController extends Controller
 {
@@ -29,7 +31,7 @@ class AuthController extends Controller
             : route('user.dashboard');
     }
 
-    private function mergeGuestData()
+    public function mergeGuestData()
     {
         $userId = Auth::id();
 
@@ -90,12 +92,6 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'terms' => 'accepted',
-        ], [
-            'terms.accepted' => 'Please agree to the Privacy Policy and Terms & Conditions to sign in.',
-        ]);
-
         if (Recaptcha::enabled('login') && ! Recaptcha::verify($request, 'login')) {
             return back()->withErrors(['g-recaptcha-response' => 'Please complete the reCAPTCHA verification.'])->withInput();
         }
@@ -106,9 +102,22 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Invalid credentials']);
         }
 
+        $user = Auth::user();
+
+        if ($user->hasTwoFactorEnabled()) {
+            $remember = $request->boolean('remember');
+            Auth::logout();
+            $request->session()->regenerate();
+            $request->session()->put([
+                'two_factor_user_id' => $user->id,
+                'two_factor_remember' => $remember,
+            ]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         $request->session()->regenerate();
 
-        $user = Auth::user();
         $request->session()->put([
             'user_logged_in' => true,
             'user_profile' => $user->only(['id', 'name', 'email', 'role', 'phone', 'address', 'city', 'country']),
@@ -177,7 +186,20 @@ class AuthController extends Controller
 
         NotificationHelper::welcomeUser($user);
 
-        Mail::to($user->email)->send(new WelcomeMail($user));
+        try {
+            Mail::to($user->email)->send(new WelcomeMail($user));
+        } catch (TransportExceptionInterface $exception) {
+            Log::error('Welcome email delivery failed after account creation.', [
+                'user_id' => $user->id,
+                'exception_type' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return redirect()->route('user.dashboard')->with(
+                'warning',
+                'Your account was created, but we could not send the welcome email. Please contact support if you need help.'
+            );
+        }
 
         return redirect()->route('user.dashboard')->with('success', 'Account created successfully!');
     }

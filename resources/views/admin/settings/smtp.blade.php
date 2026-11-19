@@ -66,7 +66,7 @@
                             </div>
                         </div>
 
-                        <div data-mail-driver="mailgun">
+                        <div data-mail-driver="mailgun" class="mailgun-settings-fields d-flex flex-column gap-2">
                             <div class="form-group row">
                                 <label class="col-md-3 col-form-label" for="mailgun-domain">Mailgun Domain</label>
                                 <div class="col-md-9"><input id="mailgun-domain" name="mailgun_domain" class="form-control" value="{{ old('mailgun_domain', $mailgunDomain) }}" placeholder="mg.example.com"></div>
@@ -80,7 +80,7 @@
                             </div>
                         </div>
 
-                        <div data-mail-driver="microsoft">
+                        <div data-mail-driver="microsoft" class="microsoft-settings-fields d-flex flex-column gap-2">
                             <div class="alert alert-info">Sends through Microsoft Graph using an Azure app registration with the Mail.Send application permission.</div>
                             <div class="form-group row">
                                 <label class="col-md-3 col-form-label" for="mail-tenant-id">Tenant ID</label>

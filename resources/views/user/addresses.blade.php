@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-addresses-page', 'pageClass' => 'user-addresses-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'My Addresses - StAutoparts',
-        'metaTitle' => 'My Addresses | StAutoparts',
+        'pageTitle' => 'My Addresses - Steve Autoparts',
+        'metaTitle' => 'My Addresses | Steve Autoparts',
         'metaDescription' => 'Manage your shipping addresses at StAutoparts.',
     ])
 @endsection
