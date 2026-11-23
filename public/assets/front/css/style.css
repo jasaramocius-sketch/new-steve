@@ -466,6 +466,7 @@ p.text-lg {
 .w-40px {
   width: 40px;
 }
+
 #toast-container>.toast-success {
   background-color: #28a745;
 }
@@ -5038,7 +5039,14 @@ tbody tr:last-child {
   background-image: none;
   padding-right: 2.25rem;
   cursor: pointer;
+  height: 40px;
+  min-width: 200px;
 }
+
+.new-city-state .form-select-wrapper .form-select {
+    min-width: 100%;
+}
+
 /* #home-vehicle-filter-form .form-select-wrapper{
   width: 26%;
 } */
@@ -6615,9 +6623,12 @@ footer .footer-row .footer-col-title {
 .gs-dashboard-user-sidebar-wrapper .nav-link:focus {
   background-color: var(--primary);
 }
+.admin-content .nav .nav-item .nav-link{
+  color: #1f0300;
+}
 
 .admin-content .nav .nav-item .nav-link:focus,
-.admin-content .nav .nav-item .nav-link:hover {
+.admin-content .nav .nav-item .nav-link:hover, .admin-content .nav .nav-item .nav-link.active {
   color: var(--primary);
 }
 
@@ -12142,10 +12153,7 @@ form#home-vehicle-filter-form {
   display: grid !important;
   grid-template-columns: 1fr 1fr 1fr auto;
 }
-.form-select{
-  height: 40px;
-  min-width: 200px;
-}
+
 .home-vehicle-filter .form-select{
   width: 250px;
 }
@@ -19571,6 +19579,12 @@ a.single-blog-navigation-link:focus-visible {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
+.payment-methods-fields{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
 @media (max-width: 1024px) {
   .Tax-Rate-settings-container{
     grid-template-columns: 1fr;
@@ -19579,6 +19593,10 @@ a.single-blog-navigation-link:focus-visible {
 }
 .support-conversations-search select, .support-tickets-search select {
     width: 100% !important;
+}
+.payment-method-form .form-group {
+  flex-direction: column !important;
+  align-items: flex-start !important;
 }
 }
 
@@ -19593,7 +19611,7 @@ a.single-blog-navigation-link:focus-visible {
   .item-pagination-container .Go-to-page{
     justify-content: center !important;
   }
-.social-logins-page-section{
+.social-logins-page-section, .payment-methods-fields{
   grid-template-columns: 1fr;
 }
 }
@@ -19621,4 +19639,7 @@ a.single-blog-navigation-link:focus-visible {
   display: flex;
   flex-direction:column;
   gap: 10px;
+}
+#new-city-state.form-select {
+    min-width: unset !important;
 }

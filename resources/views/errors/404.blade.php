@@ -27,7 +27,7 @@
                     <h3 class="mb-3" style="color: #1f0300;">No results found.</h3>
                     <p class="text-muted mb-4">The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
                     <a href="{{ route('home') }}" class="btn text-white steve-btn" style="background-color: var(--primary);">
-                        <i class="fas fa-home me-2"></i>Home
+                        <i class="fas fa-home"></i>Home
                     </a>
                 </div>
             </div>

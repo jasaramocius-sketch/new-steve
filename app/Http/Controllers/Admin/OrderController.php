@@ -92,13 +92,26 @@ class OrderController extends Controller
         $statusRanks = ['pending' => 0, 'processing' => 1, 'shipped' => 2, 'delivered' => 3];
 
         if ($requestedStatus !== null && $requestedStatus !== $oldStatus) {
-            $isReopeningCancelledOrder = $oldStatus === 'cancelled';
+            if ($oldStatus === 'cancelled') {
+                return back()
+                    ->withErrors(['status' => 'Cancelled orders cannot be changed. Use a return/refund workflow if needed.'])
+                    ->withInput();
+            }
+
+            if ($requestedStatus === 'cancelled' && in_array($oldStatus, ['shipped', 'delivered'], true)) {
+                return back()
+                    ->withErrors(['status' => $oldStatus === 'delivered'
+                        ? 'Delivered orders cannot be cancelled. Use Return/Refund instead.'
+                        : 'Shipped orders cannot be cancelled. Use Return/Refund instead.'])
+                    ->withInput();
+            }
+
             $isMovingStatusBackward = isset($statusRanks[$oldStatus], $statusRanks[$requestedStatus])
                 && $statusRanks[$requestedStatus] < $statusRanks[$oldStatus];
 
-            if ($isReopeningCancelledOrder || $isMovingStatusBackward) {
+            if ($isMovingStatusBackward) {
                 return back()
-                    ->withErrors(['status' => 'Order status cannot be moved backward or changed after cancellation.'])
+                    ->withErrors(['status' => 'Order status cannot be moved backward.'])
                     ->withInput();
             }
         }
@@ -169,6 +182,38 @@ class OrderController extends Controller
             }
         }
 
+        // Refunds for Stripe/card payments must go through Stripe API, not just a label.
+        if ($requestedPaymentStatus === 'refunded' && $oldPaymentStatus !== 'refunded') {
+            $paymentMethod = strtolower((string) ($order->payment_method ?? ''));
+            $isStripePayment = in_array($paymentMethod, ['card', 'stripe'], true)
+                || ! empty($details['stripe_session_id'])
+                || str_starts_with((string) ($details['transaction_id'] ?? ''), 'pi_')
+                || str_starts_with((string) ($details['transaction_id'] ?? ''), 'cs_')
+                || str_starts_with((string) ($details['transaction_id'] ?? ''), 'ch_');
+
+            if ($isStripePayment) {
+                $paymentReference = (string) ($details['transaction_id'] ?? $details['stripe_session_id'] ?? '');
+                try {
+                    $refund = app(\App\Services\StripeCheckoutService::class)->createRefund($paymentReference, null, [
+                        'order_id' => (string) $order->id,
+                        'order_number' => (string) $order->order_number,
+                    ]);
+                    $details['stripe_refund_id'] = $refund->id ?? null;
+                    $details['stripe_refund_status'] = $refund->status ?? null;
+                    $details['refunded_at'] = now()->toIso8601String();
+                    $update['payment_details'] = json_encode($details);
+                } catch (\Throwable $e) {
+                    return back()
+                        ->withErrors(['payment_status' => 'Stripe refund failed: '.$e->getMessage()])
+                        ->withInput();
+                }
+            } else {
+                $details['refunded_at'] = $details['refunded_at'] ?? now()->toIso8601String();
+                $details['refund_note'] = $details['refund_note'] ?? 'Manual refund recorded by admin.';
+                $update['payment_details'] = json_encode($details);
+            }
+        }
+
         // A paid order should not stay Pending. COD is different: payment is
         // collected on delivery, so marking it Paid means it is Delivered.
         // Never reopen a cancelled order or override an explicit cancellation.
@@ -224,7 +269,21 @@ class OrderController extends Controller
             $message = 'Order cancelled and stock restored.';
         }
 
-        return redirect()->route('admin.orders.show', $id)->with('success', $message);
+        $finalPaymentStatus = $update['payment_status'] ?? $order->payment_status;
+        $finalPaymentMethod = strtolower((string) ($order->payment_method ?? ''));
+        $warning = null;
+        if (in_array($newStatus, ['shipped', 'delivered'], true)
+            && $finalPaymentStatus !== 'paid'
+            && $finalPaymentMethod !== 'cod') {
+            $warning = 'Warning: this non-COD order is '.$newStatus.' but payment is still '.$finalPaymentStatus.'. Please verify payment before fulfilment.';
+        }
+
+        $redirect = redirect()->route('admin.orders.show', $id)->with('success', $message);
+        if ($warning) {
+            $redirect->with('warning', $warning);
+        }
+
+        return $redirect;
     }
 
     public function shipViaApi($id)

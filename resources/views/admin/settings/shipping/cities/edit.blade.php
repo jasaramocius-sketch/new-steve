@@ -40,7 +40,7 @@
                         </div>
                         <div class="form-group mb-3">
                             <input type="hidden" name="status" value="0">
-                            <div class="form-check">
+                            <div class="form-check d-flex align-items-center gap-2">
                                 <input id="city-status" type="checkbox" name="status" value="1" class="form-check-input" @checked(old('status', $city->status))>
                                 <label class="form-check-label" for="city-status">Active</label>
                             </div>

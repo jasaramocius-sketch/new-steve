@@ -87,9 +87,11 @@
         <!-- <a href="{{ route('admin.products.import-form') }}" class="nav-item nav-item-sub {{ request()->routeIs('admin.products.import-form') ? 'active' : '' }}">
             <i class="fas fa-upload"></i> Import Products 
         </a>-->
+        @if (\App\Support\FeatureFlags::enabled('vendor_system_activation'))
         <a href="{{ route('admin.sellers.index') }}" class="nav-item {{ request()->routeIs('admin.sellers.*') ? 'active' : '' }}">
             <i class="fas fa-store"></i> Sellers
         </a>
+        @endif
 
         <div class="nav-section">Content</div>
         <a href="{{ route('page-builder.index') }}" class="nav-item {{ request()->routeIs('page-builder.*') ? 'active' : '' }}">
@@ -247,12 +249,14 @@
                             <span class="badge bg-info">{{ $supportOpenTickets ?? 0 }}</span>
                         </a>
                     </li>
+                    @if (\App\Support\FeatureFlags::enabled('conversation_system'))
                     <li>
                         <a href="{{ route('admin.support.conversations.index') }}" class="nav-item-sub {{ request()->routeIs('admin.support.conversations.*') ? 'active' : '' }}">
                             <i class="fas fa-comments"></i> Product Conversations
                             <span class="badge bg-info">{{ $supportOpenConversations ?? 0 }}</span>
                         </a>
                     </li>
+                    @endif
                 </ul>
             </li>
         </ul>

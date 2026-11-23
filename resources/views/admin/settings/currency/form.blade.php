@@ -75,7 +75,7 @@
                         <input id="currency-rate" type="number" name="rate" class="form-control" value="{{ old('rate', $currency->rate ?: 1) }}" min="0.00000001" max="100000000" step="any" required>
                     </div>
                     @if (!$isEditing)
-                        <div class="custom-control custom-checkbox mb-3">
+                        <div class="custom-control custom-checkbox mb-3 mt-1">
                             <input id="currency-active" type="checkbox" name="is_active" value="1" class="custom-control-input" checked>
                             <label class="custom-control-label" for="currency-active">Active</label>
                         </div>

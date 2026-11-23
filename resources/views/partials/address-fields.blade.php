@@ -94,6 +94,7 @@
             @endif
         </select>
         </div>
+        <input type="text" id="{{ $p }}_state_text" class="form-control address-free-text-input address-state-free-text d-none @error('state') is-invalid @enderror" value="{{ $get('state') }}" placeholder="Enter state / region" data-target="{{ $p }}_state" autocomplete="address-level1" disabled>
         @error('state')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-6 address-city-wrapper select-dropdown-icon">
@@ -108,6 +109,7 @@
             @endif
         </select>
         </div>
+        <input type="text" id="{{ $p }}_city_text" class="form-control address-free-text-input address-city-free-text d-none @error('city') is-invalid @enderror" value="{{ $get('city') }}" placeholder="Enter city" data-target="{{ $p }}_city" autocomplete="address-level2" disabled>
         @error('city')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-6">
@@ -341,9 +343,133 @@
         el.required = false;
     }
 
+    function getFreeTextInput(el) {
+        if (!el || !el.id) return null;
+        return document.getElementById(el.id + '_text');
+    }
+
+    function setFreeTextMode(el, enabled, selectedVal) {
+        if (!el) return;
+        var wrap = el.closest('.address-suggest');
+        var input = getFreeTextInput(el);
+        var col = el.closest('.address-state-wrapper, .address-city-wrapper');
+        var label = col ? col.querySelector('label.form-label') : null;
+
+        if (!input) {
+            // No free-text companion; fall back to normal select behavior.
+            fillSelect(el, [], selectedVal, enabled, el.id.indexOf('_state') !== -1 ? 'Select State' : 'Select City');
+            return;
+        }
+
+        var shouldRequire = enabled && (el.getAttribute('data-required') === '1');
+        var val = (selectedVal && selectedVal !== '__loading__') ? selectedVal : (input.value || '');
+        input.value = val;
+        input.disabled = !enabled;
+        input.required = shouldRequire;
+        if (shouldRequire) {
+            input.setAttribute('required', 'required');
+        } else {
+            input.removeAttribute('required');
+        }
+
+        // The select is not submitted in free-text mode.
+        el.innerHTML = '';
+        var first = document.createElement('option');
+        first.value = '';
+        first.textContent = el.id.indexOf('_state') !== -1 ? 'Select State' : 'Select City';
+        el.appendChild(first);
+        if (val) {
+            var opt = document.createElement('option');
+            opt.value = opt.textContent = val;
+            opt.selected = true;
+            el.appendChild(opt);
+        }
+        el.setAttribute('data-selected', val);
+        el.disabled = true;
+        el.required = false;
+        el.removeAttribute('name');
+        el.dataset.freeTextMode = '1';
+
+        if (!el.dataset.originalName) {
+            el.dataset.originalName = el.id.indexOf('_state') !== -1 ? 'state' : 'city';
+        }
+        input.name = el.dataset.originalName;
+
+        if (!input._addrSync) {
+            input.addEventListener('input', function () {
+                var sel = document.getElementById(input.dataset.target || '');
+                if (!sel) return;
+                var v = input.value || '';
+                sel.innerHTML = '';
+                var ph = document.createElement('option');
+                ph.value = '';
+                ph.textContent = sel.id.indexOf('_state') !== -1 ? 'Select State' : 'Select City';
+                sel.appendChild(ph);
+                if (v) {
+                    var o = document.createElement('option');
+                    o.value = o.textContent = v;
+                    o.selected = true;
+                    sel.appendChild(o);
+                }
+                sel.setAttribute('data-selected', v);
+            });
+            input._addrSync = true;
+        }
+
+        if (wrap) wrap.classList.add('d-none');
+        input.classList.remove('d-none');
+        if (col) col.classList.remove('select-dropdown-icon');
+        if (label) label.setAttribute('for', input.id);
+
+        if (el.dispatchEvent) el.dispatchEvent(new Event('addrFieldUpdated', { bubbles: true }));
+    }
+
+    function clearFreeTextMode(el) {
+        if (!el) return;
+        if (el.dataset.freeTextMode !== '1') return;
+        var wrap = el.closest('.address-suggest');
+        var input = getFreeTextInput(el);
+        var col = el.closest('.address-state-wrapper, .address-city-wrapper');
+        var label = col ? col.querySelector('label.form-label') : null;
+        var searchTrigger = wrap ? wrap.querySelector('.address-suggest-trigger') : null;
+
+        el.dataset.freeTextMode = '0';
+        if (!el.dataset.originalName) {
+            el.dataset.originalName = el.id.indexOf('_state') !== -1 ? 'state' : 'city';
+        }
+        el.setAttribute('name', el.dataset.originalName);
+
+        if (input) {
+            input.disabled = true;
+            input.required = false;
+            input.removeAttribute('name');
+            input.classList.add('d-none');
+        }
+        if (wrap) wrap.classList.remove('d-none');
+        if (col) col.classList.add('select-dropdown-icon');
+        if (label && searchTrigger) label.setAttribute('for', searchTrigger.id);
+    }
+
     // ── Fill a <select> with options and refresh its nice-select wrapper ──────────
     function fillSelect(el, items, selectedVal, enabled, placeholder) {
         if (!el) return;
+        if (selectedVal === '__loading__') selectedVal = '';
+
+        var hasItems = enabled && Array.isArray(items) && items.length > 0;
+        var freeTextInput = getFreeTextInput(el);
+
+        if (enabled && !hasItems && freeTextInput) {
+            setFreeTextMode(el, true, selectedVal || '');
+            return;
+        }
+
+        clearFreeTextMode(el);
+
+        if (!enabled) {
+            var ft = getFreeTextInput(el);
+            if (ft) { ft.value = ''; ft.setCustomValidity(''); }
+        }
+
         el.innerHTML = '';
 
         var first = document.createElement('option');
@@ -351,9 +477,8 @@
         first.textContent = placeholder || 'Select';
         el.appendChild(first);
 
-        if (enabled && Array.isArray(items) && items.length) {
+        if (hasItems) {
             var list = items.slice();
-            if (selectedVal === '__loading__') selectedVal = '';
             if (selectedVal && list.indexOf(selectedVal) === -1) list.unshift(selectedVal);
             list.forEach(function(val) {
                 var o = document.createElement('option');
@@ -385,13 +510,33 @@
             if (el && el.dispatchEvent) el.dispatchEvent(new Event('addrFieldUpdated', { bubbles: true }));
         }
 
+        function enableCityForState(country, stateName) {
+            var curCity = savedValue(cityEl);
+            if (!stateName) {
+                fillSelect(cityEl, [], curCity, true, 'Select City');
+                notify(cityEl);
+                return;
+            }
+            setLoading(cityEl, 'Select City');
+            loadList('city', country, stateName).then(function(cities) {
+                if ((countryEl.value || '').trim() !== country) return;
+                if (savedValue(stateEl) !== stateName) return;
+                fillSelect(cityEl, cities, savedValue(cityEl), true, 'Select City');
+                notify(cityEl);
+            }).catch(function() {
+                if ((countryEl.value || '').trim() !== country) return;
+                if (savedValue(stateEl) !== stateName) return;
+                fillSelect(cityEl, [], savedValue(cityEl), true, 'Select City');
+                notify(cityEl);
+            });
+        }
+
         function refresh() {
             var country    = (countryEl.value || '').trim();
             var hasCountry = country !== '';
 
             var savedState = savedValue(stateEl);
             var savedCity  = savedValue(cityEl);
-            var hasState   = savedState !== '';
 
             if (stateEl && stateEl.nextElementSibling && stateEl.nextElementSibling.classList) {
                 stateEl.nextElementSibling.classList.remove('open');
@@ -400,22 +545,7 @@
                 cityEl.nextElementSibling.classList.remove('open');
             }
 
-            if (hasCountry) {
-                // State: enabled only once a country is chosen.
-                setLoading(stateEl, 'Select State');
-                loadList('state', country).then(function(states) {
-                    // Stale-guard: the country may have changed while fetching.
-                    if ((countryEl.value || '').trim() !== country) return;
-                    var curState = savedValue(stateEl);
-                    fillSelect(stateEl, states, curState, true, 'Select State');
-                    notify(stateEl);
-                }).catch(function() {
-                    if ((countryEl.value || '').trim() !== country) return;
-                    var curState = savedValue(stateEl);
-                    fillSelect(stateEl, [], curState, true, 'Select State');
-                    notify(stateEl);
-                });
-            } else {
+            if (!hasCountry) {
                 fillSelect(stateEl, [], '', false, 'Select State');
                 fillSelect(cityEl, [], '', false, 'Select City');
                 notify(stateEl);
@@ -423,26 +553,37 @@
                 return;
             }
 
-            if (hasState) {
-                // City: enabled only once both a country AND a state are chosen
-                // (mirrors the country -> state cascade).
-                setLoading(cityEl, 'Select City');
-                loadList('city', country, savedState).then(function(cities) {
-                    // Stale-guard: the state may have changed while fetching.
-                    if (savedValue(stateEl) !== savedState) return;
-                    var curCity = savedValue(cityEl);
-                    fillSelect(cityEl, cities, curCity, true, 'Select City');
+            // State: enabled once a country is chosen. If there are no states for
+            // the country, fall back to free-text and also allow free-text city.
+            setLoading(stateEl, 'Select State');
+            loadList('state', country).then(function(states) {
+                if ((countryEl.value || '').trim() !== country) return;
+                var curState = savedValue(stateEl);
+                fillSelect(stateEl, states, curState, true, 'Select State');
+                notify(stateEl);
+
+                if (!Array.isArray(states) || states.length === 0) {
+                    // No state data for this country (e.g. Hong Kong): city cannot
+                    // depend on a state selection, so allow free-text city too.
+                    fillSelect(cityEl, [], savedValue(cityEl), true, 'Select City');
                     notify(cityEl);
-                }).catch(function() {
-                    if (savedValue(stateEl) !== savedState) return;
-                    var curCity = savedValue(cityEl);
-                    fillSelect(cityEl, [], curCity, true, 'Select City');
+                    return;
+                }
+
+                var nextState = savedValue(stateEl);
+                if (nextState) {
+                    enableCityForState(country, nextState);
+                } else {
+                    fillSelect(cityEl, [], savedValue(cityEl), false, 'Select City');
                     notify(cityEl);
-                });
-            } else {
-                fillSelect(cityEl, [], '', hasCountry && hasState, 'Select City');
+                }
+            }).catch(function() {
+                if ((countryEl.value || '').trim() !== country) return;
+                fillSelect(stateEl, [], savedValue(stateEl), true, 'Select State');
+                notify(stateEl);
+                fillSelect(cityEl, [], savedValue(cityEl), true, 'Select City');
                 notify(cityEl);
-            }
+            });
         }
 
         countryEl._addrWired = true;
@@ -454,8 +595,8 @@
         $(countryEl).off('change.addrCascade').on('change.addrCascade', function() {
             // Country changed: drop any previously selected state/city (they
             // belonged to the old country) so refresh repopulates cleanly.
-            if (stateEl) { stateEl.value = ''; stateEl.setAttribute('data-selected', ''); }
-            if (cityEl)  { cityEl.value = ''; cityEl.setAttribute('data-selected', ''); }
+            if (stateEl) { stateEl.value = ''; stateEl.setAttribute('data-selected', ''); var st = getFreeTextInput(stateEl); if (st) st.value = ''; }
+            if (cityEl)  { cityEl.value = ''; cityEl.setAttribute('data-selected', ''); var ct = getFreeTextInput(cityEl); if (ct) ct.value = ''; }
             syncZipFieldForCountry(countryEl.closest('form'));
             refresh();
         });
@@ -465,6 +606,23 @@
                 stateEl.setAttribute('data-selected', stateEl.value || '');
                 refresh();
             });
+        }
+
+        var stateFreeText = getFreeTextInput(stateEl);
+        if (stateFreeText && !stateFreeText._addrCityCascade) {
+            stateFreeText.addEventListener('change', function () {
+                if (!stateEl || stateEl.dataset.freeTextMode !== '1') return;
+                var country = (countryEl.value || '').trim();
+                var st = (stateFreeText.value || '').trim();
+                stateEl.setAttribute('data-selected', st);
+                if (country && st) {
+                    enableCityForState(country, st);
+                } else if (country) {
+                    fillSelect(cityEl, [], savedValue(cityEl), true, 'Select City');
+                    notify(cityEl);
+                }
+            });
+            stateFreeText._addrCityCascade = true;
         }
 
         // Populate immediately on wire-up

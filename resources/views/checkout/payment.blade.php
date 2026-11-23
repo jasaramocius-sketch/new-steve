@@ -63,9 +63,15 @@
                     @endforelse
                   </div>
 
-                  @if (array_key_exists('card', $paymentMethods))
+                  @if (count(array_filter($paymentMethods, fn ($option) => ! empty($option['offsite']))) > 0)
                   <div class="alert alert-info text-left mt-4 mb-0" role="note">
-                    Stripe payments are completed on Stripe's secure checkout page. You will be redirected there after placing the order, and your card details are never stored on our servers.
+                    Online payments are completed on the selected provider's secure checkout page. Your payment details are never stored on our servers, and your order is marked paid only after the provider confirms the payment.
+                  </div>
+                  @endif
+
+                  @if (array_key_exists('card', $paymentMethods))
+                  <div class="alert alert-light text-left mt-2 mb-0" role="note">
+                    Card payments are processed by Stripe Checkout.
                   </div>
                   @endif
                 </div>

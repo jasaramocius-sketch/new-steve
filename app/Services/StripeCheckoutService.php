@@ -129,4 +129,61 @@ class StripeCheckoutService
 
         return $response->successful() ? $response->object() : null;
     }
+
+    /**
+     * Create a Stripe refund for a payment intent or checkout session reference.
+     * Returns the Stripe refund object on success.
+     */
+    public function createRefund(string $paymentReference, ?int $amountMinor = null, array $metadata = []): object
+    {
+        $secret = $this->credentials()['STRIPE_SECRET'] ?? null;
+
+        if (! $secret) {
+            throw new RuntimeException('Stripe secret key is not configured.');
+        }
+
+        $paymentReference = trim($paymentReference);
+        if ($paymentReference === '') {
+            throw new RuntimeException('Missing Stripe payment reference for refund.');
+        }
+
+        $paymentIntent = $paymentReference;
+        if (str_starts_with($paymentReference, 'cs_')) {
+            $session = $this->retrieveCheckoutSession($paymentReference);
+            $paymentIntent = (string) ($session->payment_intent ?? '');
+            if ($paymentIntent === '') {
+                throw new RuntimeException('Stripe checkout session has no payment intent to refund.');
+            }
+        }
+
+        $payload = [];
+        if (str_starts_with($paymentIntent, 'pi_')) {
+            $payload['payment_intent'] = $paymentIntent;
+        } elseif (str_starts_with($paymentIntent, 'ch_')) {
+            $payload['charge'] = $paymentIntent;
+        } else {
+            throw new RuntimeException('Unsupported Stripe payment reference for refund.');
+        }
+
+        if ($amountMinor !== null) {
+            $payload['amount'] = (string) max(1, $amountMinor);
+        }
+
+        foreach ($metadata as $key => $value) {
+            if ($value !== null && $value !== '') {
+                $payload['metadata['.$key.']'] = (string) $value;
+            }
+        }
+
+        $response = Http::asForm()
+            ->withToken($secret)
+            ->timeout(20)
+            ->post(self::API_BASE.'/refunds', $payload);
+
+        if ($response->failed()) {
+            throw new RuntimeException($response->json('error.message') ?: 'Stripe refund could not be created.');
+        }
+
+        return $response->object();
+    }
 }

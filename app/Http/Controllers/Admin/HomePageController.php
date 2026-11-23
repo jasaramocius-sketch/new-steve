@@ -80,6 +80,14 @@ class HomePageController extends Controller
     {
         $section = HomePageSection::findOrFail($id);
 
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'subtitle' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'button_text' => 'nullable|string|max:255',
+            'button_url' => 'nullable|string|max:1000',
+        ]);
+
         if ($section->section_name === 'services') {
             $request->validate([
                 'services' => 'nullable|array|max:4',

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\BlogCategoryController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Admin\BulkOperationController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CurrencySettingsController;
@@ -44,6 +45,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentGatewayController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\ReviewController;
@@ -95,6 +97,7 @@ Route::get('/api/vehicles/years', [ShopController::class, 'vehicleYears'])->name
 Route::get('/api/vehicles/makes', [ShopController::class, 'vehicleMakes'])->name('vehicles.makes');
 Route::get('/api/vehicles/models', [ShopController::class, 'vehicleModels'])->name('vehicles.models');
 Route::get('/api/search/suggestions', [ShopController::class, 'suggestions'])->name('search.suggestions');
+Route::get('/ajax/mobile-categories', [HomeController::class, 'mobileCategories'])->name('ajax.mobile-categories');
 
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product');
 Route::post('/contact-seller', [ProductController::class, 'contactSeller'])->name('contact.seller');
@@ -114,6 +117,15 @@ Route::get('/blog/tag/{slug}', [BlogController::class, 'tag'])->name('blog.tag')
 
 Route::get('/about-us', [HomeController::class, 'about'])->name('about');
 Route::get('/contact-us', [HomeController::class, 'contact'])->name('contact');
+Route::get('/contact', fn () => redirect()->route('contact', [], 301));
+Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
+Route::get('/faqs', fn () => redirect()->route('faq', [], 301));
+Route::get('/privacy-policy', [HomeController::class, 'privacy'])->name('privacy.policy');
+Route::get('/privacy', fn () => redirect()->route('privacy.policy', [], 301));
+Route::get('/terms-and-conditions', [HomeController::class, 'terms'])->name('terms.conditions');
+Route::get('/terms', fn () => redirect()->route('terms.conditions', [], 301));
+Route::get('/return-policy', [HomeController::class, 'returnPolicy'])->name('return.policy');
+Route::get('/support-policy', [HomeController::class, 'supportPolicy'])->name('support.policy');
 Route::get('/page/{slug}', [HomeController::class, 'page'])->name('page.show');
 
 /*
@@ -153,6 +165,11 @@ Route::get('/checkout/stripe/success', [CartController::class, 'stripeSuccess'])
 Route::get('/checkout/stripe/cancel', [CartController::class, 'stripeCancel'])->middleware(['nocache'])->name('checkout.stripe.cancel');
 
 Route::post('/checkout/stripe/webhook', [CartController::class, 'stripeWebhook'])->name('checkout.stripe.webhook');
+
+Route::match(['get', 'post'], '/checkout/gateway/{provider}/return', [PaymentGatewayController::class, 'return'])->name('checkout.gateway.return');
+Route::match(['get', 'post'], '/checkout/gateway/{provider}/cancel', [PaymentGatewayController::class, 'cancel'])->name('checkout.gateway.cancel');
+Route::post('/checkout/gateway/{provider}/webhook', [PaymentGatewayController::class, 'webhook'])->name('checkout.gateway.webhook');
+Route::post('/checkout/razorpay/verify', [PaymentGatewayController::class, 'verifyRazorpay'])->name('checkout.razorpay.verify');
 
 Route::get('/checkout/order-confirmed', [CartController::class, 'orderConfirmed'])->middleware(['nocache'])->name('checkout.confirmed');
 
@@ -342,6 +359,8 @@ Route::prefix('admin')
 
         Route::get('/products', [ProductController::class, 'index'])
             ->name('admin.products.index');
+        Route::get('/products/lookup', [ProductController::class, 'lookup'])
+            ->name('admin.products.lookup');
         Route::get('/products/create', [ProductController::class, 'create'])
             ->name('admin.products.create');
         Route::post('/products', [ProductController::class, 'store'])
@@ -349,12 +368,18 @@ Route::prefix('admin')
 
         Route::get('/product-bulk-upload', [ProductController::class, 'importForm'])
             ->name('admin.products.import-form');
-        Route::post('/product-bulk-upload', [ProductController::class, 'import'])
+        Route::post('/product-bulk-upload', [BulkOperationController::class, 'import'])
             ->name('admin.products.import');
         Route::get('/product-bulk-upload/index', [ProductController::class, 'downloadSampleCsv'])
             ->name('admin.products.download-sample-csv');
-        Route::get('/product-bulk-export/csv', [ProductController::class, 'exportCsv'])
+        Route::get('/product-bulk-export/csv', [BulkOperationController::class, 'export'])
             ->name('admin.products.export-csv');
+        Route::get('/product-bulk/progress/{id}', [BulkOperationController::class, 'progress'])
+            ->name('admin.products.bulk-progress');
+        Route::get('/product-bulk/progress/{id}/status', [BulkOperationController::class, 'progressJson'])
+            ->name('admin.products.bulk-progress-json');
+        Route::get('/product-bulk/download/{id}', [BulkOperationController::class, 'download'])
+            ->name('admin.products.bulk-download');
 
         Route::get('/products/stock', [ProductController::class, 'stockIndex'])
             ->name('admin.products.stock');
@@ -377,6 +402,10 @@ Route::prefix('admin')
             ->name('admin.products.toggle-status');
         Route::post('/products/{id}/toggle-featured', [ProductController::class, 'toggleFeatured'])
             ->name('admin.products.toggle-featured');
+        Route::post('/products/{id}/approve', [ProductController::class, 'approveSellerProduct'])
+            ->name('admin.products.approve');
+        Route::post('/products/{id}/reject', [ProductController::class, 'rejectSellerProduct'])
+            ->name('admin.products.reject');
         Route::post('/products/{id}/commission', [ProductController::class, 'updateCommission'])
             ->name('admin.products.commission');
         Route::post('/products/{id}/duplicate', [ProductController::class, 'duplicate'])
@@ -414,11 +443,13 @@ Route::prefix('admin')
         Route::post('/support/tickets/{ticket}/status', [SupportTicketController::class, 'updateStatus'])->name('admin.support.tickets.status');
         Route::delete('/support/tickets/{ticket}', [SupportTicketController::class, 'destroy'])->name('admin.support.tickets.destroy');
 
-        Route::get('/support/conversations', [ProductConversationController::class, 'index'])->name('admin.support.conversations.index');
-        Route::get('/support/conversations/{conversation}', [ProductConversationController::class, 'show'])->name('admin.support.conversations.show');
-        Route::post('/support/conversations/{conversation}/reply', [ProductConversationController::class, 'reply'])->name('admin.support.conversations.reply');
-        Route::post('/support/conversations/{conversation}/status', [ProductConversationController::class, 'updateStatus'])->name('admin.support.conversations.status');
-        Route::delete('/support/conversations/{conversation}', [ProductConversationController::class, 'destroy'])->name('admin.support.conversations.destroy');
+        Route::middleware('feature:conversation_system')->group(function () {
+            Route::get('/support/conversations', [ProductConversationController::class, 'index'])->name('admin.support.conversations.index');
+            Route::get('/support/conversations/{conversation}', [ProductConversationController::class, 'show'])->name('admin.support.conversations.show');
+            Route::post('/support/conversations/{conversation}/reply', [ProductConversationController::class, 'reply'])->name('admin.support.conversations.reply');
+            Route::post('/support/conversations/{conversation}/status', [ProductConversationController::class, 'updateStatus'])->name('admin.support.conversations.status');
+            Route::delete('/support/conversations/{conversation}', [ProductConversationController::class, 'destroy'])->name('admin.support.conversations.destroy');
+        });
         Route::get('/orders/export/csv', [AdminOrderController::class, 'exportCsv'])->name('admin.orders.export-csv');
         Route::post('/orders/{id}/email-customer', [AdminOrderController::class, 'emailCustomer'])->name('admin.orders.email-customer');
         Route::get('/orders/{id}/invoice', [AdminOrderController::class, 'invoice'])->name('admin.orders.invoice');
@@ -450,22 +481,24 @@ Route::prefix('admin')
         Route::post('/brands/{id}/toggle-status', [BrandController::class, 'toggleStatus'])
             ->name('admin.brands.toggle-status');
 
-        Route::get('/sellers', [SellerController::class, 'index'])
-            ->name('admin.sellers.index');
-        Route::get('/sellers/create', [SellerController::class, 'create'])
-            ->name('admin.sellers.create');
-        Route::post('/sellers', [SellerController::class, 'store'])
-            ->name('admin.sellers.store');
-        Route::get('/sellers/{id}/edit', [SellerController::class, 'edit'])
-            ->name('admin.sellers.edit');
-        Route::put('/sellers/{id}', [SellerController::class, 'update'])
-            ->name('admin.sellers.update');
-        Route::delete('/sellers/{id}', [SellerController::class, 'destroy'])
-            ->name('admin.sellers.destroy');
-        Route::post('/sellers/{id}/toggle-status', [SellerController::class, 'toggleStatus'])
-            ->name('admin.sellers.toggle-status');
-        Route::get('/sellers/{id}/followers', [SellerController::class, 'followers'])
-            ->name('admin.sellers.followers');
+        Route::middleware('feature:vendor_system_activation')->group(function () {
+            Route::get('/sellers', [SellerController::class, 'index'])
+                ->name('admin.sellers.index');
+            Route::get('/sellers/create', [SellerController::class, 'create'])
+                ->name('admin.sellers.create');
+            Route::post('/sellers', [SellerController::class, 'store'])
+                ->name('admin.sellers.store');
+            Route::get('/sellers/{id}/edit', [SellerController::class, 'edit'])
+                ->name('admin.sellers.edit');
+            Route::put('/sellers/{id}', [SellerController::class, 'update'])
+                ->name('admin.sellers.update');
+            Route::delete('/sellers/{id}', [SellerController::class, 'destroy'])
+                ->name('admin.sellers.destroy');
+            Route::post('/sellers/{id}/toggle-status', [SellerController::class, 'toggleStatus'])
+                ->name('admin.sellers.toggle-status');
+            Route::get('/sellers/{id}/followers', [SellerController::class, 'followers'])
+                ->name('admin.sellers.followers');
+        });
 
         Route::get('/blogs', [AdminBlogController::class, 'index'])
             ->name('admin.blogs.index');
@@ -957,15 +990,11 @@ Route::get('/category', function () {
 });
 Route::get('/customer_products', [ShopController::class, 'customerProducts'])->name('customer.products');
 Route::get('/category/{parent}/{child}/{subchild?}', [ShopController::class, 'categoryByPath'])->name('subcategory');
-Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
-Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
-Route::get('/privacy-policy', [HomeController::class, 'privacy'])->name('privacy.policy');
-Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
-Route::get('/terms-conditions', [HomeController::class, 'terms'])->name('terms.conditions');
-Route::get('/return-policy', [HomeController::class, 'returnPolicy'])->name('return.policy');
-Route::get('/support-policy', [HomeController::class, 'supportPolicy'])->name('support.policy');
 
 Route::match(['get', 'post'], '/order/tracking', [OrderController::class, 'tracking'])->middleware(['nocache'])->name('order.tracking');
+Route::match(['get', 'post'], '/track-order', [OrderController::class, 'tracking'])->middleware(['nocache'])->name('order.tracking.alias.track-order');
+Route::match(['get', 'post'], '/tracking', [OrderController::class, 'tracking'])->middleware(['nocache'])->name('order.tracking.alias.tracking');
+Route::match(['get', 'post'], '/order-tracking', [OrderController::class, 'tracking'])->middleware(['nocache'])->name('order.tracking.alias.order-tracking');
 
 Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'userDashboard'])->name('dashboard');
@@ -989,6 +1018,7 @@ Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(fun
     Route::delete('/followed-seller/{id}', [DashboardController::class, 'destroyFollowedSeller'])->name('followed-sellers.destroy');
     Route::get('/api/seller/{id}', [DashboardController::class, 'getSellerDetails'])->name('api.seller.details');
     Route::get('/api/seller/{id}/products', [DashboardController::class, 'getSellerProducts'])->name('api.seller.products');
+    Route::get('/wallet', [DashboardController::class, 'wallet'])->name('wallet');
     Route::get('/addresses', [DashboardController::class, 'addresses'])->name('addresses');
     Route::post('/addresses', [DashboardController::class, 'storeAddress'])->name('addresses.store');
     Route::put('/addresses/{id}', [DashboardController::class, 'updateAddress'])->name('addresses.update');

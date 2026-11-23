@@ -33,7 +33,7 @@
                         <label for="pickup-contact">Pickup Station Contact</label>
                         <input id="pickup-contact" name="contact" class="form-control" value="{{ old('contact', $pickupPoint->contact) }}" maxlength="50" required>
                     </div>
-                    <div class="custom-control custom-checkbox mb-3">
+                    <div class="custom-control custom-checkbox mb-3 mt-1">
                         <input id="pickup-open" type="checkbox" name="is_open" value="1" class="custom-control-input" @checked(old('is_open', $isEditing ? $pickupPoint->is_open : true))>
                         <label class="custom-control-label" for="pickup-open">Open for pickup</label>
                     </div>

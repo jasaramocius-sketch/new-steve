@@ -92,6 +92,22 @@
         <div class="col-lg-6 mb-3">
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">PHP Limits</h2></div>
+                <div class="card-body">
+                    @if (! empty($bulkLimits['warnings']))
+                        <div class="alert alert-danger small">
+                            <strong>Bulk import/export limits are too low.</strong>
+                            <ul class="mb-2 ps-3">
+                                @foreach ($bulkLimits['warnings'] as $warning)
+                                    <li>{{ $warning }}</li>
+                                @endforeach
+                            </ul>
+                            <div>Recommended: upload {{ $bulkLimits['recommended_upload'] }}, post {{ $bulkLimits['recommended_post'] }}, execution {{ $bulkLimits['recommended_execution'] }}s. For PHP-FPM, update <code>public/.user.ini</code> and reload PHP-FPM; for mod_php, <code>public/.htaccess</code> is used.</div>
+                        </div>
+                    @endif
+                    <div class="alert alert-info small mb-0">
+                        Bulk imports/exports are queued jobs. Start a worker with <code>php artisan queue:work</code> (or Supervisor) so they run, and use the progress page to watch status and download exports.
+                    </div>
+                </div>
                 <div class="card-body p-0">
                     <table class="table mb-0">
                         <tbody>

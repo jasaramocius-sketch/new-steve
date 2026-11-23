@@ -202,9 +202,11 @@
                 <li>
                   <a href="javascript:;" data-href="{{ route('compare.add', ['product_id' => $product->id]) }}" class="compare_product"><i class="fas fa-exchange-alt"></i> Compare</a>
                 </li>
+                @if (\App\Support\FeatureFlags::enabled('product_query_activation'))
                 <li>
                    <a href="javascript:void(0)" id="contact-seller-btn" style="cursor:pointer;"><i class="fas fa-question-circle"></i> Ask a question</a>
                  </li>
+                @endif
               </ul>
 
               <ul class="details_tags_sku">
@@ -257,14 +259,17 @@
           </ul>
           <div class="tab-content border px-4 " id="myTabContent">
             <div class="tab-pane fade show active py-4" id="description-tab-pane" role="tabpanel" aria-labelledby="description-tab" tabindex="0">
-              @php                  
-                  $descText  = $product['overview'] ?? '';
-                  $descText1  = $product['description'] ?? '';
+              @php
+                  $overview = trim((string) ($product['overview'] ?? ''));
+                  $description = trim((string) ($product['description'] ?? ''));
+                  $descText = $overview !== '' ? $overview : $description;
                   $descLower = strtolower(strip_tags($descText));
                   $hasFeaturesInDesc = str_contains($descLower, 'key features') || preg_match('/^\s*[•\-*]\s/m', $descText);
               @endphp
-              @if(!empty($descText))
-              <div class="product-description-body">{!! $descText1 !!} {!! $descText !!}</div>
+              @if($overview !== '')
+              <div class="product-description-body">{!! $description !!} {!! $overview !!}</div>
+              @elseif($description !== '')
+              <div class="product-description-body">{!! $description !!}</div>
               @else
               <p class="text-muted mb-0">No description available for this product yet.</p>
               @endif
@@ -503,6 +508,7 @@
 @include('partials.recently-viewed')
 
 <!-- Contact Seller Modal -->
+@if (\App\Support\FeatureFlags::enabled('product_query_activation'))
 <div class="modal fade" id="contactSellerModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -545,6 +551,7 @@
     </div>
   </div>
 </div>
+@endif
 
 @endsection
 
@@ -769,11 +776,16 @@ if (submitReviewBtn) {
       method: 'POST',
       headers: {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
       },
       body: formData
     })
-    .then(r => r.json().then(body => ({ status: r.status, body })))
+    .then(async (r) => {
+      let body = {};
+      try { body = await r.json(); } catch (e) { body = { success: false, message: 'Unexpected server response. Please try again.' }; }
+      return { status: r.status, body };
+    })
     .then(({ status, body }) => {
       if (status === 401) {
         alertEl.className = 'alert alert-danger';

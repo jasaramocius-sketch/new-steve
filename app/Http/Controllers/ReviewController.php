@@ -17,7 +17,8 @@ class ReviewController extends Controller
             return redirect()->route('product', $slug);
         }
 
-        $product = Product::where('slug', $slug)->firstOrFail();
+        try {
+            $product = Product::where('slug', $slug)->firstOrFail();
 
         $validated = $request->validate([
             'rating' => 'required|integer|min:1|max:5',
@@ -93,6 +94,16 @@ class ReviewController extends Controller
             'rating' => $product->rating,
             'count' => $product->reviews,
         ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to submit review right now. Please try again.',
+            ], 500);
+        }
     }
 
     public function destroy(Request $request, $slug, $reviewId)

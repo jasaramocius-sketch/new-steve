@@ -6160,3 +6160,182 @@ Layout:
   - Cached garage-vehicle match count in `applyVehicleFilter()` for 600s, keyed by vehicle ID + effective filter/query.
   - Replaced 4 shop `paginate(24)->onEachSide(1)->withQueryString()` calls with `paginateProducts()`.
 - Verification: `php -l app/Http/Controllers/ShopController.php` passed; migration marked DONE; indexes present: `PRIMARY, idx_product, idx_ymm, idx_base_veh, idx_my, idx_model`. `EXPLAIN` confirmed `WHERE make='Toyota'` uses `idx_my` (ref, ~2,377,074 rows) and `WHERE year=2015` uses `idx_ymm` (ref, ~1,820,836 rows). Live before/after timing not re-measured in this pass; count-cache TTL is 5/10 min (stale-count tradeoff).
+
+## 442. (2026-11-23): Checkout/Address — Free-Text State/City Fallback for Countries Without Location Data
+
+**Status: Completed**
+
+- Fixed high-priority checkout/address blocker: countries/regions with no state/city DB data (e.g., Hong Kong) could not submit addresses because City/State were required selects with empty options, causing `The city field is required.`.
+- `resources/views/partials/address-fields.blade.php`: added free-text State/City fallback when `/address/states` or `/address/cities` returns empty/unavailable data. Hidden inputs and JS state now switch to `input` mode for empty datasets while preserving normal select behavior where data exists; typed free-text state can still trigger city lookup/fallback.
+- Verification: `php artisan view:clear` run. `LocationController@states` for `country=Hong Kong` returns `{"states":[]}` (confirmed). Existing US ZIP format validation behavior preserved. End-to-end checkout submission for a no-state/city country was not explicitly re-recorded in this pass.
+- Files: `resources/views/partials/address-fields.blade.php`.
+
+## 443. (2026-11-23): Frontend Issues Follow-up — Remaining Partial Fixes
+
+**Status: Pending**
+
+- User requested status check for reported frontend issues. Current state:
+
+| Issue | Status | Notes |
+|---|---|---|
+| Reviews - New reviews cannot be posted | Partial | Review submit flow hardened (`resources/views/product/show.blade.php`, `app/Http/Controllers/ReviewController.php`) for JSON/non-JSON errors; purchase-eligibility rule still blocks users without qualifying purchased order (`ProductReviewEligibility`). Decide policy: allow verified-email reviews or keep purchase-only with clearer UX. |
+| Performance - Every storefront page ~20 MB | Partial | Mobile category tree lazy-loaded via `/ajax/mobile-categories`; home page ~608KB verified. `/search?search=oxygen+sensor` still ~13.2MB; investigate search page bloat (filters/sidebar/result rendering). |
+| Search - Foreign-language duplicates and poor titles | Partial | Suggestions deduped/whitespace-normalized in `ShopController@suggestions`; main search results still need dedupe/locale/title cleanup. |
+| Compare - accepts non-existent products | Fixed | `CompareController@add` validates active product exists, returns 404 JSON for missing. |
+| Cart - Quantity capped silently | Fixed | `CartController@updateQuantity` returns `capped`+message; cart JS shows `toastr.warning`. |
+| Routing - Common URLs 404; no order tracking | Partial | `/contact` 301, `/track-order` 200, `/terms-and-conditions` 200, order tracking route/link present. Still 404: `/login` (actual `/users/login`), `/register` (no route), `/shop` (actual `/search`), `/about` (actual `/about-us`); add aliases/redirects. |
+
+- Next steps: add missing route aliases/redirects, investigate search-page bloat, add main-search dedupe/title cleanup, and confirm review posting policy/UX. No commit made.
+
+## 444. (2026-11-23): Admin Order Status Workflow Guard, Unpaid-Shipping Warning & Stripe Refund API
+
+**Status: Completed**
+
+- Fixed reported order workflow issue: orders could move to invalid states (e.g., Delivered -> Cancelled) and refunds were label-only.
+- `app/Http/Controllers/Admin/OrderController.php`:
+  - Added status transition guards: cancelled orders cannot be changed; shipped/delivered orders cannot be cancelled (use Return/Refund instead); backward transitions still blocked.
+  - When payment status changes to `refunded` for Stripe/card payments (`card`/`stripe`, or Stripe reference in payment details), issues a real Stripe refund via `StripeCheckoutService::createRefund()` before saving. Stores refund metadata (`stripe_refund_id`, `stripe_refund_status`, `refunded_at`) in `payment_details`; API failures block the status change with an error. Non-Stripe refunds are recorded as manual refund metadata.
+  - Adds warning flash when a non-COD order is shipped/delivered while payment is not `paid`.
+- `app/Services/StripeCheckoutService.php`: added `createRefund($paymentReference, $amountMinor, $metadata)` supporting `pi_`, `ch_`, and `cs_` (resolved to payment intent) references.
+- `app/Http/Controllers/Admin/ReturnController.php`: return requests marked `refunded` now also trigger Stripe API refund for Stripe/card orders (supports optional partial refund amount) and update order payment status/details; non-Stripe returns mark order refunded.
+- Verification: `php -l` passed for `OrderController.php`, `ReturnController.php`, and `StripeCheckoutService.php`. Admin warning flash is supported by existing admin layout (`data-warning="{{ session('warning') }}"`). No live Stripe refund was executed in this environment (requires configured Stripe keys and real payment reference).
+- Files: `app/Http/Controllers/Admin/OrderController.php`, `app/Http/Controllers/Admin/ReturnController.php`, `app/Services/StripeCheckoutService.php`.
+
+## 445. (2026-11-23): Payment Methods — Configured Secret Keys Read-Only with Secure Reveal
+
+**Status: Completed**
+
+- User requested: in Payment Methods, if a secret key is already added, the field should be non-editable and the full key should be shown securely.
+- `app/Http/Controllers/Admin/PaymentMethodSettingsController.php`: configured secret fields now pass the saved value to the view (`value` no longer blanked for secrets), while keeping `configured`/`masked` metadata.
+- `resources/views/admin/settings/payment-methods.blade.php`: configured secret fields render as readonly password inputs with the full saved value, an eye toggle to show/hide securely, and a Change/Cancel button for controlled updates. Unconfigured secret fields remain editable blank inputs. Existing save behavior still keeps current secret when blank.
+- Verification: `php -l` passed for `PaymentMethodSettingsController.php`; `php artisan view:clear` run.
+- Security note: full secret is now present in admin page DOM (password-masked by default), per requested behavior; previously the full value was never sent to the browser.
+- Files: `app/Http/Controllers/Admin/PaymentMethodSettingsController.php`, `resources/views/admin/settings/payment-methods.blade.php`.
+
+## 446. (2026-11-23): Payment Methods — Secret Action Icons Moved to Card Header
+
+**Status: Completed**
+
+- User requested: Payment Methods show/change secret icons should match other admin pages (product page action icon style) and be moved to the card header; if no secret key is configured, show icon should also be hidden.
+- `resources/views/admin/settings/payment-methods.blade.php`: moved secret show/change actions from inline field input-group to each method card header. Uses admin `action-buttons` / `action-btn` SVG style (`btn-view` eye/eye-slash for show/hide, `btn-edit` pen for change, X for cancel), matching product-page action icons. Show and Change icons render only when a secret key is configured; unconfigured secret fields remain editable with no header secret icons.
+- JS updated to swap header SVG icons/titles for show/hide and change/cancel states; cancelling restores original value and resets visibility.
+- Verification: `php artisan view:clear` run. No backend logic change.
+- Files: `resources/views/admin/settings/payment-methods.blade.php`.
+
+## 447. (2026-11-23): Features Activation — Restore Every Toggle And Wire Real Effects
+
+**Status: Completed (corrected after user feedback: toggles restored, not removed)**
+
+- Problem reported: Features activation toggles saved but did not all affect real behavior. User clarified that dead toggles must be restored and updated, not deleted.
+- `app/Support/FeatureFlags.php`: single source of truth with **all 35 legacy toggles** restored (34 configurable + email verification shown as always-on). Adds `enabled()`, `keys()`, `items()`, `integrationRequired()`, `checkoutPaymentMethods()` and request-level setting cache with `flush()`.
+- `app/Http/Controllers/AdminController.php`: feature page/update now use `FeatureFlags`; removed old duplicated `featureActivationGroups()`. `disable_image_optimization` still mirrors to `webp_frontend`, and the flag cache is flushed after save.
+- Real effects for existing features:
+  - `FORCE_HTTPS` + `maintenance_mode` via `app/Http/Middleware/EnforceFeatureFlags.php`, registered in `bootstrap/app.php`. HTTPS redirects skip localhost/IP hosts so `http://192.168.130.54/new-steve/...` keeps working. Maintenance returns a 503 view for storefront routes while admin/login/verify/assets stay reachable.
+  - `classified_product` gates `/customer_products` with 404.
+  - `product_query_activation` gates the “Ask a question” link/modal and `contact.seller`.
+  - `conversation_system` gates customer/admin conversations, sidebar menu, counts and routes.
+  - `coupon_system`, `pickup_point`, `stripe_payment`, `cash_payment` use `FeatureFlags::enabled()`.
+- Restored business toggles with real effects:
+  - `vendor_system_activation`: gates admin seller CRUD, admin/customer seller menus, followed-seller routes, and seller assignment on products.
+  - `wallet_system`: gates a new customer wallet page using `users.balance` and its dashboard menu link.
+  - `product_manage_by_admin`: controls whether admins may assign/manage seller products; seller selector is hidden when off.
+  - `product_approve_by_admin`: added `products.approval_status` migration; seller products go pending on create/seller change, cannot be published until approved, and admin approve/reject actions were added.
+- At this stage, unimplemented provider toggles (16 payment gateways incl. PayPal, 4 social logins) were restored and still saved their settings, but were marked **Integration required** on the Features page and never surfaced as actionable storefront/checkout options. Checkout returned only Stripe (when configured) and Cash on Delivery. Payment gateways were later wired in #448; social logins remain integration-required.
+- `resources/views/admin/settings/features.blade.php`: renders all restored cards, disabled checked switch for always-on email verification, and explicit integration-required warnings.
+- `resources/views/partials/social-login-buttons.blade.php`: gated social buttons on login/register; no misleading buttons for unconnected providers.
+- Verification: `php -l` passed on all changed PHP files; migration ran; `php artisan view:cache` passed. Feature definitions render 35 cards. HTTP smoke checks earlier in this task: IP host + HTTPS flag on → home 200; maintenance on → storefront 503 / admin login bypass (restored); `/customer_products` 200 on / 404 off (restored); product query link only when on (restored off).
+- Files: `app/Support/FeatureFlags.php`, `app/Http/Middleware/EnforceFeatureFlags.php`, `bootstrap/app.php`, `resources/views/maintenance.blade.php`, `app/Http/Controllers/AdminController.php`, `app/Http/Controllers/CartController.php`, `app/Http/Controllers/ShopController.php`, `app/Http/Controllers/ProductController.php`, `app/Http/Controllers/DashboardController.php`, `app/Http/Controllers/Admin/SellerController.php`, `app/Http/Controllers/UserSupportController.php`, `app/Http/Controllers/Admin/ProductConversationController.php`, `app/Models/Product.php`, `database/migrations/2026_11_23_000001_add_approval_status_to_products.php`, `routes/web.php`, `app/Providers/AppServiceProvider.php`, `resources/views/admin/settings/features.blade.php`, `resources/views/admin/partials/sidebar.blade.php`, `resources/views/admin/products/index.blade.php`, `resources/views/admin/products/create.blade.php`, `resources/views/admin/products/edit.blade.php`, `resources/views/product/show.blade.php`, `resources/views/user/support/index.blade.php`, `resources/views/user/layouts/sidebar.blade.php`, `resources/views/user/wallet.blade.php`, `resources/views/partials/social-login-buttons.blade.php`, `resources/views/auth/login.blade.php`, `resources/views/auth/register.blade.php`.
+
+## 448. (2026-11-23): All Payment Gateways — Credential-Gated Checkout And Provider Verification
+
+**Status: Implemented (live settlement not testable locally without provider credentials)**
+
+- User asked for **all** payment gateways: saving credentials in Payment Methods + enabling the matching Features toggle must expose the option at checkout and process/confirm payment.
+- New centralized layer:
+  - `app/Support/PaymentMethods.php`: single source of truth for all payment-method credential definitions (including newly added **ProxyPay** fields) plus encrypted credential decoding and `isConfigured()` checks.
+  - `app/Services/Payments/PaymentGatewayManager.php`: registry for all 17 online gateways + COD. `availableMethods()` returns a method only when its toggle is ON **and** all required saved credentials exist. Start/verify/cancel/webhook flows are provider-specific and idempotent.
+  - `app/Http/Controllers/PaymentGatewayController.php`: generic return/cancel/webhook endpoints plus Razorpay signature verification.
+- Checkout changes:
+  - Removed the fake PayPal branch that generated a transaction ID and marked orders paid without provider confirmation.
+  - Every non-COD order is created `unpaid`; status changes to `paid` only after re-querying the provider or validating a signed callback. Fully discounted orders are marked paid because there is nothing to charge.
+  - Failed gateway start cancels the pending order and restores stock. Cancels restore stock and mark the order failed/cancelled.
+  - Added generic gateway views: auto-submit form, raw provider HTML (iyzico), Razorpay checkout JS with server-side HMAC verification, and manual-confirmation page.
+- Provider flows wired: PayPal (OAuth + Orders v2 capture), MercadoPago, SSLCommerz, Instamojo, Razorpay, Paystack, VoguePay, PayHere, N-Genius, iyzico 3DS, bKash, ProxyPay, Aamarpay, Authorize.Net hosted page, Payku, plus existing Stripe and COD.
+- **Nagad** credentials are validated and the option appears when configured + enabled, but settlement is intentionally left as admin-confirmed from the Nagad merchant dashboard; the order is never auto-marked paid. This is the only gateway without automated settlement because its hosted checkout requires merchant-specific RSA/signing setup that cannot be safely faked.
+- Features/Payment Methods UI:
+  - Removed the outdated “other gateways are stored for future use” notice.
+  - Payment toggles no longer show the “Integration required” badge; social login toggles still do.
+  - Checkout shows a generic secure-offsite payment note for configured gateways.
+- Routes/CSRF: added `checkout/gateway/{provider}/return|cancel|webhook` and `checkout/razorpay/verify`; CSRF exceptions only for provider return/cancel/webhook endpoints.
+- Verification: `php -l` passed on all changed PHP files; `php artisan view:cache` passed; route list confirms gateway endpoints. Tinker smoke test: with no PayPal credentials checkout returns `card, cod`; with PayPal credentials saved **and** toggle on it returns `card, paypal, cod`. Live provider settlement was not executed because no real test credentials are available in this environment.
+- Files: `app/Support/PaymentMethods.php`, `app/Services/Payments/PaymentGatewayManager.php`, `app/Http/Controllers/PaymentGatewayController.php`, `app/Http/Controllers/CartController.php`, `app/Http/Controllers/Admin/PaymentMethodSettingsController.php`, `app/Support/FeatureFlags.php`, `routes/web.php`, `bootstrap/app.php`, `resources/views/checkout/payment.blade.php`, `resources/views/checkout/gateway/*.blade.php`, `resources/views/admin/settings/payment-methods.blade.php`, `TASKS.md`.
+
+## 449. (2026-11-23): Fix `/admin/sellers` 500 — Laravel 13 Controller Middleware
+
+**Status: Completed**
+
+- Error in log: `Call to undefined method App\Http\Controllers\Admin\SellerController::middleware()` at controller construction. Laravel 11+ removed the old `$this->middleware()` controller helper.
+- Same latent bug existed in `Admin\ProductConversationController` (`conversation_system` gate).
+- Added reusable `app/Http/Middleware/EnsureFeatureEnabled.php` and registered the `feature:{key}` alias in `bootstrap/app.php`.
+- Removed both controller constructors and moved the gates to routes:
+  - Seller CRUD routes now use `feature:vendor_system_activation`.
+  - Admin support conversation routes now use `feature:conversation_system`.
+- Verification: `php -l` passed on all changed files; controller resolution succeeds in Tinker; `route:list -v` confirms the middleware is attached to all seller routes. With the vendor toggle OFF the page now correctly 404s instead of throwing a 500.
+- Files: `app/Http/Middleware/EnsureFeatureEnabled.php`, `bootstrap/app.php`, `routes/web.php`, `app/Http/Controllers/Admin/SellerController.php`, `app/Http/Controllers/Admin/ProductConversationController.php`.
+
+
+## 450. (2026-11-23): Bulk Import/Export — Higher PHP Limits And Queued Jobs With Progress
+
+**Status: Implemented**
+
+- Server Status reported `upload_max_filesize=2M`, `post_max_size=8M`, `max_execution_time=30s`, while the import form promised `Max 5MB` and export streamed 761k products inside the request.
+- PHP limits raised for both Apache modes:
+  - `public/.htaccess` (mod_php): 64M upload / 80M post / 300s / 10000 input vars.
+  - New `public/.user.ini` (PHP-FPM/CGI): same values. PHP-FPM must be reloaded by the server administrator for these per-directory values to take effect.
+  - Imports validate against 64MB and the form shows the correct limit.
+- Bulk work is now queued:
+  - New `app/Support/BulkOperation.php`: progress state in the cache, operation IDs, recommended-limit warnings.
+  - `ImportProductsJob`: streams the uploaded CSV from private storage, counts rows, reuses product normalization/SKU/spec helpers, updates progress every 100 rows, caps stored errors, and deletes the source CSV on success.
+  - `ExportProductsJob`: writes a chunked CSV to `storage/app/private/bulk-exports/{id}.csv`, updates progress per 500-row chunk, and exposes a download URL when complete.
+  - `BulkOperationController`: stores uploads, dispatches jobs, serves the progress page/JSON, and streams completed exports. Routes keep the existing import/export URLs.
+- New admin progress UI (`resources/views/admin/products/bulk-progress.blade.php`) polls status, shows progress bar/counters/errors, and reveals the download button only when the export is complete.
+- Server Status now warns when PHP limits are below bulk thresholds and shows queue-worker guidance (`php artisan queue:work` / Supervisor).
+- Synchronous import/export bodies were removed from `ProductController`; `parseSpecifications()` is now public static so the import job can reuse it.
+- Verification: `php -l` passed on all changed/new PHP files; `php artisan view:cache` passed. Web SAPI check confirmed `upload_max_filesize=64M`, `post_max_size=80M`, `max_execution_time=300`. A header-only import job completed successfully in a direct handle smoke test. Queue worker is required (`QUEUE_CONNECTION=database`, jobs/failed_jobs tables already exist).
+- Files: `app/Support/BulkOperation.php`, `app/Jobs/ImportProductsJob.php`, `app/Jobs/ExportProductsJob.php`, `app/Http/Controllers/Admin/BulkOperationController.php`, `app/Http/Controllers/ProductController.php`, `app/Http/Controllers/Admin/SystemStatusController.php`, `routes/web.php`, `resources/views/admin/products/import.blade.php`, `resources/views/admin/products/bulk-progress.blade.php`, `resources/views/admin/system/server-status.blade.php`, `public/.htaccess`, `public/.user.ini`, `TASKS.md`.
+
+
+## 451. (2026-11-23): Page Builder — Add Block Picker Clipped
+
+**Status: Fixed**
+
+- On `/admin/page-builder/page/{id}/edit`, clicking **Add Block** showed only part of `#pb-block-picker`.
+- Cause: `page-builder.css` set `#page-builder-app { overflow: hidden; }`. The picker is `position: absolute` inside that editor shell, so every row below the shell boundary was clipped. Bootstrap 5.3 `.card` itself does not clip, so the editor shell was the limiting ancestor.
+- Fix:
+  - `#page-builder-app` now uses `overflow: visible` so the dropdown can extend past the editor shell.
+  - `.pb-block-picker` now has `min-width: 300px`, `max-width: calc(100vw - 32px)`, `max-height: min(70vh, 560px)`, `overscroll-behavior: contain`, and a higher `z-index: 1080` so long block lists remain scrollable and sit above editor content.
+  - Bumped the stylesheet cache-buster to `?v=1.0.1` and cleared/rebuilt compiled views.
+- Updated all three copies to avoid regressions on re-publish/re-install: `public/vendor/page-builder/css/page-builder.css`, `vendor/stevestore/laravel-page-builder/resources/css/page-builder.css`, and `/var/www/html/laravel-page-builder/resources/css/page-builder.css`.
+- Verification: served CSS confirms `overflow: visible` and the new picker dimensions; compiled view confirms the new cache-buster.
+
+
+## 452. (2026-11-23): Page Builder — Textarea Styling Class
+
+**Status: Completed**
+
+- Added the shared `textarea-control` class to page-builder textareas generated by `editor/partials/field.blade.php` (`textarea` and `code` field types) so they match the admin panel's standard textarea styling. This also covers repeater subfields such as `blocks[0][data][items][0][quote]` from `TestimonialCarousel`.
+- File: `vendor/stevestore/laravel-page-builder/resources/views/editor/partials/field.blade.php`.
+- Verification: compiled view confirms `class="form-control textarea-control"` and `class="form-control textarea-control pb-code"`.
+
+
+## 453. (2026-11-23): Admin Products — AJAX Searchable Category/Brand/Seller Selects
+
+**Status: Implemented**
+
+- Product list/create/edit were printing every category (21,300), brand, and seller into dropdowns (All Products ~4.7 MB / 3.6 s; create/edit ~2.9 MB each).
+- Added `GET admin/products/lookup?type=category|brand|seller&q=...` in `ProductController` returning at most 50 `{id, text}` matches as JSON. Brands remain active-only.
+- Controller methods now pass only the currently selected option(s) to the views instead of full collections. For edit, `old()` values are preserved. Bulk "Move to category" also uses the AJAX select.
+- Extended `public/assets/front/js/searchable-select.js` with an opt-in `data-ajax-url` mode: debounced remote search, loading/error states, native `<select>` remains authoritative for form submission, and the selected/placeholder options are preserved while fetched results are replaced.
+- Added CSS so a generated searchable trigger stays hidden when its native select has `d-none` (bulk category action).
+- Verification: `php -l` on controller/routes, `node --check` on JS, `view:cache`, route registered, and lookup endpoint smoke-tested for all three types.
+- Files: `app/Http/Controllers/ProductController.php`, `routes/web.php`, `resources/views/admin/products/index.blade.php`, `resources/views/admin/products/create.blade.php`, `resources/views/admin/products/edit.blade.php`, `public/assets/front/js/searchable-select.js`, `public/assets/front/css/searchable-select.css`, `TASKS.md`.

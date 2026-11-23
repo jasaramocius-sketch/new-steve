@@ -44,6 +44,7 @@ class Product extends Model
         'reviews',
         'packs',
         'status',
+        'approval_status',
     ];
 
     protected $casts = [

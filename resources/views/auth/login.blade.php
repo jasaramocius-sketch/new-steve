@@ -59,12 +59,6 @@
               <div class="d-flex login-forgot">
                 <a href="{{ route('password.request') }}" class="a-tag-text-hover">Forgot Password?</a>
               </div>
-              <div class="d-flex">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" name="remember" value="1" id="remember_me">
-                  <label class="form-check-label" for="remember_me">Remember Me</label>
-                </div>
-              </div>
             </div>
 
             @error('g-recaptcha-response')
@@ -72,8 +66,16 @@
             @enderror
             @include('partials.recaptcha-field', ['form' => 'login'])
 
-            <button type="submit" class="template-btn btn-forms steve-btn button-hover mt-3">Sign In</button>
+            <button type="submit" class="template-btn btn-forms steve-btn button-hover">Sign In</button>
+            @include('partials.social-login-buttons')
             <!-- <p class="text-center login-or">Or</p> -->
+            
+            <div class="d-flex mt-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="remember" value="1" id="remember_me">
+                <label class="form-check-label" for="remember_me">Remember Me</label>
+              </div>
+            </div>
             <hr></hr>
             <p class="login-redirect">Don't have an account? <span><a href="{{ route('register') }}" class="a-tag-text-hover">Register Now</a></span></p>
           </form>

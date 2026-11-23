@@ -17,6 +17,7 @@
             ],
             [
                 'type' => 'links', 'heading' => 'Customer Service', 'span' => 2, 'links' => [
+                    ['label' => 'Order Tracking', 'url' => route('order.tracking')],
                     ['label' => 'Terms & Conditions', 'url' => route('terms.conditions')],
                     ['label' => 'Privacy Policy', 'url' => route('privacy.policy')],
                     ['label' => 'Return Policy', 'url' => route('return.policy')],

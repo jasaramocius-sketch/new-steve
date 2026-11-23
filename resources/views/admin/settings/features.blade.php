@@ -10,6 +10,8 @@
 @endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px ap-features-page">
+    <div class="alert alert-info">All activation toggles are listed below. Items marked “Integration required” are saved but do not appear as actionable storefront options until their provider flow is implemented.</div>
+
     <!-- <div class="ap-page-header mb-4">
         <nav class="ap-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ route('admin.settings.index') }}">Settings</a>
@@ -32,16 +34,27 @@
                                 <h3 class="mb-0 h6 text-center">{{ $item['label'] }}</h3>
                             </div>
                             <div class="card-body text-center">
-                                <form class="feature-setting-form" data-endpoint="{{ route('admin.settings.features.update') }}">
-                                    @csrf
-                                    <input type="hidden" name="key" value="{{ $item['key'] }}">
+                                @if (!empty($item['always_on']))
                                     <div class="form-check form-switch d-inline-block mb-0">
-                                        <input class="form-check-input" type="checkbox" role="switch" name="enabled" value="1" aria-label="{{ $item['label'] }}" @checked($item['enabled'])>
+                                        <input class="form-check-input" type="checkbox" role="switch" checked disabled aria-label="{{ $item['label'] }} (always enabled)" title="Always enabled for new customer accounts">
                                     </div>
-                                </form>
+                                @else
+                                    <form class="feature-setting-form" data-endpoint="{{ route('admin.settings.features.update') }}">
+                                        @csrf
+                                        <input type="hidden" name="key" value="{{ $item['key'] }}">
+                                        <div class="form-check form-switch d-inline-block mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="enabled" value="1" aria-label="{{ $item['label'] }}" @checked($item['enabled'])>
+                                        </div>
+                                    </form>
+                                @endif
 
                                 @if (!empty($item['description']))
                                     <div class="alert alert-info feature-setting-note mb-0 mt-3">{{ $item['description'] }}</div>
+                                @endif
+                                @if (!empty($item['integration_required']))
+                                    <div class="alert alert-warning feature-setting-note mb-0 mt-3">
+                                        <strong>Integration required.</strong> This toggle is saved, but the provider flow is not connected yet, so no storefront option is shown.
+                                    </div>
                                 @endif
                                 @if (!empty($item['configure']))
                                     <p class="small mb-0 mt-3">You need to configure this service before enabling it.

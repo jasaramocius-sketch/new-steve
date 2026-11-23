@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Wishlist;
 use App\Services\ProductReviewEligibility;
+use App\Support\FeatureFlags;
 use Illuminate\Http\Request;
 use App\Rules\ZipCodeForCountry;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -213,6 +214,8 @@ class DashboardController extends Controller
 
     public function followedSellers()
     {
+        abort_unless(FeatureFlags::enabled('vendor_system_activation'), 404);
+
         if (! Auth::check()) {
             return redirect()->route('login');
         }
@@ -233,8 +236,22 @@ class DashboardController extends Controller
         return view('user.followed-sellers', compact('followedSellers', 'availableSellers'));
     }
 
+    public function wallet()
+    {
+        abort_unless(FeatureFlags::enabled('wallet_system'), 404);
+
+        $user = Auth::user();
+
+        return view('user.wallet', [
+            'user' => $user,
+            'balance' => (float) ($user->balance ?? 0),
+        ]);
+    }
+
     public function storeFollowedSeller(Request $request)
     {
+        abort_unless(FeatureFlags::enabled('vendor_system_activation'), 404);
+
         $request->validate([
             'seller_id' => 'required|exists:sellers,id',
         ]);
@@ -275,6 +292,8 @@ class DashboardController extends Controller
 
     public function destroyFollowedSeller($id)
     {
+        abort_unless(FeatureFlags::enabled('vendor_system_activation'), 404);
+
         $followedSeller = FollowedSeller::where('user_id', Auth::id())
             ->where('id', $id)
             ->firstOrFail();
@@ -286,6 +305,8 @@ class DashboardController extends Controller
 
     public function getSellerDetails($id)
     {
+        abort_unless(FeatureFlags::enabled('vendor_system_activation'), 404);
+
         $followedSeller = FollowedSeller::with('seller')
             ->where('user_id', Auth::id())
             ->where('id', $id)
@@ -323,6 +344,8 @@ class DashboardController extends Controller
 
     public function getSellerProducts($id)
     {
+        abort_unless(FeatureFlags::enabled('vendor_system_activation'), 404);
+
         $followedSeller = FollowedSeller::with('seller')
             ->where('user_id', Auth::id())
             ->where('id', $id)

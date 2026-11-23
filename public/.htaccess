@@ -1,7 +1,9 @@
-# PHP Upload Limits (override 2M default)
+# PHP Upload Limits (mod_php only; PHP-FPM/CGI reads public/.user.ini)
 <IfModule mod_php.c>
-    php_value upload_max_filesize 32M
-    php_value post_max_size 40M
+    php_value upload_max_filesize 64M
+    php_value post_max_size 80M
+    php_value max_execution_time 300
+    php_value max_input_vars 10000
 </IfModule>
 
 <IfModule mod_rewrite.c>

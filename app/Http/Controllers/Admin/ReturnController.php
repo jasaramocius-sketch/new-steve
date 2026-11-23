@@ -39,7 +39,7 @@ class ReturnController extends Controller
             'refund_amount' => 'refund amount',
         ]);
 
-        $return = ReturnRequest::with('product')->findOrFail($id);
+        $return = ReturnRequest::with(['product', 'order'])->findOrFail($id);
         $oldStatus = $return->status;
 
         $update = [
@@ -53,6 +53,51 @@ class ReturnController extends Controller
             $update['refund_amount'] = null;
         } elseif ($request->filled('refund_amount')) {
             $update['refund_amount'] = $request->refund_amount;
+        }
+
+        if ($request->status === 'refunded' && $oldStatus !== 'refunded') {
+            $order = $return->order;
+            if ($order) {
+                $rawDetails = $order->payment_details;
+                $details = is_array($rawDetails) ? $rawDetails : (is_string($rawDetails) ? json_decode($rawDetails, true) : []);
+                $details = is_array($details) ? $details : [];
+                $paymentMethod = strtolower((string) ($order->payment_method ?? ''));
+                $isStripePayment = in_array($paymentMethod, ['card', 'stripe'], true)
+                    || ! empty($details['stripe_session_id'])
+                    || str_starts_with((string) ($details['transaction_id'] ?? ''), 'pi_')
+                    || str_starts_with((string) ($details['transaction_id'] ?? ''), 'cs_')
+                    || str_starts_with((string) ($details['transaction_id'] ?? ''), 'ch_');
+
+                if ($isStripePayment) {
+                    $paymentReference = (string) ($details['transaction_id'] ?? $details['stripe_session_id'] ?? '');
+                    $amount = $request->filled('refund_amount') ? (float) $request->refund_amount : null;
+                    $amountMinor = null;
+                    if ($amount !== null && $amount > 0) {
+                        $stripe = app(\App\Services\StripeCheckoutService::class);
+                        $amountMinor = $stripe->toMinorUnits($amount);
+                    }
+
+                    try {
+                        $stripe = $stripe ?? app(\App\Services\StripeCheckoutService::class);
+                        $refund = $stripe->createRefund($paymentReference, $amountMinor, [
+                            'order_id' => (string) $order->id,
+                            'order_number' => (string) $order->order_number,
+                            'return_request_id' => (string) $return->id,
+                        ]);
+                        $details['stripe_refund_id'] = $refund->id ?? ($details['stripe_refund_id'] ?? null);
+                        $details['stripe_refund_status'] = $refund->status ?? null;
+                        $details['refunded_at'] = now()->toIso8601String();
+                        $order->update([
+                            'payment_status' => 'refunded',
+                            'payment_details' => json_encode($details),
+                        ]);
+                    } catch (\Throwable $e) {
+                        return back()->withErrors(['status' => 'Stripe refund failed: '.$e->getMessage()])->withInput();
+                    }
+                } else {
+                    $order->update(['payment_status' => 'refunded']);
+                }
+            }
         }
 
         DB::transaction(function () use ($return, $update, $oldStatus, $request) {

@@ -19,6 +19,13 @@
     margin: 0 !important;
 }
 
+/* A hidden native select (e.g. the bulk category action) must hide its
+   generated trigger too. */
+.form-select-wrapper:has(> select.d-none),
+.form-select-wrapper:has(> select[hidden]) {
+    display: none;
+}
+
 /* Visible trigger — inherits the theme styling from the .form-select class. */
 .ss-control {
     position: relative;

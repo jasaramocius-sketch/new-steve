@@ -108,15 +108,15 @@
                             </div>
                             <div class="col-md-6 form-group mb-3">
                                 <label for="invoice_note">Invoice note</label>
-                                <textarea id="invoice_note" name="invoice_note" rows="3" maxlength="2000" class="form-control">{{ old('invoice_note', $invoiceSettings['invoice_note']) }}</textarea>
+                                <textarea id="invoice_note" name="invoice_note" rows="3" maxlength="2000" class="form-control textarea-control">{{ old('invoice_note', $invoiceSettings['invoice_note']) }}</textarea>
                             </div>
                             <div class="col-md-6 form-group mb-3">
                                 <label for="invoice_terms">Terms and conditions</label>
-                                <textarea id="invoice_terms" name="invoice_terms" rows="3" maxlength="2000" class="form-control">{{ old('invoice_terms', $invoiceSettings['invoice_terms']) }}</textarea>
+                                <textarea id="invoice_terms" name="invoice_terms" rows="3" maxlength="2000" class="form-control textarea-control">{{ old('invoice_terms', $invoiceSettings['invoice_terms']) }}</textarea>
                             </div>
                             <div class="col-md-6 form-group mb-4">
                                 <label for="invoice_footer">Footer message</label>
-                                <textarea id="invoice_footer" name="invoice_footer" rows="2" maxlength="500" class="form-control">{{ old('invoice_footer', $invoiceSettings['invoice_footer']) }}</textarea>
+                                <textarea id="invoice_footer" name="invoice_footer" rows="2" maxlength="500" class="form-control textarea-control">{{ old('invoice_footer', $invoiceSettings['invoice_footer']) }}</textarea>
                             </div>
                             <div class="col-md-6 form-group mb-4">
                                 <label for="invoice_currency_label">Currency label (optional)</label>

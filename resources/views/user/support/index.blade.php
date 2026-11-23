@@ -61,6 +61,7 @@
 </div>
 
 {{-- Product conversations --}}
+@if ($conversationsEnabled)
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0 h6 fw-semibold"><i class="fas fa-comments me-2 text-primary"></i>Product Conversations</h5>
@@ -103,6 +104,7 @@
         <div class="p-3">{{ $conversations->links() }}</div>
     @endif
 </div>
+@endif
 
 {{-- New ticket modal --}}
 <div class="modal fade" id="newTicketModal" tabindex="-1" aria-hidden="true">

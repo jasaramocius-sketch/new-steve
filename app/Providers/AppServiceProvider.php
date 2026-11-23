@@ -146,13 +146,6 @@ class AppServiceProvider extends ServiceProvider
             $cartCount = count($cart);
             $cartTotal = array_sum(array_map(fn ($item) => ($item['price'] ?? 0) * ($item['qty'] ?? ($item['quantity'] ?? 0)), $cart));
 
-            // The mobile category tree is only rendered by the storefront layout.
-            // Skip the (cache-backed) tree lookup for admin pages so the panel
-            // stays light even when the tree cache is being rebuilt.
-            $isAdminArea = str_contains('/'.ltrim(request()->path(), '/').'/', '/admin/');
-            $isCategoryIndex = request()->routeIs('categories.index');
-            $mobileCategoryTree = ($isAdminArea || $isCategoryIndex) ? [] : \App\Services\CategoryTree::tree();
-
             $sharedData = [
                 'wishlistCount' => $wishlistCount,
                 'wishedProductIds' => $wishedProductIds,
@@ -160,7 +153,6 @@ class AppServiceProvider extends ServiceProvider
                 'cartCount' => $cartCount,
                 'cartTotal' => $cartTotal,
                 'unreadNotificationCount' => $unreadNotificationCount,
-                'mobileCategoryTree' => $mobileCategoryTree,
             ];
 
             $view->with($sharedData);
@@ -170,7 +162,9 @@ class AppServiceProvider extends ServiceProvider
             try {
                 $view->with([
                     'supportOpenTickets' => \App\Models\SupportTicket::whereIn('status', ['open', 'pending'])->count(),
-                    'supportOpenConversations' => \App\Models\ProductConversation::where('status', 'open')->count(),
+                    'supportOpenConversations' => \App\Support\FeatureFlags::enabled('conversation_system')
+                        ? \App\Models\ProductConversation::where('status', 'open')->count()
+                        : 0,
                 ]);
             } catch (\Throwable) {
                 $view->with([

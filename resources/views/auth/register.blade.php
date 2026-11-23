@@ -83,6 +83,7 @@
 
             <br>
             <button type="submit" class="template-btn btn-forms steve-btn button-hover">Register Now</button>
+            @include('partials.social-login-buttons')
             <!-- <p class="text-center login-or">Or</p> -->
             <hr></hr>
             <p class="login-redirect">Already have an account? <span><a href="{{ route('login') }}" class="a-tag-text-hover">Sign In</a></span></p>

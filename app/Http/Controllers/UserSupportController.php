@@ -6,6 +6,7 @@ use App\Models\ProductConversation;
 use App\Models\ProductConversationMessage;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketReply;
+use App\Support\FeatureFlags;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,7 @@ class UserSupportController extends Controller
     public function index()
     {
         $userId = Auth::id();
+        $conversationsEnabled = FeatureFlags::enabled('conversation_system');
 
         $tickets = SupportTicket::where('user_id', $userId)
             ->withCount('replies')
@@ -22,14 +24,16 @@ class UserSupportController extends Controller
             ->paginate(10, ['*'], 'ticket_page')
             ->withQueryString();
 
-        $conversations = ProductConversation::where('user_id', $userId)
-            ->with(['product:id,name,slug,main_image', 'seller:id,name'])
-            ->withCount('messages')
-            ->orderByRaw('COALESCE(last_message_at, created_at) DESC')
-            ->paginate(10, ['*'], 'conversation_page')
-            ->withQueryString();
+        $conversations = $conversationsEnabled
+            ? ProductConversation::where('user_id', $userId)
+                ->with(['product:id,name,slug,main_image', 'seller:id,name'])
+                ->withCount('messages')
+                ->orderByRaw('COALESCE(last_message_at, created_at) DESC')
+                ->paginate(10, ['*'], 'conversation_page')
+                ->withQueryString()
+            : null;
 
-        return view('user.support.index', compact('tickets', 'conversations'));
+        return view('user.support.index', compact('tickets', 'conversations', 'conversationsEnabled'));
     }
 
     public function storeTicket(Request $request)
@@ -93,6 +97,7 @@ class UserSupportController extends Controller
 
     public function showConversation(ProductConversation $conversation)
     {
+        abort_unless(FeatureFlags::enabled('conversation_system'), 404);
         abort_unless((int) $conversation->user_id === (int) Auth::id(), 404);
 
         $conversation->load(['product:id,name,slug,main_image', 'seller:id,name', 'messages']);
@@ -102,6 +107,7 @@ class UserSupportController extends Controller
 
     public function replyConversation(Request $request, ProductConversation $conversation)
     {
+        abort_unless(FeatureFlags::enabled('conversation_system'), 404);
         abort_unless((int) $conversation->user_id === (int) Auth::id(), 404);
 
         $validated = $request->validate([

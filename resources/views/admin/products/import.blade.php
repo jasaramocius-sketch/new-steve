@@ -19,7 +19,7 @@
                 <label class="form-label">CSV File *</label>
                 <input type="file" name="csv_file" class="form-control @error('csv_file') is-invalid @enderror" accept=".csv,.txt" required>
                 @error('csv_file') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                <div class="form-text">Max 5MB. First row must contain column headers.</div>
+                <div class="form-text">Max {{ $maxUploadLabel ?? '64MB' }}. First row must contain column headers. Imports run in the background with a live progress page.</div>
             </div>
 
             <div class="alert alert-info">
@@ -54,7 +54,7 @@
         </a>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary steve-btn gap-1">
-                    <i class="fas fa-upload"></i> Import Products
+                    <i class="fas fa-upload"></i> Queue Import
                 </button>
                 <a href="{{ route('admin.products.index') }}" class="btn btn-primary steve-btn gap-1"><i class="fas fa-times"></i> Cancel</a>
             </div>

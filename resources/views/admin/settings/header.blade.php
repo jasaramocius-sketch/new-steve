@@ -11,10 +11,10 @@
 <div class="container-fluid admin-settings-header">
     <ul class="nav nav-tabs" id="settingsConfigurationTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ session('settings_tab') === 'footer' ? '' : 'active' }}" id="header-configuration-tab" data-bs-toggle="tab" data-bs-target="#header-configuration" type="button" role="tab" aria-controls="header-configuration" aria-selected="{{ session('settings_tab') === 'footer' ? 'false' : 'true' }}">Header Configuration</button>
+            <button class="nav-link border-radius-0 {{ session('settings_tab') === 'footer' ? '' : 'active' }}" id="header-configuration-tab" data-bs-toggle="tab" data-bs-target="#header-configuration" type="button" role="tab" aria-controls="header-configuration" aria-selected="{{ session('settings_tab') === 'footer' ? 'false' : 'true' }}">Header Configuration</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ session('settings_tab') === 'footer' ? 'active' : '' }}" id="footer-configuration-tab" data-bs-toggle="tab" data-bs-target="#footer-configuration" type="button" role="tab" aria-controls="footer-configuration" aria-selected="{{ session('settings_tab') === 'footer' ? 'true' : 'false' }}">Footer Configuration</button>
+            <button class="nav-link border-radius-0 {{ session('settings_tab') === 'footer' ? 'active' : '' }}" id="footer-configuration-tab" data-bs-toggle="tab" data-bs-target="#footer-configuration" type="button" role="tab" aria-controls="footer-configuration" aria-selected="{{ session('settings_tab') === 'footer' ? 'true' : 'false' }}">Footer Configuration</button>
         </li>
     </ul>
     <div class="tab-content" id="settingsConfigurationTabContent">
@@ -97,7 +97,7 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col">
                                     <div class="form-group mb-3">
                                         <label class="form-label"><strong>Admin Header Background Image</strong></label>
                                         <small class="text-muted d-block mb-2">Background image of the admin top bar (the container that holds the page title).</small>

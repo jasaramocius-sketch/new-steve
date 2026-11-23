@@ -37,7 +37,7 @@
                value="{{ $searchValue }}">
     </div>
     @if($showClear && ! $hasSearch)
-        <a href="{{ $clearRoute }}" class="btn btn-outline-danger d-flex align-items-center h-40px w-40px" title="Clear search" data-bs-toggle="tooltip" data-bs-placement="top">
+        <a href="{{ $clearRoute }}" class="btn btn-outline-danger d-flex align-items-center h-40px w-40px justify-content-center" title="Clear search" data-bs-toggle="tooltip" data-bs-placement="top">
             <i class="fas fa-times"></i>
         </a>
     @endif

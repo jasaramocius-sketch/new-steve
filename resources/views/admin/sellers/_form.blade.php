@@ -101,7 +101,7 @@
                     <div class="card-body p-4">
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="form-label" for="seller-name">Name <span class="text-danger">*</span></label>
+                                <label class="form-label mt-0" for="seller-name">Name <span class="text-danger">*</span></label>
                                 <input type="text"
                                        name="name"
                                        id="seller-name"
@@ -167,6 +167,14 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
+                            <div class="col-12 d-flex gap-2">
+                                <button class="btn btn-primary steve-btn">
+                                    <i class="fas fa-save me-1"></i> {{ $submitLabel }}
+                                </button>
+                                <a href="{{ route('admin.sellers.index') }}" class="btn btn-outline-secondary steve-btn gap-1"><i class="fas fa-times"></i>
+                                    Cancel
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -200,17 +208,6 @@
                                 <i class="fas fa-cloud-upload-alt me-1"></i> Browse
                             </button>
                             <div class="form-text text-center mt-2">Recommended: 800 × 800px · JPG, PNG or WebP</div>
-                        </div>
-                    </div>
-
-                    <div class="card border-0 shadow-sm mt-3">
-                        <div class="card-body p-3 d-flex gap-2">
-                            <button class="btn btn-primary steve-btn flex-fill">
-                                <i class="fas fa-save me-1"></i> {{ $submitLabel }}
-                            </button>
-                            <a href="{{ route('admin.sellers.index') }}" class="btn btn-outline-secondary flex-fill steve-btn gap-1"><i class="fas fa-times"></i>
-                                Cancel
-                            </a>
                         </div>
                     </div>
                 </div>

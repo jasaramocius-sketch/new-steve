@@ -16,9 +16,9 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Wishlist;
 use App\Support\DescriptionMarkdown;
+use App\Support\FeatureFlags;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -113,6 +113,57 @@ class ProductController extends Controller
         return Product::generateSku($name, $existing ? (int) $existing->id : null);
     }
 
+    public function lookup(Request $request)
+    {
+        $type = (string) $request->query('type', '');
+        $q = trim((string) $request->query('q', ''));
+
+        $query = match ($type) {
+            'category' => Category::query(),
+            'brand' => Brand::where('status', true),
+            'seller' => Seller::query(),
+            default => null,
+        };
+
+        if (! $query) {
+            return response()->json(['results' => []]);
+        }
+
+        if ($q !== '') {
+            $query->where('name', 'like', '%'.$q.'%');
+        }
+
+        $models = $query->orderBy('name')->limit(50)->get(['id', 'name']);
+
+        return response()->json([
+            'results' => $models->map(fn ($model) => [
+                'id' => $model->id,
+                'text' => $model->name,
+            ])->values()->all(),
+        ]);
+    }
+
+    private function productLookupOptions(string $type, array $ids)
+    {
+        $ids = collect($ids)
+            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        return match ($type) {
+            'category' => Category::whereIn('id', $ids)->get(['id', 'name']),
+            'brand' => Brand::whereIn('id', $ids)->get(['id', 'name']),
+            'seller' => Seller::whereIn('id', $ids)->get(['id', 'name']),
+            default => collect(),
+        };
+    }
+
     public function index(Request $request)
     {
         $sortBy = $request->query('sort_by', 'created_at');
@@ -188,9 +239,11 @@ class ProductController extends Controller
 
         $products->appends($request->query())->onEachSide(1);
 
-        $categories = Category::orderBy('name')->get();
-        $brands = Brand::orderBy('name')->get();
-        $sellers = Seller::orderBy('name')->get();
+        // Only the currently selected options are printed. The rest are loaded
+        // on demand by the AJAX searchable select.
+        $categories = $this->productLookupOptions('category', [$request->query('category_id')]);
+        $brands = $this->productLookupOptions('brand', [$request->query('brand_id')]);
+        $sellers = $this->productLookupOptions('seller', [$request->query('seller_id')]);
 
         return view('admin.products.index', compact('products', 'sortBy', 'sortDir', 'categories', 'brands', 'sellers'));
     }
@@ -314,9 +367,9 @@ class ProductController extends Controller
 
     public function create()
     {
-        $categories = Category::orderBy('name')->get();
-        $brands = Brand::where('status', true)->orderBy('name')->get();
-        $sellers = Seller::orderBy('name')->get();
+        $categories = $this->productLookupOptions('category', [old('category_id')]);
+        $brands = $this->productLookupOptions('brand', [old('brand_id')]);
+        $sellers = $this->productLookupOptions('seller', [old('seller_id')]);
 
         return view('admin.products.create', compact('categories', 'brands', 'sellers'));
     }
@@ -354,10 +407,22 @@ class ProductController extends Controller
             (string) ($data['policy_text'] ?? '')
         );
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
-        $data['specifications'] = $this->parseSpecifications($request->specifications);
+        $data['specifications'] = self::parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
         $data['part_number'] = Product::generateSku((string) $request->name);
         $data['slug'] = Str::slug($request->name.'-'.$data['part_number']);
+
+        if (! FeatureFlags::enabled('vendor_system_activation') || ! FeatureFlags::enabled('product_manage_by_admin')) {
+            unset($data['seller_id']);
+        }
+
+        $data['approval_status'] = FeatureFlags::enabled('product_approve_by_admin') && ! empty($data['seller_id'])
+            ? 'pending'
+            : 'approved';
+
+        if ($data['approval_status'] === 'pending') {
+            $data['status'] = false;
+        }
 
         if ($request->hasFile('image')) {
             $data['main_image'] = saveImageWithWebp($request->file('image'));
@@ -403,9 +468,9 @@ class ProductController extends Controller
     public function edit($id)
     {
         $product = Product::findOrFail($id);
-        $categories = Category::orderBy('name')->get();
-        $brands = Brand::where('status', true)->orderBy('name')->get();
-        $sellers = Seller::orderBy('name')->get();
+        $categories = $this->productLookupOptions('category', [old('category_id', $product->category_id)]);
+        $brands = $this->productLookupOptions('brand', [old('brand_id', $product->brand_id)]);
+        $sellers = $this->productLookupOptions('seller', [old('seller_id', $product->seller_id)]);
 
         return view('admin.products.edit', compact('product', 'categories', 'brands', 'sellers'));
     }
@@ -445,8 +510,22 @@ class ProductController extends Controller
             (string) ($data['policy_text'] ?? '')
         );
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
-        $data['specifications'] = $this->parseSpecifications($request->specifications);
+        $data['specifications'] = self::parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
+
+        if (! FeatureFlags::enabled('vendor_system_activation') || ! FeatureFlags::enabled('product_manage_by_admin')) {
+            unset($data['seller_id']);
+        }
+
+        $effectiveSellerId = $data['seller_id'] ?? $product->seller_id;
+        if (
+            FeatureFlags::enabled('product_approve_by_admin')
+            && $effectiveSellerId
+            && (int) $effectiveSellerId !== (int) $product->seller_id
+        ) {
+            $data['approval_status'] = 'pending';
+            $data['status'] = false;
+        }
 
         if ($request->hasFile('image')) {
             $data['main_image'] = saveImageWithWebp($request->file('image'));
@@ -469,6 +548,30 @@ class ProductController extends Controller
         $this->attachGalleryImagesFromManager($product, $request->gallery_images_from_manager);
 
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully!');
+    }
+
+    public function approveSellerProduct($id)
+    {
+        abort_unless(FeatureFlags::enabled('product_approve_by_admin'), 404);
+
+        $product = Product::findOrFail($id);
+        $product->approval_status = 'approved';
+        $product->status = true;
+        $product->save();
+
+        return back()->with('success', 'Seller product approved and published.');
+    }
+
+    public function rejectSellerProduct($id)
+    {
+        abort_unless(FeatureFlags::enabled('product_approve_by_admin'), 404);
+
+        $product = Product::findOrFail($id);
+        $product->approval_status = 'rejected';
+        $product->status = false;
+        $product->save();
+
+        return back()->with('success', 'Seller product rejected and hidden.');
     }
 
     private function attachGalleryUploads(Product $product, $files): void
@@ -549,6 +652,16 @@ class ProductController extends Controller
     public function toggleStatus($id)
     {
         $product = Product::findOrFail($id);
+
+        if (
+            ! $product->status
+            && FeatureFlags::enabled('product_approve_by_admin')
+            && $product->seller_id
+            && ($product->approval_status ?? 'approved') !== 'approved'
+        ) {
+            return back()->with('warning', 'Approve this seller product before publishing it.');
+        }
+
         $product->status = ! $product->status;
         $product->save();
 
@@ -663,7 +776,20 @@ class ProductController extends Controller
         }
 
         $status = $request->integer('status') === 1 ? 1 : 0;
-        Product::whereIn('id', $ids)->update(['status' => $status]);
+        $query = Product::whereIn('id', $ids);
+
+        if ($status === 1 && FeatureFlags::enabled('product_approve_by_admin')) {
+            $query->where(function ($q) {
+                $q->whereNull('seller_id')
+                    ->orWhere('approval_status', 'approved');
+            });
+        }
+
+        $updated = $query->update(['status' => $status]);
+
+        if ($updated < count($ids)) {
+            return back()->with('warning', 'Some seller products were skipped because they are not approved yet.');
+        }
 
         return back()->with('success', count($ids).' product(s) '.($status ? 'activated' : 'deactivated').'.');
     }
@@ -695,6 +821,8 @@ class ProductController extends Controller
 
     public function contactSeller(Request $request)
     {
+        abort_unless(FeatureFlags::enabled('product_query_activation'), 404);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -726,6 +854,10 @@ class ProductController extends Controller
 
     private function createProductConversation(Request $request, Product $product): void
     {
+        if (! FeatureFlags::enabled('conversation_system')) {
+            return;
+        }
+
         try {
             if (auth()->check()) {
                 $conversation = ProductConversation::query()
@@ -778,266 +910,9 @@ class ProductController extends Controller
 
     public function importForm()
     {
-        return view('admin.products.import');
-    }
-
-    public function import(Request $request)
-    {
-        $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+        return view('admin.products.import', [
+            'maxUploadLabel' => '64MB',
         ]);
-
-        $file = $request->file('csv_file');
-        $handle = fopen($file->getRealPath(), 'r');
-        $header = fgetcsv($handle, 0, ',');
-
-        $header = array_map('trim', $header);
-        $expected = ['id', 'name', 'part_number', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'buy_return_policy', 'return_policy', 'features', 'feature_list', 'reviews', 'reviews_data', 'specifications', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
-
-        $colMap = [];
-        foreach ($header as $i => $col) {
-            $colLower = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', $col));
-            if (in_array($colLower, $expected)) {
-                $colMap[$i] = $colLower;
-            }
-        }
-
-        if (! isset($colMap[array_search('name', $colMap)]) || ! isset($colMap[array_search('price', $colMap)])) {
-            fclose($handle);
-
-            return back()->with('error', 'CSV must contain at least "name" and "price" columns.');
-        }
-
-        $categories = Category::all()->keyBy(function ($cat) {
-            return strtolower(trim($cat->name));
-        });
-
-        $brands = Brand::all()->keyBy(function ($brand) {
-            return strtolower(trim($brand->name));
-        });
-
-        $sellers = Seller::all()->keyBy(function ($seller) {
-            return strtolower(trim($seller->name));
-        });
-
-        $imported = 0;
-        $categoriesCreated = 0;
-        $brandsCreated = 0;
-        $sellersCreated = 0;
-        $galleryImported = 0;
-        $errors = [];
-        $rowNum = 1;
-
-        while (($row = fgetcsv($handle, 0, ',')) !== false) {
-            $rowNum++;
-            $row = array_map('trim', $row);
-            $data = [];
-
-            foreach ($colMap as $colIdx => $colName) {
-                $data[$colName] = $row[$colIdx] ?? '';
-            }
-
-            if (empty($data['name'])) {
-                $errors[] = "Row {$rowNum}: name is required.";
-
-                continue;
-            }
-            if (! is_numeric($data['price']) || $data['price'] < 0) {
-                $errors[] = "Row {$rowNum}: price must be a positive number.";
-
-                continue;
-            }
-
-            $existingProduct = null;
-            if (! empty($data['id']) && is_numeric($data['id'])) {
-                $existingProduct = Product::find((int) $data['id']);
-            }
-
-            $categoryId = null;
-            if (! empty($data['category'])) {
-                $catKey = strtolower(trim($data['category']));
-                if (isset($categories[$catKey])) {
-                    $categoryId = $categories[$catKey]->id;
-                } else {
-                    $newCat = Category::create([
-                        'name' => trim($data['category']),
-                        'slug' => Str::slug(trim($data['category'])),
-                        'status' => true,
-                    ]);
-                    $categories[$catKey] = $newCat;
-                    $categoryId = $newCat->id;
-                    $categoriesCreated++;
-                }
-            }
-
-            $brandId = null;
-            if (! empty($data['brand'])) {
-                $brandKey = strtolower(trim($data['brand']));
-                if (isset($brands[$brandKey])) {
-                    $brandId = $brands[$brandKey]->id;
-                } else {
-                    $newBrand = Brand::create([
-                        'name' => trim($data['brand']),
-                        'slug' => Str::slug(trim($data['brand'])),
-                        'status' => true,
-                    ]);
-                    $brands[$brandKey] = $newBrand;
-                    $brandId = $newBrand->id;
-                    $brandsCreated++;
-                }
-            }
-
-            $sellerId = null;
-            if (! empty($data['seller'])) {
-                $sellerKey = strtolower(trim($data['seller']));
-                if (isset($sellers[$sellerKey])) {
-                    $sellerId = $sellers[$sellerKey]->id;
-                } else {
-                    $newSeller = Seller::create([
-                        'name' => trim($data['seller']),
-                        'slug' => Str::slug(trim($data['seller'])).'-'.uniqid(),
-                        'status' => true,
-                    ]);
-                    $sellers[$sellerKey] = $newSeller;
-                    $sellerId = $newSeller->id;
-                    $sellersCreated++;
-                }
-            }
-
-            $normalized = self::normalizeImportedProductData($data);
-
-            $insertData = [
-                'name' => $data['name'],
-                'price' => $data['price'],
-                'old_price' => (! empty($data['old_price']) && is_numeric($data['old_price'])) ? $data['old_price'] : null,
-                'category_id' => $categoryId,
-                'brand_id' => $brandId,
-                'seller_id' => $sellerId,
-                'year' => (! empty($data['year']) && is_numeric($data['year'])) ? (int) $data['year'] : null,
-                'make' => $data['make'] ?? null,
-                'model' => $data['model'] ?? null,
-                'stock' => (! empty($data['stock']) && is_numeric($data['stock'])) ? (int) $data['stock'] : 0,
-                'description' => $normalized['description'] ?: ($data['description'] ?? ''),
-                'badge' => $data['badge'] ?? null,
-                'product_type' => in_array($data['product_type'] ?? '', ['none', 'new_arrival', 'trending', 'best_selling', 'popular']) ? $data['product_type'] : 'none',
-                'status' => in_array(($data['status'] ?? ''), ['1', 'yes', 'active', 'true'], true) ? true : false,
-                'featured' => in_array(($data['featured'] ?? ''), ['1', 'yes', 'active', 'true'], true) ? true : false,
-                'policy_text' => $normalized['policy_text'],
-                'features' => $normalized['features'],
-                'reviews_data' => $normalized['reviews_data'],
-                'specifications' => $this->parseSpecifications($data['specifications'] ?? null),
-                'tab_label_1' => $data['tab_label_1'] ?? null,
-                'tab_label_2' => $data['tab_label_2'] ?? null,
-                'tab_label_3' => $data['tab_label_3'] ?? null,
-            ];
-
-            if ($existingProduct) {
-                $insertData['slug'] = $existingProduct->slug;
-                $insertData['part_number'] = self::resolveImportedSku($data, $data['name'], $existingProduct);
-            } else {
-                $insertData['added_by'] = 'admin';
-                $insertData['part_number'] = self::resolveImportedSku($data, $data['name']);
-                $insertData['slug'] = Str::slug($data['name']).'-'.time().'-'.$imported;
-            }
-
-            if (! empty($data['image']) && filter_var($data['image'], FILTER_VALIDATE_URL)) {
-                $saved = saveImageFromUrlWithWebp($data['image']);
-                if ($saved) {
-                    $insertData['image'] = $saved;
-                } else {
-                    $errors[] = "Row {$rowNum}: image URL could not be downloaded or was not a valid image.";
-                }
-            }
-
-            try {
-                if ($existingProduct) {
-                    $existingProduct->update($insertData);
-                    $product = $existingProduct;
-                    $action = 'updated';
-                } else {
-                    $product = Product::create($insertData);
-                    $action = 'created';
-                }
-                $imported++;
-
-                if (! empty($data['gallery_images'])) {
-                    $galleryUrls = array_filter(array_map('trim', explode('|', $data['gallery_images'])));
-                    $subdir = 'uploads/'.now()->format('Y/m');
-                    $destDir = storage_path('app/public/'.$subdir);
-                    if (! is_dir($destDir)) {
-                        mkdir($destDir, 0775, true);
-                    }
-                    foreach ($galleryUrls as $imgUrl) {
-                        if (! filter_var($imgUrl, FILTER_VALIDATE_URL)) {
-                            continue;
-                        }
-                        $response = Http::get($imgUrl);
-                        if ($response->failed()) {
-                            continue;
-                        }
-                        $contentType = $response->header('Content-Type');
-                        if (! str_contains($contentType, 'image/')) {
-                            continue;
-                        }
-                        $ext = 'jpg';
-                        if (str_contains($contentType, 'png')) {
-                            $ext = 'png';
-                        } elseif (str_contains($contentType, 'webp')) {
-                            $ext = 'webp';
-                        } elseif (str_contains($contentType, 'gif')) {
-                            $ext = 'gif';
-                        }
-                        $filename = time().'_'.uniqid().'.'.$ext;
-                        file_put_contents($destDir.'/'.$filename, $response->body());
-                        $info = @getimagesize($destDir.'/'.$filename);
-                        Image::create([
-                            'original_name' => $filename,
-                            'filename' => $filename,
-                            'path' => $subdir.'/'.$filename,
-                            'url' => 'storage/'.$subdir.'/'.$filename,
-                            'mime_type' => $contentType,
-                            'size' => filesize($destDir.'/'.$filename),
-                            'width' => $info[0] ?? null,
-                            'height' => $info[1] ?? null,
-                            'is_unused' => false,
-                            'attachable_type' => Product::class,
-                            'attachable_id' => $product->id,
-                        ]);
-                        $galleryImported++;
-                    }
-                }
-            } catch (\Exception $e) {
-                $errors[] = "Row {$rowNum}: ".$e->getMessage();
-            }
-        }
-
-        fclose($handle);
-
-        $message = "Imported {$imported} product(s) successfully.";
-        $extras = [];
-        if ($categoriesCreated > 0) {
-            $extras[] = "{$categoriesCreated} new category(ies) created";
-        }
-        if ($brandsCreated > 0) {
-            $extras[] = "{$brandsCreated} new brand(s) created";
-        }
-        if ($sellersCreated > 0) {
-            $extras[] = "{$sellersCreated} new seller(s) created";
-        }
-        if ($galleryImported > 0) {
-            $extras[] = "{$galleryImported} gallery image(s) imported";
-        }
-        if (! empty($extras)) {
-            $message .= ' ('.implode(', ', $extras).')';
-        }
-        if (! empty($errors)) {
-            $message .= ' '.count($errors).' error(s): '.implode('; ', array_slice($errors, 0, 10));
-            if (count($errors) > 10) {
-                $message .= ' (and '.(count($errors) - 10).' more)';
-            }
-        }
-
-        return redirect()->route('admin.products.index')->with('success', $message);
     }
 
     public function downloadSampleCsv()
@@ -1064,78 +939,6 @@ class ProductController extends Controller
         ]);
     }
 
-    public function exportCsv()
-    {
-        $headers = ['id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
-
-        $callback = function () use ($headers) {
-            set_time_limit(0);
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $headers);
-
-            Product::with('category', 'brand', 'seller', 'galleryImages')
-                ->chunkById(500, function ($products) use ($handle) {
-                    foreach ($products as $p) {
-                        $galleryUrls = $p->galleryImages->map(function ($img) {
-                            return $img->url ? url($img->url) : '';
-                        })->filter()->values()->implode('|');
-
-                        $features = is_array($p->features) ? implode("\n", array_filter($p->features)) : '';
-
-                        $specsLines = [];
-                        foreach ((array) $p->specifications as $spec) {
-                            $label = trim($spec['label'] ?? '');
-                            $value = trim($spec['value'] ?? '');
-                            $specsLines[] = ($label !== '' && $value !== '') ? $label.'::'.$value : ($label ?: $value);
-                        }
-                        $specs = implode("\n", array_filter($specsLines));
-
-                        $reviewsData = is_array($p->reviews_data) && $p->reviews_data ? json_encode($p->reviews_data) : '';
-
-                        fputcsv($handle, [
-                            $p->id,
-                            $p->name,
-                            $p->part_number ?? '',
-                            $p->price,
-                            $p->old_price ?? '',
-                            $p->category->name ?? '',
-                            $p->stock ?? 0,
-                            $p->description ?? '',
-                            $p->badge ?? '',
-                            $p->product_type ?? 'none',
-                            $p->status ? '1' : '0',
-                            $p->featured ? '1' : '0',
-                            $p->image ? url(storedPath($p->image, 'assets/images/thumbnails')) : '',
-                            $p->brand->name ?? '',
-                            $p->seller->name ?? '',
-                            $p->year ?? '',
-                            $p->make ?? '',
-                            $p->model ?? '',
-                            $galleryUrls,
-                            $p->policy_text ?? '',
-                            $features,
-                            $specs,
-                            $reviewsData,
-                            $p->tab_label_1 ?? '',
-                            $p->tab_label_2 ?? '',
-                            $p->tab_label_3 ?? '',
-                        ]);
-                    }
-
-                    if (ob_get_level() > 0) {
-                        ob_flush();
-                    }
-                    flush();
-                });
-
-            fclose($handle);
-        };
-
-        return response()->streamDownload($callback, 'products-export-'.date('Y-m-d').'.csv', [
-            'Content-Type' => 'text/csv',
-        ]);
-    }
-
     private function normalizeEditorContent(string $description, string $policyText): array
     {
         $description = DescriptionMarkdown::toHtml(trim($description));
@@ -1148,7 +951,7 @@ class ProductController extends Controller
         return [$description, $policyText];
     }
 
-    private function parseSpecifications(?string $raw): ?array
+    public static function parseSpecifications(?string $raw): ?array
     {
         if ($raw === null || trim($raw) === '') {
             return null;

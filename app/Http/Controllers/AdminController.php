@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Rules\ZipCodeForCountry;
+use App\Support\FeatureFlags;
 
 class AdminController extends Controller
 {
@@ -332,13 +333,11 @@ class AdminController extends Controller
 
     public function featureSettings()
     {
-        $settingsGroups = $this->featureActivationGroups();
-        $storedSettings = Setting::getAllAsArray();
+        $settingsGroups = FeatureFlags::definitions();
 
         foreach ($settingsGroups as &$group) {
             foreach ($group['items'] as &$item) {
-                $storedValue = $storedSettings[$item['key']] ?? ($item['default'] ? '1' : '0');
-                $item['enabled'] = filter_var($storedValue, FILTER_VALIDATE_BOOLEAN);
+                $item['enabled'] = FeatureFlags::enabled($item['key']);
             }
             unset($item);
         }
@@ -354,12 +353,7 @@ class AdminController extends Controller
             'enabled' => 'required|boolean',
         ]);
 
-        $allowedKeys = [];
-        foreach ($this->featureActivationGroups() as $group) {
-            $allowedKeys = array_merge($allowedKeys, array_column($group['items'], 'key'));
-        }
-
-        if (! in_array($validated['key'], $allowedKeys, true)) {
+        if (! in_array($validated['key'], FeatureFlags::keys(), true)) {
             return response()->json(['message' => 'Unknown feature setting.'], 422);
         }
 
@@ -370,72 +364,13 @@ class AdminController extends Controller
             Setting::set('webp_frontend', $enabled ? '0' : '1');
         }
 
+        FeatureFlags::flush();
+
         return response()->json([
             'success' => true,
             'enabled' => $enabled,
             'message' => 'Feature setting saved successfully.',
         ]);
-    }
-
-    private function featureActivationGroups(): array
-    {
-        return [
-            [
-                'title' => 'System',
-                'items' => [
-                    ['key' => 'FORCE_HTTPS', 'label' => 'HTTPS Activation', 'default' => false],
-                    ['key' => 'maintenance_mode', 'label' => 'Maintenance Mode Activation', 'default' => false],
-                    ['key' => 'disable_image_optimization', 'label' => 'Disable image encoding?', 'default' => false],
-                ],
-            ],
-            [
-                'title' => 'Business Related',
-                'items' => [
-                    ['key' => 'vendor_system_activation', 'label' => 'Vendor System Activation', 'default' => false],
-                    ['key' => 'classified_product', 'label' => 'Classified Product', 'default' => true],
-                    ['key' => 'wallet_system', 'label' => 'Wallet System Activation', 'default' => false],
-                    ['key' => 'coupon_system', 'label' => 'Coupon System Activation', 'default' => true],
-                    ['key' => 'pickup_point', 'label' => 'Pickup Point Activation', 'default' => true],
-                    ['key' => 'conversation_system', 'label' => 'Conversation Activation', 'default' => true],
-                    ['key' => 'product_manage_by_admin', 'label' => 'Seller Product Manage By Admin', 'default' => false, 'description' => 'When enabled, COD for seller products is managed by the admin.'],
-                    ['key' => 'product_approve_by_admin', 'label' => 'Admin Approval On Seller Product', 'default' => false, 'description' => 'Seller products require admin approval.'],
-                    ['key' => 'email_verification', 'label' => 'Email Verification', 'default' => false, 'configure' => 'admin.settings.smtp', 'configureLabel' => 'Configure SMTP'],
-                    ['key' => 'product_query_activation', 'label' => 'Product Query Activation', 'default' => false],
-                ],
-            ],
-            [
-                'title' => 'Payment Related',
-                'items' => [
-                    ['key' => 'paypal_payment', 'label' => 'PayPal Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'stripe_payment', 'label' => 'Stripe Payment Activation', 'default' => true, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'mercadopago_payment', 'label' => 'MercadoPago Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'sslcommerz_payment', 'label' => 'SSlCommerz Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'instamojo_payment', 'label' => 'Instamojo Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'razorpay', 'label' => 'Razor Pay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'paystack', 'label' => 'PayStack Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'voguepay', 'label' => 'VoguePay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'payhere', 'label' => 'Payhere Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'ngenius', 'label' => 'Ngenius Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'iyzico', 'label' => 'Iyzico Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'bkash', 'label' => 'Bkash Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'nagad', 'label' => 'Nagad Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'proxypay', 'label' => 'Proxy Pay Activation', 'default' => true, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'aamarpay', 'label' => 'Amarpay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'authorizenet', 'label' => 'Authorize Net Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'payku', 'label' => 'Payku Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'cash_payment', 'label' => 'Cash Payment Activation', 'default' => true],
-                ],
-            ],
-            [
-                'title' => 'Social Media Login',
-                'items' => [
-                    ['key' => 'facebook_login', 'label' => 'Facebook login', 'default' => false],
-                    ['key' => 'google_login', 'label' => 'Google login', 'default' => false],
-                    ['key' => 'twitter_login', 'label' => 'Twitter login', 'default' => false],
-                    ['key' => 'apple_login', 'label' => 'Apple login', 'default' => false],
-                ],
-            ],
-        ];
     }
 
     public function updateCustomSettings(Request $request)

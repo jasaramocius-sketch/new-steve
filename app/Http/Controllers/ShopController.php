@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVehicle;
 use App\Models\Vehicle;
 use App\Services\VehicleCatalog;
+use App\Support\FeatureFlags;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -353,6 +354,8 @@ class ShopController extends Controller
 
     public function customerProducts(Request $request)
     {
+        abort_unless(FeatureFlags::enabled('classified_product'), 404);
+
         $productsQuery = Product::where('status', true)->hasUsableImage();
 
         $baseQuery = clone $productsQuery;
@@ -496,9 +499,9 @@ class ShopController extends Controller
 
     public function suggestions(Request $request)
     {
-        $query = $request->get('query', '');
+        $query = trim((string) $request->get('query', ''));
 
-        if (strlen($query) < 3) {
+        if (mb_strlen($query) < 3) {
             return response()->json([]);
         }
 
@@ -509,20 +512,36 @@ class ShopController extends Controller
                     ->orWhere('part_number', 'like', "%{$query}%");
             })
             ->with('category:id,name')
-            ->limit(8)
-            ->get(['id', 'name', 'slug', 'cost', 'main_image', 'category_id']);
+            ->limit(20)
+            ->get(['id', 'name', 'slug', 'cost', 'main_image', 'category_id', 'part_number']);
 
+        $seen = [];
         $results = $products->map(function ($product) {
+            $name = preg_replace('/\s+/u', ' ', trim((string) $product->name));
+
             return [
-                'name' => $product->name,
+                'name' => $name,
                 'slug' => $product->slug,
                 'price' => currency_format(buyerPrice($product->price, $product)),
                 'old_price' => null,
                 'image' => storedImageUrl($product->image, 'assets/images/thumbnails'),
                 'category' => $product->category->name ?? '',
                 'url' => route('product', $product->slug),
+                '_dedupe' => $product->part_number ?: $product->slug,
             ];
-        });
+        })->filter(function ($item) use (&$seen) {
+            $key = mb_strtolower((string) ($item['_dedupe'] ?? ''));
+            if ($key === '' || isset($seen[$key])) {
+                return false;
+            }
+            $seen[$key] = true;
+
+            return $item['name'] !== '';
+        })->take(8)->map(function ($item) {
+            unset($item['_dedupe']);
+
+            return $item;
+        })->values();
 
         return response()->json($results);
     }

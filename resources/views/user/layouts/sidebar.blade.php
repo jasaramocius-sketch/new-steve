@@ -42,9 +42,15 @@
 
             <li><a class="nav-link {{ request()->routeIs('user.wishlist') ? 'active' : '' }}" href="{{ route('user.wishlist') }}"><i class="fas fa-heart me-2"></i>My Wishlist</a></li>
 
-            <!-- <li><a class="nav-link {{ request()->routeIs('compare.index') ? 'active' : '' }}" href="{{ route('compare.index') }}"><i class="fas fa-exchange-alt me-2"></i>Compare Products</a></li> 
+            <!-- <li><a class="nav-link {{ request()->routeIs('compare.index') ? 'active' : '' }}" href="{{ route('compare.index') }}"><i class="fas fa-exchange-alt me-2"></i>Compare Products</a></li> -->
 
-            <li><a class="nav-link {{ request()->routeIs('user.followed-sellers') ? 'active' : '' }}" href="{{ route('user.followed-sellers') }}"><i class="fas fa-user-friends me-2"></i>Followed Sellers</a></li> -->
+            @if (\App\Support\FeatureFlags::enabled('vendor_system_activation'))
+            <li><a class="nav-link {{ request()->routeIs('user.followed-sellers') ? 'active' : '' }}" href="{{ route('user.followed-sellers') }}"><i class="fas fa-user-friends me-2"></i>Followed Sellers</a></li>
+            @endif
+
+            @if (\App\Support\FeatureFlags::enabled('wallet_system'))
+            <li><a class="nav-link {{ request()->routeIs('user.wallet') ? 'active' : '' }}" href="{{ route('user.wallet') }}"><i class="fas fa-wallet me-2"></i>My Wallet</a></li>
+            @endif
 
             <li><a class="nav-link {{ request()->routeIs('user.vehicles') ? 'active' : '' }}" href="{{ route('user.vehicles') }}"><i class="fas fa-car me-2"></i>My Vehicles</a></li>
 

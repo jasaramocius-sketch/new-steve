@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\BulkOperation;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -51,6 +52,14 @@ class SystemStatusController extends Controller
         $diskTotal = @disk_total_space(base_path());
         $diskFree = @disk_free_space(base_path());
 
+        $limits = [
+            'memory_limit' => ini_get('memory_limit'),
+            'max_execution_time' => ini_get('max_execution_time'),
+            'upload_max_filesize' => ini_get('upload_max_filesize'),
+            'post_max_size' => ini_get('post_max_size'),
+            'max_input_vars' => ini_get('max_input_vars'),
+        ];
+
         return view('admin.system.server-status', [
             'runtime' => [
                 'laravel' => app()->version(),
@@ -77,12 +86,12 @@ class SystemStatusController extends Controller
                 'filesystem' => config('filesystems.default'),
             ],
             'queue' => $queue,
-            'limits' => [
-                'memory_limit' => ini_get('memory_limit'),
-                'max_execution_time' => ini_get('max_execution_time'),
-                'upload_max_filesize' => ini_get('upload_max_filesize'),
-                'post_max_size' => ini_get('post_max_size'),
-                'max_input_vars' => ini_get('max_input_vars'),
+            'limits' => $limits,
+            'bulkLimits' => [
+                'recommended_upload' => BulkOperation::RECOMMENDED_UPLOAD,
+                'recommended_post' => BulkOperation::RECOMMENDED_POST,
+                'recommended_execution' => BulkOperation::RECOMMENDED_EXECUTION,
+                'warnings' => BulkOperation::limitWarnings(),
             ],
             'extensions' => $this->extensionStatus(),
         ]);

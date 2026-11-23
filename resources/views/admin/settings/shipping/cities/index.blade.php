@@ -127,14 +127,14 @@
                 <div class="card-body">
                     <form action="{{ route('admin.settings.shipping-cities.store') }}" method="POST">
                         @csrf
-                        <div class="form-group mb-3">
-                            <label for="new-city-name" class="form-label">Name</label>
+                        <div class="form-group">
+                            <label for="new-city-name" class="form-label mt-0">Name</label>
                             <input id="new-city-name" type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="City name" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-                        <div class="form-group mb-3">
-                            <label for="new-city-state" class="form-label">State</label>
-                            <select id="new-city-state" name="state_id" class="form-select @error('state_id') is-invalid @enderror" required>
+                        <div class="new-city-state form-group">
+                            <label for="new-city-state-label" class="form-label">State</label>
+                            <select id="new-city-state-select" name="state_id" class="form-select @error('state_id') is-invalid @enderror" required>
                                 <option value="">Select state</option>
                                 @foreach ($states as $state)
                                     <option value="{{ $state->id }}" @selected((int) old('state_id') === $state->id)>{{ $state->name }}{{ $state->country ? ', '.$state->country->name : '' }}</option>

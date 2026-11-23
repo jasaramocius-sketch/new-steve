@@ -46,6 +46,14 @@ class CompareController extends Controller
             ], 400);
         }
 
+        $product = Product::where('status', true)->find($productId);
+        if (! $product) {
+            return response()->json([
+                'error' => 'Product not found.',
+                'count' => $this->currentCompareCount(),
+            ], 404);
+        }
+
         // Logged-in user
         if (session('user_logged_in') && session('user_profile.id')) {
 
@@ -175,5 +183,14 @@ class CompareController extends Controller
         }
 
         return back()->with('success', 'Compare list cleared successfully.');
+    }
+
+    private function currentCompareCount(): int
+    {
+        if (session('user_logged_in') && session('user_profile.id')) {
+            return Compare::where('user_id', session('user_profile.id'))->count();
+        }
+
+        return count(session()->get('guest_compare', []));
     }
 }

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\EnforceFeatureFlags;
+use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\LogSiteChange;
 use App\Http\Middleware\NoCache;
 use App\Http\Middleware\PublishDueScheduledBlogs;
@@ -22,9 +24,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'checkout/stripe/webhook',
+            'checkout/gateway/*/return',
+            'checkout/gateway/*/cancel',
+            'checkout/gateway/*/webhook',
         ]);
         $middleware->append([
             LogSiteChange::class,
+            EnforceFeatureFlags::class,
         ]);
         $middleware->web(append: [
             SetLocale::class,
@@ -36,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => StaffMiddleware::class,
             'role' => RoleMiddleware::class,
             'nocache' => NoCache::class,
+            'feature' => EnsureFeatureEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

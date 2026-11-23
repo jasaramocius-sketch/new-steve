@@ -22,12 +22,12 @@
                         <label for="tax-type-name">Tax Type</label>
                         <input id="tax-type-name" name="name" class="form-control" value="{{ old('name', $taxType->name) }}" maxlength="150" required autofocus>
                     </div>
-                    <div class="custom-control custom-checkbox mb-3">
+                    <div class="custom-control custom-checkbox mb-3 mt-1">
                         <input id="tax-type-active" type="checkbox" name="is_active" value="1" class="custom-control-input" @checked(old('is_active', $isEditing ? $taxType->is_active : true))>
                         <label class="custom-control-label" for="tax-type-active">Active</label>
                     </div>
-                    <button type="submit" class="btn btn-primary">{{ $isEditing ? 'Update Tax Type' : 'Save Tax Type' }}</button>
-                    <a href="{{ route('admin.settings.custom') }}" class="btn btn-light">Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {{ $isEditing ? 'Update Tax Type' : 'Save Tax Type' }}</button>
+                    <a href="{{ route('admin.settings.custom') }}" class="btn btn-primary"><i class="fas fa-times"></i> Cancel</a>
                 </div>
             </form>
         </div>

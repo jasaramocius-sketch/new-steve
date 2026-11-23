@@ -255,3 +255,20 @@ Search / Filter -
 Vehicle filter extremely slow -	
 /search?make=Toyota (no year): 134 s. /search?year=2015: 28 s. Year+Make+Model: about 4 s. -	
 Add DB indexes on fitment (year, make, model); cache counts. 
+
+
+
+Reviews	New reviews cannot be posted	Reviews need login + purchase; existing reviews DO show (e.g. 'Mounting, engine' = Reviews (2)). New customers can't buy, so can't review. (Correction: earlier report said all products show Reviews (0).)	Fixed by A1. Optionally allow verified-email reviews.
+
+Performance	Every storefront page is about 20 MB	Full category tree (about 21,000 categories, about 15,600 with 0 products) printed on every page; search pages 33 MB. Under about 20 concurrent requests pages took about 30 s.	AJAX/cached mega menu; hide empty categories.
+
+Search	Foreign-language duplicates and poor titles	'oxygen sensor' returns French/Spanish rows; titles like '4SB-2MPGSO'.	Locale filter; title clean-up.
+
+Compare	Compare accepts non-existent products	compare/add?product_id=99999999 -> 'Product added to compare list!'	Validate product exists.
+
+Cart	Quantity capped silently	Qty 25 with stock 20 -> set to 20, toast 'Cart updated successfully!'	Show 'Only 20 available'.
+
+Routing	Common URLs 404; no order tracking	/login, /register, /shop, /about, /contact, /track-order, /terms-and-conditions = 404.	Redirects + order tracking page.
+
+
+.admin-content .nav .nav-item .nav-link:focus, .admin-content .nav .nav-item .nav-link:hover

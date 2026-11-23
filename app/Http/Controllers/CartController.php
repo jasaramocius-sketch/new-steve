@@ -14,9 +14,11 @@ use App\Models\PickupPoint;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Vehicle;
+use App\Services\Payments\PaymentGatewayManager;
 use App\Services\ShippingChargeService;
 use App\Services\ShippingRateService;
 use App\Services\StripeCheckoutService;
+use App\Support\FeatureFlags;
 use App\Rules\ZipCodeForCountry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +35,7 @@ class CartController extends Controller
         $cartItems = $cart;
         $couponData = $this->recomputeCoupon($cart) ?? [];
         $couponDiscount = $couponData['discount'] ?? 0;
-        $couponEnabled = Setting::get('coupon_system', '1') === '1';
+        $couponEnabled = FeatureFlags::enabled('coupon_system');
         $minimumOrderAmountEnabled = Setting::get('minimum_order_amount_check', '0') === '1';
         $minimumOrderAmount = (float) Setting::get('minimum_order_amount', 0);
         $minimumOrderRemaining = $minimumOrderAmountEnabled ? max($minimumOrderAmount - $total, 0) : 0;
@@ -160,14 +162,17 @@ class CartController extends Controller
 
         }
 
-        $qty = max((int) $request->quantity, 1);
+        $requestedQty = max((int) $request->quantity, 1);
+        $qty = $requestedQty;
         $stock = (int) ($cart[$id]['stock'] ?? 0);
+        $capped = false;
 
         $product = \App\Models\Product::find($id);
         if ($product) {
             $stock = (int) ($product->vendor_stock ?? $product->stock ?? 0);
             if ($stock > 0 && $qty > $stock) {
                 $qty = $stock;
+                $capped = true;
             }
         }
 
@@ -192,6 +197,10 @@ class CartController extends Controller
 
             'stock' => $stock,
 
+            'capped' => $capped,
+
+            'message' => $capped ? 'Only '.$stock.' unit(s) of this product are available.' : null,
+
             'itemSubtotal' => currency_format($itemSubtotal),
 
             'cartTotal' => currency_format($cartTotal),
@@ -201,7 +210,7 @@ class CartController extends Controller
 
     public function applyCoupon(Request $request)
     {
-        if (Setting::get('coupon_system', '1') !== '1') {
+        if (! FeatureFlags::enabled('coupon_system')) {
             return back()->with('error', 'Coupons are currently disabled.');
         }
 
@@ -251,7 +260,7 @@ class CartController extends Controller
      */
     private function recomputeCoupon(array $cart): ?array
     {
-        if (Setting::get('coupon_system', '1') !== '1') {
+        if (! FeatureFlags::enabled('coupon_system')) {
             session()->forget('coupon');
 
             return null;
@@ -450,7 +459,7 @@ class CartController extends Controller
         }
         $total = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
         $pickupPoints = PickupPoint::where('is_open', true)->orderBy('name')->get();
-        $pickupEnabled = Setting::get('pickup_point', '1') === '1' && $pickupPoints->isNotEmpty();
+        $pickupEnabled = FeatureFlags::enabled('pickup_point') && $pickupPoints->isNotEmpty();
         $homeDeliveryEnabled = Setting::get('home_delivery_enabled', '1') === '1';
         $shippingService = app(ShippingChargeService::class);
         $shippingType = $shippingService->type();
@@ -540,7 +549,7 @@ class CartController extends Controller
         if ($homeDeliveryAvailable) {
             $allowedShippingMethods[] = 'home_delivery';
         }
-        if (Setting::get('pickup_point', '1') === '1' && PickupPoint::where('is_open', true)->exists()) {
+        if (FeatureFlags::enabled('pickup_point') && PickupPoint::where('is_open', true)->exists()) {
             $allowedShippingMethods[] = 'pickup';
         }
         if ($allowedShippingMethods === []) {
@@ -742,11 +751,9 @@ class CartController extends Controller
             ];
         }
 
-        // Card payments are only marked paid after Stripe confirms the charge.
+        // Every provider starts from an unpaid order. Payment status changes
+        // only after the provider is re-queried or a signed callback verifies.
         $paymentDetails = null;
-        if ($paymentMethod === 'paypal') {
-            $paymentDetails = json_encode(['transaction_id' => generateTransactionId()]);
-        }
 
         $dbOrder = $this->createCheckoutOrder(
             $request,
@@ -767,17 +774,55 @@ class CartController extends Controller
             return $this->startStripeCheckout($dbOrder, $cart, $billing);
         }
 
-        if ($isStripe) {
-            // A fully discounted order needs no charge, so consider it paid.
-            $dbOrder->update(['payment_status' => 'paid']);
+        if ($grandTotal <= 0) {
+            // Nothing to charge: no gateway confirmation is required.
+            $dbOrder->update([
+                'payment_status' => 'paid',
+                'status' => $dbOrder->status === 'pending' ? 'processing' : $dbOrder->status,
+                'payment_details' => json_encode(['provider' => $paymentMethod, 'waived' => true]),
+            ]);
+            $dbOrder->recordStatusChange('processing', 'No payment required for this order');
         }
 
-        $this->notifyOrderPlaced($dbOrder);
+        if ($paymentMethod === 'cod' || $grandTotal <= 0) {
+            $this->notifyOrderPlaced($dbOrder);
 
-        session()->put('last_order', $this->orderSummary($dbOrder));
-        $this->clearCheckoutSession();
+            session()->put('last_order', $this->orderSummary($dbOrder));
+            $this->clearCheckoutSession();
 
-        return redirect()->route('checkout.confirmed');
+            return redirect()->route('checkout.confirmed');
+        }
+
+        try {
+            $result = app(PaymentGatewayManager::class)->start($dbOrder, $paymentMethod, $billing);
+        } catch (Throwable $exception) {
+            $this->cancelPendingOrder(
+                $dbOrder,
+                app(PaymentGatewayManager::class)->label($paymentMethod).' could not start the payment: '.$exception->getMessage()
+            );
+            session()->forget(['pending_gateway_order_id', 'pending_gateway_provider']);
+
+            return back()->with('error', app(PaymentGatewayManager::class)->label($paymentMethod).' could not start the payment: '.$exception->getMessage());
+        }
+
+        if (! empty($result['redirect'])) {
+            return redirect()->away($result['redirect']);
+        }
+
+        if (! empty($result['html'])) {
+            return response($result['html']);
+        }
+
+        if (! empty($result['pending'])) {
+            return view('checkout.gateway.pending', [
+                'order' => $result['order'] ?? $dbOrder,
+                'gateway' => app(PaymentGatewayManager::class)->label($paymentMethod),
+            ]);
+        }
+
+        $this->cancelPendingOrder($dbOrder, 'Payment gateway did not return a checkout destination.');
+
+        return back()->with('error', 'The payment gateway did not return a checkout destination. Please try again.');
     }
 
     /**
@@ -808,7 +853,7 @@ class CartController extends Controller
                 'total_amount' => $grandTotal,
                 'status' => 'pending',
                 'payment_method' => $request->payment_method,
-                'payment_status' => $request->payment_method === 'paypal' ? 'paid' : 'unpaid',
+                'payment_status' => 'unpaid',
                 'payment_details' => $paymentDetails,
                 'delivery_type' => $shipping['method'] ?? 'free',
                 'shipping_fee' => $shippingCost,
@@ -917,9 +962,9 @@ class CartController extends Controller
     /**
      * Cancel an unpaid order and return its reserved stock to the catalogue.
      */
-    private function cancelPendingOrder(Order $order): void
+    private function cancelPendingOrder(Order $order, string $reason = 'Checkout was not completed'): void
     {
-        if ($order->payment_status === 'paid') {
+        if ($order->payment_status === 'paid' || $order->status === 'cancelled') {
             return;
         }
 
@@ -932,7 +977,7 @@ class CartController extends Controller
             'payment_status' => 'failed',
             'stock_deducted' => false,
         ]);
-        $order->recordStatusChange('cancelled', 'Stripe checkout was not completed');
+        $order->recordStatusChange('cancelled', $reason);
     }
 
     public function stripeSuccess(Request $request)
@@ -1050,7 +1095,7 @@ class CartController extends Controller
         return redirect()->route('checkout.payment')->with('error', 'Stripe payment was cancelled. Your cart is still saved, so you can try again.');
     }
 
-    private function notifyOrderPlaced(Order $order): void
+    public function notifyOrderPlaced(Order $order): void
     {
         $order->loadMissing('items.product');
         NotificationHelper::orderPlaced($order);
@@ -1065,7 +1110,7 @@ class CartController extends Controller
     /**
      * Build the array consumed by the order confirmation page.
      */
-    private function orderSummary(Order $order): array
+    public function orderSummary(Order $order): array
     {
         $order->loadMissing('items.product');
         $billing = json_decode($order->shipping_details ?? '[]', true) ?: [];
@@ -1096,7 +1141,7 @@ class CartController extends Controller
         ];
     }
 
-    private function clearCheckoutSession(): void
+    public function clearCheckoutSession(): void
     {
         session()->forget([
             'cart',
@@ -1105,6 +1150,8 @@ class CartController extends Controller
             'checkout_vehicle_id',
             'coupon',
             'pending_stripe_order_id',
+            'pending_gateway_order_id',
+            'pending_gateway_provider',
         ]);
     }
 
@@ -1145,7 +1192,7 @@ class CartController extends Controller
 
     private function activePickupPointDetails(array $shipping): ?array
     {
-        if (Setting::get('pickup_point', '1') !== '1') {
+        if (! FeatureFlags::enabled('pickup_point')) {
             return null;
         }
 
@@ -1208,19 +1255,9 @@ class CartController extends Controller
 
     private function enabledCheckoutPaymentMethods(): array
     {
-        $methods = [];
-
-        if (Setting::get('stripe_payment', '1') === '1' && app(StripeCheckoutService::class)->isConfigured()) {
-            $methods['card'] = ['label' => 'Stripe', 'icon' => 'las la-credit-card'];
-        }
-        if (Setting::get('cash_payment', '1') === '1') {
-            $methods['cod'] = ['label' => 'Cash on Delivery', 'icon' => 'las la-money-bill-wave'];
-        }
-        if (Setting::get('paypal_payment', '0') === '1') {
-            $methods['paypal'] = ['label' => 'PayPal', 'icon' => 'lab la-paypal'];
-        }
-
-        return $methods;
+        // FeatureFlags only returns gateways with a real handler. Toggles for
+        // unconnected providers stay on the admin page but never reach here.
+        return FeatureFlags::checkoutPaymentMethods();
     }
 
     private function refreshCartPrices(): array

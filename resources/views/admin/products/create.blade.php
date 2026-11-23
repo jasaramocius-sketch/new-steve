@@ -81,7 +81,7 @@
 
                         <div class="col-md-3">
                             <label class="form-label">Category</label>
-                            <select name="category_id" class="form-select">
+                            <select name="category_id" class="form-select" data-ajax-url="{{ route('admin.products.lookup', ['type' => 'category']) }}" data-search-placeholder="Search categories…">
                                 <option value="">None</option>
                                 @foreach($categories as $cat)
                                     <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
@@ -91,7 +91,7 @@
 
                         <div class="col-md-3">
                             <label class="form-label">Brand</label>
-                            <select name="brand_id" class="form-select">
+                            <select name="brand_id" class="form-select" data-ajax-url="{{ route('admin.products.lookup', ['type' => 'brand']) }}" data-search-placeholder="Search brands…">
                                 <option value="">None</option>
                                 @foreach($brands as $b)
                                     <option value="{{ $b->id }}" {{ old('brand_id') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
@@ -99,15 +99,17 @@
                             </select>
                         </div>
 
+                        @if (\App\Support\FeatureFlags::enabled('vendor_system_activation') && \App\Support\FeatureFlags::enabled('product_manage_by_admin'))
                         <div class="col-md-3">
                             <label class="form-label">Seller</label>
-                            <select name="seller_id" class="form-select">
+                            <select name="seller_id" class="form-select" data-ajax-url="{{ route('admin.products.lookup', ['type' => 'seller']) }}" data-search-placeholder="Search sellers…">
                                 <option value="">None</option>
                                 @foreach($sellers as $s)
                                     <option value="{{ $s->id }}" {{ old('seller_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
                                 @endforeach
                             </select>
                         </div>
+                        @endif
 
                         <div class="col-md-2">
                             <label class="form-label">Stock</label>

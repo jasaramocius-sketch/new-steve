@@ -6,15 +6,15 @@
 @endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+    <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
-    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif -->
 
     <div class="card">
         <div class="card-header">
             <form action="{{ route('admin.settings.shipping-countries.index') }}" method="GET">
                 <div class="d-flex flex-wrap flex-row flex-wrap align-items-end gap-1">
-                    <div class="w-auto">
+                    <div class="gap-1" style="display: grid !important; grid-template-columns: 1fr auto;">
                     @include('admin.partials.search-form', [
                         'embedded' => true,
                         'placeholder' => 'Type country name',

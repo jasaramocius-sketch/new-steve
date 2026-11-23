@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Tag;
 use App\Services\VehicleCatalog;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
@@ -578,6 +579,26 @@ class HomeController extends Controller
         }
 
         return $entries;
+    }
+
+    public function mobileCategories(Request $request)
+    {
+        $current = (string) $request->query('current', url()->previous());
+        $mobileCurrentUrl = $current !== '' ? $current : url()->current();
+        $mobileBasePath = rtrim(parse_url(url('/'), PHP_URL_PATH) ?? '', '/');
+        $mobileCurrentPath = parse_url($mobileCurrentUrl, PHP_URL_PATH) ?? '/';
+
+        $activeCategoryUrls = [];
+        $active = $request->query('active');
+        if (is_array($active)) {
+            $activeCategoryUrls = array_values(array_filter($active, fn ($u) => is_string($u) && $u !== ''));
+        }
+
+        return view('partials.mobile-category-tree-items', [
+            'mobileCategoryTree' => \App\Services\CategoryTree::tree(),
+            'mobileCurrentUrl' => $mobileCurrentUrl,
+            'activeCategoryUrls' => $activeCategoryUrls,
+        ]);
     }
 
     private function staticSitemapUrls(): array

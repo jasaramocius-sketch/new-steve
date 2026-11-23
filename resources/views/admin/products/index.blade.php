@@ -56,7 +56,7 @@
             @endif
             <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Category</label>
-                <select name="category_id" class="form-select">
+                <select name="category_id" class="form-select" data-ajax-url="{{ route('admin.products.lookup', ['type' => 'category']) }}" data-search-placeholder="Search categories…">
                     <option value="">All Categories</option>
                     @foreach($categories as $cat)
                         <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
@@ -65,7 +65,7 @@
             </div>
             <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Brand</label>
-                <select name="brand_id" class="form-select">
+                <select name="brand_id" class="form-select" data-ajax-url="{{ route('admin.products.lookup', ['type' => 'brand']) }}" data-search-placeholder="Search brands…">
                     <option value="">All Brands</option>
                     @foreach($brands as $br)
                         <option value="{{ $br->id }}" {{ request('brand_id') == $br->id ? 'selected' : '' }}>{{ $br->name }}</option>
@@ -74,7 +74,7 @@
             </div>
             <div class="admin-product-index-filter-item w-auto">
                 <label class="form-label small text-muted mb-1">Seller</label>
-                <select name="seller_id" class="form-select">
+                <select name="seller_id" class="form-select" data-ajax-url="{{ route('admin.products.lookup', ['type' => 'seller']) }}" data-search-placeholder="Search sellers…">
                     <option value="">All Sellers</option>
                     @foreach($sellers as $se)
                         <option value="{{ $se->id }}" {{ request('seller_id') == $se->id ? 'selected' : '' }}>{{ $se->name }}</option>
@@ -150,7 +150,7 @@
                     <button type="button" class="btn btn-warning steve-btn btn-sm d-none" id="bulk-deactivate-btn" data-bulk-action="{{ route('admin.products.bulk-status') }}" data-field="status" data-value="0" onclick="bulkRunValue(this)"><i class="fas fa-ban me-1"></i> Deactivate (<span class="bulk-count">0</span>)</button>
                     <button type="button" class="btn btn-outline-primary steve-btn btn-sm d-none" id="bulk-featured-btn" data-bulk-action="{{ route('admin.products.bulk-featured') }}" data-field="featured" data-value="1" onclick="bulkRunValue(this)"><i class="fas fa-star me-1"></i> Featured (<span class="bulk-count">0</span>)</button>
                     <button type="button" class="btn btn-outline-secondary steve-btn btn-sm d-none" id="bulk-unfeatured-btn" data-bulk-action="{{ route('admin.products.bulk-featured') }}" data-field="featured" data-value="0" onclick="bulkRunValue(this)"><i class="far fa-star me-1"></i> Unfeature (<span class="bulk-count">0</span>)</button>
-                    <select id="bulk-category-select" class="form-select form-select-sm w-auto d-none">
+                    <select id="bulk-category-select" class="form-select form-select-sm w-auto d-none" data-ajax-url="{{ route('admin.products.lookup', ['type' => 'category']) }}" data-search-placeholder="Search categories…">
                         <option value="">Move to category…</option>
                         @foreach($categories as $cat)
                             <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -263,6 +263,29 @@
                                         </span>
                                     </button>
                                 </form>
+                                @if (\App\Support\FeatureFlags::enabled('product_approve_by_admin') && $product->seller_id)
+                                    <div class="mt-1">
+                                        @if (($product->approval_status ?? 'approved') === 'pending')
+                                            <span class="badge bg-warning text-dark">Pending approval</span>
+                                            <form action="{{ route('admin.products.approve', $product->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-success py-0 px-1">Approve</button>
+                                            </form>
+                                            <form action="{{ route('admin.products.reject', $product->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1">Reject</button>
+                                            </form>
+                                        @elseif (($product->approval_status ?? 'approved') === 'rejected')
+                                            <span class="badge bg-danger">Rejected</span>
+                                            <form action="{{ route('admin.products.approve', $product->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-success py-0 px-1">Approve</button>
+                                            </form>
+                                        @else
+                                            <span class="badge bg-success">Approved</span>
+                                        @endif
+                                    </div>
+                                @endif
                             @endif
                         </td>
                         <td class="pe-3 table-action-col">

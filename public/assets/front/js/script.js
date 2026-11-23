@@ -265,8 +265,13 @@ $(document).ready((function() {
         const s = document.querySelector(".total-cart-price-sub");
         s && (s.textContent = e.cartTotal);
         const i = document.querySelector(".total-cart-price-val");
-        i && (i.textContent = e.cartTotal), "undefined" != typeof toastr && toastr.success("Cart updated successfully!")
-      } else "undefined" != typeof toastr && toastr.error("Failed to update quantity.")
+        i && (i.textContent = e.cartTotal);
+        if (e.capped && e.message) {
+          "undefined" != typeof toastr && toastr.warning(e.message);
+        } else {
+          "undefined" != typeof toastr && toastr.success("Cart updated successfully!");
+        }
+      } else "undefined" != typeof toastr && toastr.error(e.message || "Failed to update quantity.")
     })).catch((e => {
       console.error("Error updating cart:", e), "undefined" != typeof toastr && toastr.error("An error occurred while updating the cart.")
     }))
