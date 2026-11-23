@@ -10,6 +10,20 @@
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
 
+    @if (($shippingType ?? '') === 'carrier_wise_shipping' && empty($carrierReady))
+        <div class="alert alert-warning">
+            <strong>Carrier Wise Shipping is not fully configured.</strong>
+            No active carrier with an active shipping zone rate was found, so checkout will use <strong>Flat Rate Shipping</strong> as a fallback until this is fixed.
+            <div class="mt-1">
+                <a href="{{ route('admin.settings.shipping-carriers.index') }}">Manage carriers</a>
+                &middot;
+                <a href="{{ route('admin.settings.shipping-zones.index') }}">Manage zone rates</a>
+                &middot;
+                <a href="#flat-rate-shipping-cost">Review flat rate cost</a>
+            </div>
+        </div>
+    @endif
+
     @php
         $shippingMethods = [
             'product_wise_shipping' => 'Product Wise Shipping Cost',

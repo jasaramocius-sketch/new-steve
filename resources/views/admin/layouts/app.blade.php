@@ -85,7 +85,7 @@
 
 <body id="@yield('page-id', 'default-page-id')" class="site-root @yield('page-class', 'default-body-class')"
     data-success="{{ session('success') }}" data-error="{{ session('error') }}"
-    data-warning="{{ session('warning') }}" data-info="{{ session('info') }}">
+    data-warning="{{ session('warning') }}" data-info="{{ session('info') }}" data-status="{{ session('status') }}">
 
 @include('admin.partials.sidebar')
 <div class="admin-sidebar-overlay"></div>

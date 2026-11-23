@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Rules\ZipCodeForCountry;
 
 class UserController extends Controller
 {
@@ -119,7 +120,7 @@ class UserController extends Controller
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
-            'postal_code' => 'nullable|string|max:20',
+            'postal_code' => ['nullable', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ];
 
@@ -224,7 +225,7 @@ class UserController extends Controller
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
-            'postal_code' => 'nullable|string|max:20|regex:/^[A-Za-z0-9\-\s]{3,20}$/',
+            'postal_code' => ['nullable', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
             'status' => 'nullable|in:active,inactive',
         ], [
             'email.unique' => 'This email is already registered.',
@@ -268,7 +269,7 @@ class UserController extends Controller
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
-            'postal_code' => 'nullable|string|max:20|regex:/^[A-Za-z0-9\-\s]{3,20}$/',
+            'postal_code' => ['nullable', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
             'status' => 'nullable|in:active,inactive',
         ], [
             'email.unique' => 'This email is already registered.',

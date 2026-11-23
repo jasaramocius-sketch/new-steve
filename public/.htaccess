@@ -10,6 +10,11 @@
     </IfModule>
 
     RewriteEngine On
+
+    # Legacy base-path compatibility (old project path: steve_autoparts-main)
+    # Redirect to canonical URL structure (strip legacy prefix, keep path/query).
+    RewriteRule ^steve_autoparts-main(?:/(.*))?$ /$1 [R=301,L,QSA]
+
     RewriteBase /new-steve/
 
     # Handle Authorization Header

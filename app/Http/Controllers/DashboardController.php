@@ -15,6 +15,7 @@ use App\Models\Vehicle;
 use App\Models\Wishlist;
 use App\Services\ProductReviewEligibility;
 use Illuminate\Http\Request;
+use App\Rules\ZipCodeForCountry;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -528,7 +529,7 @@ class DashboardController extends Controller
             'city' => 'required|string|max:100',
             'state' => 'nullable|string|max:100',
             'country' => 'required|string|max:100',
-            'zip_code' => 'required|string|max:20|regex:/^[0-9a-zA-Z\-\s]+$/',
+            'zip_code' => ['required', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
             'set_default' => 'nullable|boolean',
         ]);
 
@@ -553,7 +554,7 @@ class DashboardController extends Controller
             'city' => 'required|string|max:100',
             'state' => 'nullable|string|max:100',
             'country' => 'required|string|max:100',
-            'zip_code' => 'required|string|max:20|regex:/^[0-9a-zA-Z\-\s]+$/',
+            'zip_code' => ['required', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
             'set_default' => 'nullable|boolean',
         ]);
 

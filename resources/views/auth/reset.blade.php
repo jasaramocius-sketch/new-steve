@@ -18,10 +18,6 @@
         <div class="reg-content">
           <h4 class="text-center">Reset Password</h4>
 
-          @if(session('status'))
-            <div class="alert alert-success">{{ session('status') }}</div>
-          @endif
-
           @if($errors->any())
             <div class="alert alert-danger">{{ $errors->first() }}</div>
           @endif

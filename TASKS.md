@@ -6075,3 +6075,88 @@ Layout:
   - At 1365/900/390px: `overflow=0` desktop/tablet; pre-existing order-detail mobile overflow remains (`184px`). Only pre-existing `Swiper is not defined` + admin `404` console noise.
 - Screenshots: `public/visual-audit/cod-delivered/order40-delivered-{desktop,tablet,mobile}.jpg`.
 - Workbook Evidence row updated to final behavior; A1–A4 counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+
+## 435. (2026-11-20): Enable HTTPS/SSL for `new-steve.local` (Local Dev)
+
+**Status: Completed**
+
+- User requested HTTP → HTTPS for this environment (`APP_URL` was `http://new-steve.local`, Apache on Ubuntu 24.04 serving `new-steve.local` via `/etc/apache2/sites-available/new-steve.conf`, port 80 only, `ssl_module` not enabled). `.local` is not publicly validatable, so a local cert approach was used instead of Let's Encrypt.
+- Generated a self-signed certificate (SAN: `new-steve.local`, `localhost`, `127.0.0.1`; 825 days):
+  - `storage/certs/new-steve.local.crt`
+  - `storage/certs/new-steve.local.key`
+- Created ready-to-apply vhost config: `new-steve.ssl.vhost.conf` (project root) with `*:80` permanent redirect to `https://new-steve.local/` and `*:443` SSL vhost (`SSLEngine on`, cert/key paths above, same docroot `/var/www/html/new-steve/public`).
+- `.env`: set `APP_URL=https://new-steve.local` and added `SESSION_SECURE_COOKIE=true` (initially, for HTTPS). Ran `php artisan config:clear`.
+- User applied server-side changes (sudo): `a2enmod ssl`, copied `new-steve.ssl.vhost.conf` to `/etc/apache2/sites-available/new-steve.conf`, `apache2ctl configtest` (Syntax OK), `systemctl reload apache2`. Verification: `ss -ltnp` showed both `:80` and `:443` listening.
+- Browser will show a self-signed cert warning until trusted; HTTPS endpoint became reachable after apply.
+
+## 436. (2026-11-20): Trusted Local HTTPS Certificate (mkcert) for `new-steve.local`
+
+**Status: Pending**
+
+- Current HTTPS setup uses a self-signed cert (`storage/certs/new-steve.local.crt/.key`), so browsers show a privacy/warning prompt.
+- Follow-up: install/configure `mkcert` (local CA), generate a trusted cert for `new-steve.local`, update `SSLCertificateFile`/`SSLCertificateKeyFile` in the Apache vhost (`/etc/apache2/sites-available/new-steve.conf`, reference: `new-steve.ssl.vhost.conf`), `apache2ctl configtest` + reload, and verify warning-free HTTPS in browser. Consider re-tightening secure-cookie behavior if all access moves to HTTPS.
+
+## 437. (2026-11-20): Login Fixes — 419 on HTTP IP Access and Credential Mismatch (User #30)
+
+**Status: Completed**
+
+- **Invalid credentials (`/users/login`)**: `jasaram.ocius@gmail.com` (user #30, `customer`, active) existed, but the provided password did not match the stored hash (`Auth::attempt` failed at `app/Http/Controllers/AuthController.php:101-103`). Password for user #30 was reset to the user-provided credential to restore access; no plaintext password recorded here.
+- **419 Page Expired on `http://192.168.130.54/new-steve/users/login`**: user accessed via plain HTTP (LAN IP/subpath). `SESSION_SECURE_COOKIE=true` (set during #435) caused session/XSRF cookies to be marked `Secure`, so browsers did not send them over HTTP, breaking CSRF/session validation. Fresh GETs to that URL showed `Set-Cookie` with `secure`; form actions/tokens were otherwise correct for the host.
+- Fix: `.env` `SESSION_SECURE_COOKIE=false` to support mixed HTTP (IP) and HTTPS (`new-steve.local`) access, then `php artisan config:clear` (`config('session.secure') === false` verified). User advised to hard-refresh/clear cookies or use incognito after change to avoid stale CSRF token.
+- Note: `APP_URL` remains `https://new-steve.local`; if IP-based access produces incorrect absolute redirects/links, APP_URL/host handling may need follow-up.
+
+## 438. (2026-11-20): SMTP Settings — Emails Will Not Reach Customers
+
+**Status: Pending**
+
+- New issue reported: **“SMTP Settings: Emails will not reach customers”**.
+- Impact: order confirmations, status-change notifications and other transactional emails may not be delivered to customers until mail configuration is corrected.
+- Scope of this entry: task logging only. No mail configuration was changed and no diagnosis/fix has been performed yet.
+- Next steps:
+  - Audit current mail configuration (`.env` `MAIL_*` values, `config/mail.php`, admin SMTP settings if any) without logging secrets.
+  - Verify `MAIL_MAILER`, host/port/encryption, username/password, `MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME`, and SPF/DKIM/DMARC requirements for the sending domain.
+  - Send a controlled test email (or use Laravel log/mail fake in non-production-safe way) and check queue/failed-job logs if mail is queued.
+  - Apply fix, re-test customer-facing order/status emails, and update this entry with evidence.
+
+## 439. (2026-11-20): Customer Registration Email Confirmation & Account Activation on Verify
+
+**Status: Completed**
+
+- User requested: on new user account creation, send a confirmation email and activate the account only after confirmation.
+- `app/Models/User.php`: implemented `Illuminate\Contracts\Auth\MustVerifyEmail` (kept existing casts/fillable/traits); enables `hasVerifiedEmail()`, `markEmailAsVerified()`, and `sendEmailVerificationNotification()`.
+- `app/Http/Controllers/AuthController.php`:
+  - `register()`: creates customer as unverified, no auto-login/session profile/guest merge; stores pending verification email/redirect in session, sends verification notification, redirects to `verification.notice` with status (or warning on mail send failure). Welcome notification/mail moved to post-verification.
+  - `login()`: if credentials valid but user unverified, logs out/regenerates session, stores pending email/redirect, (re)sends verification notification best-effort, and redirects to `verification.notice` with error (blocks login until confirmed). Existing 2FA/redirect flow preserved for verified users.
+  - Added `showVerificationNotice()`, `resendVerification()` (throttled, non-enumerating response), and `verifyEmail($id,$hash)` (signed link/hash validation, marks verified + fires `Verified`, sends welcome notification/mail best-effort, auto-logins, restores session profile/guest merge, redirects to preserved target or dashboard).
+- `routes/web.php`: added `GET /email/verify` (`verification.notice`), `POST /email/verification-notification` (`verification.send`, throttled), `GET /email/verify/{id}/{hash}` (`verification.verify`, signed+throttled).
+- `resources/views/auth/verify-email.blade.php`: new confirmation notice/resend page (status/warning/errors, email input, resend form, sign-in link) matching auth layout.
+- Data safety/backfill: existing users with `email_verified_at IS NULL` were backfilled as verified (**13** users updated) to prevent lockout of pre-existing accounts.
+- Verification: `php -l` OK for modified PHP files; routes registered (`verification.notice/send/verify`, registration routes intact). Mail delivery depends on environment SMTP/mail config (admin `email_verification`/SMTP settings exist but this flow is enforced for new registrations as implemented); see pending #438 for SMTP delivery issues.
+
+## 440. (2026-11-20): Checkout/Delivery Resilience — Flat-Rate Fallback & No-Option UX (F1/A1/A2)
+
+**Status: Completed**
+
+- Addressed "real app" checkout blocker where carrier-wise shipping selected with no carriers/zone rates (A1) and/or pickup enabled with no open pickup points (A2) could leave no delivery option (F1: "No home-delivery rate is available…" / "No delivery option is available for this address.").
+- `app/Services/ShippingChargeService.php`: added `flatRateQuote()` (Standard Shipping, cost from `flat_rate_shipping_cost`) as a safe fallback quote.
+- `app/Http/Controllers/CartController.php` (`deliveryInfo`, `deliveryInfoSubmit`, `refreshHomeDeliveryRate`):
+  - If home delivery is enabled and carrier-wise rates are unavailable for the address, or a selected non-carrier method cannot produce a quote, fall back to flat-rate standard shipping so home delivery remains available instead of blocking checkout.
+  - `shipping_rate_id` is required/validated and DB-resolved only when actual carrier rate options exist; fallback stores a standard quote (`rate_id` null) and refresh handles carrier-rate-selected vs fallback safely (re-resolves carrier rate when present, otherwise flat-rate/standard quote fallback).
+- `resources/views/pages/checkout/delivery-info.blade.php`, `resources/views/checkout/delivery-info.blade.php`:
+  - Render selectable carrier rates when `$shippingRates->isNotEmpty()`, otherwise show the standard shipping quote (name/cost/estimate).
+  - "No home-delivery rate…" messaging no longer suggests pickup when pickup is unavailable; if no delivery option exists at all, show a clear warning and disable **Continue to Payment** (`$hasAnyDeliveryOption`). Pickup remains offered only when the feature is on and an open pickup point exists.
+- `resources/views/admin/settings/shipping/configuration.blade.php`: added warning when `shipping_type` is `carrier_wise_shipping` but `carrierReady` is false, noting checkout uses Flat Rate fallback until fixed, with links to carriers/zone rates/flat-rate cost.
+- Verification: `php -l` passed for `ShippingChargeService.php` and `CartController.php`; `php artisan view:clear` run. Tinker check (sample US address, `carrier_wise_shipping`, 0 carrier rates, `flat_rate_shipping_cost=10.00`, pickup off/no open points) returned fallback `Standard Shipping` cost `10.0`, confirming a delivery option is available instead of a blocked checkout. UI/responsive screenshots not captured in this pass. Changes are currently uncommitted.
+
+## 441. (2026-11-23): Shop Vehicle Filter Performance — Fitment Indexes & Count Caching
+
+**Status: Completed**
+
+- Fixed high-priority search/filter slowness: `/search?make=Toyota` (no year) ~134s, `/search?year=2015` ~28s, year+make+model ~4s.
+- Root cause: `product_vehicle` has ~42,293,575 rows; existing indexes were `PRIMARY`, `idx_product (product_id)`, `idx_ymm (year,make,model)`, `idx_base_veh`. Make-leading filters could not use `idx_ymm`, causing full scans.
+- `database/migrations/2026_11_23_105841_add_vehicle_fitment_indexes_to_product_vehicle_table.php`: added `idx_my (make, year)` for make-leading fitment filters and `idx_model (model)` for model lookups; migration checks existing indexes before creating. Migration run/recorded (`--force`); index build on 42M rows took time (`idx_model` completed after initial migrate timeout, then migration was recorded).
+- `app/Http/Controllers/ShopController.php`:
+  - Added `paginateProducts()` to cache paginated total counts for 300s (`Cache::remember`, key from query SQL + bindings) and pass cached total to `paginate()`.
+  - Cached garage-vehicle match count in `applyVehicleFilter()` for 600s, keyed by vehicle ID + effective filter/query.
+  - Replaced 4 shop `paginate(24)->onEachSide(1)->withQueryString()` calls with `paginateProducts()`.
+- Verification: `php -l app/Http/Controllers/ShopController.php` passed; migration marked DONE; indexes present: `PRIMARY, idx_product, idx_ymm, idx_base_veh, idx_my, idx_model`. `EXPLAIN` confirmed `WHERE make='Toyota'` uses `idx_my` (ref, ~2,377,074 rows) and `WHERE year=2015` uses `idx_ymm` (ref, ~1,820,836 rows). Live before/after timing not re-measured in this pass; count-cache TTL is 5/10 min (stale-count tradeoff).

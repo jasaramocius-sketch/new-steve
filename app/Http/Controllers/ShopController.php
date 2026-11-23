@@ -115,6 +115,16 @@ class ShopController extends Controller
         return $query;
     }
 
+    private function paginateProducts($query, int $perPage = 24)
+    {
+        $countKey = 'shop.count.'.md5($query->toSql().'|'.serialize($query->getBindings()));
+        $total = Cache::remember($countKey, 300, function () use ($query) {
+            return (int) (clone $query)->toBase()->getCountForPagination();
+        });
+
+        return $query->paginate($perPage, ['*'], 'page', null, $total)->onEachSide(1)->withQueryString();
+    }
+
     private function applyVehicleFilter(Request $request, $query, bool $autoFirst = false)
     {
         $selectedVehicle = null;
@@ -149,9 +159,24 @@ class ShopController extends Controller
         // fall back to showing all products but keep the vehicle alert (with the 0
         // count) so the user knows no parts fit their vehicle.
         if ($selectedVehicle) {
-            $vehicleQuery = (clone $query);
-            $this->filterProducts($request, $vehicleQuery);
-            $vehicleMatchCount = $vehicleQuery->count();
+            $countKey = 'shop.vehicle_match_count.'.$selectedVehicle->id.'.'.md5(json_encode([
+                'base' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+                'search' => $request->get('search', ''),
+                'sort' => $request->get('sort', 'default'),
+                'min_price' => $request->get('min_price', ''),
+                'max_price' => $request->get('max_price', ''),
+                'brand' => $request->get('brand', ''),
+                'year' => $request->get('year', ''),
+                'make' => $request->get('make', ''),
+                'model' => $request->get('model', ''),
+            ]));
+            $vehicleMatchCount = Cache::remember($countKey, 600, function () use ($query, $request) {
+                $vehicleQuery = (clone $query);
+                $this->filterProducts($request, $vehicleQuery);
+
+                return $vehicleQuery->count();
+            });
 
             if ($vehicleMatchCount === 0) {
                 $request->merge(['year' => '', 'make' => '', 'model' => '']);
@@ -235,7 +260,7 @@ class ShopController extends Controller
         $this->filterProducts($request, $baseQuery, false);
 
         $this->filterProducts($request, $productsQuery, true);
-        $products = $productsQuery->paginate(24)->onEachSide(1)->withQueryString();
+        $products = $this->paginateProducts($productsQuery);
 
         $currentBrand = $request->attributes->get('currentBrand');
 
@@ -334,7 +359,7 @@ class ShopController extends Controller
         $this->filterProducts($request, $baseQuery, false);
 
         $this->filterProducts($request, $productsQuery, true);
-        $products = $productsQuery->paginate(24)->onEachSide(1)->withQueryString();
+        $products = $this->paginateProducts($productsQuery);
         $pageTitle = 'Classified Products';
 
         return view('shop.index', array_merge(
@@ -380,7 +405,7 @@ class ShopController extends Controller
         $this->filterProducts($request, $baseQuery, false);
 
         $this->filterProducts($request, $productsQuery, true);
-        $products = $productsQuery->paginate(24)->onEachSide(1)->withQueryString();
+        $products = $this->paginateProducts($productsQuery);
 
         return view('shop.index', array_merge(
             compact('products', 'currentCategory'),
@@ -418,7 +443,7 @@ class ShopController extends Controller
         $this->filterProducts($request, $baseQuery, false);
 
         $this->filterProducts($request, $productsQuery, true);
-        $products = $productsQuery->paginate(24)->onEachSide(1)->withQueryString();
+        $products = $this->paginateProducts($productsQuery);
 
         return view('shop.index', array_merge(
             compact('products', 'currentCategory', 'currentSubcategory', 'currentChildcategory'),

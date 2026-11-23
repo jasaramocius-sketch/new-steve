@@ -56,9 +56,10 @@ class TwoFactorController extends Controller
         }
 
         $remember = (bool) $request->session()->get('two_factor_remember');
+        $redirectTo = $request->session()->get('two_factor_redirect');
 
         Auth::login($user, $remember);
-        $request->session()->forget(['two_factor_user_id', 'two_factor_remember']);
+        $request->session()->forget(['two_factor_user_id', 'two_factor_remember', 'two_factor_redirect']);
         $request->session()->regenerate();
         $request->session()->put([
             'user_logged_in' => true,
@@ -68,6 +69,11 @@ class TwoFactorController extends Controller
         ]);
 
         (new AuthController())->mergeGuestData();
+
+        if (is_string($redirectTo) && str_starts_with($redirectTo, '/') && ! str_starts_with($redirectTo, '//')
+            && ! in_array($user->role, ['master_admin', 'admin', 'staff'], true)) {
+            return redirect()->to($redirectTo);
+        }
 
         return redirect()->route(in_array($user->role, ['master_admin', 'admin', 'staff'])
             ? 'admin.dashboard'

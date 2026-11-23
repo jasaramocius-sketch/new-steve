@@ -147,7 +147,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
                     <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1"><i class="fas fa-paper-plane"></i> Create Ticket</button>
                 </div>
             </form>

@@ -55,15 +55,15 @@
               </div>
             </div>
             
-            <div class="row mb-1 mt-2">
-              <div class="col d-flex">
+            <div class="d-flex flex-column mb-1 mt-3 gap-2">
+              <div class="d-flex login-forgot">
+                <a href="{{ route('password.request') }}" class="a-tag-text-hover">Forgot Password?</a>
+              </div>
+              <div class="d-flex">
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="remember" value="1" id="remember_me">
                   <label class="form-check-label" for="remember_me">Remember Me</label>
                 </div>
-              </div>
-              <div class="col d-flex justify-content-end login-forgot">
-                <a href="{{ route('password.request') }}" class="a-tag-text-hover">Forgot Password?</a>
               </div>
             </div>
 

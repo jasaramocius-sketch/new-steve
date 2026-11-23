@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Rules\ZipCodeForCountry;
 
 class AdminController extends Controller
 {
@@ -146,7 +147,7 @@ class AdminController extends Controller
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
-            'postal_code' => 'nullable|string|max:255|regex:/^[A-Za-z0-9\-\s]{3,20}$/',
+            'postal_code' => ['nullable', 'string', 'max:255', new ZipCodeForCountry($request->input('country'))],
         ]);
 
         if ($request->filled('image_from_manager')) {

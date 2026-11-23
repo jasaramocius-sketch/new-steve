@@ -8,6 +8,8 @@ Directory (tenant) ID:
 5dd5060d-c265-470a-bd6a-496142115010
 
 
+new task add in TASKS.md file
+
 add and enable mail service jisje users ko bhi mail send ho ske
 
 
@@ -243,4 +245,13 @@ StAutoparts_Full_QA_Report_Admin_and_Frontend_2026-11-19(Admin Issues).csv me jo
 
 
 
+Critical - Checkout - Checkout blocked for every address	Delivery Info: 'No home-delivery rate is available… Please choose pickup' with no pickup option; 'Continue to Payment' reloads with 'No delivery option is available for this address.' Tried Alameda CA, New York, Houston, Toronto, Ahmedabad. - ROOT CAUSE FOUND IN ADMIN: carrier-wise shipping selected with no carriers, and pickup enabled with no pickup points (see A1, A2). Configure shipping rates.
 
+
+Fix this
+
+High -	
+Search / Filter - 
+Vehicle filter extremely slow -	
+/search?make=Toyota (no year): 134 s. /search?year=2015: 28 s. Year+Make+Model: about 4 s. -	
+Add DB indexes on fitment (year, make, model); cache counts. 

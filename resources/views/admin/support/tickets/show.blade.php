@@ -79,7 +79,7 @@
                         @csrf
                         <div class="mb-2">
                             <label for="reply-message" class="form-label">Reply</label>
-                            <textarea id="reply-message" name="message" rows="4" class="form-control" placeholder="Type your reply..." required></textarea>
+                            <textarea id="reply-message" name="message" rows="4" class="form-control textarea-control" placeholder="Type your reply..." required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1"><i class="fas fa-paper-plane"></i> Send Reply</button>
                     </form>

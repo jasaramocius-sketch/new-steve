@@ -11,7 +11,7 @@
 @section('content')
 
 @php
-    $defaultShippingMethod = $homeDeliveryAvailable ? 'home_delivery' : 'pickup';
+    $defaultShippingMethod = $homeDeliveryAvailable ? 'home_delivery' : ($pickupEnabled ? 'pickup' : 'home_delivery');
     $selectedShippingMethod = old('shipping_method', session('shipping_info.method', $defaultShippingMethod));
     if (! in_array($selectedShippingMethod, ['home_delivery', 'pickup'], true)) {
         $selectedShippingMethod = $defaultShippingMethod;
@@ -23,6 +23,7 @@
     }
     $selectedPickupPointId = (string) old('pickup_point_id', session('shipping_info.pickup_point_id', ''));
     $selectedShippingRateId = (string) old('shipping_rate_id', session('shipping_info.rate_id', $shippingRates->first()?->id ?? ''));
+    $hasAnyDeliveryOption = $homeDeliveryAvailable || $pickupEnabled;
 @endphp
 
 @include('partials.checkout-steps', ['activeStep' => 3])
@@ -92,7 +93,7 @@
                             <span class="flex-grow-1 pl-3 fw-600">Home Delivery</span>
                           </span>
                         </label>
-                        @if($shippingType === 'carrier_wise_shipping')
+                        @if($shippingRates->isNotEmpty())
                         <div class="mt-3 home-delivery-rates" id="home-delivery-rates" @unless($selectedShippingMethod === 'home_delivery') hidden @endunless>
                           @foreach($shippingRates as $rate)
                           <label class="d-flex align-items-start border p-3 mb-2">
@@ -111,6 +112,7 @@
                           <div class="d-flex align-items-start border p-3 mb-2">
                             <span class="flex-grow-1">
                               <strong>{{ $standardShipping['carrier_name'] ?? 'Standard Shipping' }}</strong>
+                              @if(!empty($standardShipping['delivery_estimate']))<span class="text-muted"> · {{ $standardShipping['delivery_estimate'] }}</span>@endif
                             </span>
                             <strong>{{ currency_format($standardShipping['cost'] ?? 0) }}</strong>
                           </div>
@@ -118,7 +120,19 @@
                         @endif
                       </div>
                       @elseif($homeDeliveryEnabled)
-                        <div class="col-12 text-muted">No home-delivery rate is available for {{ $billing['city'] ?? '' }}, {{ $billing['state'] ?? '' }}, {{ $billing['country'] ?? '' }}. Please choose pickup or contact the store.</div>
+                        <div class="col-12 text-muted">
+                          No home-delivery rate is available for {{ $billing['city'] ?? '' }}, {{ $billing['state'] ?? '' }}, {{ $billing['country'] ?? '' }}.
+                          @if($pickupEnabled)
+                            Please choose pickup or contact the store.
+                          @else
+                            Please contact the store for assistance.
+                          @endif
+                        </div>
+                      @endif
+                      @if(!$hasAnyDeliveryOption)
+                        <div class="col-12 mt-2">
+                          <div class="alert alert-warning mb-0">No delivery option is currently available for this address. Please contact the store for assistance.</div>
+                        </div>
                       @endif
                       @if($pickupEnabled)
                       <div class="{{ $homeDeliveryAvailable ? 'col-6' : 'col-12' }}">
@@ -151,7 +165,7 @@
                 <i class="fas fa-arrow-left fs-16"></i>
                 Return to shop
               </a>
-              <button type="submit" class="btn btn-primary fw-700 px-4 steve-btn">Continue to Payment</button>
+              <button type="submit" class="btn btn-primary fw-700 px-4 steve-btn" @disabled(!$hasAnyDeliveryOption)>Continue to Payment</button>
             </div>
             </div>
 

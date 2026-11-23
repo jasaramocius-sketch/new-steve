@@ -36,6 +36,22 @@ class ShippingChargeService
     }
 
     /**
+     * A safe flat-rate shipping quote, used as a fallback when a selected
+     * shipping method cannot produce rates for the given address/cart.
+     */
+    public function flatRateQuote(array $address = []): array
+    {
+        $cost = (float) Setting::get('flat_rate_shipping_cost', 0);
+
+        return [
+            'cost' => round(max(0, $cost), 2),
+            'carrier_name' => 'Standard Shipping',
+            'delivery_estimate' => null,
+            'zone_name' => null,
+        ];
+    }
+
+    /**
      * Calculate the single delivery charge for non-carrier shipping methods.
      * Carrier based shipping is resolved from shipping zone rates instead.
      */

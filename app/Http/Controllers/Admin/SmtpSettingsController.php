@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 use Throwable;
 
 class SmtpSettingsController extends Controller
@@ -33,9 +34,10 @@ class SmtpSettingsController extends Controller
             'mailFromName' => $settings['mail_from_name'] ?? config('mail.from.name', config('app.name')),
             'mailgunDomain' => $settings['mailgun_domain'] ?? '',
             'mailgunSecretConfigured' => ! empty($settings['mailgun_secret']),
-            'mailTenantId' => $settings['mail_tenant_id'] ?? '',
-            'mailClientId' => $settings['mail_client_id'] ?? '',
-            'mailClientSecretConfigured' => ! empty($settings['mail_client_secret']),
+            'mailTenantId' => $settings['mail_tenant_id'] ?? config('services.microsoft_mail.tenant_id', ''),
+            'mailClientId' => $settings['mail_client_id'] ?? config('services.microsoft_mail.client_id', ''),
+            'mailClientSecretConfigured' => ! empty($settings['mail_client_secret'])
+                || ! empty(config('services.microsoft_mail.client_secret')),
             'testEmail' => $settings['header_email'] ?? config('mail.from.address', ''),
         ]);
     }
@@ -61,7 +63,12 @@ class SmtpSettingsController extends Controller
         if ($validated['mail_driver'] === 'mailgun' && ! $request->filled('mailgun_secret') && ! Setting::get('mailgun_secret')) {
             return back()->withErrors(['mailgun_secret' => 'Enter a Mailgun API key to use this driver.'])->withInput();
         }
-        if ($validated['mail_driver'] === 'microsoft' && ! $request->filled('mail_client_secret') && ! Setting::get('mail_client_secret')) {
+        if (
+            $validated['mail_driver'] === 'microsoft'
+            && ! $request->filled('mail_client_secret')
+            && ! Setting::get('mail_client_secret')
+            && ! config('services.microsoft_mail.client_secret')
+        ) {
             return back()->withErrors(['mail_client_secret' => 'Enter a Microsoft client secret to use this driver.'])->withInput();
         }
 
@@ -90,9 +97,33 @@ class SmtpSettingsController extends Controller
                 $message->to($validated['email'])->subject('Mail configuration test');
             });
         } catch (Throwable $exception) {
-            logger()->warning('Mail configuration test failed.', ['exception' => get_class($exception)]);
+            $failureType = 'mail_transport';
+            $httpStatus = null;
+            $errorMessage = 'Test email could not be sent. Check the selected mail driver and configuration.';
 
-            return back()->with('error', 'Test email could not be sent. Check the selected mail driver and configuration.');
+            if (
+                $exception instanceof RuntimeException
+                && preg_match('/Microsoft Graph authentication failed with HTTP (\d{3})\./', $exception->getMessage(), $matches)
+            ) {
+                $failureType = 'microsoft_graph_authentication';
+                $httpStatus = (int) $matches[1];
+                $errorMessage = 'Microsoft Graph authentication failed. Check that the Tenant ID and Client ID match, and that the current Client Secret Value (not its ID) is configured.';
+            } elseif (
+                $exception instanceof RuntimeException
+                && preg_match('/Microsoft Graph sendMail failed with HTTP (\d{3})\./', $exception->getMessage(), $matches)
+            ) {
+                $failureType = 'microsoft_graph_send';
+                $httpStatus = (int) $matches[1];
+                $errorMessage = 'Microsoft Graph rejected the send request. Check Mail.Send admin consent and that the From Address is a permitted mailbox.';
+            }
+
+            logger()->warning('Mail configuration test failed.', [
+                'exception' => get_class($exception),
+                'failure_type' => $failureType,
+                'http_status' => $httpStatus,
+            ]);
+
+            return back()->with('error', $errorMessage);
         }
 
         $message = config('mail.default') === 'log'

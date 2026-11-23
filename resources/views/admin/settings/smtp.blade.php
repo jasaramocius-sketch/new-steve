@@ -155,12 +155,20 @@ const mailDriverSelect = document.getElementById('mail-driver');
 const mailDriverSections = document.querySelectorAll('[data-mail-driver]');
 
 function updateMailDriverFields() {
+    const selected = mailDriverSelect ? mailDriverSelect.value : '';
     mailDriverSections.forEach((section) => {
-        section.hidden = section.dataset.mailDriver !== mailDriverSelect.value;
+        const show = section.dataset.mailDriver === selected;
+        section.hidden = !show;
+        section.classList.toggle('d-none', !show);
+        if (show) {
+            section.classList.add('d-flex');
+        }
     });
 }
 
-mailDriverSelect.addEventListener('change', updateMailDriverFields);
-updateMailDriverFields();
+if (mailDriverSelect) {
+    mailDriverSelect.addEventListener('change', updateMailDriverFields);
+    updateMailDriverFields();
+}
 </script>
 @endsection

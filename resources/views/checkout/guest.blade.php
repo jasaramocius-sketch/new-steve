@@ -19,9 +19,16 @@
           @csrf
           <div class="border bg-white p-4 mb-4">
 
-            <h5 class="fw-700 mb-4" style="font-size: 15px;">Enter Your Shipping Details</h5>
+            <div class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4" role="alert">
+              <div>
+                <strong>Already have an account?</strong> Login first to continue checkout with your saved address and details.
+              </div>
+              <a href="{{ route('login', ['redirect' => route('checkout', [], false)]) }}" class="btn btn-primary btn-sm fs-14 fw-700 steve-btn px-3">Login to Continue</a>
+            </div>
+
+            <h5 class="fw-700 mb-4" style="font-size: 15px;">Or continue as Guest</h5>
             <p class="text-muted mb-3" style="font-size: 13px;">
-              You don't need an account to place an order. Your details are only used to deliver and confirm your order.
+              You can place an order without an account. Your details are only used to deliver and confirm your order.
             </p>
 
             <div class="row g-3 mb-3">
@@ -37,7 +44,7 @@
                 'value' => old(),
                 'withFullName' => true,
                 'withPhone' => true,
-                'required' => ['full_name', 'phone', 'address', 'country', 'city', 'zip_code'],
+                'required' => ['full_name', 'phone', 'address', 'country', 'state', 'city', 'zip_code'],
             ])
 
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-4">

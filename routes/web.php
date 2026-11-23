@@ -208,6 +208,10 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->middl
 Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('password.update');
 
+Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');
+Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])->middleware('throttle:6,1')->name('verification.send');
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+
 /*
 |--------------------------------------------------------------------------
 | USER DASHBOARD

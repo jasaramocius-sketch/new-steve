@@ -9,6 +9,7 @@
             if (flashMessages.error) toastr.error(flashMessages.error);
             if (flashMessages.warning) toastr.warning(flashMessages.warning);
             if (flashMessages.info) toastr.info(flashMessages.info);
+            if (flashMessages.status) toastr.success(flashMessages.status);
 
             document.querySelectorAll('textarea.texteditor, textarea#editor').forEach(function(editor) {
                 if (window.marked && editor.value && !/<[a-z][^>]*>/i.test(editor.value)) {
