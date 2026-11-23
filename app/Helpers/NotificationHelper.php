@@ -53,8 +53,8 @@ class NotificationHelper
     {
         return Notification::create([
             'user_id' => $user->id,
-            'title' => 'Welcome to STAutoParts!',
-            'message' => 'Hi '.e($user->name).', welcome to STAutoParts! Browse our wide range of auto parts and enjoy shopping.',
+            'title' => 'Welcome to STEVE AutoParts!',
+            'message' => 'Hi '.e($user->name).', welcome to STEVE AutoParts! Browse our wide range of auto parts and enjoy shopping.',
             'is_read' => false,
         ]);
     }

@@ -160,7 +160,7 @@
                             <div class="form-group mb-3">
                                 <label class="form-label"><strong>Footer Copyright Text</strong></label>
                                 <input type="text" name="footer_copyright" class="form-control"
-                                    value="{{ $settings['footer_copyright'] ?? 'COPYRIGHT &copy; :year. All Rights Reserved By STautoparts' }}">
+                                    value="{{ $settings['footer_copyright'] ?? 'COPYRIGHT &copy; :year. All Rights Reserved By STEVE AutoParts' }}">
                             </div>
                         </div>
                         </div>

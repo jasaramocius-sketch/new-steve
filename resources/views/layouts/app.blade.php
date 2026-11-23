@@ -88,6 +88,9 @@
     @stack('page-builder-css')
 
     @include('partials.seo-analytics')
+    @if (\App\Services\Recaptcha::isV3() && \App\Services\Recaptcha::anyEnabled())
+        <script src="https://www.google.com/recaptcha/api.js?render={{ urlencode(\App\Services\Recaptcha::siteKey()) }}" async defer></script>
+    @endif
 </head>
 <body id="@yield('page-id', 'default-page-id')" class="site-root @yield('page-class', 'default-body-class')">
 
@@ -684,16 +687,19 @@
     </script>
 <script>
     @if(session('success'))
-        document.addEventListener('DOMContentLoaded', function(){ toastr.success("{{ session('success') }}"); });
+        document.addEventListener('DOMContentLoaded', function(){ toastr.success(@json(session('success'))); });
     @endif
     @if(session('error'))
-        document.addEventListener('DOMContentLoaded', function(){ toastr.error("{{ session('error') }}"); });
+        document.addEventListener('DOMContentLoaded', function(){ toastr.error(@json(session('error'))); });
     @endif
     @if(session('warning'))
-        document.addEventListener('DOMContentLoaded', function(){ toastr.warning("{{ session('warning') }}"); });
+        document.addEventListener('DOMContentLoaded', function(){ toastr.warning(@json(session('warning'))); });
     @endif
     @if(session('info'))
-        document.addEventListener('DOMContentLoaded', function(){ toastr.info("{{ session('info') }}"); });
+        document.addEventListener('DOMContentLoaded', function(){ toastr.info(@json(session('info'))); });
+    @endif
+    @if(session('status'))
+        document.addEventListener('DOMContentLoaded', function(){ toastr.success(@json(session('status'))); });
     @endif
 
     // Mobile search toggle

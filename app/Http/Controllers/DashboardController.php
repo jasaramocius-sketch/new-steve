@@ -15,6 +15,7 @@ use App\Models\Vehicle;
 use App\Models\Wishlist;
 use App\Services\ProductReviewEligibility;
 use Illuminate\Http\Request;
+use App\Rules\ZipCodeForCountry;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -29,7 +30,7 @@ class DashboardController extends Controller
 
         $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -39,7 +40,7 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', [
             'totalOrders' => Order::count(),
-            'totalRevenue' => Order::sum('total_amount'),
+            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
             'pendingOrders' => Order::where('status', 'pending')->count(),
@@ -154,7 +155,7 @@ class DashboardController extends Controller
 
         $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -164,7 +165,7 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', [
             'totalOrders' => Order::count(),
-            'totalRevenue' => Order::sum('total_amount'),
+            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
             'pendingOrders' => Order::where('status', 'pending')->count(),
@@ -528,7 +529,7 @@ class DashboardController extends Controller
             'city' => 'required|string|max:100',
             'state' => 'nullable|string|max:100',
             'country' => 'required|string|max:100',
-            'zip_code' => 'required|string|max:20|regex:/^[0-9a-zA-Z\-\s]+$/',
+            'zip_code' => ['required', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
             'set_default' => 'nullable|boolean',
         ]);
 
@@ -553,7 +554,7 @@ class DashboardController extends Controller
             'city' => 'required|string|max:100',
             'state' => 'nullable|string|max:100',
             'country' => 'required|string|max:100',
-            'zip_code' => 'required|string|max:20|regex:/^[0-9a-zA-Z\-\s]+$/',
+            'zip_code' => ['required', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
             'set_default' => 'nullable|boolean',
         ]);
 

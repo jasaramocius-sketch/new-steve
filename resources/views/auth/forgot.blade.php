@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'auth-forgot-page', 'pageClass' => 'auth-forgot-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Forgot Password - StAutoparts',
-        'metaTitle' => 'Forgot Password | StAutoparts',
+        'pageTitle' => 'Forgot Password - Steve Autoparts',
+        'metaTitle' => 'Forgot Password | Steve Autoparts',
         'metaDescription' => 'Request a password reset link for your StAutoparts account.',
     ])
 @endsection
@@ -19,14 +19,11 @@
           <h4 class="text-center">Forgot Password</h4>
           <p class="text-center text-muted">Enter your email address and we'll send you a link to reset your password.</p>
 
-          @if(session('status'))
-            <div class="alert alert-success">{{ session('status') }}</div>
-            @if(session('reset_link'))
-              <div class="alert alert-info">
-                <strong>Local reset link:</strong><br>
-                <a href="{{ session('reset_link') }}">{{ session('reset_link') }}</a>
-              </div>
-            @endif
+          @if(session('reset_link'))
+            <div class="alert alert-info">
+              <strong>Local reset link:</strong><br>
+              <a href="{{ session('reset_link') }}">{{ session('reset_link') }}</a>
+            </div>
           @endif
 
           @if($errors->any())

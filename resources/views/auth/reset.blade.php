@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'auth-reset-page', 'pageClass' => 'auth-reset-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Reset Password - StAutoparts',
-        'metaTitle' => 'Reset Password | StAutoparts',
+        'pageTitle' => 'Reset Password - Steve Autoparts',
+        'metaTitle' => 'Reset Password | Steve Autoparts',
         'metaDescription' => 'Set a new password for your StAutoparts account.',
     ])
 @endsection
@@ -17,10 +17,6 @@
       <div class="col-lg-6 mx-auto reg-area">
         <div class="reg-content">
           <h4 class="text-center">Reset Password</h4>
-
-          @if(session('status'))
-            <div class="alert alert-success">{{ session('status') }}</div>
-          @endif
 
           @if($errors->any())
             <div class="alert alert-danger">{{ $errors->first() }}</div>

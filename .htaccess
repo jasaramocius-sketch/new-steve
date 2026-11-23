@@ -3,6 +3,10 @@ Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # This host already points directly to public/, so skip the legacy subdirectory rewrites below.
+    RewriteCond %{HTTP_HOST} ^new-steve\.local(?::\d+)?$ [NC]
+    RewriteRule ^ - [S=4]
+
     RewriteRule ^index\.php$ - [L]
 
     RewriteCond %{REQUEST_URI} !^/new-steve/public(?:/|$)

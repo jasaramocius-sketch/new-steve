@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-wishlist-page', 'pageClass' => 'user-wishlist-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'My Wishlist - StAutoparts',
-        'metaTitle' => 'My Wishlist | StAutoparts',
+        'pageTitle' => 'My Wishlist - Steve Autoparts',
+        'metaTitle' => 'My Wishlist | Steve Autoparts',
         'metaDescription' => 'View your wishlist at StAutoparts.',
     ])
 @endsection

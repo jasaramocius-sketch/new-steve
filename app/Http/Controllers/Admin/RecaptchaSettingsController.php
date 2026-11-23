@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\Recaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Throwable;
@@ -16,6 +17,7 @@ class RecaptchaSettingsController extends Controller
 
         return view('admin.settings.google-recaptcha', [
             'settings' => $settings,
+            'globalEnabled' => Recaptcha::globallyEnabled(),
             'secretConfigured' => !empty($settings['recaptcha_secret_key']),
             'v3SecretConfigured' => !empty($settings['recaptcha_v3_secret_key']),
         ]);
@@ -25,6 +27,7 @@ class RecaptchaSettingsController extends Controller
     {
         $validated = $request->validate([
             'recaptcha_version' => 'required|in:v2,v3',
+            'recaptcha_enabled' => 'nullable|boolean',
             'recaptcha_site_key' => 'nullable|string|max:255',
             'recaptcha_secret_key' => 'nullable|string|max:255',
             'recaptcha_v3_site_key' => 'nullable|string|max:255',
@@ -36,6 +39,7 @@ class RecaptchaSettingsController extends Controller
         ]);
 
         Setting::set('recaptcha_version', $validated['recaptcha_version']);
+        Setting::set('recaptcha_enabled', $request->boolean('recaptcha_enabled') ? '1' : '0');
         Setting::set('recaptcha_site_key', $validated['recaptcha_site_key'] ?? '');
         Setting::set('recaptcha_v3_site_key', $validated['recaptcha_v3_site_key'] ?? '');
         Setting::set('recaptcha_v3_score', (string) ($validated['recaptcha_v3_score'] ?? '0.5'));
@@ -57,6 +61,7 @@ class RecaptchaSettingsController extends Controller
     public function reset()
     {
         Setting::set('recaptcha_version', 'v2');
+        Setting::set('recaptcha_enabled', '0');
         Setting::set('recaptcha_site_key', '');
         Setting::set('recaptcha_secret_key', '');
         Setting::set('recaptcha_v3_site_key', '');
@@ -67,7 +72,7 @@ class RecaptchaSettingsController extends Controller
         Setting::set('recaptcha_contact', '0');
 
         return redirect()->route('admin.settings.google-recaptcha')
-            ->with('success', 'Google reCAPTCHA settings have been reset. All keys were removed and reCAPTCHA is disabled on all forms.');
+            ->with('success', 'Google reCAPTCHA settings have been reset. All keys were removed, the master switch is Inactive, and reCAPTCHA is disabled on all forms.');
     }
 
     public static function decryptSecret(?string $value): ?string

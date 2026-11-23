@@ -17,7 +17,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-primary fs-14 fw-600 steve-btn" data-bs-dismiss="modal"><i class="fas fa-times"></i>Cancel</button>
-          <button type="submit" class="btn btn-primary fs-14 fw-600 steve-btn" id="addressFormSubmit"><i class="fas fa-save"></i>Save Address</button>
+          <button type="submit" class="btn btn-primary fs-14 fw-600 steve-btn gap-1" id="addressFormSubmit" data-bs-dismiss="modal"><i class="fas fa-save"></i>Save Address</button>
         </div>
       </form>
     </div>

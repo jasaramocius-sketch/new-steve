@@ -456,6 +456,7 @@
             // belonged to the old country) so refresh repopulates cleanly.
             if (stateEl) { stateEl.value = ''; stateEl.setAttribute('data-selected', ''); }
             if (cityEl)  { cityEl.value = ''; cityEl.setAttribute('data-selected', ''); }
+            syncZipFieldForCountry(countryEl.closest('form'));
             refresh();
         });
 
@@ -479,6 +480,7 @@
                 // Sync the searchable widget display on every modal open
                 // (covers e.g. form.reset() before the modal is shown).
                 if (el.dispatchEvent) el.dispatchEvent(new Event('addrFieldUpdated', { bubbles: true }));
+                syncZipFieldForCountry(el.closest('form'));
             });
         });
     }
@@ -711,18 +713,52 @@
         alert(message);
     }
 
+    function isUsCountryName(country) {
+        var c = String(country || '').trim().toLowerCase();
+        return c === 'united states' || c === 'united states of america' || c === 'usa' || c === 'us';
+    }
+
+    function zipValidationForForm(form) {
+        var countryField = form ? form.querySelector('[name="country"]') : null;
+        var country = countryField ? countryField.value : '';
+        if (isUsCountryName(country)) {
+            return {
+                pattern: /^\d{5}(-\d{4})?$/,
+                message: 'Please enter a valid US ZIP code (e.g. 12345 or 12345-6789).'
+            };
+        }
+        return {
+            pattern: /^[A-Za-z0-9\-\s]{3,20}$/,
+            message: 'Please enter a valid ZIP / Postal Code.'
+        };
+    }
+
+    function syncZipFieldForCountry(form) {
+        if (!form) return;
+        var zipField = form.querySelector('[name="zip_code"], [name="postal_code"]');
+        if (!zipField) return;
+        var rule = zipValidationForForm(form);
+        var us = isUsCountryName((form.querySelector('[name="country"]') || {}).value || '');
+        zipField.setAttribute('pattern', us ? '\\d{5}(-\\d{4})?' : '[A-Za-z0-9\\-\\s]{3,20}');
+        zipField.setAttribute('title', us ? 'Enter a valid US ZIP code (e.g. 12345 or 12345-6789)' : 'Enter a valid zip code or postal code');
+        zipField.setAttribute('placeholder', us ? '12345 or 12345-6789' : 'ZIP / Postal code');
+        zipField.setAttribute('inputmode', 'text');
+        zipField.dataset.zipRuleMessage = rule.message;
+    }
+
     function validateAddressForm(form) {
         if (!form || !(form instanceof HTMLFormElement)) return true;
         if (form.dataset && form.dataset.addressAjax === '1') return true;
         if (!form.querySelector('.address-country-select, .address-state-select, .address-city-select')) return true;
 
+        var zipRule = zipValidationForForm(form);
         var checks = [
             { name: 'full_name', label: 'Full Name', required: form.querySelector('[name="full_name"]') && form.querySelector('[name="full_name"]').hasAttribute('required') },
             { name: 'phone', label: 'Phone', required: form.querySelector('[name="phone"]') && form.querySelector('[name="phone"]').hasAttribute('required'), pattern: /^[0-9+\-\s()]{7,20}$/ },
             { name: 'country', label: 'Country', required: form.querySelector('[name="country"]') && form.querySelector('[name="country"]').hasAttribute('required'), pattern: /.+/ },
             { name: 'state', label: 'State', required: form.querySelector('[name="state"]') && form.querySelector('[name="state"]').hasAttribute('required'), pattern: /.+/ },
             { name: 'city', label: 'City', required: form.querySelector('[name="city"]') && form.querySelector('[name="city"]').hasAttribute('required'), pattern: /.+/ },
-            { name: 'zip_code', label: 'Zip Code', selector: '[name="zip_code"], [name="postal_code"]', required: (function(){ var el = form.querySelector('[name="zip_code"], [name="postal_code"]'); return !!el && el.hasAttribute('required'); })(), pattern: /^[A-Za-z0-9\-\s]{3,20}$/ },
+            { name: 'zip_code', label: 'Zip Code', selector: '[name="zip_code"], [name="postal_code"]', required: (function(){ var el = form.querySelector('[name="zip_code"], [name="postal_code"]'); return !!el && el.hasAttribute('required'); })(), pattern: zipRule.pattern, message: zipRule.message },
             { name: 'address', label: 'Address', required: form.querySelector('[name="address"]') && form.querySelector('[name="address"]').hasAttribute('required'), pattern: /\S/ }
         ];
 
@@ -748,7 +784,7 @@
 
             if (value && item.pattern && !item.pattern.test(value)) {
                 focusField(field);
-                showAddressWarning('Please enter a valid ' + item.label + '.');
+                showAddressWarning(item.message || ('Please enter a valid ' + item.label + '.'));
                 return false;
             }
         }
@@ -766,6 +802,13 @@
             .forEach(wireAddressSearch);
 
         document.querySelectorAll('.address-country-select').forEach(wireGroup);
+
+        document.querySelectorAll('form').forEach(function(form) {
+            if (form.querySelector('.address-country-select, .address-state-select, .address-city-select')) {
+                syncZipFieldForCountry(form);
+                form.addEventListener('reset', function() { setTimeout(function() { syncZipFieldForCountry(form); }, 0); });
+            }
+        });
 
         document.addEventListener('submit', function(e) {
             var form = e.target;

@@ -192,12 +192,15 @@
                             <label class="form-label fw-semibold small text-muted text-uppercase">Transaction ID</label>
                             <div id="transactionIdPaid">
                                 <div class="input-group">
-                                    <input type="text" name="transaction_id" class="form-control" value="" placeholder="e.g. pay_xxxxxxxxxxxx">
+                                    <input type="text" name="transaction_id" class="form-control @error('transaction_id') is-invalid @enderror" value="" placeholder="e.g. pay_xxxxxxxxxxxx">
                                     <button type="button" class="btn btn-outline-secondary steve-btn" id="generateTxnBtn" title="Generate a random Transaction ID">
                                         <i class="fas fa-dice me-1"></i> Generate
                                     </button>
                                 </div>
                                 <small class="text-muted d-block">Must be unique. Can only be set once, and only when payment is Paid.</small>
+                                @error('transaction_id')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div id="transactionIdLocked" style="display:none;">
                                 <input type="text" class="form-control" value="{{ $transactionId }}" readonly>
@@ -329,6 +332,7 @@
     var txnIdExists = @json($transactionId !== '');
     var paySelect = document.querySelector('select[name="payment_status"]');
     var group = document.getElementById('transactionIdGroup');
+    var txnInput = document.querySelector('#transactionIdPaid input[name="transaction_id"]');
     if (!paySelect || !group) return;
 
     var paidDiv = document.getElementById('transactionIdPaid');
@@ -340,9 +344,11 @@
             paidDiv.style.display = 'none';
             notPaidDiv.style.display = 'none';
             lockedDiv.style.display = 'block';
+            if (txnInput) txnInput.required = false;
             return;
         }
         var val = paySelect.value;
+        if (txnInput) txnInput.required = (val === 'paid');
         if (val === 'paid') {
             lockedDiv.style.display = 'none';
             notPaidDiv.style.display = 'none';
@@ -363,7 +369,6 @@
         return 'pay_' + rnd;
     }
 
-    var txnInput = document.querySelector('#transactionIdPaid input[name="transaction_id"]');
     var generateBtn = document.getElementById('generateTxnBtn');
     if (generateBtn && txnInput) {
         generateBtn.addEventListener('click', function() {

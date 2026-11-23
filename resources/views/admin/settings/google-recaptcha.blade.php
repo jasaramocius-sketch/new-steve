@@ -16,7 +16,11 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h2 class="h6 mb-0">Google reCAPTCHA Settings</h2>
+            <h2 class="h6 mb-0">Google reCAPTCHA Settings
+                <span class="badge {{ $globalEnabled ? 'bg-success' : 'bg-secondary' }} text-white ms-2">
+                    {{ $globalEnabled ? 'Active' : 'Inactive' }}
+                </span>
+            </h2>
             <form action="{{ route('admin.settings.google-recaptcha.reset') }}" method="POST"
                   onsubmit="return confirm('Reset reCAPTCHA settings? This will remove all saved keys and disable reCAPTCHA on Login, Register, and Contact forms.');">
                 @csrf
@@ -28,6 +32,17 @@
         <div class="card-body">
             <form action="{{ route('admin.settings.google-recaptcha.update') }}" method="POST">
                 @csrf
+
+                <div class="form-group row">
+                    <label class="col-md-3 col-form-label" for="recaptcha-enabled">Status</label>
+                    <div class="col-md-9">
+                        <select id="recaptcha-enabled" name="recaptcha_enabled" class="form-control form-select" required>
+                            <option value="1" @selected(old('recaptcha_enabled', $globalEnabled ? '1' : '0') === '1')>Active — enforce reCAPTCHA on selected forms</option>
+                            <option value="0" @selected(old('recaptcha_enabled', $globalEnabled ? '1' : '0') === '0')>Inactive — disable reCAPTCHA everywhere</option>
+                        </select>
+                        <small class="text-muted">Master switch. Inactive stops all widget rendering and server-side verification, but keeps the form choices and keys below saved.</small>
+                    </div>
+                </div>
 
                 <div class="form-group row">
                     <label class="col-md-3 col-form-label" for="recaptcha-version">reCAPTCHA Version</label>
@@ -87,11 +102,14 @@
                             <small class="text-muted">0.0 = likely bot, 1.0 = likely human. Recommended: 0.5.</small>
                         </div>
                     </div>
+                    <div class="alert alert-info mb-0" role="note">
+                        The reCAPTCHA v3 badge appears across customer-facing storefront pages. The form options below control which forms submit and verify a reCAPTCHA token. Add each storefront hostname to the allowed domains in Google reCAPTCHA settings.
+                    </div>
                 </div>
 
                 <hr>
 
-                <div class="form-group row">
+                <div class="form-group row" id="recaptcha-form-options">
                     <div class="col-md-3 col-form-label">Enable on</div>
                     <div class="col-md-9 mt-1">
                         <div class="form-check mb-2">
@@ -106,6 +124,9 @@
                             <input class="form-check-input" type="checkbox" name="recaptcha_contact" value="1" id="recaptcha-contact" @checked(($settings['recaptcha_contact'] ?? '0') == '1')>
                             <label class="form-check-label m-0" for="recaptcha-contact">Contact Form</label>
                         </div>
+                        <small id="recaptcha-global-note" class="text-muted d-block mt-2">
+                            {{ $globalEnabled ? 'Master switch is Active — the selected forms will use reCAPTCHA once valid keys are saved.' : 'Master switch is Inactive — nothing is verified on the storefront until you set it to Active and save.' }}
+                        </small>
                     </div>
                 </div>
 
@@ -135,6 +156,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     versionSelect.addEventListener('change', syncVersionFields);
     syncVersionFields();
+
+    const globalToggle = document.getElementById('recaptcha-enabled');
+    const formOptions = document.getElementById('recaptcha-form-options');
+    const globalNote = document.getElementById('recaptcha-global-note');
+
+    const syncGlobalToggle = function () {
+        if (!globalToggle || !formOptions) return;
+        const active = globalToggle.value === '1';
+        formOptions.classList.toggle('opacity-50', !active);
+        if (globalNote) {
+            globalNote.textContent = active
+                ? 'Master switch is Active — the selected forms will use reCAPTCHA once valid keys are saved.'
+                : 'Master switch is Inactive — nothing is verified on the storefront until you set it to Active and save.';
+        }
+    };
+
+    if (globalToggle) globalToggle.addEventListener('change', syncGlobalToggle);
+    syncGlobalToggle();
 });
 </script>
 @endpush

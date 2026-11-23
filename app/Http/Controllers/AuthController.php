@@ -10,11 +10,15 @@ use App\Models\User;
 use App\Models\Wishlist;
 use App\Rules\UniquePhone;
 use App\Services\Recaptcha;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use RuntimeException;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AuthController extends Controller
 {
@@ -29,7 +33,7 @@ class AuthController extends Controller
             : route('user.dashboard');
     }
 
-    private function mergeGuestData()
+    public function mergeGuestData()
     {
         $userId = Auth::id();
 
@@ -90,12 +94,6 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'terms' => 'accepted',
-        ], [
-            'terms.accepted' => 'Please agree to the Privacy Policy and Terms & Conditions to sign in.',
-        ]);
-
         if (Recaptcha::enabled('login') && ! Recaptcha::verify($request, 'login')) {
             return back()->withErrors(['g-recaptcha-response' => 'Please complete the reCAPTCHA verification.'])->withInput();
         }
@@ -106,9 +104,54 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Invalid credentials']);
         }
 
+        $user = Auth::user();
+        $redirectTo = $this->safeRedirectPath($request->input('redirect'));
+
+        if ($user->requiresEmailVerification()) {
+            Auth::logout();
+            $request->session()->regenerate();
+            $request->session()->put([
+                'pending_verification_email' => $user->email,
+                'pending_verification_redirect' => $redirectTo,
+            ]);
+
+            $verificationEmailSent = true;
+            try {
+                $user->sendEmailVerificationNotification();
+            } catch (TransportExceptionInterface|RuntimeException $exception) {
+                $verificationEmailSent = false;
+                Log::error('Verification email resend failed during login.', [
+                    'user_id' => $user->id,
+                    'exception_type' => $exception::class,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+
+            $redirect = redirect()->route('verification.notice');
+            if (! $verificationEmailSent) {
+                $redirect->with('warning', 'We could not send your confirmation email. Please use the resend form below.');
+            }
+
+            return $redirect->withErrors([
+                'email' => 'Please confirm your email address before logging in.',
+            ]);
+        }
+
+        if ($user->hasTwoFactorEnabled()) {
+            $remember = $request->boolean('remember');
+            Auth::logout();
+            $request->session()->regenerate();
+            $request->session()->put([
+                'two_factor_user_id' => $user->id,
+                'two_factor_remember' => $remember,
+                'two_factor_redirect' => $redirectTo,
+            ]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         $request->session()->regenerate();
 
-        $user = Auth::user();
         $request->session()->put([
             'user_logged_in' => true,
             'user_profile' => $user->only(['id', 'name', 'email', 'role', 'phone', 'address', 'city', 'country']),
@@ -120,11 +163,33 @@ class AuthController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
+        if ($redirectTo) {
+            return redirect()->to($redirectTo);
+        }
+
         return redirect()->route('user.dashboard');
     }
 
     /**
-     * Register a new customer account and log them in.
+     * Allow only safe in-app redirect paths to prevent open redirects.
+     */
+    private function safeRedirectPath($redirect): ?string
+    {
+        if (! is_string($redirect) || $redirect === '') {
+            return null;
+        }
+
+        $redirect = trim($redirect);
+
+        if (! str_starts_with($redirect, '/') || str_starts_with($redirect, '//')) {
+            return null;
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * Register a new customer account and require email confirmation.
      */
     public function register(Request $request)
     {
@@ -159,14 +224,126 @@ class AuthController extends Controller
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => 'customer',
+            'email_verification_required_at' => now(),
         ]);
 
         if ($request->boolean('subscribe')) {
             Subscriber::firstOrCreateForEmail($user->email);
         }
 
-        Auth::login($user);
+        $redirectTo = $this->safeRedirectPath($request->input('redirect'));
+        $request->session()->put([
+            'pending_verification_email' => $user->email,
+            'pending_verification_redirect' => $redirectTo,
+        ]);
 
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (TransportExceptionInterface|RuntimeException $exception) {
+            Log::error('Verification email delivery failed after account creation.', [
+                'user_id' => $user->id,
+                'exception_type' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return redirect()->route('verification.notice')->with(
+                'warning',
+                'Your account was created, but we could not send the confirmation email. Please use "Resend confirmation email" below or contact support.'
+            );
+        }
+
+        return redirect()->route('verification.notice')->with(
+            'status',
+            'Registration successful. Please check your email and confirm your account to activate it.'
+        );
+    }
+
+    public function showVerificationNotice(Request $request)
+    {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if ($user->hasVerifiedEmail()) {
+                return redirect()->to($this->dashboardRoute() ?? route('home'));
+            }
+
+            return view('auth.verify-email', [
+                'email' => $user->email,
+            ]);
+        }
+
+        $email = $request->session()->get('pending_verification_email');
+
+        return view('auth.verify-email', [
+            'email' => $email,
+        ]);
+    }
+
+    public function resendVerification(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $email = strtolower(trim((string) $request->input('email')));
+        $user = User::where('email', $email)->first();
+
+        if ($user && ! $user->hasVerifiedEmail()) {
+            try {
+                $user->sendEmailVerificationNotification();
+            } catch (TransportExceptionInterface|RuntimeException $exception) {
+                Log::error('Verification email resend failed.', [
+                    'user_id' => $user->id,
+                    'exception_type' => $exception::class,
+                    'message' => $exception->getMessage(),
+                ]);
+
+                return back()->withErrors(['email' => 'Could not send confirmation email right now. Please try again later.'])->withInput();
+            }
+        }
+
+        $request->session()->put('pending_verification_email', $email);
+
+        return back()->with('status', 'If an account exists for that email and is not yet confirmed, a new confirmation link has been sent.');
+    }
+
+    public function verifyEmail(Request $request, $id, $hash)
+    {
+        $user = User::findOrFail($id);
+
+        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            abort(403, 'Invalid verification link.');
+        }
+
+        $alreadyVerified = $user->hasVerifiedEmail();
+
+        if (! $alreadyVerified && $user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+        if ($user->email_verification_required_at !== null) {
+            $user->forceFill(['email_verification_required_at' => null])->save();
+        }
+
+        $redirectTo = $request->session()->pull('pending_verification_redirect');
+        $request->session()->forget('pending_verification_email');
+
+        $warning = null;
+
+        if (! $alreadyVerified) {
+            NotificationHelper::welcomeUser($user);
+
+            try {
+                Mail::to($user->email)->send(new WelcomeMail($user));
+            } catch (TransportExceptionInterface|RuntimeException $exception) {
+                Log::error('Welcome email delivery failed after email verification.', [
+                    'user_id' => $user->id,
+                    'exception_type' => $exception::class,
+                    'message' => $exception->getMessage(),
+                ]);
+                $warning = 'Your email is confirmed, but we could not send the welcome email.';
+            }
+        }
+
+        Auth::login($user);
         $request->session()->regenerate();
         $request->session()->put([
             'user_logged_in' => true,
@@ -175,11 +352,20 @@ class AuthController extends Controller
 
         $this->mergeGuestData();
 
-        NotificationHelper::welcomeUser($user);
+        $destination = $redirectTo && ! in_array($user->role, ['master_admin', 'admin', 'staff'], true)
+            ? $redirectTo
+            : ($this->dashboardRoute() ?? route('home'));
 
-        Mail::to($user->email)->send(new WelcomeMail($user));
+        $redirect = redirect()->to($destination)->with(
+            'success',
+            $alreadyVerified ? 'Your email is already confirmed.' : 'Email confirmed successfully. Your account is now active.'
+        );
 
-        return redirect()->route('user.dashboard')->with('success', 'Account created successfully!');
+        if ($warning) {
+            $redirect->with('warning', $warning);
+        }
+
+        return $redirect;
     }
 
     public function logout(Request $request)

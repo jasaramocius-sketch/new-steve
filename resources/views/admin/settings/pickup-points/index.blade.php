@@ -25,6 +25,13 @@
     <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif -->
 
+    @if (\App\Models\Setting::get('pickup_point', '1') !== '1')
+        <div class="alert alert-info">
+            Pickup Point Activation is <strong>OFF</strong>. Add an open pickup point, then turn it ON from
+            <a href="{{ route('admin.settings.features') }}" class="alert-link">Features activation</a>.
+        </div>
+    @endif
+
     <div class="card">
         <div class="card-header">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">

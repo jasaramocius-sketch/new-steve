@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Address;
+use App\Rules\ZipCodeForCountry;
 use Illuminate\Http\Request;
 
 class AddressController extends Controller
@@ -22,7 +23,7 @@ class AddressController extends Controller
             'city' => 'required|string|max:100',
             'state' => 'nullable|string|max:100',
             'country' => 'required|string|max:100',
-            'zip_code' => 'required|string|max:20|regex:/^[0-9a-zA-Z\-\s]+$/',
+            'zip_code' => ['required', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
         ]);
 
         $user = auth()->user();
@@ -71,7 +72,7 @@ class AddressController extends Controller
             'city' => 'required|string|max:100',
             'state' => 'nullable|string|max:100',
             'country' => 'required|string|max:100',
-            'zip_code' => 'required|string|max:20|regex:/^[0-9a-zA-Z\-\s]+$/',
+            'zip_code' => ['required', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
         ]);
 
         $data = $request->only([

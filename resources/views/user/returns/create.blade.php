@@ -2,8 +2,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-return-create-page', 'pageClass' => 'user-return-create-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Request Return - StAutoparts',
-        'metaTitle' => 'Request Return | StAutoparts',
+        'pageTitle' => 'Request Return - Steve Autoparts',
+        'metaTitle' => 'Request Return | Steve Autoparts',
         'metaDescription' => 'Request a return for your order at StAutoparts.',
     ])
 @endsection

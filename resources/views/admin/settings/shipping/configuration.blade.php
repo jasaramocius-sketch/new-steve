@@ -6,9 +6,23 @@
 @endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <!-- @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+    @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
-    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif -->
+    @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+
+    @if (($shippingType ?? '') === 'carrier_wise_shipping' && empty($carrierReady))
+        <div class="alert alert-warning">
+            <strong>Carrier Wise Shipping is not fully configured.</strong>
+            No active carrier with an active shipping zone rate was found, so checkout will use <strong>Flat Rate Shipping</strong> as a fallback until this is fixed.
+            <div class="mt-1">
+                <a href="{{ route('admin.settings.shipping-carriers.index') }}">Manage carriers</a>
+                &middot;
+                <a href="{{ route('admin.settings.shipping-zones.index') }}">Manage zone rates</a>
+                &middot;
+                <a href="#flat-rate-shipping-cost">Review flat rate cost</a>
+            </div>
+        </div>
+    @endif
 
     @php
         $shippingMethods = [
@@ -31,11 +45,25 @@
                         @csrf
                         <input type="hidden" name="type" value="shipping_type">
                         @foreach ($shippingMethods as $value => $label)
+                            @php($carrierDisabled = $value === 'carrier_wise_shipping' && ! $carrierReady)
                             <div class="form-check mb-3">
                                 <input id="shipping-type-{{ $value }}" class="form-check-input" type="radio"
                                        name="shipping_type" value="{{ $value }}"
-                                       @checked(old('shipping_type', $shippingType) === $value)>
-                                <label class="form-check-label" for="shipping-type-{{ $value }}">{{ $label }}</label>
+                                       @checked(old('shipping_type', $shippingType) === $value)
+                                       @disabled($carrierDisabled)>
+                                <label class="label {{ $carrierDisabled ? 'text-muted' : '' }}" for="shipping-type-{{ $value }}">
+                                    {{ $label }}
+                                    @if ($carrierDisabled)
+                                        <div class="mt-2 p-2 border rounded bg-light">
+                                            <div class="fw-600 text-dark">Add an active carrier and a shipping zone rate first.</div>
+                                            <ol class="small text-muted mb-1 ps-3 mt-1">
+                                                <li><a href="{{ route('admin.settings.shipping-carriers.create') }}">Create an active carrier</a></li>
+                                                <li><a href="{{ route('admin.settings.shipping-zones.index') }}">Set a rate in a shipping zone</a></li>
+                                            </ol>
+                                            <small class="text-muted">Then this option enables automatically.</small>
+                                        </div>
+                                    @endif
+                                </label>
                             </div>
                         @endforeach
                         <button type="submit" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-save"></i>Save</button>

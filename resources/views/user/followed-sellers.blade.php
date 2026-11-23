@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-followed-sellers-page', 'pageClass' => 'user-followed-sellers-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Followed Sellers - StAutoparts',
-        'metaTitle' => 'Followed Sellers | StAutoparts',
+        'pageTitle' => 'Followed Sellers - Steve Autoparts',
+        'metaTitle' => 'Followed Sellers | Steve Autoparts',
         'metaDescription' => 'Manage the sellers you follow at StAutoparts.',
     ])
 @endsection

@@ -23,14 +23,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Rules\ZipCodeForCountry;
 
 class AdminController extends Controller
 {
     public function index()
     {
-        $topProducts = DB::table('order_items')
-            ->select('product_id', DB::raw('SUM(qty) as total_qty'))
-            ->groupBy('product_id')
+        $topProducts = Order::revenueEligible()
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->select('order_items.product_id', DB::raw('SUM(order_items.qty) as total_qty'))
+            ->groupBy('order_items.product_id')
             ->orderByDesc('total_qty')
             ->take(5)
             ->get();
@@ -42,7 +44,7 @@ class AdminController extends Controller
 
         $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -50,7 +52,7 @@ class AdminController extends Controller
             $monthlyRevenueData->put($key, (float) ($dbRevenue->get($key) ?? 0));
         }
 
-        $weeklyRevenue = Order::selectRaw('YEARWEEK(created_at, 1) as week, SUM(total_amount) as total')
+        $weeklyRevenue = Order::revenueEligible()->selectRaw('YEARWEEK(created_at, 1) as week, SUM(total_amount) as total')
             ->where('created_at', '>=', now()->subWeeks(12))
             ->groupBy('week')
             ->orderBy('week')
@@ -64,7 +66,7 @@ class AdminController extends Controller
             $weeklyRevenueData->put($key, (float) ($weeklyRevenue->get($weekKey) ?? 0));
         }
 
-        $dailyRevenue = Order::selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
+        $dailyRevenue = Order::revenueEligible()->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
             ->where('created_at', '>=', now()->subDays(30))
             ->groupBy('date')
             ->orderBy('date')
@@ -76,7 +78,7 @@ class AdminController extends Controller
             $dailyRevenueData->put($key, (float) ($dailyRevenue->get($key) ?? 0));
         }
 
-        $hourlyRevenue = Order::selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
+        $hourlyRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
             ->whereDate('created_at', today())
             ->groupBy('hour')
             ->orderBy('hour')
@@ -89,7 +91,7 @@ class AdminController extends Controller
             $hourlyRevenueData->put($key, (float) ($hourlyRevenue->get($key) ?? 0));
         }
 
-        $fiveMinRevenue = Order::selectRaw('
+        $fiveMinRevenue = Order::revenueEligible()->selectRaw('
             FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(created_at) / 300) * 300) as interval_time,
             SUM(total_amount) as total
         ')
@@ -109,7 +111,7 @@ class AdminController extends Controller
 
         return view('admin.dashboard', [
             'totalOrders' => Order::count(),
-            'totalRevenue' => Order::sum('total_amount'),
+            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
             'pendingOrders' => Order::where('status', 'pending')->count(),
@@ -145,7 +147,7 @@ class AdminController extends Controller
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
-            'postal_code' => 'nullable|string|max:255|regex:/^[A-Za-z0-9\-\s]{3,20}$/',
+            'postal_code' => ['nullable', 'string', 'max:255', new ZipCodeForCountry($request->input('country'))],
         ]);
 
         if ($request->filled('image_from_manager')) {
@@ -186,7 +188,7 @@ class AdminController extends Controller
         $range = $request->get('range', '5min');
 
         if ($range === 'hourly') {
-            $hourlyRevenue = Order::selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
+            $hourlyRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
                 ->whereDate('created_at', today())
                 ->groupBy('hour')
                 ->orderBy('hour')
@@ -202,7 +204,7 @@ class AdminController extends Controller
             return response()->json($data);
         }
 
-        $todayRevenue = Order::selectRaw('
+        $todayRevenue = Order::revenueEligible()->selectRaw('
             FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(created_at) / 300) * 300) as interval_time,
             SUM(total_amount) as total
         ')

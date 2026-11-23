@@ -35,6 +35,19 @@ class Order extends Model
         'is_deleted',
     ];
 
+    /**
+     * Orders that count toward revenue: settled payments only, excluding
+     * cancelled orders (refunded/unpaid/failed are excluded by the paid check).
+     */
+    public function scopeRevenueEligible($query)
+    {
+        $table = $query->getModel()->getTable();
+
+        return $query
+            ->where($table.'.payment_status', 'paid')
+            ->where($table.'.status', '!=', 'cancelled');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

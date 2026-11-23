@@ -88,7 +88,7 @@
                             </div>
                         </xsl:when>
                     </xsl:choose>
-                    <footer>XML sitemap · StAutoParts</footer>
+                    <footer>XML sitemap · Steve AutoParts</footer>
                 </main>
             </body>
         </html>

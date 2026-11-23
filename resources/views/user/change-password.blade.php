@@ -2,8 +2,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-change-password-page', 'pageClass' => 'user-change-password-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Change Password - StAutoparts',
-        'metaTitle' => 'Change Password | StAutoparts',
+        'pageTitle' => 'Change Password - Steve Autoparts',
+        'metaTitle' => 'Change Password | Steve Autoparts',
         'metaDescription' => 'Securely change your account password at StAutoparts.',
         'robots' => 'noindex, nofollow',
     ])

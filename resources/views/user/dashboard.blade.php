@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-dashboard-page', 'pageClass' => 'user-dashboard-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Dashboard - StAutoparts',
-        'metaTitle' => 'Dashboard | StAutoparts',
+        'pageTitle' => 'Dashboard - Steve Autoparts',
+        'metaTitle' => 'Dashboard | Steve Autoparts',
         'metaDescription' => 'Manage your account and view your orders at StAutoparts.',
     ])
 @endsection

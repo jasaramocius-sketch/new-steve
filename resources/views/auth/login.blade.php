@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'auth-login-page', 'pageClass' => 'auth-login-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Login - StAutoparts',
-        'metaTitle' => 'Login | StAutoparts',
+        'pageTitle' => 'Login - Steve Autoparts',
+        'metaTitle' => 'Login | Steve Autoparts',
         'metaDescription' => 'Sign in to your StAutoparts account.',
     ])
 @endsection
@@ -49,32 +49,22 @@
               <label for="create-password">Password</label>
               <div class="pass-wrapper" style="position:relative">
                 <input type="password" name="password" class="form-control" value="" id="create-password" placeholder="Enter your password" required>
-                <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:5" onclick="togglePassword('create-password',this)">
+                 <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:5" aria-label="Show password" title="Show password" onclick="togglePassword('create-password',this)">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </span>
               </div>
             </div>
             
-            <div class="row mb-1 mt-2">
-              <div class="col d-flex">
+            <div class="d-flex flex-column mb-1 mt-3 gap-2">
+              <div class="d-flex login-forgot">
+                <a href="{{ route('password.request') }}" class="a-tag-text-hover">Forgot Password?</a>
+              </div>
+              <div class="d-flex">
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="remember" value="1" id="remember_me">
                   <label class="form-check-label" for="remember_me">Remember Me</label>
                 </div>
               </div>
-              <div class="col d-flex justify-content-end login-forgot">
-                <a href="{{ route('password.request') }}" class="a-tag-text-hover">Forgot Password?</a>
-              </div>
-            </div>
-
-            <div class="form-check mt-2">
-              <input class="form-check-input @error('terms') is-invalid @enderror" type="checkbox" name="terms" value="1" id="login_terms" {{ old('terms') ? 'checked' : '' }} required>
-              <label class="form-check-label" for="login_terms">
-                I agree to the <a href="{{ route('privacy.policy') }}" class="a-tag-text-hover" target="_blank">Privacy Policy</a> and <a href="{{ route('terms.conditions') }}" class="a-tag-text-hover" target="_blank">Terms &amp; Conditions</a>
-              </label>
-              @error('terms')
-                <div class="invalid-feedback d-block">{{ $message }}</div>
-              @enderror
             </div>
 
             @error('g-recaptcha-response')
@@ -95,8 +85,9 @@
 
 @endsection
 
-@if(\App\Services\Recaptcha::enabled('login'))
 @section('scripts')
-    @include('partials.recaptcha-scripts', ['form' => 'login'])
+    @include('partials.password-toggle-script')
+    @if(\App\Services\Recaptcha::enabled('login'))
+        @include('partials.recaptcha-scripts', ['form' => 'login'])
+    @endif
 @endsection
-@endif

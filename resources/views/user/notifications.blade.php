@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-notifications-page', 'pageClass' => 'user-notifications-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Notifications - StAutoparts',
-        'metaTitle' => 'Notifications | StAutoparts',
+        'pageTitle' => 'Notifications - Steve Autoparts',
+        'metaTitle' => 'Notifications | Steve Autoparts',
         'metaDescription' => 'View your notifications at StAutoparts.',
     ])
 @endsection
@@ -29,9 +29,19 @@
     <div class="me-3">
         <div>{{ $notification->title }}</div>
         <small class="text-muted">{!!
-            str_contains($notification->message, '<a')
-                ? $notification->message
-                : preg_replace('/#(ORD[A-Z0-9]+)/i', '<a href="' . url('/user/orders/$1') . '" class="text-decoration-underline">$0</a>', e($notification->message))
+            (function ($message) {
+                $base = rtrim(request()->getBaseUrl(), '/');
+                $message = str_replace('/steve_autoparts-main/', $base . '/', $message);
+                if ($base !== '') {
+                    $message = preg_replace('#href=([\'"])/user/#', 'href=$1' . $base . '/user/', $message);
+                }
+
+                if (str_contains($message, '<a')) {
+                    return $message;
+                }
+
+                return preg_replace('/#(ORD[A-Z0-9]+)/i', '<a href="' . url('/user/orders/$1') . '" class="text-decoration-underline">$0</a>', e($message));
+            })($notification->message)
         !!}</small>
         <br><small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
     </div>

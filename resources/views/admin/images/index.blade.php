@@ -116,7 +116,7 @@
     }
 </style>
 
-<div class="container-fluid px-0">
+<div class="image-manager-container container-fluid px-0">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
         <div></div>
         <button type="button" class="btn btn-primary steve-btn gap-1" data-bs-toggle="modal" data-bs-target="#uploadModal">
@@ -160,18 +160,11 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mb-3 flex-wrap flex-md-nowrap">
-        <div class="card-body d-flex d-sm-flex gap-1 col-sm-12 col-lg-12 flex-wrap align-items-end">
-            <div class="col-lg-4 col-md-12 col-sm-12">
-                    <label class="form-label small">Search</label>
-                    @include('admin.partials.search-form', [
-                        'route' => route('admin.images.index'),
-                        'placeholder' => 'Search images...'
-                    ])
-                </div>
-            <form method="GET" class="row align-items-end col-md-12 g-1 col-lg-8 col-sm-12">
-                <div class="col-lg-3 col-md-3 col-sm-6">
-                    <label class="form-label small">Filter</label>
+    <div class="image-manager-filter card border-0 shadow-sm mb-3 flex-wrap flex-md-nowrap">
+        <div class="card-body d-flex d-sm-flex gap-1 flex-wrap align-items-end">
+            <form method="GET" class="align-items-end d-flex flex-wrap gap-2">
+                <div class="w-auto d-flex flex-row align-items-center gap-2">
+                    <label class="form-label small m-0">Status</label>
                     <select name="filter" class="form-select" onchange="this.form.submit()">
                         <option value="">All</option>
                         <option value="attached" {{ request('filter')=='attached'?'selected':'' }}>Attached</option>
@@ -179,26 +172,32 @@
                         <option value="convertible" {{ request('filter')=='convertible'?'selected':'' }}>Convertible</option>
                     </select>
                 </div>
-                <div class="col-lg-3 col-md-3 col-sm-6">
-                    <label class="form-label small">Sort</label>
+                <div class="w-auto d-flex flex-row align-items-center gap-2">
+                    <label class="form-label small m-0">Sort</label>
                     <select name="sort" class="form-select">
                         <option value="created_at" {{ request('sort')=='created_at'?'selected':'' }}>Date</option>
                         <option value="original_name" {{ request('sort')=='original_name'?'selected':'' }}>Name</option>
                         <option value="size" {{ request('sort')=='size'?'selected':'' }}>Size</option>
                     </select>
                 </div>
-                <div class="col-lg-3 col-md-3 col-sm-6">
-                    <label class="form-label small">Order</label>
+                <div class="w-auto d-flex flex-row align-items-center gap-2">
+                    <label class="form-label small m-0">Order</label>
                     <select name="order" class="form-select">
                         <option value="desc" {{ request('order')=='desc'?'selected':'' }}>DESC</option>
                         <option value="asc" {{ request('order')=='asc'?'selected':'' }}>ASC</option>
                     </select>
                 </div>
-                <div class="col d-grid flex-column gap-1">
+                <div class="d-grid flex-column gap-1">
                     <button type="submit" class="btn btn-primary w-100 steve-btn gap-1"><i class="fas fa-search"></i> Filter</button>
                     @if(request()->hasAny(['search', 'filter', 'sort', 'order']))
                         <a href="{{ route('admin.images.index') }}" class="btn btn-outline-secondary w-100 mt-1 steve-btn gap-1"><i class="fas fa-times"></i> Clear Filters</a>
                     @endif
+                </div>
+                <div class="" style="width: ;">
+                @include('admin.partials.search-form', [
+                        'route' => route('admin.images.index'),
+                        'placeholder' => 'Search images...'
+                    ])
                 </div>
             </form>
         </div>

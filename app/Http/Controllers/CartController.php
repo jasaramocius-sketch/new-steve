@@ -17,6 +17,7 @@ use App\Models\Vehicle;
 use App\Services\ShippingChargeService;
 use App\Services\ShippingRateService;
 use App\Services\StripeCheckoutService;
+use App\Rules\ZipCodeForCountry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -370,7 +371,7 @@ class CartController extends Controller
             'city' => 'required|string|max:150',
             'state' => 'nullable|string|max:150',
             'country' => 'required|string|max:150',
-            'zip_code' => 'nullable|string|max:20',
+            'zip_code' => ['nullable', 'string', 'max:20', new ZipCodeForCountry($request->input('country'))],
         ]);
 
         $cart = $this->refreshCartPrices();
@@ -461,9 +462,24 @@ class CartController extends Controller
             if ($shippingService->isCarrierBased()) {
                 $shippingRates = app(ShippingRateService::class)->availableRatesFor($billing);
                 $homeDeliveryAvailable = $shippingRates->isNotEmpty();
+
+                // Real-app fallback: if carrier-wise is selected but misconfigured/no
+                // rates match this address, fall back to flat-rate shipping so checkout
+                // is not blocked.
+                if (! $homeDeliveryAvailable) {
+                    $standardShipping = $shippingService->flatRateQuote($billing);
+                    $homeDeliveryAvailable = true;
+                }
             } else {
                 $standardShipping = $shippingService->quote($cart, $billing);
                 $homeDeliveryAvailable = $standardShipping !== null;
+
+                // If the selected non-carrier method cannot quote this address, keep
+                // checkout usable with a flat-rate fallback.
+                if (! $homeDeliveryAvailable) {
+                    $standardShipping = $shippingService->flatRateQuote($billing);
+                    $homeDeliveryAvailable = true;
+                }
             }
         }
 
@@ -504,9 +520,19 @@ class CartController extends Controller
             if ($shippingService->isCarrierBased()) {
                 $shippingRates = app(ShippingRateService::class)->availableRatesFor($billing);
                 $homeDeliveryAvailable = $shippingRates->isNotEmpty();
+
+                if (! $homeDeliveryAvailable) {
+                    $standardShipping = $shippingService->flatRateQuote($billing);
+                    $homeDeliveryAvailable = true;
+                }
             } else {
                 $standardShipping = $shippingService->quote($cart, $billing);
                 $homeDeliveryAvailable = $standardShipping !== null;
+
+                if (! $homeDeliveryAvailable) {
+                    $standardShipping = $shippingService->flatRateQuote($billing);
+                    $homeDeliveryAvailable = true;
+                }
             }
         }
 
@@ -523,8 +549,9 @@ class CartController extends Controller
             ]);
         }
 
+        $hasCarrierRateOptions = $shippingService->isCarrierBased() && $shippingRates->isNotEmpty();
         $requiresCarrierRate = $request->input('shipping_method') === 'home_delivery'
-            && $shippingService->isCarrierBased();
+            && $hasCarrierRateOptions;
 
         $request->validate([
             'shipping_method' => 'required|in:'.implode(',', $allowedShippingMethods),
@@ -538,7 +565,7 @@ class CartController extends Controller
             'method' => $request->shipping_method,
         ];
         if ($request->shipping_method === 'home_delivery') {
-            if ($shippingService->isCarrierBased()) {
+            if ($hasCarrierRateOptions) {
                 $rate = app(ShippingRateService::class)->resolveAvailableRate($billing, (int) $request->input('shipping_rate_id'));
                 if (! $rate) {
                     return back()->withInput()->withErrors(['shipping_rate_id' => 'That carrier rate is no longer available for this address. Please choose another option.']);
@@ -554,7 +581,7 @@ class CartController extends Controller
                 ];
             } else {
                 if (! $standardShipping) {
-                    return back()->withInput()->withErrors(['shipping_method' => 'No shipping charge is available for this address.']);
+                    $standardShipping = $shippingService->flatRateQuote($billing);
                 }
                 $shippingInfo += [
                     'cost' => $standardShipping['cost'],
@@ -1137,36 +1164,35 @@ class CartController extends Controller
 
         $shippingService = app(ShippingChargeService::class);
 
-        if ($shippingService->isCarrierBased()) {
-            if (empty($shipping['rate_id'])) {
-                return null;
-            }
-
+        if ($shippingService->isCarrierBased() && ! empty($shipping['rate_id'])) {
             $rate = app(ShippingRateService::class)->resolveAvailableRate($billing, (int) $shipping['rate_id']);
-            if (! $rate) {
-                return null;
-            }
+            if ($rate) {
+                $shipping['cost'] = (float) $rate->fee;
+                $shipping['zone_id'] = $rate->shipping_zone_id;
+                $shipping['zone_name'] = $rate->zone->name;
+                $shipping['carrier_id'] = $rate->shipping_carrier_id;
+                $shipping['carrier_name'] = $rate->carrier->name;
+                $shipping['delivery_estimate'] = $rate->carrier->delivery_estimate;
+                session(['shipping_info' => $shipping]);
 
-            $shipping['cost'] = (float) $rate->fee;
-            $shipping['zone_id'] = $rate->shipping_zone_id;
-            $shipping['zone_name'] = $rate->zone->name;
-            $shipping['carrier_id'] = $rate->shipping_carrier_id;
-            $shipping['carrier_name'] = $rate->carrier->name;
-            $shipping['delivery_estimate'] = $rate->carrier->delivery_estimate;
-        } else {
-            $quote = $shippingService->quote($cart, $billing);
-            if (! $quote) {
-                return null;
+                return $shipping;
             }
-
-            $shipping['cost'] = $quote['cost'];
-            $shipping['zone_id'] = null;
-            $shipping['zone_name'] = $quote['zone_name'];
-            $shipping['carrier_id'] = null;
-            $shipping['carrier_name'] = $quote['carrier_name'];
-            $shipping['delivery_estimate'] = $quote['delivery_estimate'];
-            $shipping['rate_id'] = null;
+            // Fall through to flat-rate fallback if the selected carrier rate is no longer available.
         }
+
+        if ($shippingService->isCarrierBased()) {
+            $quote = $shippingService->flatRateQuote($billing);
+        } else {
+            $quote = $shippingService->quote($cart, $billing) ?? $shippingService->flatRateQuote($billing);
+        }
+
+        $shipping['cost'] = $quote['cost'];
+        $shipping['zone_id'] = null;
+        $shipping['zone_name'] = $quote['zone_name'];
+        $shipping['carrier_id'] = null;
+        $shipping['carrier_name'] = $quote['carrier_name'];
+        $shipping['delivery_estimate'] = $quote['delivery_estimate'];
+        $shipping['rate_id'] = null;
 
         session(['shipping_info' => $shipping]);
 

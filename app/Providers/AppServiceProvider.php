@@ -194,6 +194,19 @@ class AppServiceProvider extends ServiceProvider
             $settings = Setting::getAllAsArray();
             $driver = $settings['mail_driver'] ?? null;
             if (! in_array($driver, ['smtp', 'sendmail', 'mailgun', 'microsoft', 'log'], true)) {
+                $hasMicrosoftCredentials = filled(config('services.microsoft_mail.tenant_id'))
+                    && filled(config('services.microsoft_mail.client_id'))
+                    && filled(config('services.microsoft_mail.client_secret'));
+
+                if (
+                    $driver === null
+                    && ! app()->environment('testing')
+                    && config('mail.default') === 'log'
+                    && $hasMicrosoftCredentials
+                ) {
+                    config(['mail.default' => 'microsoft']);
+                }
+
                 return;
             }
 
@@ -217,9 +230,9 @@ class AppServiceProvider extends ServiceProvider
                 },
                 'services.mailgun_settings.domain' => $settings['mailgun_domain'] ?? '',
                 'services.mailgun_settings.secret' => $mailgunSecret ?? '',
-                'services.microsoft_mail.tenant_id' => $settings['mail_tenant_id'] ?? '',
-                'services.microsoft_mail.client_id' => $settings['mail_client_id'] ?? '',
-                'services.microsoft_mail.client_secret' => $microsoftSecret ?? '',
+                'services.microsoft_mail.tenant_id' => $settings['mail_tenant_id'] ?? config('services.microsoft_mail.tenant_id', ''),
+                'services.microsoft_mail.client_id' => $settings['mail_client_id'] ?? config('services.microsoft_mail.client_id', ''),
+                'services.microsoft_mail.client_secret' => $microsoftSecret ?? config('services.microsoft_mail.client_secret', ''),
             ]);
         } catch (Throwable $exception) {
             logger()->warning('Stored mail configuration could not be applied: '.$exception->getMessage());

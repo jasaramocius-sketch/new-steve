@@ -3,7 +3,6 @@
 @endphp
 @if(\App\Services\Recaptcha::enabled($form))
     @if(\App\Services\Recaptcha::isV3())
-        <script src="https://www.google.com/recaptcha/api.js?render={{ urlencode(\App\Services\Recaptcha::siteKey()) }}" async defer></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const input = document.querySelector('input[name="g-recaptcha-response"][data-recaptcha-v3]');

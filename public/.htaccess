@@ -10,6 +10,11 @@
     </IfModule>
 
     RewriteEngine On
+
+    # Legacy base-path compatibility (old project path: steve_autoparts-main)
+    # Redirect to canonical URL structure (strip legacy prefix, keep path/query).
+    RewriteRule ^steve_autoparts-main(?:/(.*))?$ /$1 [R=301,L,QSA]
+
     RewriteBase /new-steve/
 
     # Handle Authorization Header
@@ -19,6 +24,12 @@
     # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # This virtual host serves public/ as the root, unlike the legacy /new-steve/ path.
+    RewriteCond %{HTTP_HOST} ^new-steve\.local(?::\d+)?$ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ /index.php [L]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

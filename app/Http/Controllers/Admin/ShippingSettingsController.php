@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Country;
 use App\Models\Setting;
 use App\Models\ShippingCarrier;
 use App\Models\ShippingZone;
+use App\Models\ShippingZoneRate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -19,6 +21,7 @@ class ShippingSettingsController extends Controller
             'shippingType' => Setting::get('shipping_type', 'carrier_wise_shipping'),
             'flatRateShippingCost' => Setting::get('flat_rate_shipping_cost', '0'),
             'shippingCostAdmin' => Setting::get('shipping_cost_admin', '0'),
+            'carrierReady' => $this->carrierShippingReady(),
         ]);
     }
 
@@ -31,6 +34,11 @@ class ShippingSettingsController extends Controller
                 $validated = $request->validate([
                     'shipping_type' => ['required', Rule::in(array_keys(\App\Services\ShippingChargeService::TYPES))],
                 ]);
+
+                if ($validated['shipping_type'] === 'carrier_wise_shipping' && ! $this->carrierShippingReady()) {
+                    return back()->withInput()->with('error', 'Add an active carrier and at least one shipping zone rate before selecting Carrier Wise Shipping.');
+                }
+
                 Setting::set('shipping_type', $validated['shipping_type']);
                 $message = 'Shipping method updated.';
                 break;
@@ -61,6 +69,17 @@ class ShippingSettingsController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    private function carrierShippingReady(): bool
+    {
+        return ShippingCarrier::query()
+            ->where('is_active', true)
+            ->exists()
+            && ShippingZoneRate::query()
+                ->whereHas('carrier', fn ($query) => $query->where('is_active', true))
+                ->whereHas('zone', fn ($query) => $query->where('is_active', true))
+                ->exists();
     }
 
     public function carriers()
@@ -143,6 +162,7 @@ class ShippingSettingsController extends Controller
     {
         return view('admin.settings.shipping.zones.form', [
             'zone' => new ShippingZone(['country' => '*', 'is_active' => true]),
+            'countries' => $this->zoneCountries(),
             'carriers' => ShippingCarrier::orderBy('sort_order')->orderBy('name')->get(),
             'isEditing' => false,
         ]);
@@ -166,6 +186,7 @@ class ShippingSettingsController extends Controller
 
         return view('admin.settings.shipping.zones.form', [
             'zone' => $zone,
+            'countries' => $this->zoneCountries($zone->country),
             'carriers' => ShippingCarrier::orderBy('sort_order')->orderBy('name')->get(),
             'isEditing' => true,
         ]);
@@ -206,6 +227,20 @@ class ShippingSettingsController extends Controller
             'rates' => 'nullable|array',
             'rates.*' => 'nullable|numeric|min:0|max:99999999.99',
         ]) + ['is_active' => $request->boolean('is_active')];
+    }
+
+    private function zoneCountries(?string $currentCountry = null)
+    {
+        return Country::query()
+            ->where(function ($query) use ($currentCountry): void {
+                $query->where('status', true);
+                if ($currentCountry !== null && $currentCountry !== '*') {
+                    $query->orWhere('name', $currentCountry);
+                }
+            })
+            ->orderByDesc('status')
+            ->orderBy('name')
+            ->get(['name', 'status']);
     }
 
     private function saveZoneRates(ShippingZone $zone, array $rates): void

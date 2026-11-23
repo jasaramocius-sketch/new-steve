@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Mail\PasswordResetMail;
 use App\Traits\Revisable;
 use App\Traits\TracksIsDeleted;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,14 +18,15 @@ use Illuminate\Support\Facades\Mail;
 
 #[Fillable([
     'name', 'email', 'password', 'role', 'user_type',
+    'email_verification_required_at',
     'phone', 'address', 'city', 'country', 'state', 'postal_code',
     'status', 'banned', 'is_deleted',
     'referred_by', 'provider', 'provider_id',
     'avatar', 'avatar_original',
     'balance', 'referral_code', 'customer_package_id', 'remaining_uploads',
 ])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, Revisable, SoftDeletes, TracksIsDeleted;
@@ -34,8 +35,21 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_verification_required_at' => 'datetime',
             'password' => 'hashed',
+            'two_factor_recovery_codes' => 'array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return filled($this->two_factor_secret) && filled($this->two_factor_confirmed_at);
+    }
+
+    public function requiresEmailVerification(): bool
+    {
+        return $this->email_verification_required_at !== null && ! $this->hasVerifiedEmail();
     }
 
     public function orders(): HasMany

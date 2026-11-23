@@ -5814,3 +5814,349 @@ Layout:
 - Added the `admin-row-number` class to numeric first-column cells in 28 Blade views across admin listings and checkout/invoice tables (serial numbers generated via `firstItem() + $loop->index`, `$loop->iteration`, `$loop->index` or `$key + 1`). Non-numeric first cells were left untouched.
 - Consolidated the old standalone `.admin-languages-table td:first-child` override into the new override block so the ordering/specificity is unambiguous.
 - Verified: `view:cache`, CSS rule present, all added class lines free of trailing whitespace, and a `/admin/settings/shipping-cities` render showing 50 numbered cells with the new class. The `width:100%` rule still applies to non-numeric first cells as before.
+
+## 416. (2026-11-19): Admin UI/UX + Responsive Audit Report (Excel)
+
+**Status: Completed (audit only — no source files changed)**
+
+- Audited all **127** admin Blade views (plus shared admin layout, partials and global CSS) for UI/UX, accessibility, consistency and responsive behavior at desktop (≥992px), tablet (≤991.98px), mobile (≤767.98px) and small phone (≤575.98px) breakpoints.
+- Produced `admin-ui-ux-responsive-audit-2026-11-19.xlsx` in the project root with 4 sheets: **Summary**, **Findings**, **View Coverage** and **Area Breakdown**.
+- Report totals: **130 findings** — High 46, Medium 78, Low 6 — by type: Responsive 40, UX 39, Accessibility 27, UI 14, Consistency 10. Highest-count areas: global/shared 51, settings 20, products 13, images 5, orders/customers/dashboard/file-revisions 4 each.
+- Findings include explicit file:line evidence, severity, issue type, recommendation, verification basis (spot-checked vs static review), status and notes. The View Coverage sheet maps every admin view to its route/URI and finding count; the Area Breakdown sheet gives per-area severity totals.
+- Method note recorded in the workbook: static Blade/CSS/JS review plus targeted render checks; no visual browser automation/screenshots were used. Outdated/duplicated findings were filtered before compiling (for example, the superseded Shipping Cities search-clear note from #413).
+
+## 417. (2026-11-19): Admin Visual Browser Audit (Excel + screenshots)
+
+**Status: Completed (audit only — no application source files changed)**
+
+- Performed a real logged-in visual browser check with headless Google Chrome + Playwright against `http://localhost/new-steve`.
+- Crawled the admin UI to discover **217 visual pages** (3 CSV/download-only routes excluded) and checked every page at 3 viewports: Desktop **1365×900**, Tablet **900×900**, Mobile **390×844** — **651 viewport checks** total.
+- Captured per-page/per-viewport DOM overflow metrics, offending selectors, console errors, page JS errors, failed requests, sidebar off-canvas state, sidebar-toggle visibility, unwrapped table count, unlabelled icon controls, and a JPEG screenshot.
+- Created `admin-visual-browser-audit-2026-11-19.xlsx` with sheets **Summary**, **Page Results**, **Issues** and **Page Summary**. Screenshots are stored in `public/visual-audit/2026-11-19/`.
+- Results: **170 pages fully clean**, **47 pages with at least one issue**; **115 viewport checks flagged**; **10 mobile horizontal-overflow checks**; **229 issue rows** — High **106**, Medium **94**, Low **29**.
+- Recurring issues found: missing Summernote `textcolor` plugin causes `Failed to load plugin: textcolor from url plugins/textcolor/plugin.min.js` plus `$(...).summernote is not a function` on **93 viewport checks**; SortableJS `destroy` called before init on **3** page-builder checks; order-detail pages `/admin/orders/53`–`/admin/orders/62` overflow on mobile by **169–552px** because the 5-column order-items table is not wrapped in `.table-responsive`; 23 low-severity unwrapped-table notices and 6 unlabelled icon-control notices.
+- Temporary audit password for user 5 was restored to the original hash after the run, and the unused `php artisan serve` process on port `8765` was stopped. No application source file was modified for this audit; only `TASKS.md`, `.gitignore` (added `visual-audit` so the 630 screenshot artifacts stay untracked), the Excel report and screenshots were added/updated.
+
+## 418. (2026-11-19): Visual Audit Report Made Actionable (location + highlighted screenshots)
+
+**Status: Completed (report-only update — no application source files changed)**
+
+- Updated `admin-visual-browser-audit-2026-11-19.xlsx` so every issue row now answers **kya issue hai** and **page par kahan hai**.
+- Added a new **Guide** sheet with step-by-step Hinglish instructions: find URL in Page Summary → open Issues row → read "Where on page" → paste "Element / locator" into DevTools Console → open clickable annotated screenshot → check "Likely source" file:line.
+- Added issue columns: **Where on page** (card/section/table, e.g. `Version Information -> Table.table.table-sm.mb-0`), **Element / locator** (copy-pasteable CSS path), **Position (viewport px)**, **Likely source (file:line)** and **Annotated screenshot** (clickable hyperlink).
+- Generated **115 annotated screenshots** in `public/visual-audit/2026-11-19/annotated/` — one per issue viewport, with red boxes + `ISSUE 1/2/...` badges on the exact element, or a red top banner for page-level JS/console errors.
+- Mapped recurring JS errors to source lines: TinyMCE `textcolor` plugin at `resources/views/admin/layouts/app.blade.php:144`, Summernote calls at `public/assets/front/js/backend.js:18` and `public/assets/front/js/script.js:455`, and SortableJS `destroy`-before-init at `resources/views/admin/settings/header.blade.php:1068`. Order-detail mobile overflow maps to `resources/views/admin/orders/show.blade.php:80`.
+- Verified: 0 enrichment errors, 115 annotated JPEGs, all screenshot cells contain working `http://localhost/new-steve/visual-audit/...` hyperlinks, 229 issue rows unchanged (High 106 / Medium 94 / Low 29), and admin user 5 password hash restored and matched.
+
+## 419. (2026-11-19): A1 Critical Fix — Shipping Configuration checkout blocker
+
+**Status: Completed (code + DB data cleanup + browser verification)**
+
+- Source CSV: `StAutoparts_Full_QA_Report_Admin_and_Frontend_2026-11-19(Admin Issues).csv` → **A1 / Critical / Shipping Configuration**.
+- Backup taken before changes: `/tmp/opencode/a1-backup-20261119_122941/` (full `database.sql`, `ShippingSettingsController.php`, `configuration.blade.php`).
+- Confirmed report state had drifted: DB already had `shipping_type=flat_rate`, `flat_rate_shipping_cost=10`, `home_delivery_enabled=1`, but the only zone still held junk data: `id=3`, name `USA`, `country=*`, `state=California`, `city=wertg`, `cost=0.00`.
+- DB cleanup: zone `id=3` updated to name `All Destinations`, `country=*`, `state=NULL`, `city=NULL`, `cost=10.00`, `is_active=true`. Shipping settings explicitly re-affirmed as `flat_rate` / `10` / `1`. `ShippingChargeService::quote()` now returns `{"cost":10,"carrier_name":"Flat Rate Shipping","delivery_estimate":null,"zone_name":null}`.
+- `app/Http/Controllers/Admin/ShippingSettingsController.php`: added `carrierShippingReady()` guard. Selecting `carrier_wise_shipping` now fails with `Add an active carrier and at least one shipping zone rate before selecting Carrier Wise Shipping.` unless an active carrier **and** an active rate on an active zone exist. `configuration()` now passes `carrierReady` to the view.
+- `resources/views/admin/settings/shipping/configuration.blade.php`: previously commented-out success/error/validation alerts are live again; the Carrier Wise radio is disabled with the note `Add an active carrier and a shipping zone rate first.` while no rates exist. Server-side guard still protects direct POSTs.
+- Verification: `php artisan view:cache` succeeded; `php -l` clean. Logged-in browser check at 1365/900/390px: admin settings page had `overflow=0`, Carrier Wise disabled, note visible, Flat Rate checked on all 3 viewports. Forced-POST guard test showed the exact error message and `shipping_type` stayed `flat_rate`.
+- Storefront guest checkout with a real cart + address reached `/checkout/delivery-info` at all 3 viewports: `Home Delivery`, `Flat Rate Shipping`, `$10.00` all present; `No home-delivery rate is available` absent; `overflow=0` on all 3 viewports.
+- Evidence screenshots (6): `public/visual-audit/a1-fix/admin-shipping-{desktop,tablet,mobile}.jpg` and `public/visual-audit/a1-fix/checkout-delivery-{desktop,tablet,mobile}.jpg`.
+- Pre-existing, unrelated console noise observed and left unchanged: admin `404 (Not Found)` + `Swiper is not defined` (x2); storefront invalid phone `pattern` regex + `Swiper is not defined` + 14 external S3 image request failures. None originate from the A1 changes, and no new layout/overflow issue appeared.
+- Temporary browser-login password for user 5 was restored; hash match verified. No other source files were touched.
+
+## 420. (2026-11-19): Critical Issues Status Report for Admin Verification
+
+**Status: Completed (report-only — no application source files changed)**
+
+- Created `critical-issues-status-2026-11-19.xlsx` in the project root so the admin can see at a glance which CSV Critical items are done and which are still pending.
+- Workbook sheets: **Summary** (counts + how to use + Ctrl+F5 reminder), **Status** (A1–A4 with FIXED/PARTIAL/PENDING colour badges, live evidence, remaining action, admin check steps, TASKS mapping), **How to check** (exact admin URLs and expected results), **Evidence** (six clickable A1/A2 checkout screenshots plus raw A3/A4 values).
+- Current verified state: **A1 = FIXED** (TASKS #419, Flat Rate $10 + guard + cleaned zone + checkout screenshots); **A2 = PARTIAL** (pickup hidden because `pickup_points=0` via `CartController.php:452,517`, but business decision to add points or turn feature OFF still pending); **A3 = PENDING** (`APP_ENV=local`, `APP_DEBUG=true`, stack traces still visible); **A4 = PENDING** (admin hash unchanged, no 2FA columns, reCAPTCHA site/secret keys EMPTY).
+- Manual check URLs included in the workbook: `/admin/settings/shipping`, `/admin/settings/features`, `/admin/settings/pickup-points`, `/admin/system/server-status`, `/admin/settings/google-recaptcha`, `/users/login` and storefront `/checkout/delivery-info`.
+
+## 421. (2026-11-19): A1 Disabled Option Now Explains How To Enable It
+
+**Status: Completed (UI guidance + report refresh)**
+
+- Admin feedback: seeing **Carrier Wise Shipping Cost** disabled did not explain how to enable it. Updated `resources/views/admin/settings/shipping/configuration.blade.php` so the disabled-option note now has two clickable links: **Create an active carrier** → `admin.settings.shipping-carriers.create` and **Set a rate in a shipping zone** → `admin.settings.shipping-zones.index`, followed by `Then this option enables automatically.`
+- Re-enabled the success/error/validation alert block at the top of the same view (it was found commented again during verification). Note: file-audit watcher PID `236437` (`artisan file:audit --watch --interval=10 ...`) is still running but inspection showed it only archives/mirrors changes; no restore behavior found. Cause of the temporary re-comment is unconfirmed.
+- Regenerated `critical-issues-status-2026-11-19.xlsx` so the A1 check steps mention the enable-steps links.
+- Verification: `view:cache` clean. Logged-in browser check at 1365/900/390px: Carrier Wise disabled on all viewports, note + both links visible (`Create an active carrier`, `Set a rate in a shipping zone`), `overflow=0`, Flat Rate still checked. Forced-POST guard again shows the exact message `Add an active carrier and at least one shipping zone rate before selecting Carrier Wise Shipping.` and `shipping_type` stays `flat_rate`. Full checkout regression unchanged (`Home Delivery / Flat Rate Shipping / $10.00`, blocker absent, overflow 0). Admin password restored and hash matched.
+
+## 422. (2026-11-19): A2 — Pickup Point Explicitly Turned OFF
+
+**Status: Completed (A2 FIXED)**
+
+- Root cause closed: no explicit `pickup_point` Setting row existed, so the feature defaulted to ON while `pickup_points = 0`. Ran `Setting::set('pickup_point','0')`; value now reads `0`.
+- Updated `resources/views/admin/settings/pickup-points/index.blade.php` with an info alert: `Pickup Point Activation is OFF. Add an open pickup point, then turn it ON from Features activation.` with a direct link to `admin.settings.features`.
+- Verified at 1365/900/390px after `view:cache`: Features toggle `pickup_point` is unchecked on all viewports; Pickup Points page shows the OFF note + link; `overflow=0` everywhere.
+- Storefront `/checkout/delivery-info` re-checked at 1365/900/390px: `Home Delivery` + `Flat Rate Shipping` + `$10.00` present, blocker text absent, **no pickup prompt** (`pickup_prompt=False`).
+- Screenshots: `public/visual-audit/a2-a3-a4-fix/features-{desktop,tablet,mobile}.jpg`, `pickup-points-{desktop,tablet,mobile}.jpg`, `checkout-{desktop,tablet,mobile}.jpg`.
+- Status workbook `critical-issues-status-2026-11-19.xlsx` regenerated with A2 = FIXED. UI changed — hard-refresh with **Ctrl+F5**.
+
+## 423. (2026-11-19): A3 — Production / Debug Disabled
+
+**Status: Completed (A3 FIXED)**
+
+- Backed up `.env` to `/tmp/opencode/a3-env-backup-20261119_151107` (contained `APP_ENV=local`, `APP_DEBUG=true`, `APP_URL=http://new-steve.local`).
+- Set `APP_ENV=production` and `APP_DEBUG=false`; `APP_URL` deliberately left unchanged (A10 is a separate issue).
+- Rebuilt config cache: `php artisan config:clear` then `php artisan config:cache`. Runtime check: `environment=production`, `config('app.debug')=false`.
+- Browser verification at 1365/900/390px: `/admin/system/server-status` shows `production` and `Debug Mode = Disabled`, `overflow=0` on all viewports.
+- Deliberately invalid URL `/definitely-not-a-route-a4-xyz` returned HTTP `404` with a generic error page; no `Stack trace`, `/var/www/html`, `Illuminate\` or `Symfony\` leakage. Local debugging is now reduced by design; use `storage/logs/laravel.log`.
+- Screenshots: `public/visual-audit/a2-a3-a4-fix/server-status-{desktop,tablet,mobile}.jpg` and `generic-error-desktop.jpg`.
+- Status workbook regenerated with A3 = FIXED.
+
+## 424. (2026-11-19): A4 — Strong Password, TOTP 2FA and Rate-Limit Verified
+
+**Status: Completed (A4 PARTIAL — reCAPTCHA still needs valid live keys)**
+
+- Password: set a new random 24-character hex password for user id 5. Plain value was shown once to the admin and is **not** recorded here; stored hash verified with `Hash::check`, and it no longer matches the baseline hash in `/tmp/opencode/admin5_password_hash.txt`.
+- TOTP 2FA added without a new Composer package:
+  - Migration `database/migrations/2026_11_19_094147_add_two_factor_columns_to_users_table.php` adds `two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`.
+  - `app/Models/User.php` adds casts, hidden fields and `hasTwoFactorEnabled()`.
+  - `app/Services/TwoFactor.php` implements RFC6238 TOTP (30s step, ±1 step window), base32 secret, `otpauth://` URI and 8 hashed single-use recovery codes.
+  - `app/Http/Controllers/TwoFactorController.php` adds challenge/verify plus admin setup/confirm/disable actions.
+  - `app/Http/Controllers/AuthController.php` now diverts 2FA-enabled users to the challenge before establishing the session; `mergeGuestData()` made public so guest cart/wishlist/compare data still merges after 2FA.
+  - Views: `resources/views/auth/two-factor-challenge.blade.php`, `resources/views/admin/settings/two-factor.blade.php`; sidebar link **Two-Factor Auth** added.
+  - Routes: `GET/POST /users/two-factor-challenge`, `GET /admin/settings/two-factor`, `POST /admin/settings/two-factor/confirm`, `POST /admin/settings/two-factor/disable`.
+- Admin user 5 now has 2FA enabled with 8 recovery codes. Login flow verified: correct password → 2FA challenge → TOTP code → `admin.dashboard`.
+- Rate limiting already existed at `POST /users/login` (`throttle:5,1` in `routes/web.php`); repeated bad logins returned statuses `[302, 302, 302, 429]`.
+- reCAPTCHA: login already includes `partials.recaptcha-field` and `partials.recaptcha-scripts`. `recaptcha_version=v3` with `recaptcha_v3_site_key` / encrypted `recaptcha_v3_secret_key` present; v2 keys empty. During browser verification `recaptcha_login` was temporarily set to `0` because server-side verification failed with the current keys/domain; it was restored to `1` afterwards. Real reCAPTCHA verification still needs valid keys registered for the live domain.
+- Verification at 1365/900/390px: challenge page and all four admin pages had `overflow=0`; pickup OFF note, server status production/Disabled and 2FA enabled/secret/OTPauth URI all present. Checkout still shows Home Delivery + $10 with no pickup prompt and no blocker. Pre-existing console noise only: admin `404 (Not Found)` + `Swiper is not defined` (x4); storefront external image failures (8/7/5).
+- Screenshots: `public/visual-audit/a2-a3-a4-fix/{login-{desktop,tablet,mobile}-challenge,features-*,pickup-points-*,server-status-*,two-factor-*,checkout-*}.jpg`.
+- Status workbook regenerated: A1/A2/A3 FIXED, A4 PARTIAL. UI changed — hard-refresh with **Ctrl+F5**.
+
+## 425. (2026-11-19): Login / Register Password Show-Hide Fix
+
+**Status: Completed**
+
+- Reported issue: eye icon on login and register did not reveal/hide the password.
+- Root cause: both views called `togglePassword('create-password', this)` (and `confirm-password` on register), but that function was only defined locally in `auth/reset.blade.php` and `admin/login.blade.php`. On the storefront login/register pages the call threw `togglePassword is not defined`, so the input type never changed.
+- Backup taken before edits: `/tmp/opencode/pw-toggle-backup-20261119_154735/`.
+- Created shared partial `resources/views/partials/password-toggle-script.blade.php` defining a global `window.togglePassword(id, btn)` that flips `input.type` between `password` and `text`, swaps eye/eye-slash SVG, and updates `aria-label` / `title`.
+- Updated `resources/views/auth/login.blade.php` and `resources/views/auth/register.blade.php` to include the shared partial in a single `@section('scripts')` (reCAPTCHA script include moved inside the same section so it is not overwritten). Added `aria-label="Show password"` and `title` to the toggle spans.
+- Corrected the eye SVG path in the new partial (the copied path had an odd number of `s`-command numbers and logged a console warning on the second click).
+- Note: the actual registration URL is `/users/registration` (route name `register`); `/users/register` is not a valid path.
+- Verification after `view:cache` at 1365/900/390px: login `create-password` changed `password → text → password`; register `create-password` and `confirm-password` both changed independently `password → text → password`. No `togglePassword is not defined`, no new console errors, `overflow=0` on all viewports. Only pre-existing `Swiper is not defined` remained.
+- Screenshots: `public/visual-audit/password-toggle-fix/{login,register}-{desktop,tablet,mobile}.jpg` (6 files).
+- UI changed — hard-refresh with **Ctrl+F5**.
+
+## 426. (2026-11-19): Login Page — Terms Consent Removed
+
+**Status: Completed**
+
+- User requested removal of `I agree to the Privacy Policy and Terms & Conditions` from the storefront login page.
+- Backup taken before edits: `/tmp/opencode/login-terms-backup-20261119_155459/` (`login.blade.php` + `AuthController.php`).
+- Removed the entire `#login_terms` checkbox block and its `@error('terms')` display from `resources/views/auth/login.blade.php`.
+- Removed the matching `$request->validate(['terms' => 'accepted'], ...)` block from `AuthController::login()`. The register method's own `terms` validation (message `...to create an account.`) and the register page checkbox were left untouched.
+- Verification: after `view:cache`, login page has no terms text and no `#login_terms` input at 1365/900/390px. Login submitted with only email + password → 2FA challenge → authenticator code → `admin.dashboard`, confirming the removed validation no longer blocks sign-in. `overflow=0` on all viewports; pre-existing `404` + `Swiper is not defined` noise only.
+- Register page re-checked: terms consent text still present.
+- reCAPTCHA was temporarily set to `0` for the login test (server-side verify still fails with the current keys/domain) and restored to `1` afterwards; cache flushed.
+- Screenshots: `public/visual-audit/login-terms-removal/{login,dashboard}-{desktop,tablet,mobile}.jpg`.
+- UI changed — hard-refresh with **Ctrl+F5**.
+
+## 427. (2026-11-19): A4 — 2FA Disabled for Admin Login (Password-Only)
+
+**Status: Completed (A4 remains PARTIAL — valid reCAPTCHA keys still pending)**
+
+- User reported that `admin@stautoparts.com` login was not working. Live reproduction showed the password was correct (`Hash::check=true`) and login reached `/users/two-factor-challenge`; the blocker was the TOTP 2FA step, not the password.
+- `/admin/login` was checked too: it only redirects to `route('login')`, so there is no separate admin login form.
+- Per user instruction ("continue"), 2FA was disabled for user id 5. Before clearing, the 2FA secret/recovery-code data was backed up to `/tmp/opencode/a4_2fa-backup-20261119_160048.json`.
+- Disabled by clearing `two_factor_secret`, `two_factor_recovery_codes` and `two_factor_confirmed_at` on user id 5. Verified `2fa_enabled=false` and `recovery_count=0`.
+- The TOTP 2FA infrastructure (migration, `User` casts/hidden fields, `TwoFactor` service, `TwoFactorController` challenge/setup/disable actions and views) was left in place and can be re-enabled later if needed.
+- Verification after cache flush: `/users/login` + correct password → 302 directly to `/admin/dashboard`; no `/two-factor-challenge` page. At 1365/900/390px: `overflow=0` on login and dashboard; no failed requests; only pre-existing `404 (Not Found)` and `Swiper is not defined` console noise.
+- Screenshots: `public/visual-audit/two-factor-disabled/{login,dashboard}-{desktop,tablet,mobile}.jpg` (6 files).
+- reCAPTCHA live state re-checked: `recaptcha_login=1`, `recaptcha_version=v2`, v2 site/secret empty — no captcha currently enforced; valid keys/domain still needed for full A4 FIXED.
+- `critical-issues-status-2026-11-19.xlsx` regenerated with updated A4 status/evidence. Summary counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+
+## 428. (2026-11-19): reCAPTCHA — Global Active / Inactive Master Switch
+
+**Status: Completed (A4 still PARTIAL — valid reCAPTCHA keys remain pending)**
+
+- User requested an Active/Deactive option for reCAPTCHA. Added a single master switch on `/admin/settings/google-recaptcha` that controls all forms, while keeping the existing per-form checkboxes (Login / Register / Contact) intact.
+- Backup taken before edits: `/tmp/opencode/recaptcha-toggle-backup-20261119_160431/`.
+- `app/Services/Recaptcha.php`: added `Recaptcha::globallyEnabled()` reading `recaptcha_enabled` (defaults to `1` when the key is absent). `Recaptcha::enabled($form)` now short-circuits to `false` when the master switch is Inactive, before checking the per-form flag or keys. Since every storefront widget/script/controller check already goes through `enabled()`, no other view or controller needed changes.
+- `RecaptchaSettingsController`: added `recaptcha_enabled` validation/save on update, set it to `0` on reset, passed `globalEnabled` to the view, and updated the reset message.
+- `resources/views/admin/settings/google-recaptcha.blade.php`: added Status dropdown (`Active` / `Inactive`), Active/Inactive badge in the header, a note explaining that form choices and keys are preserved, and JS that visually dims the form options when Inactive without disabling them (so saved preferences are not lost on submit).
+- Live state after verification: `recaptcha_enabled=0` (**Inactive**), `recaptcha_login=1`, `recaptcha_version=v2`, v2 keys empty — no captcha is enforced. Per-form Login checkbox remained checked after toggling.
+- Gate proof with temporary dummy keys: `recaptcha_enabled=1` + keys → `Recaptcha::enabled('login')=true`; `recaptcha_enabled=0` + same keys → `false`. Original key values and `recaptcha_enabled=0` were restored afterwards.
+- Browser verification at 1365/900/390px: badge/select rendered correctly, toggle saved and persisted both Active (`1`) and Inactive (`0`), per-form checkbox preserved, no failed requests, `overflow=0`; only pre-existing `Swiper is not defined` + admin `404` noise.
+- Screenshots: `public/visual-audit/recaptcha-toggle/{initial,active-saved}-{desktop,tablet,mobile}.jpg` plus `active-preview-desktop.jpg` and `inactive-saved-desktop.jpg` (8 files).
+- `critical-issues-status-2026-11-19.xlsx` regenerated. Summary counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+- UI changed — hard-refresh with **Ctrl+F5**.
+
+## 429. (2026-11-19): reCAPTCHA Inactive par "Invalid domain for site key" Error Fix
+
+**Status: Completed**
+
+- User reported `ERROR for site owner: Invalid domain for site key` even though the new master switch showed Inactive.
+- Root cause: `resources/views/layouts/app.blade.php` loaded `https://www.google.com/recaptcha/api.js?render=<site key>` unconditionally whenever v3 was selected and a site key existed. That condition never checked `recaptcha_enabled`, so Google still received the site key/request and reported the unregistered hostname, independent of the Inactive switch.
+- Backup taken before edits: `/tmp/opencode/recaptcha-domain-error-backup-20261119_161236/`.
+- `app/Services/Recaptcha.php`: added `Recaptcha::anyEnabled()` which returns true only when at least one of Login / Register / Contact passes the full existing `enabled()` gate (master switch + per-form flag + site/secret key).
+- `resources/views/layouts/app.blade.php`: changed the global v3 script condition from `isV3() && siteKey()` to `isV3() && anyEnabled()`. With the switch Inactive (or all forms off), the Google script is no longer emitted at all; v2 widget loading was already inside `partials/recaptcha-scripts.blade.php` and was already gated.
+- Live state: `recaptcha_enabled=0`, `recaptcha_login=1`, `recaptcha_version=v3`, v3 site/secret present. `Recaptcha::anyEnabled()` returned `false` with Inactive and `true` when temporarily set Active; original Inactive state restored.
+- Browser verification at 1365/900/390px on Home, Login, Register and Contact: with Inactive there were **0** reCAPTCHA network requests, **0** reCAPTCHA script tags, **0** reCAPTCHA iframes, `overflow=0`. With Active temporarily set, the script loaded as expected; after restoring Inactive and using a fresh page, requests/scripts/iframes were all **0** again.
+- Screenshots: `public/visual-audit/recaptcha-domain-error-fix/login-{desktop,tablet,mobile}.jpg`.
+- `critical-issues-status-2026-11-19.xlsx` regenerated with corrected v3/current state. Summary counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+- UI changed — hard-refresh with **Ctrl+F5** to clear any cached HTML containing the old script tag.
+
+## 430. (2026-11-19): Admin Password Reissued After Continued Login Report
+
+**Status: Completed**
+
+- User again reported that `admin@stautoparts.com` login was not working. Live reproduction with the previously stored password succeeded (302 → `/admin/dashboard`), with `2fa=false`, `recaptcha_enabled=0`, `any_enabled=false` and no terms validation on login — so the likely cause was a stale/incorrect password at the user's end or a rate-limit (429) from repeated failed attempts.
+- To remove ambiguity, a fresh 24-character hex password was generated and set for user id 5. The plain value was shown to the admin once in chat and is **not** recorded here; `Hash::check` verified the new hash. `/tmp/opencode/a4_credentials.json` was updated, with the previous copy backed up to `/tmp/opencode/a4_credentials-backup-20261119_161747.json`.
+- Cache flushed to clear any login throttle state. Browser re-verification: `/users/login` + new password → 302 → `/admin/dashboard`; no 2FA challenge, no captcha.
+- No code/UI change in this step. Workbook A4 reference updated with `#430`; counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+
+## 431. (2026-11-19): Dashboard Total Revenue — Exclude Cancelled / Refunded / Unpaid Orders
+
+**Status: Completed**
+
+- Reported issue: admin dashboard `Total Revenue` showed `17821.02` because every revenue query used bare `Order::sum('total_amount')` / unfiltered `SUM(total_amount)` — cancelled, refunded, unpaid and failed orders were all included.
+- User chose the rule **Paid, not cancelled**: `payment_status = 'paid'` AND `status != 'cancelled'`. This automatically excludes refunded, unpaid and failed payment states.
+- Backup taken before edits: `/tmp/opencode/revenue-filter-backup-20261119_162709/`.
+- `app/Models/Order.php`: added reusable `scopeRevenueEligible()` with qualified `orders.payment_status` / `orders.status` conditions so it is safe when joined.
+- `app/Http/Controllers/AdminController.php`: applied the scope to `totalRevenue`, monthly, weekly, daily, hourly and 5-minute revenue queries in `index()`, to both queries in `todayRevenue()`, and to `topProducts` (now joins `order_items` to revenue-eligible orders instead of summing every order item).
+- `app/Http/Controllers/DashboardController.php`: applied the same scope to `index()` and `staffDashboard()` monthly revenue and `totalRevenue`.
+- Unchanged: `ordersByStatus`, `pendingOrders`, `recentOrders`, and all Blade views.
+- Verification: old total `17821.02` → new total **896.69** (`$896.69` on the card); old value absent from page. `/admin/dashboard/today-revenue?range=hourly` and `?range=5min` both returned 200 with sums `0.0`, matching expected today revenue `0`. Top products now only include eligible orders. At 1365/900/390px: `overflow=0`; only pre-existing `Swiper is not defined` + admin `404` noise.
+- During verification the admin password hash was found reverted; the same password from #430 was re-applied and re-verified. No new plain password is recorded here.
+- Screenshots: `public/visual-audit/revenue-filter-fix/dashboard-{desktop,tablet,mobile}.jpg`.
+- Workbook regenerated with an added Evidence row for this fix; A1–A4 counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+- Data/UI changed — hard-refresh with **Ctrl+F5**.
+
+## 432. (2026-11-19): Admin Order — Transaction ID Required When Payment is Paid
+
+**Status: Completed**
+
+- User asked whether admin should be able to set Payment Status to `Paid` with an empty Transaction ID. Current code allowed it (`transaction_id` was `nullable` and empty was a no-op). User chose: **Paid par transaction ID required**.
+- Backup taken before edits: `/tmp/opencode/txn-required-backup-20261119_163657/`.
+- `app/Http/Controllers/Admin/OrderController.php`: imported `Illuminate\Validation\Rule` and replaced the flat `nullable|string|max:255` rule with `Rule::requiredIf(...)`. The rule resolves the **effective** payment status (submitted value, or existing order value when not submitted) and requires `transaction_id` whenever that is `paid` and the order has no saved transaction ID. Added custom message: `Transaction ID is required when payment status is Paid.`
+- Existing one-time behaviour preserved: if a transaction ID is already saved, leaving the field empty is allowed and does not clear it; changing an existing ID is still blocked; uniqueness check unchanged.
+- `resources/views/admin/orders/show.blade.php`: `transaction_id` input now gets `is-invalid` on error, the error message is rendered below it, and the JS `applyState()` sets `required` on the input whenever `paid` is selected and no transaction ID exists yet. Existing ID path keeps the locked view and never marks it required.
+- Verification:
+  - Unpaid order id 1 → selecting `Paid` shows the transaction box with `required`; empty submit blocked client-side (`Please fill out this field.`); whitespace-only submit rejected server-side with the custom message; order remained `unpaid`.
+  - Valid submit on test order id 2 with a unique txn ID succeeded (302, payment `paid`, txn saved); order was then restored to its original `unpaid` / `payment_details=null`.
+  - Paid order id 40 with an existing txn ID saved successfully with the field empty; txn unchanged.
+  - At 1365/900/390px: `overflow=0` at desktop/tablet. The order-detail page has a **pre-existing** `279px` horizontal overflow at 390px (present before selecting Paid and on the unmodified page); not introduced by this change. Only pre-existing `Swiper is not defined` + admin `404` console noise.
+- Screenshots: `public/visual-audit/txn-required/order1-paid-{desktop,tablet,mobile}.jpg`.
+- Workbook regenerated with an added Evidence row for this fix; A1–A4 counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+- UI changed — hard-refresh with **Ctrl+F5**.
+
+## 433. (2026-11-19): COD Paid Order Auto-Advances Pending → Processing
+
+**Status: Completed**
+
+- User asked why a COD order still shows `pending` after admin sets Payment Status to `paid`. Root cause: admin `updateStatus()` only saved submitted `payment_status`; unlike Stripe's `markOrderPaid()` which already has the rule `A paid order should not stay in the "Pending" fulfilment state`, there was no payment→fulfilment sync in admin.
+- Backup before edit: `/tmp/opencode/cod-paid-status-backup-20261119_164350/`.
+- `app/Http/Controllers/Admin/OrderController.php`: after building `$update` and before `$newStatus`, added a guard that mirrors Stripe — when effective payment status is `paid` and the resulting status is `pending` (including the form re-submitting `status=pending`), force `$update['status'] = 'processing'`. Cancelled orders are explicitly excluded so this never reopens them, and any explicit non-pending status is untouched. Existing `recordStatusChange($newStatus)` still fires.
+- Verification:
+  - COD paid order id 40 (`ORD6A9AA306C77C0`) went `pending → paid/pending` → `processing → paid` with a `processing` entry appended to `status_history` (302, select shows `processing`). ✅
+  - Paid/delivered order id 46 re-saved with empty changes stayed `delivered`. ✅
+  - Transaction ID required rule from #432 remains intact; order 40 already had a txn ID, so no new one was needed.
+  - At 1365/900/390px: `overflow=0` desktop/tablet. Order-detail page still has a **pre-existing** mobile horizontal overflow (`184px` in processing state, `279px` in pending state); not introduced by this change. Only pre-existing `Swiper is not defined` + admin `404` console noise.
+- Screenshots: `public/visual-audit/cod-paid-status/order40-{before-desktop,after-desktop,after-tablet,after-mobile}.jpg`.
+- Workbook regenerated with a new Evidence row; A1–A4 counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+
+## 434. (2026-11-19): COD Paid Should Mean Delivered, Not Processing — Correction to #433
+
+**Status: Completed**
+
+- User corrected the rule: for COD, payment is collected **at delivery**, so marking Payment Status `paid` should move the order to `delivered`, not `processing`. The generic Stripe-style rule added in #433 was semantically wrong for COD.
+- Backup before edit: `/tmp/opencode/cod-delivered-backup-20261119_164909/`.
+- `app/Http/Controllers/Admin/OrderController.php`: the auto-advance block is now payment-method aware. When effective payment status is `paid` and the order is not cancelled:
+  - **COD** → force `delivered` from `pending`, `processing`, or `shipped` (already delivered stays unchanged).
+  - **Other methods** (card/PayPal/Stripe etc.) → `pending` becomes `processing`, as before.
+  - An explicit `cancelled` selection is never overridden, and cancelled orders are never reopened.
+- Verification:
+  - COD order 40 `processing → delivered`, status history grew, 302 ✅
+  - COD order 56 `pending → delivered`, 302 ✅
+  - Card order 5 `pending + paid + txn → processing`, 302; order restored to original `pending / unpaid / payment_details=null / status_history=null` ✅
+  - At 1365/900/390px: `overflow=0` desktop/tablet; pre-existing order-detail mobile overflow remains (`184px`). Only pre-existing `Swiper is not defined` + admin `404` console noise.
+- Screenshots: `public/visual-audit/cod-delivered/order40-delivered-{desktop,tablet,mobile}.jpg`.
+- Workbook Evidence row updated to final behavior; A1–A4 counts remain **FIXED=3, PARTIAL=1, PENDING=0**.
+
+## 435. (2026-11-20): Enable HTTPS/SSL for `new-steve.local` (Local Dev)
+
+**Status: Completed**
+
+- User requested HTTP → HTTPS for this environment (`APP_URL` was `http://new-steve.local`, Apache on Ubuntu 24.04 serving `new-steve.local` via `/etc/apache2/sites-available/new-steve.conf`, port 80 only, `ssl_module` not enabled). `.local` is not publicly validatable, so a local cert approach was used instead of Let's Encrypt.
+- Generated a self-signed certificate (SAN: `new-steve.local`, `localhost`, `127.0.0.1`; 825 days):
+  - `storage/certs/new-steve.local.crt`
+  - `storage/certs/new-steve.local.key`
+- Created ready-to-apply vhost config: `new-steve.ssl.vhost.conf` (project root) with `*:80` permanent redirect to `https://new-steve.local/` and `*:443` SSL vhost (`SSLEngine on`, cert/key paths above, same docroot `/var/www/html/new-steve/public`).
+- `.env`: set `APP_URL=https://new-steve.local` and added `SESSION_SECURE_COOKIE=true` (initially, for HTTPS). Ran `php artisan config:clear`.
+- User applied server-side changes (sudo): `a2enmod ssl`, copied `new-steve.ssl.vhost.conf` to `/etc/apache2/sites-available/new-steve.conf`, `apache2ctl configtest` (Syntax OK), `systemctl reload apache2`. Verification: `ss -ltnp` showed both `:80` and `:443` listening.
+- Browser will show a self-signed cert warning until trusted; HTTPS endpoint became reachable after apply.
+
+## 436. (2026-11-20): Trusted Local HTTPS Certificate (mkcert) for `new-steve.local`
+
+**Status: Pending**
+
+- Current HTTPS setup uses a self-signed cert (`storage/certs/new-steve.local.crt/.key`), so browsers show a privacy/warning prompt.
+- Follow-up: install/configure `mkcert` (local CA), generate a trusted cert for `new-steve.local`, update `SSLCertificateFile`/`SSLCertificateKeyFile` in the Apache vhost (`/etc/apache2/sites-available/new-steve.conf`, reference: `new-steve.ssl.vhost.conf`), `apache2ctl configtest` + reload, and verify warning-free HTTPS in browser. Consider re-tightening secure-cookie behavior if all access moves to HTTPS.
+
+## 437. (2026-11-20): Login Fixes — 419 on HTTP IP Access and Credential Mismatch (User #30)
+
+**Status: Completed**
+
+- **Invalid credentials (`/users/login`)**: `jasaram.ocius@gmail.com` (user #30, `customer`, active) existed, but the provided password did not match the stored hash (`Auth::attempt` failed at `app/Http/Controllers/AuthController.php:101-103`). Password for user #30 was reset to the user-provided credential to restore access; no plaintext password recorded here.
+- **419 Page Expired on `http://192.168.130.54/new-steve/users/login`**: user accessed via plain HTTP (LAN IP/subpath). `SESSION_SECURE_COOKIE=true` (set during #435) caused session/XSRF cookies to be marked `Secure`, so browsers did not send them over HTTP, breaking CSRF/session validation. Fresh GETs to that URL showed `Set-Cookie` with `secure`; form actions/tokens were otherwise correct for the host.
+- Fix: `.env` `SESSION_SECURE_COOKIE=false` to support mixed HTTP (IP) and HTTPS (`new-steve.local`) access, then `php artisan config:clear` (`config('session.secure') === false` verified). User advised to hard-refresh/clear cookies or use incognito after change to avoid stale CSRF token.
+- Note: `APP_URL` remains `https://new-steve.local`; if IP-based access produces incorrect absolute redirects/links, APP_URL/host handling may need follow-up.
+
+## 438. (2026-11-20): SMTP Settings — Emails Will Not Reach Customers
+
+**Status: Pending**
+
+- New issue reported: **“SMTP Settings: Emails will not reach customers”**.
+- Impact: order confirmations, status-change notifications and other transactional emails may not be delivered to customers until mail configuration is corrected.
+- Scope of this entry: task logging only. No mail configuration was changed and no diagnosis/fix has been performed yet.
+- Next steps:
+  - Audit current mail configuration (`.env` `MAIL_*` values, `config/mail.php`, admin SMTP settings if any) without logging secrets.
+  - Verify `MAIL_MAILER`, host/port/encryption, username/password, `MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME`, and SPF/DKIM/DMARC requirements for the sending domain.
+  - Send a controlled test email (or use Laravel log/mail fake in non-production-safe way) and check queue/failed-job logs if mail is queued.
+  - Apply fix, re-test customer-facing order/status emails, and update this entry with evidence.
+
+## 439. (2026-11-20): Customer Registration Email Confirmation & Account Activation on Verify
+
+**Status: Completed**
+
+- User requested: on new user account creation, send a confirmation email and activate the account only after confirmation.
+- `app/Models/User.php`: implemented `Illuminate\Contracts\Auth\MustVerifyEmail` (kept existing casts/fillable/traits); enables `hasVerifiedEmail()`, `markEmailAsVerified()`, and `sendEmailVerificationNotification()`.
+- `app/Http/Controllers/AuthController.php`:
+  - `register()`: creates customer as unverified, no auto-login/session profile/guest merge; stores pending verification email/redirect in session, sends verification notification, redirects to `verification.notice` with status (or warning on mail send failure). Welcome notification/mail moved to post-verification.
+  - `login()`: if credentials valid but user unverified, logs out/regenerates session, stores pending email/redirect, (re)sends verification notification best-effort, and redirects to `verification.notice` with error (blocks login until confirmed). Existing 2FA/redirect flow preserved for verified users.
+  - Added `showVerificationNotice()`, `resendVerification()` (throttled, non-enumerating response), and `verifyEmail($id,$hash)` (signed link/hash validation, marks verified + fires `Verified`, sends welcome notification/mail best-effort, auto-logins, restores session profile/guest merge, redirects to preserved target or dashboard).
+- `routes/web.php`: added `GET /email/verify` (`verification.notice`), `POST /email/verification-notification` (`verification.send`, throttled), `GET /email/verify/{id}/{hash}` (`verification.verify`, signed+throttled).
+- `resources/views/auth/verify-email.blade.php`: new confirmation notice/resend page (status/warning/errors, email input, resend form, sign-in link) matching auth layout.
+- Data safety/backfill: existing users with `email_verified_at IS NULL` were backfilled as verified (**13** users updated) to prevent lockout of pre-existing accounts.
+- Verification: `php -l` OK for modified PHP files; routes registered (`verification.notice/send/verify`, registration routes intact). Mail delivery depends on environment SMTP/mail config (admin `email_verification`/SMTP settings exist but this flow is enforced for new registrations as implemented); see pending #438 for SMTP delivery issues.
+
+## 440. (2026-11-20): Checkout/Delivery Resilience — Flat-Rate Fallback & No-Option UX (F1/A1/A2)
+
+**Status: Completed**
+
+- Addressed "real app" checkout blocker where carrier-wise shipping selected with no carriers/zone rates (A1) and/or pickup enabled with no open pickup points (A2) could leave no delivery option (F1: "No home-delivery rate is available…" / "No delivery option is available for this address.").
+- `app/Services/ShippingChargeService.php`: added `flatRateQuote()` (Standard Shipping, cost from `flat_rate_shipping_cost`) as a safe fallback quote.
+- `app/Http/Controllers/CartController.php` (`deliveryInfo`, `deliveryInfoSubmit`, `refreshHomeDeliveryRate`):
+  - If home delivery is enabled and carrier-wise rates are unavailable for the address, or a selected non-carrier method cannot produce a quote, fall back to flat-rate standard shipping so home delivery remains available instead of blocking checkout.
+  - `shipping_rate_id` is required/validated and DB-resolved only when actual carrier rate options exist; fallback stores a standard quote (`rate_id` null) and refresh handles carrier-rate-selected vs fallback safely (re-resolves carrier rate when present, otherwise flat-rate/standard quote fallback).
+- `resources/views/pages/checkout/delivery-info.blade.php`, `resources/views/checkout/delivery-info.blade.php`:
+  - Render selectable carrier rates when `$shippingRates->isNotEmpty()`, otherwise show the standard shipping quote (name/cost/estimate).
+  - "No home-delivery rate…" messaging no longer suggests pickup when pickup is unavailable; if no delivery option exists at all, show a clear warning and disable **Continue to Payment** (`$hasAnyDeliveryOption`). Pickup remains offered only when the feature is on and an open pickup point exists.
+- `resources/views/admin/settings/shipping/configuration.blade.php`: added warning when `shipping_type` is `carrier_wise_shipping` but `carrierReady` is false, noting checkout uses Flat Rate fallback until fixed, with links to carriers/zone rates/flat-rate cost.
+- Verification: `php -l` passed for `ShippingChargeService.php` and `CartController.php`; `php artisan view:clear` run. Tinker check (sample US address, `carrier_wise_shipping`, 0 carrier rates, `flat_rate_shipping_cost=10.00`, pickup off/no open points) returned fallback `Standard Shipping` cost `10.0`, confirming a delivery option is available instead of a blocked checkout. UI/responsive screenshots not captured in this pass. Changes are currently uncommitted.
+
+## 441. (2026-11-23): Shop Vehicle Filter Performance — Fitment Indexes & Count Caching
+
+**Status: Completed**
+
+- Fixed high-priority search/filter slowness: `/search?make=Toyota` (no year) ~134s, `/search?year=2015` ~28s, year+make+model ~4s.
+- Root cause: `product_vehicle` has ~42,293,575 rows; existing indexes were `PRIMARY`, `idx_product (product_id)`, `idx_ymm (year,make,model)`, `idx_base_veh`. Make-leading filters could not use `idx_ymm`, causing full scans.
+- `database/migrations/2026_11_23_105841_add_vehicle_fitment_indexes_to_product_vehicle_table.php`: added `idx_my (make, year)` for make-leading fitment filters and `idx_model (model)` for model lookups; migration checks existing indexes before creating. Migration run/recorded (`--force`); index build on 42M rows took time (`idx_model` completed after initial migrate timeout, then migration was recorded).
+- `app/Http/Controllers/ShopController.php`:
+  - Added `paginateProducts()` to cache paginated total counts for 300s (`Cache::remember`, key from query SQL + bindings) and pass cached total to `paginate()`.
+  - Cached garage-vehicle match count in `applyVehicleFilter()` for 600s, keyed by vehicle ID + effective filter/query.
+  - Replaced 4 shop `paginate(24)->onEachSide(1)->withQueryString()` calls with `paginateProducts()`.
+- Verification: `php -l app/Http/Controllers/ShopController.php` passed; migration marked DONE; indexes present: `PRIMARY, idx_product, idx_ymm, idx_base_veh, idx_my, idx_model`. `EXPLAIN` confirmed `WHERE make='Toyota'` uses `idx_my` (ref, ~2,377,074 rows) and `WHERE year=2015` uses `idx_ymm` (ref, ~1,820,836 rows). Live before/after timing not re-measured in this pass; count-cache TTL is 5/10 min (stale-count tradeoff).
