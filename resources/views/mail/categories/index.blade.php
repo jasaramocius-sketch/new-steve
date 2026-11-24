@@ -45,7 +45,7 @@
     <div class="category-toolbar mb-4 gap-3 d-grid">
         <div class="d-flex justify-content-between flex-md-row gap-2 flex-sm-row category-toolbar-top">
             <div class="w-auto">
-                @include('admin.partials.search-form', [
+                @include('backend.partials.search-form', [
                     'route' => route('categories.index'),
                     'placeholder' => 'Search category...'
                 ])

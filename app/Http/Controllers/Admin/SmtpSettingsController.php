@@ -23,7 +23,7 @@ class SmtpSettingsController extends Controller
             $driver = 'smtp';
         }
 
-        return view('admin.settings.smtp', [
+        return view('backend.settings.smtp', [
             'driver' => $driver,
             'mailHost' => $settings['mail_host'] ?? config('mail.mailers.smtp.host', ''),
             'mailPort' => $settings['mail_port'] ?? config('mail.mailers.smtp.port', 587),

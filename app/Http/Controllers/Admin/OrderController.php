@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class OrderController extends Controller
 {
@@ -39,14 +40,14 @@ class OrderController extends Controller
         $orders = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
         $orders->appends($request->query())->onEachSide(1);
 
-        return view('admin.orders.index', compact('orders', 'sortBy', 'sortDir', 'statusFilter', 'paymentStatusFilter'));
+        return view('backend.orders.index', compact('orders', 'sortBy', 'sortDir', 'statusFilter', 'paymentStatusFilter'));
     }
 
     public function show($id)
     {
         $order = Order::with(['user', 'items.product'])->findOrFail($id);
 
-        return view('admin.orders.show', compact('order'));
+        return view('backend.orders.show', compact('order'));
     }
 
     public function updateStatus(Request $request, $id)
@@ -261,7 +262,11 @@ class OrderController extends Controller
         NotificationHelper::orderStatusChanged($order, $oldStatus);
 
         if ($order->user_id && $order->user?->email && $newStatus !== $oldStatus) {
-            Mail::to($order->user->email)->queue(new OrderStatusChangedMail($order, $oldStatus));
+            try {
+                Mail::to($order->user->email)->send(new OrderStatusChangedMail($order, $oldStatus));
+            } catch (Throwable $exception) {
+                logger()->warning('Order status email failed: '.$exception->getMessage());
+            }
         }
 
         $message = 'Order updated successfully.';
@@ -341,7 +346,13 @@ class OrderController extends Controller
             return back()->with('error', 'No customer email is available for this order.');
         }
 
-        Mail::to($toEmail)->queue(new OrderConfirmationMail($order->load('items.product')));
+        try {
+            Mail::to($toEmail)->send(new OrderConfirmationMail($order->load('items.product')));
+        } catch (Throwable $exception) {
+            logger()->warning('Order confirmation email failed: '.$exception->getMessage());
+
+            return back()->with('error', 'Mail delivery failed. Check the SMTP settings and try again.');
+        }
 
         return back()->with('success', "Order details emailed to {$toEmail}.");
     }

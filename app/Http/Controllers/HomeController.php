@@ -269,7 +269,7 @@ class HomeController extends Controller
         $makes = collect();
         $models = collect();
 
-        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'hasMoreLatestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
+        return view('frontend.home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'hasMoreLatestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
     }
 
     private function buildExploreTabs($section): array
@@ -354,17 +354,30 @@ class HomeController extends Controller
     {
         $page = $this->pageOrAbort('about');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.about');
+        return view('frontend.pages.about');
     }
 
     public function contact()
     {
         $page = $this->pageOrAbort('contact');
 
-        return view('pages.contact', compact('page'));
+        return view('frontend.pages.contact', compact('page'));
+    }
+
+    /**
+     * Old /page/{slug} URL: keep it alive as a 301 to the canonical page URL.
+     */
+    public function legacyPage($slug)
+    {
+        $canonicalRoute = config("page-builder.live_url_map.page.$slug");
+        if ($canonicalRoute) {
+            return redirect()->route($canonicalRoute, [], 301);
+        }
+
+        return redirect()->route('page.show', $slug, 301);
     }
 
     public function page($slug)
@@ -376,7 +389,7 @@ class HomeController extends Controller
 
         $page = Page::where('slug', $slug)->where('status', true)->firstOrFail();
 
-        return view('pages.show', compact('page'));
+        return view('frontend.pages.show', compact('page'));
     }
 
     public function faq()
@@ -384,47 +397,47 @@ class HomeController extends Controller
         $faqs = Faq::where('status', true)->orderBy('order')->get();
         $page = $this->pageOrAbort('faq');
 
-        return view('pages.faq', compact('faqs') + ['page' => $page]);
+        return view('frontend.pages.faq', compact('faqs') + ['page' => $page]);
     }
 
     public function privacy()
     {
         $page = $this->pageOrAbort('privacy-policy');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.privacy');
+        return view('frontend.pages.privacy');
     }
 
     public function terms()
     {
         $page = $this->pageOrAbort('terms-conditions');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.terms');
+        return view('frontend.pages.terms');
     }
 
     public function returnPolicy()
     {
         $page = $this->pageOrAbort('return-policy');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.return-policy');
+        return view('frontend.pages.return-policy');
     }
 
     public function supportPolicy()
     {
         $page = $this->pageOrAbort('support-policy');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.support-policy');
+        return view('frontend.pages.support-policy');
     }
 
     public function robots()
@@ -563,7 +576,7 @@ class HomeController extends Controller
                 ->get()
                 ->each(function ($record) use (&$entries, $type, $base) {
                     $path = match ($type) {
-                        'pages' => '/page/'.$record->slug,
+                        'pages' => '/'.$record->slug,
                         'products' => '/product/'.$record->slug,
                         'blogs' => '/blog/'.$record->slug,
                         'brands' => '/brand/'.$record->slug,

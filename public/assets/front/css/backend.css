@@ -36,7 +36,7 @@ ul.admin-sidebar-drop li ul.list-unstyled li{display: list-item;}
 .admin-sidebar .nav-item-sub i {
     width:16px;
     text-align:center;
-    font-size:13px;
+    font-size:12px;
     flex-shrink:0;
 }
 .admin-sidebar .nav-item-sub:hover {
@@ -876,5 +876,42 @@ body.sidebar-open .admin-sidebar-overlay {
 .no-spinner {
     -moz-appearance: textfield;
     appearance: textfield;
+}
+
+/* Add/Edit Product form: the global .form-select rule sets min-width:200px,
+   which overflows narrow grid columns when the admin sidebar is expanded or on
+   small screens. Keep every select (and its searchable-select trigger/panel
+   wrapper) inside its own column. */
+body.admin-products-create-page [class*="col-"],
+body.admin-products-edit-page [class*="col-"],
+body.admin-products-create-page .form-select,
+body.admin-products-edit-page .form-select,
+body.admin-products-create-page .form-select-wrapper,
+body.admin-products-edit-page .form-select-wrapper,
+body.admin-products-create-page .ss-control,
+body.admin-products-edit-page .ss-control {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+}
+
+body.admin-products-create-page .form-select,
+body.admin-products-edit-page .form-select,
+body.admin-products-create-page .form-select-wrapper,
+body.admin-products-edit-page .form-select-wrapper,
+body.admin-products-create-page .ss-control,
+body.admin-products-edit-page .ss-control {
+    width: 100%;
+}
+
+/* Five tabs do not fit in a narrow content area; let them wrap instead of
+   spilling outside the card. */
+body.admin-products-create-page #productTabs,
+body.admin-products-edit-page #productTabs {
+    flex-wrap: wrap;
+}
+body.admin-products-create-page #productTabs .nav-link,
+body.admin-products-edit-page #productTabs .nav-link {
+    white-space: nowrap;
 }
 

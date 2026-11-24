@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+@extends('backend.layouts.app')
 
 @include('partials.page-attributes', ['pageId' => 'admin-page-builder-index-page', 'pageClass' => 'admin-page-builder-index-page'])
 

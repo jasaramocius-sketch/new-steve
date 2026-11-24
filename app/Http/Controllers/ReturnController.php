@@ -15,7 +15,7 @@ class ReturnController extends Controller
             ->latest()
             ->paginate(10);
 
-        return view('user.returns.index', compact('returns'));
+        return view('frontend.user.returns.index', compact('returns'));
     }
 
     public function create($orderId)
@@ -55,7 +55,7 @@ class ReturnController extends Controller
             ];
         });
 
-        return view('user.returns.create', compact('order', 'items'));
+        return view('frontend.user.returns.create', compact('order', 'items'));
     }
 
     public function store(Request $request, $orderId)

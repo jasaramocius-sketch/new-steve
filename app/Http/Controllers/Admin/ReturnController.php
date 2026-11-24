@@ -19,14 +19,14 @@ class ReturnController extends Controller
 
         $returns = $query->latest()->paginate(20)->withQueryString();
 
-        return view('admin.returns.index', compact('returns'));
+        return view('backend.returns.index', compact('returns'));
     }
 
     public function show($id)
     {
         $return = ReturnRequest::with(['order', 'user', 'product'])->findOrFail($id);
 
-        return view('admin.returns.show', compact('return'));
+        return view('backend.returns.show', compact('return'));
     }
 
     public function update(Request $request, $id)

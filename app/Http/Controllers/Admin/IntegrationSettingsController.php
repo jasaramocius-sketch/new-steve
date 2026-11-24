@@ -14,7 +14,7 @@ class IntegrationSettingsController extends Controller
     {
         $settings = Setting::getAllAsArray();
 
-        return view('admin.settings.social-logins', [
+        return view('backend.settings.social-logins', [
             'settings' => $settings,
             'googleClientSecretConfigured' => ! empty($settings['google_client_secret']) || ! empty(config('services.google.client_secret')),
             'facebookClientSecretConfigured' => ! empty($settings['facebook_client_secret']) || ! empty(config('services.facebook.client_secret')),
@@ -72,7 +72,7 @@ class IntegrationSettingsController extends Controller
 
     public function facebookChat()
     {
-        return view('admin.settings.facebook-chat', [
+        return view('backend.settings.facebook-chat', [
             'settings' => Setting::getAllAsArray(),
         ]);
     }
@@ -98,7 +98,7 @@ class IntegrationSettingsController extends Controller
 
     public function facebookComment()
     {
-        return view('admin.settings.facebook-comment', [
+        return view('backend.settings.facebook-comment', [
             'settings' => Setting::getAllAsArray(),
         ]);
     }
@@ -122,7 +122,7 @@ class IntegrationSettingsController extends Controller
     {
         $settings = Setting::getAllAsArray();
 
-        return view('admin.settings.google-map', [
+        return view('backend.settings.google-map', [
             'settings' => $settings,
             'apiKeyConfigured' => ! empty($settings['google_map_api_key']),
         ]);
@@ -145,7 +145,7 @@ class IntegrationSettingsController extends Controller
     {
         $settings = Setting::getAllAsArray();
 
-        return view('admin.settings.google-firebase', [
+        return view('backend.settings.google-firebase', [
             'settings' => $settings,
             'serverKeyConfigured' => ! empty($settings['firebase_server_key']),
         ]);

@@ -6179,13 +6179,13 @@ Layout:
 | Issue | Status | Notes |
 |---|---|---|
 | Reviews - New reviews cannot be posted | Partial | Review submit flow hardened (`resources/views/product/show.blade.php`, `app/Http/Controllers/ReviewController.php`) for JSON/non-JSON errors; purchase-eligibility rule still blocks users without qualifying purchased order (`ProductReviewEligibility`). Decide policy: allow verified-email reviews or keep purchase-only with clearer UX. |
-| Performance - Every storefront page ~20 MB | Partial | Mobile category tree lazy-loaded via `/ajax/mobile-categories`; home page ~608KB verified. `/search?search=oxygen+sensor` still ~13.2MB; investigate search page bloat (filters/sidebar/result rendering). |
-| Search - Foreign-language duplicates and poor titles | Partial | Suggestions deduped/whitespace-normalized in `ShopController@suggestions`; main search results still need dedupe/locale/title cleanup. |
+| Performance - Every storefront page ~20 MB | Fixed | Mobile category tree lazy-loaded via `/ajax/mobile-categories`; home page ~608KB verified. `/search?search=oxygen+sensor` lazy-loads the sidebar tree (#457): 413KB / 4,705 lines (was 13.2MB / 135,486 lines). |
+| Search - Foreign-language duplicates and poor titles | Fixed | Added `cleanProductTitle()` helper: product cards and suggestions prefer the first ASCII line of imported multilingual titles. Suggestions also dedupe by cleaned name (#458). |
 | Compare - accepts non-existent products | Fixed | `CompareController@add` validates active product exists, returns 404 JSON for missing. |
 | Cart - Quantity capped silently | Fixed | `CartController@updateQuantity` returns `capped`+message; cart JS shows `toastr.warning`. |
-| Routing - Common URLs 404; no order tracking | Partial | `/contact` 301, `/track-order` 200, `/terms-and-conditions` 200, order tracking route/link present. Still 404: `/login` (actual `/users/login`), `/register` (no route), `/shop` (actual `/search`), `/about` (actual `/about-us`); add aliases/redirects. |
+| Routing - Common URLs 404; no order tracking | Fixed | `/contact` 301, `/track-order` 200, `/terms-and-conditions` 200, order tracking route/link present. Added 301 aliases for `/login`, `/register`, `/shop`, `/about` (#458). |
 
-- Next steps: add missing route aliases/redirects, investigate search-page bloat, add main-search dedupe/title cleanup, and confirm review posting policy/UX. No commit made.
+- Remaining step: confirm review posting policy/UX (purchase-only vs verified-email). Search bloat, titles and route aliases are now fixed in #457/#458. No commit made.
 
 ## 444. (2026-11-23): Admin Order Status Workflow Guard, Unpaid-Shipping Warning & Stripe Refund API
 
@@ -6339,3 +6339,353 @@ Layout:
 - Added CSS so a generated searchable trigger stays hidden when its native select has `d-none` (bulk category action).
 - Verification: `php -l` on controller/routes, `node --check` on JS, `view:cache`, route registered, and lookup endpoint smoke-tested for all three types.
 - Files: `app/Http/Controllers/ProductController.php`, `routes/web.php`, `resources/views/admin/products/index.blade.php`, `resources/views/admin/products/create.blade.php`, `resources/views/admin/products/edit.blade.php`, `public/assets/front/js/searchable-select.js`, `public/assets/front/css/searchable-select.css`, `TASKS.md`.
+
+
+## 454. (2026-11-24): General Settings (Header/Footer) — 21 MB page / menu link options
+
+**Status: Implemented**
+
+- `Settings > General Settings (/admin/settings/header)` was 21.5 MB / 68,895 lines. The navigation menu builder printed all 21,300 categories three times (All + Search + children) = ~63,965 link options, plus a full availability map.
+- `AdminController::headerSettings()` no longer loads/passes `$categories`, `$pages`, `$posts`. It now builds `availableMenuUrls` only for links already saved in `nav_menu` (recursive, page/post/category-aware), so the page no longer embeds every URL.
+- Added `GET admin/settings/header/links?type=pages|posts|categories&mode=recent|all|search&q=&page=` (`admin.settings.header.links`) returning paginated JSON `{data:[{label,url,type}], current_page, last_page, per_page, total}`. Recent = 10 rows, All/Search = 20 rows.
+- Rebuilt the menu picker panel in `resources/views/admin/settings/header.blade.php`:
+  - Pages/Posts: Recent / All / Search
+  - Categories: All / Search
+  - Search is debounced (250 ms), requests are abortable, and Prev/Next + `Page X of Y · N links` pagination is rendered.
+  - Selections still add normal menu rows; newly selected linked URLs are added to the availability map so they are not falsely flagged as unavailable.
+- Verification: `php -l` on controller/routes, `route:list` shows the new endpoint, `view:cache` passes, endpoint smoke-tested (categories page 2 = 20 items / 21,300 total / 1,065 pages; search returns matches; pages/posts return data), rendered page measured at ~257 KB / 5,043 lines with `category_boxes=0`, and all 21 inline JS blocks pass `node --check`.
+- Files: `app/Http/Controllers/AdminController.php`, `routes/web.php`, `resources/views/admin/settings/header.blade.php`, `TASKS.md`.
+
+
+## 455. (2026-11-24): Pagination summary text — Page X of Y (Total)
+
+**Status: Implemented**
+
+- Replaced the global pagination summary in `resources/views/vendor/pagination/gs-pagination.blade.php`:
+  - Old: `Showing 1 to 24 of 493679 results`
+  - New: `Page 1 of 20570 (493679 Total)`
+- Uses `$paginator->currentPage()`, `$paginator->lastPage()`, and `$paginator->total()`.
+- Removed the duplicate page-count span from `resources/views/vendor/pagination/_go-to-page.blade.php` so the new text appears once (next to the Go to page control).
+- Verification: `view:clear` + `view:cache` passed; rendered paginator output confirms `Page 1 of 20570 (493679 Total)` and no `Showing` text.
+- Files: `resources/views/vendor/pagination/gs-pagination.blade.php`, `resources/views/vendor/pagination/_go-to-page.blade.php`, `TASKS.md`.
+
+
+## 456. (2026-11-24): Admin list result info — consistent Page X of Y (Total)
+
+**Status: Implemented**
+
+- Follow-up to #455: admin list pages had their own `Showing x-y of total` header text, which conflicted with the new pagination summary.
+- Replaced all 24 admin occurrences with `Page {{ $paginator->currentPage() }} of {{ $paginator->lastPage() }} ({{ $paginator->total() }} Total)`.
+- Covered: brands, orders, subscribers, contacts, returns, customers (index/show), staff, product stock, users, blogs, blog categories, pages, FAQs, coupons (index/show), reviews, sellers, file revisions, home-page sections, categories, revisions, support conversations, support tickets.
+- `Showing: {{ $selectedFile }}` in the log viewer was intentionally left unchanged (not paginator info).
+- Verification: grep confirms no `Showing $...firstItem()` patterns remain under `resources/views/admin`; `view:clear` + `view:cache` passed.
+- Files: 24 admin Blade views under `resources/views/admin/`, `TASKS.md`.
+
+
+## 457. (2026-11-24): Storefront /search — lazy sidebar category tree
+
+**Status: Implemented**
+
+- `/search?search=oxygen+sensor` was still 13.2 MB / 135,486 lines because the shop sidebar recursively printed all 20,891 category rows.
+- Added `CategoryTree::pathTo(int $categoryId)` to return the root-to-node id path, so only the active category branch is expanded on category pages.
+- Added `GET /ajax/shop-category-children?parent=ID&level=N&active[]=...` (`ajax.shop-category-children`) in `ShopController`, returning one level of child categories per request.
+- Added `resources/views/partials/shop-sidebar-category-items.blade.php` and replaced the full nested loop in `resources/views/shop/index.blade.php` with a lazy partial. Each expandable branch fetches its children on `show.bs.collapse`; already-expanded active branches are loaded on page ready. Failed loads show a retry button.
+- Category pages now pass `activeCategoryIds` so the current branch (and its ancestors) expand automatically.
+- Verification: `php -l` on controller/service/routes, `node --check` on the inline JS, `view:clear` + `view:cache`, route registered, endpoint smoke-tested for normal and active branches.
+- Result: `/search?search=oxygen+sensor` dropped from 13,245,469 bytes / 135,486 lines to 413,117 bytes / 4,705 lines (~97% smaller); the 20,891-child `<li>` pattern is gone. `/category/adhesives` is 408,537 bytes with `data-active-categories="1,1334"` and only the active branch expanded.
+- Files: `app/Services/CategoryTree.php`, `app/Http/Controllers/ShopController.php`, `routes/web.php`, `resources/views/shop/index.blade.php`, `resources/views/partials/shop-sidebar-category-items.blade.php`, `TASKS.md`.
+
+
+## 458. (2026-11-24): Storefront titles, suggestion dedupe & common URL aliases
+
+**Status: Implemented**
+
+- Imported product names contain the same title on several lines in different languages (e.g. `Bonde pour sonde d’oxygène / Oxygen Sensor Bung / Tapón para Sensor de Oxígeno`), which made search cards and autocomplete hard to read.
+- Added `cleanProductTitle()` in `app/helpers.php`: normalizes whitespace and prefers the first ASCII-only line, falling back to the first line when every translation contains non-ASCII characters.
+- `resources/views/partials/product-card.blade.php` now renders cleaned titles on storefront listings.
+- `ShopController@suggestions` now uses the cleaned title and dedupes by normalized cleaned name (falling back to part number/slug), so repeated `Oxygen Sensor Connector` / `Oxygen Sensor, Genuine OE Part` suggestions no longer crowd out other matches.
+- Added 301 aliases for common URLs: `/login` → `/users/login`, `/register` → `/users/registration`, `/shop` → `/search`, `/about` → `/about-us`.
+- Verification: `php -l` on helpers/controller/routes, `view:clear` + `view:cache`, route list shows the aliases, all four aliases return 301 with the expected `Location`, search titles are now single-line English, and the suggestions endpoint returns unique names.
+- Files: `app/helpers.php`, `app/Http/Controllers/ShopController.php`, `resources/views/partials/product-card.blade.php`, `routes/web.php`, `TASKS.md`.
+
+
+## 459. (2026-11-24): Credential-waiting integrations — ready to go when admin saves keys
+
+**Status: Implemented (live provider settlement still needs the real credentials)**
+
+- User asked that every task currently waiting on credentials be made ready now, so adding credentials in Admin + enabling the matching Features toggle is enough and no further code change is needed.
+- Payment Methods UI:
+  - Every configured secret field now gets its own reveal/edit icon pair, fixing gateways with multiple secrets (bKash, Stripe, etc.).
+  - Added optional `STRIPE_WEBHOOK_SECRET` with signed-webhook verification in `CartController::stripeWebhook()`; an unsigned/invalid callback now gets HTTP 400 instead of being trusted.
+  - Added N-Genius sandbox toggle, MercadoPago currency help, ProxyPay signature documentation, and Nagad mode/key help.
+- Provider adapters (`PaymentGatewayManager`) hardened end to end:
+  - **Nagad** is no longer a stub: initialize + complete now use merchant RSA encryption/signing, sandbox/live base URLs, callback URL, payment reference storage, and signed/decrypted verification with order/amount/merchant binding. The old “confirm manually from dashboard” wording was removed.
+  - **bKash** uses `/token/grant`, `/create` (with `mode`, `payerReference`, `bkashURL`) and `/execute`, with invoice and amount checks.
+  - **iyzico** uses `IYZWSv2` headers with random key, URI-path signing, `x-iyzi-rnd`, and stores checkout details before redirect fallback.
+  - **Authorize.Net** now builds the required `settingName`/`settingValue` JSON settings XML, includes `cancelUrl`, binds invoice/amount on return, and uses the sandbox hosted form URL.
+  - **ProxyPay** uses one canonical sorted `key=value&...` HMAC helper for both outbound and return signatures; amount/currency are checked.
+  - **PayPal** uses modern `payment_source.paypal.experience_context`, idempotent capture key, and amount/currency checks.
+  - **MercadoPago**, **SSLCommerz**, **Paystack**, **N-Genius**, **Instamojo**, **VoguePay**, and **Nagad** now bind callbacks to the resolved order and re-query/signature-verify before payment is marked paid.
+  - **N-Genius** webhook order resolution now understands nested `order.reference` / `order.merchantOrderReference`.
+- Order state/security:
+  - `markPaid()` is atomic (`lockForUpdate`), ignores cancelled orders, and returns whether the transition happened; webhooks no longer clear the checkout cart.
+  - Webhook failures now return HTTP 422 so providers retry; successful confirmations return 200.
+  - `cancel()` re-queries the provider before restoring stock so a last-second paid order is not cancelled.
+  - CSRF exceptions now cover subdirectory installs, and FORCE_HTTPS no longer redirects provider webhook POSTs.
+- Email readiness:
+  - Order confirmation/status emails changed from `Mail::queue()` to safe synchronous `Mail::send()` with try/catch logging, so saved SMTP credentials work without requiring a queue worker.
+  - Admin SMTP settings page already applies DB-backed driver/host/port/credentials/sender at runtime; no env-only dependency remains.
+- Verification: `php -l` passed on all changed PHP files; `node --check` on touched JS; `view:clear` + `view:cache` passed; checkout routes confirmed. Tinker smoke tests confirmed `card,cod` with no new credentials; N-Genius fake credentials satisfy `isConfigured()` + sandbox toggle; Stripe webhook signature accepts a correctly signed payload and rejects a bad one. Nagad RSA encryption/signing was round-tripped with a generated key pair (correct signed response accepted, bad signature rejected), including full-PEM and raw-key normalization and the `050` currency code. A follow-up read-only audit found no remaining credential/checkout blocker or path that marks an order paid without provider confirmation.
+- Files: `app/Support/PaymentMethods.php`, `app/Services/Payments/PaymentGatewayManager.php`, `app/Http/Controllers/CartController.php`, `app/Http/Controllers/Admin/OrderController.php`, `app/Http/Middleware/EnforceFeatureFlags.php`, `bootstrap/app.php`, `resources/views/admin/settings/payment-methods.blade.php`, `resources/views/checkout/gateway/pending.blade.php`, `TASKS.md`.
+
+
+## 460. (2026-11-24): Admin product form — auto-parts fields and multi-row fitment editor
+
+**Status: Implemented**
+
+- User asked for the missing auto-parts product fields but explicitly requested that **part number/SKU be skipped** because SKU is not used. The existing auto-generated readonly `part_number` remains untouched; no SKU input was added.
+- Added nullable `products` columns: `meta_title`, `meta_description`, `oem_numbers_json`, `interchange_numbers_json`, `weight_kg`, `dimensions_json`, `condition`, `warranty_months`, `warranty_text` (`2026_11_24_000001_add_auto_parts_fields_to_products_table.php`).
+- Added `product_fitments` table (`2026_11_24_000002_create_product_fitments_table.php`) and `ProductFitment` model for `{year_from, year_to, make, model, engine, sort_order}` rows.
+- `ProductController` create/edit/store/update now load, validate, save and display all new fields. OEM/interchange lists accept line, comma or semicolon separated values; dimensions are stored as structured JSON; warranty supports months plus free text; condition defaults to `New`.
+- Multi-row fitment editor replaces the old no-op single year/make/model inputs. It uses the cached vehicle catalog for year selects and make suggestions (without embedding 14k+ models/engines in the form) and a `<template>`/repeater pattern matching the home-page editor.
+- Saving fitments mirrors each year in a range into `product_vehicle` with a `admin-fitment:` note prefix, so the existing storefront vehicle filter and `VehicleCatalog` dropdowns keep working without changing the 42M-row pivot schema. Only those generated rows are replaced on edit; imported fitments are preserved.
+- `VehicleCatalog` cache keys are now versioned and `flush()` increments the version, so all year/make/model/engine caches are invalidated after fitment changes instead of only two keys. Unchanged fitments are detected and do not trigger a cache flush.
+- Slug is editable in the new SEO tab; blank slugs are generated from name + part number, collisions are suffixed, and editing keeps the existing slug unless changed.
+- Storefront product page now uses saved SEO meta title/description, shows fitment badges and per-vehicle fit confirmation from the new fitment rows, and renders the specifications table again (imported `title/value` specs and admin `label/value` specs both work). Condition, warranty, weight, dimensions, OEM and interchange numbers are merged into that table.
+- Admin product details page now shows condition, warranty, weight/dimensions, OEM/interchange numbers, SEO fields and a fitments table.
+- Verification: `php -l` on all changed PHP files, `view:clear` + `view:cache`, migrations ran successfully, and Tinker smoke tests confirmed create/update persistence, fitment mirroring (including range expansion), invalid fitment rejection, catalog cache invalidation, rollback cleanup, and successful rendering of admin create/edit/details and storefront product pages.
+- Files: `app/Http/Controllers/ProductController.php`, `app/Models/Product.php`, `app/Models/ProductFitment.php`, `app/Services/VehicleCatalog.php`, `database/migrations/2026_11_24_000001_add_auto_parts_fields_to_products_table.php`, `database/migrations/2026_11_24_000002_create_product_fitments_table.php`, `resources/views/admin/products/create.blade.php`, `resources/views/admin/products/edit.blade.php`, `resources/views/admin/products/partials/fitment-editor.blade.php`, `resources/views/admin/products/show.blade.php`, `resources/views/product/show.blade.php`, `resources/views/partials/product-buy-return-policy.blade.php`, `TASKS.md`.
+
+
+## 461. (2026-11-24): Add/Edit Product selects no longer overflow narrow admin layouts
+
+**Status: Implemented**
+
+- User reported that the manually set `min-width: 200px` on `select.form-select` makes Add/Edit Product selects overlap the next field or escape the section when the admin sidebar is expanded or on a small screen.
+- Root cause: the shared storefront stylesheet has a global `.form-select { min-width: 200px }` rule. It also applies to the generated searchable-select trigger (`.ss-control.form-select`), so both native and enhanced selects were forced to 200px even inside much narrower grid columns.
+- Added page-scoped overrides in `public/assets/front/css/backend.css` for `body.admin-products-create-page` and `body.admin-products-edit-page`: grid columns, `.form-select`, `.form-select-wrapper` and `.ss-control` now use `box-sizing:border-box`, `min-width:0`, `max-width:100%` and `width:100%`. Higher specificity wins over the later-loaded global rule without changing storefront filter selects.
+- Product form tabs now wrap instead of spilling outside the card in a narrow content area.
+- Fitment editor rows now use `col-6 col-sm-4 col-xl-2/3/1` instead of `col-md-2/3/1`, so the year/make/model/engine/remove columns degrade cleanly on phones and tablets.
+- Verification: `view:clear` + `view:cache`, CSS syntax check, and rendered admin create/edit pages confirm the scoped rules are present and no global storefront select behavior was changed.
+- Files: `public/assets/front/css/backend.css`, `resources/views/admin/products/partials/fitment-editor.blade.php`, `TASKS.md`.
+
+
+## 462. (2026-11-24): Product admin action buttons matched to other admin pages
+
+**Status: Implemented**
+
+- Aligned Add/Edit Product form actions and the Add Product list button with the standard admin button pattern used on other create/edit pages (`btn btn-primary steve-btn gap-1` with Font Awesome icons).
+- Add Product form: Save now uses `<i class="fas fa-save"></i> Save Product`; Cancel now has `<i class="fas fa-times"></i>Cancel` instead of being iconless. Removed the extra `px-4` padding and normalized the separator/action spacing.
+- Edit Product form: same pattern for `Update Product` and `Cancel`; cleaned up the duplicate `gap-1` class.
+- Products list: the `Add Product` button now also carries `steve-btn`, matching the neighbouring Import action and other admin header actions.
+- Verification: `view:clear` + `view:cache` and rendered admin index/create/edit pages confirm the updated button classes/icons.
+- Files: `resources/views/admin/products/index.blade.php`, `resources/views/admin/products/create.blade.php`, `resources/views/admin/products/edit.blade.php`, `TASKS.md`.
+
+
+## 463. (2026-11-24): Fitment row action icons switched to admin SVG action buttons
+
+**Status: Implemented**
+
+- User asked that the icons inside Add/Edit Product → Vehicle Details `fitment-rows` use the same inline SVG `action-btn` style as the Products index action buttons (View/Edit/Delete), instead of Font Awesome `<i>` icons.
+- Replaced both row controls with the shared action-button markup:
+  - Add row: `action-btn btn-view-live` with a stroke-style plus SVG.
+  - Remove row: `action-btn btn-cancel` with the exact trash SVG used by the Products index delete button, including tooltip attributes.
+- Restored the remove button on existing saved rows (it was commented out) and made the initial row markup match the `<template>` used for newly added rows, so both add and remove work consistently.
+- Rebalanced fitment columns from `2/2/2/2/3/1` to `2/2/2/2/2/2` so the two 36px circular action buttons fit at `col-xl-2` without squeezing the engine field.
+- `addFitmentRow()` now initializes Bootstrap tooltips on injected rows, which the layout's one-time tooltip pass does not cover.
+- Verification: `view:clear` + `view:cache`; rendered create/edit pages contain the inline `action-btn` SVGs and no `fas fa-times`/`fas fa-plus` inside fitment rows.
+- Files: `resources/views/admin/products/partials/fitment-editor.blade.php`, `TASKS.md`.
+
+
+## 464. (2026-11-24): Search Categories settings — paginated autocomplete picker
+
+**Status: Implemented**
+
+- `Admin > Settings > Search Categories` was 7.6 MB / 215,042 lines because it recursively rendered all 21,300 categories (plus orphans) as checkboxes on page load.
+- `AdminController@searchCategorySettings()` no longer loads `Category::searchCategoryTree()` or the orphan-category query; it only resolves the already-saved `search_category_menu` items for the Selected list.
+- Added `GET /admin/settings/search-categories/lookup?q=&page=` (`admin.settings.search-categories.lookup`) returning paginated JSON `{data:[{id,label,url,context}], current_page, last_page, per_page, total}` with 20 rows per page. Search is a `LIKE` filter on category name; `context` shows the immediate parent when present.
+- Rebuilt the Available Categories panel as an AJAX picker: debounced search (250 ms), Prev/Next buttons, `Page X of Y (N Total)` info, loading/empty/error + retry states, and checkboxes generated from the JSON response. Existing add/reorder/remove JS and hidden JSON payload are unchanged, so saving behaviour is identical.
+- Checkbox state is derived from the current Selected list, so already-picked categories stay checked as pages are navigated.
+- Verification: `php -l` on controller/routes, `view:clear` + `view:cache`, route registered, endpoint smoke-tested (page 1 = 20 rows / 21,300 total / 1,065 pages; `oxygen` search = 41 matches). Inline JS passes `node --check`. Rendered settings page dropped from 7,675,197 bytes / 215,042 lines to 99,507 bytes / 1,322 lines (~98.7% smaller), with 0 checkbox inputs and no category-tree includes in the HTML.
+- Files: `app/Http/Controllers/AdminController.php`, `routes/web.php`, `resources/views/admin/settings/search-categories.blade.php`, `TASKS.md`.
+
+
+## 465. (2026-11-24): Configurable supplier stock feed, scheduled sync and low-stock threshold
+
+**Status: Implemented (integration-ready; feed credentials/URL supplied by admin)**
+
+- Audit flagged stock as placeholder-like: Out of Stock 0, Low (1–5) 401,429 of 761,107 products, many with `vendor_stock = 1`.
+- Confirmed from code that there is **no** supplier feed/API yet. Stock enters via `ImportProductsJob` CSV `stock` column, manual admin bulk edits and order decrements. No fake/guessed endpoint was added.
+- Added `App\Support\StockSync` as the single source of truth for feed settings and defaults (`low_stock_threshold = 5`, format `json`, key `part_number`, stock field `stock`, frequency `manual`, disabled). It tolerates DB/migration errors so `artisan` stays usable.
+- Added `Admin > Products > Stock Sync` settings page (`GET/POST /admin/settings/stock-sync`) with feed URL, optional Bearer token (readonly/reveal/edit like Payment Methods), format, optional JSON items path, key field (`part_number|id|slug`), stock field, schedule (`manual|hourly|daily`), enable switch, low-stock threshold and last-run/result. Shows **Integration required** until a URL is saved and sync is enabled. `POST /admin/settings/stock-sync/run` queues a sync; Save rejects enabling without a URL.
+- Added `App\Services\StockFeedSyncService`: fetches JSON/CSV with a 60s timeout, optional Bearer token, optional dot-notation items path, normalizes key→stock rows and updates `vendor_stock` in chunks of 500 **only** for products present in the feed. Products absent from the feed are never zeroed. Dry-run mode reports matches without writing. Failures and skips are recorded in settings.
+- Added `SyncProductStockJob` (queued, used by Run now) and `stocks:sync` command (`--dry-run`, `--force`). Scheduled hourly/daily via `routes/console.php` only when the toggle is on and frequency is not `manual`; `withoutOverlapping()` prevents parallel runs.
+- Stock Management now reads `low_stock_threshold` from settings (query `?threshold=` still overrides) and links to the new settings page. Sidebar Products menu gained a Stock Sync link and active-state handling; it is nested under **Stock Management** (not as a sibling item). Stock Management keeps its direct link and now has a Bootstrap collapse chevron toggle that expands/collapses the Stock Sync child, with scoped indentation/arrow CSS matching the other toggle groups.
+- Verification: `php -l` on all changed/new PHP files, `view:clear` + `view:cache`, route list, rendered settings page, inline JS `node --check`, controller save smoke test (302 + saved values, then restored), `schedule:list` with toggle off (no stock entry) and with hourly enabled (`0 * * * * php artisan stocks:sync`), then restored. `stocks:sync --dry-run` skips safely when unconfigured; with `Http::fake`, JSON array, nested `data.products` path and CSV dry-runs matched the expected rows, a real fake-feed run wrote only the two mapped products (values restored afterwards), and a missing part number was reported as not found without touching other stock.
+- Files: `app/Support/StockSync.php`, `app/Services/StockFeedSyncService.php`, `app/Jobs/SyncProductStockJob.php`, `app/Console/Commands/SyncProductStock.php`, `app/Http/Controllers/AdminController.php`, `app/Http/Controllers/ProductController.php`, `routes/web.php`, `routes/console.php`, `resources/views/admin/settings/stock-sync.blade.php`, `resources/views/admin/partials/sidebar.blade.php`, `resources/views/admin/products/stock.blade.php`, `TASKS.md`.
+
+
+## 466. (2026-11-24): 500 root cause fixed + safe 500 debug facility
+
+**Status: Implemented**
+
+- Root cause of the latest `500 Server Error`: `ErrorException: Undefined variable $setupConfigExpanded` in the compiled admin sidebar. The inline `@php($stockSubmenuExpanded = ...)` added in #465 caused Blade to mispair with the later `@php ... @endphp` Settings block, leaving raw `@php` / `{{` in `storage/framework/views/8ca4fa...php`. Fixed by moving `$stockSubmenuExpanded` into the sidebar's main `@php` block. Compiled sidebar now has 0 raw `@php` and 0 raw `{{`; standalone render is 28,083 bytes and clean.
+- Added `App\Support\ErrorDebugger` + dedicated `debug500` log channel (`storage/logs/debug500.log`). Every reported throwable is written as a structured JSON line with id, time, env, method/path, route name, user id, exception class/message/file/line, first 8 stack frames, PHP version and peak memory. Expected 4xx traffic (validation, auth, token mismatch, HTTP status < 500) is filtered out.
+- Deliberately **not** logged: request body, cookies, headers, query strings or secrets. Debug logging is wrapped so it can never break normal exception handling. No public stack traces are rendered.
+- Added `php artisan debug:last-error {--limit=} {--json}` for CLI diagnosis.
+- Added admin-only `GET /admin/system/debug-errors` (`admin.system.debug-errors`) with a compact HTML viewer showing the last 30 records and CLI hint. It is available in `local` automatically, or in production only when `DEBUG_ERRORS_ENABLED=true` (config `app.debug_errors_enabled`); otherwise it 404s. Added a gated **500 Debug** link under `Admin > System`. Enabled `DEBUG_ERRORS_ENABLED=true` in `.env` on this install (`APP_ENV=production`) so the viewer is usable here; set it back to false if the box becomes public.
+- Verification: `php -l` on all changed/new PHP files (warning-free after using `\Throwable` in the global-namespace bootstrap), `view:clear` + `view:cache`, route registered (`admin.system.debug-errors`), command registered (`debug:last-error`), controlled `report(new RuntimeException('DEBUG TEST 500'))` captured with full class/message/file/frames, `debug:last-error --limit=1` printed it, and the admin viewer rendered (46,570 bytes) with the root-cause section. Test log entry removed afterwards.
+- Files: `bootstrap/app.php`, `config/app.php`, `config/logging.php`, `app/Support/ErrorDebugger.php`, `app/Console/Commands/DebugLastError.php`, `app/Http/Controllers/Admin/SystemStatusController.php`, `routes/web.php`, `resources/views/admin/partials/sidebar.blade.php`, `resources/views/admin/system/debug-errors.blade.php`, `TASKS.md`.
+
+
+## 467. (2026-11-24): Admin sidebar — Stock Management toggle styling + persistent parent highlight
+
+**Status: Implemented**
+
+- User noted that under `Admin > Products`, the **Stock Management** row had a different font/icon style, and then that its chevron toggle style was different from the other groups.
+- Root cause of the first mismatch: Stock Management was wrapped in an extra `<div class="stock-management-parent d-flex ...">`, so it was no longer a direct `li > a` child and missed `.admin-sidebar .admin-sidebar-drop .submenu li > a` styles (12px / `#aebdcc` / `7px 9px` padding / shared active state). It was inheriting the base `.nav-item-sub` styles (13px / `rgba(255,255,255,.5)` / `8px 20px 8px 42px`).
+- Final fix matches the existing **Shipping / Facebook / Google / Setup / System** pattern exactly: one `nav-item sidebar-link` toggle row with `fa-warehouse` icon + `<span>Stock Management</span>` + `fa-chevron-down submenu-arrow`, followed by a plain `ul.collapse.submenu` containing two `nav-item-sub` children — **Stock Overview** (existing `/admin/products/stock`, keeps the direct link reachable) and **Stock Sync** (`/admin/settings/stock-sync`). The intermediate icon-only chevron button and all custom `.stock-management-*`/`.stock-sync-submenu` CSS were removed, so shared sidebar CSS alone controls the look.
+- `$stockSubmenuExpanded` now also covers `admin.products.stock` and `admin.products.bulk-stock`, so the group expands automatically on those pages (not only on Stock Sync).
+- Active-state bug fixed: the collapse JS used `link.classList.toggle('active', isExpanded)`, so manually collapsing a group while still on one of its child pages removed the parent highlight. It now captures the server-rendered route-active state as `routeActive` and applies `link.classList.toggle('active', isExpanded || routeActive)`. `expanded`/`collapsed`/`aria-expanded` still follow the real collapse state. This applies to every toggle group, not only Products.
+- Verification: inline sidebar JS passes `node --check`; `view:clear` + `view:cache` leaves compiled sidebar with 0 raw `@php` and 0 raw `{{`; compiled output confirms the `nav-item sidebar-link` toggle, both child links, and the `routeActive` logic.
+- Files: `resources/views/admin/partials/sidebar.blade.php`, `public/assets/front/css/backend.css`, `TASKS.md`.
+
+
+## 468. (2026-11-24): Admin Pages list shows the exact public URL
+
+**Status: Implemented**
+
+- User asked what URL a page created from `Admin > Pages` gets, then objected that the admin list showed only `/{slug}` and forced them to guess the real URL.
+- Actual public route is `GET /page/{slug}` (`page.show`). Slug is `Str::slug(slug field ?: title)`; duplicates are rejected; inactive pages 404; mapped slugs such as `faq`/`about`/`privacy-policy` 301 to their canonical routes.
+- `resources/views/admin/pages/index.blade.php`: column header changed from **Slug** to **URL** (still sorts by the `slug` column). The cell now renders the exact `/page/{slug}` path instead of `/{slug}`:
+  - Active pages: clickable link to `route('page.show', $page->slug)` with `target="_blank" rel="noopener"`; tooltip shows the full absolute URL.
+  - Inactive pages: muted `/page/{slug}` with a tooltip explaining that it returns 404 until activated.
+  - Trashed pages: muted struck-through `/page/{slug}`.
+- Added an eye **View public page** action button (same `btn-view` style as other admin lists) for active pages, opening the same public URL in a new tab.
+- Verification: `view:clear` + `view:cache`; compiled view contains `/page/{slug}` output, `route('page.show', ...)` links and the new View action. No commit made.
+- Files: `resources/views/admin/pages/index.blade.php`, `TASKS.md`.
+
+
+## 469. (2026-11-24): Custom pages moved to root URL + WordPress-style slug suffix
+
+**Status: Implemented**
+
+- User asked whether the public URL could be `/{slug}` instead of `/page/{slug}`, and then suggested WordPress-style auto-numbering (`slug`, `slug-2`, `slug-3`) when a slug is already taken. Implemented both.
+- `PageController` now resolves slugs via `resolveSlug()`: `Str::slug()` base, then `base-2`, `base-3`, ... until free. It checks **soft-deleted rows too** (`withTrashed()`, because the DB `slug` index is unique even for trashed pages) and also **reserved single-segment frontend routes** derived from `Route::getRoutes()` (`admin`, `search`, `blog`, `cart`, `faq`, `home`, ...). Editing a page without changing its slug stays a no-op via `$currentSlug`. The old hard “slug already in use” validation error was removed; the flash message now reports the final slug when it was adjusted.
+- Public route moved to the root: `GET /{slug}` → `HomeController@page`, named `page.show`, constrained by `where('slug', '[a-z0-9-]+')` and registered **last** in `routes/web.php` so it cannot shadow `/up`, `/admin`, `/search`, `/cart`, `/faq`, etc. Verified route matching for `/up`, `/admin`, `/search`, `/cart`, `/faq`, `/shipping-policy`, `/page/shipping-policy` and `/favicon.ico`.
+- Old `GET /page/{slug}` is kept as `HomeController@legacyPage` and returns a **301** to the canonical URL: mapped slugs (`faq`, `home`, `privacy-policy`, ...) go to their named route, everything else to the new `page.show` root URL. No SEO/backlink break.
+- Updated all URL generators: sitemap `pages` entries use `/{slug}`; `AdminController` page-link picker prefix changed from `/page/` to `/`; admin Pages list shows `/{slug}` (already clickable via `route('page.show')`); `config/page-builder.php` comment clarified.
+- Verification: `php -l` on all changed PHP files; route matching table confirmed; `resolveSlug()` smoke tests returned `shipping-policy`, `faq-2`, `home-2`, `categories-2`, `about-2` for the existing `about` slug, `compare-2-2` for a trashed slug, and unchanged `about` when editing that page; legacy redirects returned 301 to `/shipping-policy`, `/faq` and `/`; existing page render (79,139 bytes); `view:clear` + `view:cache` clean.
+- Files: `app/Http/Controllers/Admin/PageController.php`, `app/Http/Controllers/HomeController.php`, `app/Http/Controllers/AdminController.php`, `routes/web.php`, `config/page-builder.php`, `resources/views/admin/pages/index.blade.php`, `TASKS.md`.
+
+
+## 470. (2026-11-24): Explicit Page Builder option + design mode in All Pages
+
+**Status: Implemented**
+
+- User pointed out that “All Pages” uses the classic Summernote editor while Page Builder uses a separate block editor, so the two designs can mix on the live page. Added a clear Page Builder entry point inside All Pages and an explicit per-page design mode so only the chosen editor's output renders.
+- All Pages list: new toolbar **Page Builder** button (`page-builder.index?type=page`), a **Design** column (`Classic` / `Builder` / `Both` + block count), and a per-row **Open in Page Builder** action linking to `page-builder.edit` with the block count in its tooltip. Empty-state colspan updated 7 → 8.
+- Add/Edit Page forms: new shared `_design_mode.blade.php` select with three modes — `classic` (Content editor only), `builder` (blocks only; classic content kept but hidden), `both` (legacy mixed rendering). Builder mode hides the classic Content tab/textarea via JS; switch back to Classic/Both to reveal it. Both forms explain the two editors; Edit has a direct **Page Builder** button in the header.
+- Page Builder editor now has an overridden view with a **Classic Editor** button and a mode badge; if a classic-mode page is opened there, a warning explains that saving blocks will auto-switch it to Builder mode.
+- New `design_mode` column on `pages` (migration `2026_11_24_000003`), backfilled from existing data without changing any live design: blocks-only → `builder`, content-only → `classic`, meaningful content + blocks → `both`. In practice all current pages resolved to `builder`/`classic` because the older “content” on block pages is structural markup with no text (already hidden by the existing frontend check).
+- `Page::designMode()` centralises the mode with a legacy fallback. `AppServiceProvider` registers a `Page::saved` observer: when Page Builder saves `content_blocks` for a classic page, it quietly flips `design_mode` to `builder` (reads the stored/default value, not the in-memory null right after `create()`). Classic content is never deleted, so the switch is reversible by choosing Classic/Both again.
+- Frontend `pages/show.blade.php` now honours the mode: classic content only for `classic`/`both`, `<x-page-blocks>` only for `builder`/`both`. Verified with rendered views: builder page shows block markup and no classic `<div class="page-content">`; in-memory `both` page shows both markers; `builder` with classic content hides the classic text.
+- Verification: migration ran clean; `php -l` on all changed PHP; `view:clear` + `view:cache` clean (0 raw `@php`/`{{` in compiled views); observer smoke test proved `classic → builder` on `setBlocks()` with content present; route URL generation for `page-builder.edit`, `page-builder.index` and `admin.pages.edit` correct.
+- Follow-up (same day): user reported the Page Builder action icon looked off. Added a dedicated `.btn-builder` variant in `public/assets/front/css/style.css` (purple circle, 16×16 SVG via the existing `.action-btn svg` rule) and added `aria-label`/`title` to the link. It now matches the other coloured action icons (view/blue, edit/orange, delete/red, restore/green).
+- Files: `database/migrations/2026_11_24_000003_add_design_mode_to_pages_table.php`, `app/Models/Page.php`, `app/Providers/AppServiceProvider.php`, `app/Http/Controllers/Admin/PageController.php`, `resources/views/admin/pages/_design_mode.blade.php`, `resources/views/admin/pages/index.blade.php`, `resources/views/admin/pages/create.blade.php`, `resources/views/admin/pages/edit.blade.php`, `resources/views/pages/show.blade.php`, `resources/views/vendor/page-builder/admin/page-builder/edit.blade.php`, `public/assets/front/css/style.css`, `TASKS.md`.
+
+
+## 471. (2026-11-24): One inbox for inquiries — Support Tickets migrated and removed
+
+**Status: Implemented**
+
+- User reported that product inquiries were duplicated in **Questions / Inquiries** and **Support Tickets**; chose to keep one Inquiries inbox and migrate old ticket data instead of syncing two modules.
+- New migration `2026_11_24_000004_migrate_support_tickets_to_inquiries.php` adds `category`, `priority` and `legacy_ticket_id` to `contacts`, migrates ticket subjects/categories/priorities/status/replies into contacts, then drops `support_ticket_replies` and `support_tickets`. Exact duplicate product inquiries are merged into the existing contact instead of inserted twice. In this install: ticket #2 (`QWREWA`, Order/high, reply `hi`) became Contact #26; ticket #7 (QA product inquiry) merged into existing Contact #25 with `legacy_ticket_id=7`.
+- `Contact` now exposes shared `categories()` / `priorities()` helpers and `categoryLabel()`. All new contacts get an explicit category/priority. The contact form, product seller form, and new dashboard inquiry modal use the shared lists.
+- Admin `admin.contacts.index` gained search plus Category/Source filters and a Category column; the detail page shows category, priority and the legacy ticket reference. The sidebar **Questions / Inquiries** now carries the pending-inquiry count previously shown on Ticket.
+- Removed the entire Support Ticket module: admin controller/models/views, user ticket list/detail views, admin/user ticket routes and the sidebar **Ticket** child. Legacy `user.support.*` ticket URLs still redirect to My Inquiries so bookmarks do not 404. The **Support** group remains only when `conversation_system` is enabled, with **Product Conversations** as its sole item.
+- Customer self-service ticket categories survive in **My Inquiries**: added a **New Inquiry** modal (category/priority/subject/message), a product-conversations table, and a `POST user.inquiries.store` route. Removed the duplicate **My Support** sidebar link; the My Inquiries link stays active on conversation detail pages too.
+- `ProductController` no longer creates a guest Support Ticket; logged-in product questions still create/update a `ProductConversation` when the feature flag is on. `ContactController` no longer creates tickets from the general contact form.
+- Verification: `php -l` on all changed/new PHP files; migration ran clean (contacts 22 → 23, ticket tables dropped, dedupe verified); `view:clear` + `view:cache` + `route:clear` + `route:cache` clean; `route:list` shows no admin ticket routes and only conversation/support aliases remain; compiled views contain zero `SupportTicket`/`support.tickets`/`My Support` references; rendered admin inquiry list/detail, rendered user inbox (with and without conversations), and smoke-tested `storeInquiry()` (created then removed a test inquiry) and legacy redirects.
+- Follow-up (same day): user reported the edit control between the **Pending** badge and Delete looked inconsistent. It now uses the shared `.action-buttons` wrapper and `action-btn btn-edit` circle (same 36px size, orange edit styling and tooltip as other admin/user actions); the delete control was aligned to the same `.action-buttons` group and given explicit `type="submit"`/`aria-label`. Re-cached views and re-rendered the dashboard to confirm.
+- Files: `database/migrations/2026_11_24_000004_migrate_support_tickets_to_inquiries.php`, `app/Models/Contact.php`, `app/Http/Controllers/ContactController.php`, `app/Http/Controllers/ProductController.php`, `app/Http/Controllers/Admin/ContactController.php`, `app/Http/Controllers/DashboardController.php`, `app/Http/Controllers/UserSupportController.php`, `app/Providers/AppServiceProvider.php`, `routes/web.php`, `resources/views/pages/contact.blade.php`, `resources/views/admin/contacts/index.blade.php`, `resources/views/admin/contacts/show.blade.php`, `resources/views/admin/partials/sidebar.blade.php`, `resources/views/user/inquiries.blade.php`, `resources/views/user/layouts/sidebar.blade.php`, `resources/views/user/support/conversation.blade.php`, `TASKS.md`.
+
+
+## 472. (2026-11-24): Product Conversations merged into Inquiries as well
+
+**Status: Implemented**
+
+- User pointed out that admin **Questions / Inquiries → Questions** and **Support → Product Conversations** were still two separate modules for the same logged-in product question. Chose to merge conversations into the single Inquiries inbox too.
+- New migration `2026_11_24_000005_migrate_product_conversations_to_inquiries.php` adds `legacy_conversation_id` to `contacts`, migrates each conversation and its full message thread, mirrors the last staff reply into the normal `reply`/`replied_by`/`replied_at` fields, and drops `product_conversation_messages` + `product_conversations`. Exact duplicates are merged: conversation #4 was folded into existing Contact #24 (no new row) with the admin reply `hi` preserved.
+- `ProductController` no longer calls/creates a `ProductConversation`; a product seller question now always produces exactly one Contact inquiry. The `conversation_system` feature toggle was kept (per the “never remove toggles” rule) but relabelled **Conversation Activation (Legacy)** with a description that conversation messages now live in Questions / Inquiries.
+- Removed the admin Product Conversation controller/models/views/routes and the **Support** sidebar group. The two legacy user conversation URLs now redirect to My Inquiries with an explanatory info message. My Inquiries no longer has a separate conversations table; migrated rows show a **Conversation #…** badge alongside the existing legacy ticket badge.
+- Verification: `php -l` on all changed/new PHP files; migration ran clean (conversation #4 deduped into Contact #24, both conversation tables dropped); `view:clear` + `view:cache` + `route:clear` + `route:cache` clean; `route:list` shows no admin conversation routes and only the two legacy user redirect routes; rendered admin Contact #24 (legacy conversation badge + merged thread) and user inbox (conversation section gone, badge present); legacy conversation redirect lands on `/user/inquiries`.
+- Files: `database/migrations/2026_11_24_000005_migrate_product_conversations_to_inquiries.php`, `app/Models/Contact.php`, `app/Http/Controllers/ProductController.php`, `app/Http/Controllers/DashboardController.php`, `app/Http/Controllers/UserSupportController.php`, `app/Support/FeatureFlags.php`, `app/Providers/AppServiceProvider.php`, `routes/web.php`, `resources/views/admin/contacts/show.blade.php`, `resources/views/admin/partials/sidebar.blade.php`, `resources/views/user/inquiries.blade.php`, `TASKS.md`.
+
+
+## 473. (2026-11-24): User Management counters/list count all roles
+
+**Status: Implemented**
+
+- User reported `Total Users 1 | Admin 0 | Staff 1 | Customer 0` even though customers and a master admin exist.
+- Root cause 1: `UserManagementController@index` filtered the list with `whereIn('role', ['staff', 'admin'])` — the real admin role is `master_admin`, and customers were excluded entirely.
+- Root cause 2: the Blade cards derived both totals and role counts from the **current paginator page** (`$users->count()` / `$users->where(...)`) instead of the whole users table.
+- Fix:
+  - List query is now `User::query()->...->paginate($perPage)` so master admin, staff and customers all appear (soft-deleted users remain excluded by the model's `SoftDeletes` scope).
+  - One grouped aggregate query in the controller computes `total`, `admin` (`master_admin` + legacy `admin`), `staff`, and `customer` (`customer` + legacy `user`) across all non-deleted users. Values are cast to int and passed to the view.
+  - Removed the local `@php` counter block from `resources/views/admin/users/index.blade.php`; cards now use the controller-provided values.
+- Verification: DB aggregate checked with tinker (local DB: total 14 active, admin 1, staff 1, customer 12; 1 soft-deleted customer excluded); `view:clear` + `view:cache` rebuilt; controller on disk now passes the four counters and the compiled view consumes them.
+- Follow-up: an initial `500` (`Undefined variable $totalCount`) occurred because the controller edit was not present on disk while the view edit was. The controller fix was re-applied and confirmed on disk; a hard refresh clears any cached error page.
+- Files: `app/Http/Controllers/UserManagementController.php`, `resources/views/admin/users/index.blade.php`, `TASKS.md`.
+
+
+## 474. (2026-11-24): Purchase-only review policy with clearer UX
+
+**Status: Implemented**
+
+- User chose **purchase-only + clearer UX** over verified-email reviews, so review authenticity stays tied to real orders.
+- `ProductController` now resolves purchased orders and already-reviewed order IDs through `ProductReviewEligibility` and passes `canReview` to `resources/views/product/show.blade.php`. The review form is shown only when the user has an unreviewed purchase.
+- Product page now explains the rule instead of showing a form that fails with 403: guests get a login link, customers who purchased get “already reviewed / edit in My Reviews”, and logged-in non-purchasers get a hint to check My Orders (guest checkout uses the checkout email).
+- Server-side gate remains purchase-only with actionable messages: sign in with the order account / check My Orders, purchase not eligible, already reviewed this purchase, or edit an existing review in My Reviews.
+- Dashboard **My Reviews** now states that reviews require a purchase and explains how guest-checkout purchases appear after login with the checkout email.
+- Fixed the product-page review delete handler: it no longer references undefined `alertEl`/`submitReviewBtn`, no longer reads `data.rating` from the wrong response variable, and now updates the rating/tab count from `result.data`.
+- Verification: `php -l` clean on both controllers; `view:clear` + `view:cache` rebuilt.
+- Files: `app/Http/Controllers/ProductController.php`, `app/Http/Controllers/ReviewController.php`, `resources/views/product/show.blade.php`, `resources/views/user/reviews.blade.php`, `TASKS.md`.
+
+
+## 475. (2026-11-24): Organize Blade views into backend/frontend
+
+**Status: Implemented**
+
+- User asked to move every Blade under `resources/views` into either `backend/` or `frontend/`, keeping shared views at the root.
+- Moved 129 admin templates from `resources/views/admin/*` to `resources/views/backend/*` (view namespace `admin.*` → `backend.*`).
+- Moved 59 public/user/auth templates to `resources/views/frontend/*`: `auth`, `blog`, `brands`, `cart`, `categories`, `checkout`, `compare`, `home`, `pages`, `product`, `shop`, `user`, plus root `maintenance.blade.php` (namespace `frontend.*`).
+- Kept `resources/views/layouts`, `partials`, `mail`, `errors`, and `vendor` at the root so both backend and frontend share them without duplicate copies.
+- Updated 450 view references across 203 source files: controller `view()`/`View::make()`/`response()->view()` calls and Blade `@extends`/`@include`/`@includeWhen`/`@each`/`@component`/`@livewire` directives. Route names such as `admin.users.index` were deliberately left untouched.
+- Fixed a latent broken reference discovered during verification: `backend/login.blade.php` now posts to `route('login.submit')` instead of the nonexistent `admin.login.submit`.
+- Follow-up 500 fix: the bulk reference rewrite also touched route names nested inside Blade directive arguments (for example `route('home')` → `route('frontend.home')` and `route('admin.categories.index')` → `route('backend.categories.index')`), causing repeated `GET categories` 500s (`Route [frontend.home] not defined`). 36 route calls in 32 files were restored to their real names and views were re-cached.
+- Verification: no old view prefixes remain in source; `view:clear` + `view:cache` clean; rendered home, shop, product, auth login, user dashboard, admin login, admin dashboard and admin users pages successfully.
+- Historical TASKS entries still mention the old paths; actual source now lives under `backend/`/`frontend/` as described above.
+- Files: all PHP/Blade sources under `app/`, `routes/`, `resources/views/`, `config/`, `database/`, plus `TASKS.md`.
+
+
+## 476. (2026-11-24): Fix duplicate product cards (Related Products)
+
+**Status: Implemented**
+
+- User reported repeated cards in the product detail page **Related Products** section.
+- Root cause: product-card includes passed the data as `['frontend.product' => $rel]`, but `resources/views/partials/product-card.blade.php` reads `$product`. Because Blade includes inherit parent variables, every card silently rendered the outer/current product instead of `$rel`, so the section showed the same product repeatedly. The same typo affected Recently Viewed, Home, Shop, Wishlist and dashboard cards.
+- Changed all 9 occurrences to `['product' => ...]` so the partial receives the intended model.
+- Verification: rendered a product page and parsed the Related Products section — 4 cards, 4 distinct product URLs, current product not repeated. `view:cache` rebuilt.
+- Files: `resources/views/frontend/product/show.blade.php`, `resources/views/frontend/shop/index.blade.php`, `resources/views/frontend/home/index.blade.php`, `resources/views/frontend/user/wishlist.blade.php`, `resources/views/frontend/user/dashboard.blade.php`, `resources/views/partials/recently-viewed.blade.php`.
+
+
+## 477. (2026-11-24): Recently Viewed should not show the current product
+
+**Status: Implemented**
+
+- User confirmed that opening a product for the first time should not immediately show that same product in **Recently Viewed** on the same page.
+- `ProductController::show()` now computes `$recentlyViewedIds` from the session **before** adding the current product, passes those IDs to the view, and only then stores the current product at the front of the session list (max 4).
+- `partials/recently-viewed.blade.php` prefers the passed `$recentlyViewedIds` and falls back to the session for any other caller.
+- Verification: first open with empty session → session `[current]`, current not rendered in the section; second product open → session `[second, first]`, section shows only `first`, current `second` not repeated. `view:cache` rebuilt.
+- Files: `app/Http/Controllers/ProductController.php`, `resources/views/partials/recently-viewed.blade.php`, `TASKS.md`.

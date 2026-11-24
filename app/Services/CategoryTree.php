@@ -79,6 +79,41 @@ class CategoryTree
         return $resolved = (json_decode($json) ?? []);
     }
 
+    /**
+     * Return the ids from the root down to (and including) the given category.
+     * Used to expand only the active branch in lazy-loaded category trees.
+     *
+     * @return array<int, int>
+     */
+    public static function pathTo(int $categoryId): array
+    {
+        $tree = self::tree();
+        $path = [];
+
+        $walk = function (array $nodes, array $trail) use (&$walk, $categoryId, &$path): bool {
+            foreach ($nodes as $node) {
+                $id = (int) $node->id;
+                $next = array_merge($trail, [$id]);
+
+                if ($id === $categoryId) {
+                    $path = $next;
+
+                    return true;
+                }
+
+                if (! empty($node->children) && $walk($node->children, $next)) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        $walk($tree, []);
+
+        return $path;
+    }
+
     public static function flush(): void
     {
         cache()->forget(self::CACHE_KEY);

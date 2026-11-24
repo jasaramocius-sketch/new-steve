@@ -19,7 +19,7 @@ class FileSystemCacheSettingsController extends Controller
     {
         $settings = Setting::getAllAsArray();
 
-        return view('admin.settings.file-system-cache', [
+        return view('backend.settings.file-system-cache', [
             'filesystemDriver' => $this->resolveDriver($settings['filesystem_driver'] ?? config('filesystems.default'), self::FILESYSTEM_DRIVERS, 'local'),
             'awsAccessKeyId' => $settings['aws_access_key_id'] ?? config('filesystems.disks.s3.key', ''),
             'awsSecretConfigured' => ! empty($settings['aws_secret_access_key']) || ! empty(config('filesystems.disks.s3.secret')),

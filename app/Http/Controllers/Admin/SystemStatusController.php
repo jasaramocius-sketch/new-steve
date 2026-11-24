@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Support\BulkOperation;
+use App\Support\ErrorDebugger;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -60,7 +61,7 @@ class SystemStatusController extends Controller
             'max_input_vars' => ini_get('max_input_vars'),
         ];
 
-        return view('admin.system.server-status', [
+        return view('backend.system.server-status', [
             'runtime' => [
                 'laravel' => app()->version(),
                 'php' => PHP_VERSION,
@@ -97,6 +98,18 @@ class SystemStatusController extends Controller
         ]);
     }
 
+    public function debugErrors()
+    {
+        if (! app()->environment('local') && ! config('app.debug_errors_enabled')) {
+            abort(404);
+        }
+
+        $entries = ErrorDebugger::latest(30);
+        $logPath = ErrorDebugger::path();
+
+        return view('backend.system.debug-errors', compact('entries', 'logPath'));
+    }
+
     public function update()
     {
         $pendingMigrations = [];
@@ -114,7 +127,7 @@ class SystemStatusController extends Controller
             // Database unavailable — skip migration checks.
         }
 
-        return view('admin.system.update', [
+        return view('backend.system.update', [
             'current' => [
                 'app_name' => config('app.name'),
                 'app_version' => config('app.version', '1.0.0'),

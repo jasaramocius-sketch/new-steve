@@ -65,6 +65,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'debug500' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/debug500.log'),
+            'level' => 'debug',
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

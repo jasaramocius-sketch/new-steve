@@ -10,10 +10,12 @@ use App\Models\Setting;
 use App\Support\FeatureFlags;
 use App\Support\PaymentMethods;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Central checkout gateway layer.
@@ -135,7 +137,9 @@ class PaymentGatewayManager
         }
 
         if ($order->payment_status === 'paid') {
-            $this->finishCheckout($order);
+            if (! $this->isWebhookRequest()) {
+                $this->finishCheckout($order);
+            }
 
             return [
                 'order' => $order,
@@ -146,19 +150,20 @@ class PaymentGatewayManager
 
         $result = $this->verifyProvider($method, $order, $request);
 
-        if (! empty($result['paid'])) {
-            $this->markPaid(
-                $order,
-                $method,
-                $result['transaction_id'] ?? null,
-                $result['extra'] ?? []
-            );
+        $marked = ! empty($result['paid']) && $this->markPaid(
+            $order,
+            $method,
+            $result['transaction_id'] ?? null,
+            $result['extra'] ?? []
+        );
+
+        if ($marked && ! $this->isWebhookRequest()) {
             $this->finishCheckout($order);
         }
 
         return [
             'order' => $order,
-            'paid' => (bool) ($result['paid'] ?? false),
+            'paid' => $marked,
             'message' => $result['message'] ?? 'Payment is still being confirmed by the provider.',
         ];
     }
@@ -170,14 +175,26 @@ class PaymentGatewayManager
         return response()->json([
             'received' => true,
             'paid' => $result['paid'],
-        ]);
+        ], $result['paid'] ? 200 : 422);
     }
 
     public function cancel(string $method, Request $request): void
     {
         $order = $this->resolveOrder($method, $request);
         if ($order) {
-            $this->cancelPending($order, $this->label($method).' checkout was cancelled');
+            // The customer may have paid just before hitting cancel. Re-query the
+            // provider so we never cancel/stock-restore an already-settled order.
+            $result = $this->verifyProvider($method, $order, $request);
+            if (! empty($result['paid'])) {
+                $this->markPaid(
+                    $order,
+                    $method,
+                    $result['transaction_id'] ?? null,
+                    $result['extra'] ?? []
+                );
+            } else {
+                $this->cancelPending($order, $this->label($method).' checkout was cancelled');
+            }
         }
 
         session()->forget(['pending_gateway_order_id', 'pending_gateway_provider']);
@@ -211,14 +228,14 @@ class PaymentGatewayManager
         }
 
         $result = $this->verifyRazorpayPayment($order, $paymentId, $razorpayOrderId);
-        if (! empty($result['paid'])) {
-            $this->markPaid($order, 'razorpay', $paymentId, $result['extra'] ?? []);
+        $marked = ! empty($result['paid']) && $this->markPaid($order, 'razorpay', $paymentId, $result['extra'] ?? []);
+        if ($marked) {
             $this->finishCheckout($order);
         }
 
         return [
             'order' => $order,
-            'paid' => (bool) ($result['paid'] ?? false),
+            'paid' => $marked,
             'message' => $result['message'] ?? 'Razorpay payment is still being confirmed.',
         ];
     }
@@ -255,10 +272,14 @@ class PaymentGatewayManager
                         'value' => $this->amount($order),
                     ],
                 ]],
-                'application_context' => [
-                    'brand_name' => config('app.name', 'Store'),
-                    'return_url' => route('checkout.gateway.return', 'paypal'),
-                    'cancel_url' => route('checkout.gateway.cancel', 'paypal'),
+                'payment_source' => [
+                    'paypal' => [
+                        'experience_context' => [
+                            'brand_name' => config('app.name', 'Store'),
+                            'return_url' => route('checkout.gateway.return', 'paypal'),
+                            'cancel_url' => route('checkout.gateway.cancel', 'paypal'),
+                        ],
+                    ],
                 ],
             ]);
 
@@ -281,24 +302,31 @@ class PaymentGatewayManager
 
     private function startMercadoPago(Order $order): array
     {
+        $configuredCurrency = trim(PaymentMethods::value('mercadopago', 'MERCADOPAGO_CURRENCY'));
+        $currency = preg_match('/^[A-Za-z]{3}$/', $configuredCurrency) === 1
+            ? strtoupper($configuredCurrency)
+            : $this->currency();
+
+        $payload = [
+            'items' => [[
+                'title' => 'Order '.$order->order_number,
+                'quantity' => 1,
+                'currency_id' => $currency,
+                'unit_price' => (float) $order->total_amount,
+            ]],
+            'external_reference' => (string) $order->id,
+            'back_urls' => [
+                'success' => route('checkout.gateway.return', 'mercadopago'),
+                'pending' => route('checkout.gateway.return', 'mercadopago'),
+                'failure' => route('checkout.gateway.cancel', 'mercadopago'),
+            ],
+            'auto_return' => 'approved',
+            'notification_url' => route('checkout.gateway.webhook', 'mercadopago'),
+        ];
+
         $response = Http::withToken(PaymentMethods::value('mercadopago', 'MERCADOPAGO_ACCESS'))
             ->timeout(20)
-            ->post('https://api.mercadopago.com/checkout/preferences', [
-                'items' => [[
-                    'title' => 'Order '.$order->order_number,
-                    'quantity' => 1,
-                    'currency_id' => $this->currency(),
-                    'unit_price' => (float) $order->total_amount,
-                ]],
-                'external_reference' => (string) $order->id,
-                'back_urls' => [
-                    'success' => route('checkout.gateway.return', 'mercadopago'),
-                    'pending' => route('checkout.gateway.return', 'mercadopago'),
-                    'failure' => route('checkout.gateway.cancel', 'mercadopago'),
-                ],
-                'auto_return' => 'approved',
-                'notification_url' => route('checkout.gateway.webhook', 'mercadopago'),
-            ]);
+            ->post('https://api.mercadopago.com/checkout/preferences', $payload);
 
         if ($response->failed()) {
             throw new RuntimeException($response->json('message') ?: 'MercadoPago could not start the payment.');
@@ -412,7 +440,7 @@ class PaymentGatewayManager
             'status' => 'initiated',
         ]);
 
-        return ['html' => view('checkout.gateway.razorpay', [
+        return ['html' => view('frontend.checkout.gateway.razorpay', [
             'order' => $order,
             'key' => $key,
             'razorpayOrderId' => $response->json('id'),
@@ -504,7 +532,7 @@ class PaymentGatewayManager
 
         $this->storeDetails($order, ['status' => 'initiated']);
 
-        return ['html' => view('checkout.gateway.auto-submit', [
+        return ['html' => view('frontend.checkout.gateway.auto-submit', [
             'title' => 'Redirecting to PayHere...',
             'action' => PaymentMethods::isSandbox('payhere')
                 ? 'https://sandbox.payhere.lk/pay/checkout'
@@ -547,6 +575,7 @@ class PaymentGatewayManager
                 'merchantAttributes' => [
                     'redirectUrl' => route('checkout.gateway.return', 'ngenius'),
                     'cancelUrl' => route('checkout.gateway.cancel', 'ngenius'),
+                    'notificationUrl' => route('checkout.gateway.webhook', 'ngenius'),
                     'skipConfirmationPage' => false,
                 ],
             ]);
@@ -561,7 +590,7 @@ class PaymentGatewayManager
         }
 
         $this->storeDetails($order, [
-            'ngenius_order_id' => $response->json('_links.self.href') ?: $response->json('id'),
+            'ngenius_order_id' => $response->json('id'),
             'ngenius_order_reference' => $response->json('merchantOrderReference'),
             'status' => 'initiated',
         ]);
@@ -620,7 +649,7 @@ class PaymentGatewayManager
         ];
 
         $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
-        $response = Http::withHeaders($this->iyzicoHeaders($body, $conversationId))
+        $response = Http::withHeaders($this->iyzicoHeaders($body, '/payment/3dsecure/initialize'))
             ->withBody($body, 'application/json')
             ->timeout(20)
             ->post($base.'/payment/3dsecure/initialize');
@@ -628,6 +657,11 @@ class PaymentGatewayManager
         if ($response->failed()) {
             throw new RuntimeException($response->json('errorMessage') ?: 'iyzico could not start the payment.');
         }
+
+        $this->storeDetails($order, [
+            'iyzico_conversation_id' => $conversationId,
+            'status' => 'initiated',
+        ]);
 
         $html = $response->json('threeDSHtmlContent');
         if (! $html && $response->json('redirectUrl')) {
@@ -637,12 +671,7 @@ class PaymentGatewayManager
             throw new RuntimeException('iyzico did not return a 3D Secure checkout form.');
         }
 
-        $this->storeDetails($order, [
-            'iyzico_conversation_id' => $conversationId,
-            'status' => 'initiated',
-        ]);
-
-        return ['html' => view('checkout.gateway.raw', [
+        return ['html' => view('frontend.checkout.gateway.raw', [
             'title' => 'Redirecting to iyzico...',
             'html' => $html,
         ])->render()];
@@ -650,40 +679,33 @@ class PaymentGatewayManager
 
     private function startBkash(Order $order): array
     {
-        $base = PaymentMethods::isSandbox('bkash')
-            ? 'https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized'
-            : 'https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized';
+        $base = $this->bkashBaseUrl();
         $appKey = PaymentMethods::value('bkash', 'BKASH_CHECKOUT_APP_KEY');
 
-        $tokenResponse = Http::withHeaders([
-            'X-App-Key' => $appKey,
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-        ])->timeout(20)->post($base.'/grant', [
-            'app_key' => $appKey,
-            'app_secret' => PaymentMethods::value('bkash', 'BKASH_CHECKOUT_APP_SECRET'),
-        ]);
+        $tokenResponse = Http::withHeaders($this->bkashHeaders())
+            ->timeout(20)
+            ->post($base.'/token/grant', [
+                'app_key' => $appKey,
+                'app_secret' => PaymentMethods::value('bkash', 'BKASH_CHECKOUT_APP_SECRET'),
+            ]);
 
         if ($tokenResponse->failed() || ! $tokenResponse->json('id_token')) {
             throw new RuntimeException('bKash authentication failed. Check the saved app credentials.');
         }
 
-        $response = Http::withToken($tokenResponse->json('id_token'))
-            ->withHeaders(['X-App-Key' => $appKey, 'Accept' => 'application/json'])
-            ->withBasicAuth(
-                PaymentMethods::value('bkash', 'BKASH_CHECKOUT_USER_NAME'),
-                PaymentMethods::value('bkash', 'BKASH_CHECKOUT_PASSWORD')
-            )
+        $response = Http::withHeaders($this->bkashHeaders($tokenResponse->json('id_token')))
             ->timeout(20)
-            ->post($base.'/payment/create', [
+            ->post($base.'/create', [
                 'amount' => $this->amount($order),
                 'currency' => 'BDT',
                 'intent' => 'sale',
+                'mode' => '0011',
+                'payerReference' => $order->order_number,
                 'merchantInvoiceNumber' => $order->order_number,
                 'callbackURL' => route('checkout.gateway.return', 'bkash'),
             ]);
 
-        if ($response->failed() || ! $response->json('paymentURL')) {
+        if ($response->failed() || ! $response->json('bkashURL')) {
             throw new RuntimeException($response->json('errorMessage') ?: 'bKash could not create the payment.');
         }
 
@@ -692,27 +714,104 @@ class PaymentGatewayManager
             'status' => 'initiated',
         ]);
 
-        return ['redirect' => $response->json('paymentURL')];
+        return ['redirect' => $response->json('bkashURL')];
     }
 
     private function startNagad(Order $order): array
     {
-        // Nagad's hosted checkout requires per-request RSA encryption and a
-        // signed initialize call with merchant-specific gateway certificates.
-        // Credentials are validated above; the order is kept unpaid until an
-        // administrator confirms settlement from the Nagad merchant dashboard.
+        $merchantId = PaymentMethods::value('nagad', 'NAGAD_MERCHANT_ID');
+        $merchantNumber = PaymentMethods::value('nagad', 'NAGAD_MERCHANT_NUMBER');
+        $invoice = $order->order_number;
+        $base = $this->nagadBaseUrl();
+        $datetime = now()->setTimezone('Asia/Dhaka')->format('YmdHis');
+        $challenge = Str::random(16);
+
+        $sensitive = (string) json_encode([
+            'merchantId' => $merchantId,
+            'datetime' => $datetime,
+            'orderId' => $invoice,
+            'challenge' => $challenge,
+        ], JSON_UNESCAPED_SLASHES);
+
+        $initialize = Http::withHeaders($this->nagadHeaders())
+            ->timeout(20)
+            ->post($base.'check-out/initialize/'.rawurlencode($merchantId).'/'.rawurlencode($invoice), [
+                'accountNumber' => $merchantNumber,
+                'dateTime' => $datetime,
+                'sensitiveData' => $this->nagadEncrypt($sensitive),
+                'signature' => $this->nagadSign($sensitive),
+            ]);
+
+        if ($initialize->failed() || strtolower((string) $initialize->json('status')) !== 'success') {
+            throw new RuntimeException($initialize->json('message') ?: 'Nagad could not initialize this payment.');
+        }
+
+        $initialized = $this->nagadResponseData($initialize->json() ?: []);
+        $paymentReference = (string) ($initialized['paymentReferenceId'] ?? $initialize->json('paymentReferenceId') ?? '');
+        $nextChallenge = (string) ($initialized['challenge'] ?? '');
+        if ($paymentReference === '' || $nextChallenge === '') {
+            throw new RuntimeException('Nagad returned an incomplete checkout response.');
+        }
+        if (
+            (string) ($initialized['merchantId'] ?? $merchantId) !== $merchantId
+            || (string) ($initialized['orderId'] ?? $invoice) !== $invoice
+        ) {
+            throw new RuntimeException('Nagad checkout response does not match this order.');
+        }
+
+        $sensitive = (string) json_encode([
+            'merchantId' => $merchantId,
+            'orderId' => $invoice,
+            'currencyCode' => '050',
+            'amount' => $this->amount($order),
+            'challenge' => $nextChallenge,
+        ], JSON_UNESCAPED_SLASHES);
+
+        $complete = Http::withHeaders($this->nagadHeaders())
+            ->timeout(20)
+            ->post($base.'check-out/complete/'.rawurlencode($paymentReference), [
+                'merchantCallbackURL' => route('checkout.gateway.return', 'nagad'),
+                'sensitiveData' => $this->nagadEncrypt($sensitive),
+                'signature' => $this->nagadSign($sensitive),
+            ]);
+
+        if ($complete->failed() || strtolower((string) $complete->json('status')) !== 'success') {
+            throw new RuntimeException($complete->json('message') ?: 'Nagad could not create the checkout URL.');
+        }
+
+        $completed = $this->nagadResponseData($complete->json() ?: []);
+        $url = (string) ($complete->json('callBackUrl') ?? $completed['callBackUrl'] ?? '');
+        if ($url === '') {
+            throw new RuntimeException('Nagad did not return a checkout URL.');
+        }
+
         $this->storeDetails($order, [
-            'status' => 'awaiting_manual_confirmation',
-            'gateway_reference' => $order->order_number,
+            'nagad_payment_reference_id' => $paymentReference,
+            'nagad_invoice' => $invoice,
+            'status' => 'initiated',
         ]);
 
-        return ['pending' => true, 'order' => $order];
+        return ['redirect' => $url];
+    }
+
+    private function proxypaySignature(array $params): string
+    {
+        unset($params['signature'], $params['_token']);
+        ksort($params);
+
+        $parts = [];
+        foreach ($params as $key => $value) {
+            if (is_scalar($value)) {
+                $parts[] = $key.'='.(string) $value;
+            }
+        }
+
+        return hash_hmac('sha256', implode('&', $parts), PaymentMethods::value('proxypay', 'PROXYPAY_SECRET_KEY'));
     }
 
     private function startProxypay(Order $order): array
     {
         $merchant = PaymentMethods::value('proxypay', 'PROXYPAY_MERCHANT_ID');
-        $secret = PaymentMethods::value('proxypay', 'PROXYPAY_SECRET_KEY');
         $baseUrl = rtrim(PaymentMethods::value('proxypay', 'PROXYPAY_BASE_URL'), '/');
         $params = [
             'merchant' => $merchant,
@@ -722,7 +821,7 @@ class PaymentGatewayManager
             'return_url' => route('checkout.gateway.return', 'proxypay'),
             'cancel_url' => route('checkout.gateway.cancel', 'proxypay'),
         ];
-        $params['signature'] = hash_hmac('sha256', implode('|', $params), $secret);
+        $params['signature'] = $this->proxypaySignature($params);
 
         $this->storeDetails($order, ['status' => 'initiated']);
 
@@ -757,7 +856,7 @@ class PaymentGatewayManager
 
         $this->storeDetails($order, ['status' => 'initiated']);
 
-        return ['html' => view('checkout.gateway.auto-submit', [
+        return ['html' => view('frontend.checkout.gateway.auto-submit', [
             'title' => 'Redirecting to Aamarpay...',
             'action' => PaymentMethods::isSandbox('aamarpay')
                 ? 'https://sandbox.aamarpay.com/request.php'
@@ -775,7 +874,12 @@ class PaymentGatewayManager
             : 'https://api.authorize.net/xml/v1/request.api';
 
         $settings = [
-            'hostedPaymentReturnOptions' => ['showReceipt' => true, 'url' => route('checkout.gateway.return', 'authorizenet'), 'urlText' => 'Continue'],
+            'hostedPaymentReturnOptions' => [
+                'showReceipt' => true,
+                'url' => route('checkout.gateway.return', 'authorizenet'),
+                'cancelUrl' => route('checkout.gateway.cancel', 'authorizenet'),
+                'urlText' => 'Continue',
+            ],
             'hostedPaymentButtonOptions' => ['text' => 'Pay'],
             'hostedPaymentPaymentOptions' => ['cardCodeRequired' => false],
             'hostedPaymentBillingAddressOptions' => ['show' => true, 'required' => true],
@@ -783,11 +887,11 @@ class PaymentGatewayManager
 
         $settingXml = '';
         foreach ($settings as $name => $setting) {
-            $values = '';
-            foreach ($setting as $settingName => $settingValue) {
-                $values .= '<setting><name>'.$this->xml($settingName).'</name><value>'.$this->xml((string) $settingValue).'</value></setting>';
-            }
-            $settingXml .= '<setting><name>'.$this->xml($name).'</name><value>'.$values.'</value></setting>';
+            $json = (string) json_encode($setting, JSON_UNESCAPED_SLASHES);
+            $settingXml .= '<setting>'
+                .'<settingName>'.$this->xml($name).'</settingName>'
+                .'<settingValue>'.$this->xml($json).'</settingValue>'
+                .'</setting>';
         }
 
         $xml = '<?xml version="1.0" encoding="utf-8"?>'
@@ -814,7 +918,11 @@ class PaymentGatewayManager
 
         $this->storeDetails($order, ['status' => 'initiated']);
 
-        return ['redirect' => 'https://accept.authorize.net/payment/payment/form?token='.rawurlencode($token)];
+        $hostedForm = PaymentMethods::isSandbox('authorizenet')
+            ? 'https://test.authorize.net/payment/payment/form'
+            : 'https://accept.authorize.net/payment/payment/form';
+
+        return ['redirect' => $hostedForm.'?token='.rawurlencode($token)];
     }
 
     private function startPayku(Order $order): array
@@ -870,7 +978,7 @@ class PaymentGatewayManager
             'ngenius' => $this->verifyNgenius($order),
             'iyzico' => $this->verifyIyzico($order, $request),
             'bkash' => $this->verifyBkash($order, $request),
-            'nagad' => ['paid' => false, 'message' => 'Nagad payments need to be confirmed from the merchant dashboard before this order is marked paid.'],
+            'nagad' => $this->verifyNagad($order, $request),
             'proxypay' => $this->verifyProxypay($order, $request),
             'aamarpay' => $this->verifyAamarpay($order, $request),
             'authorizenet' => $this->verifyAuthorizeNet($order, $request),
@@ -911,7 +1019,8 @@ class PaymentGatewayManager
 
         $status = (string) $payment->json('status');
         if ($status === 'APPROVED') {
-            $capture = $http->post($base.'/v2/checkout/orders/'.rawurlencode($paypalOrderId).'/capture', new \stdClass());
+            $capture = $http->withHeaders(['PayPal-Request-Id' => $order->order_number.'-capture'])
+                ->post($base.'/v2/checkout/orders/'.rawurlencode($paypalOrderId).'/capture', new \stdClass());
             if ($capture->failed()) {
                 return ['paid' => false, 'message' => 'PayPal approved the payment but capture has not completed yet.'];
             }
@@ -922,6 +1031,13 @@ class PaymentGatewayManager
         $captureId = (string) ($payment->json('purchase_units.0.payments.captures.0.id') ?? '');
         if (! in_array($status, ['COMPLETED', 'CAPTURED'], true) || $captureId === '') {
             return ['paid' => false, 'message' => 'PayPal payment is not settled yet.'];
+        }
+
+        $paidAmount = (string) ($payment->json('purchase_units.0.amount.value') ?? '');
+        $paidCurrency = strtoupper((string) ($payment->json('purchase_units.0.amount.currency_code') ?? ''));
+        if (($paidAmount !== '' && (float) $paidAmount !== (float) $this->amount($order))
+            || ($paidCurrency !== '' && $paidCurrency !== strtoupper($this->currency()))) {
+            return ['paid' => false, 'message' => 'PayPal payment amount or currency does not match this order.'];
         }
 
         return ['paid' => true, 'transaction_id' => $captureId, 'extra' => ['paypal_order_id' => $paypalOrderId]];
@@ -943,7 +1059,7 @@ class PaymentGatewayManager
         }
 
         $reference = (string) ($response->json('external_reference') ?? '');
-        if ($reference !== '' && $reference !== (string) $order->id) {
+        if ($reference !== '' && ! in_array($reference, [(string) $order->id, (string) $order->order_number], true)) {
             return ['paid' => false, 'message' => 'This MercadoPago payment belongs to a different order.'];
         }
 
@@ -976,7 +1092,15 @@ class PaymentGatewayManager
 
         $status = (string) $response->json('status');
         $responseTranId = (string) ($response->json('tran_id') ?? '');
-        if ($response->failed() || ! in_array($status, ['VALID', 'VALIDATED'], true) || ($responseTranId !== '' && $responseTranId !== $order->order_number)) {
+        $paidAmount = (string) ($response->json('amount') ?? '');
+        $paidCurrency = strtoupper((string) ($response->json('currency') ?? ''));
+        if (
+            $response->failed()
+            || ! in_array($status, ['VALID', 'VALIDATED'], true)
+            || ($responseTranId !== '' && $responseTranId !== $order->order_number)
+            || ($paidAmount !== '' && (float) $paidAmount !== (float) $this->amount($order))
+            || ($paidCurrency !== '' && $paidCurrency !== strtoupper($this->currency()))
+        ) {
             return ['paid' => false, 'message' => 'SSLCommerz could not validate this payment.'];
         }
 
@@ -986,8 +1110,8 @@ class PaymentGatewayManager
     private function verifyInstamojo(Order $order, Request $request): array
     {
         $paymentId = (string) ($request->input('payment_id') ?: '');
-        $requestId = (string) ($request->input('payment_request_id') ?: $this->details($order)['instamojo_request_id'] ?? '');
-        if ($paymentId === '') {
+        $requestId = (string) ($this->details($order)['instamojo_request_id'] ?? '');
+        if ($paymentId === '' || $requestId === '') {
             return ['paid' => false, 'message' => 'Missing Instamojo payment reference.'];
         }
 
@@ -1002,8 +1126,16 @@ class PaymentGatewayManager
         }
 
         $returnedRequest = (string) ($response->json('payment_request') ?? '');
-        if ($requestId !== '' && $returnedRequest !== '' && $returnedRequest !== $requestId) {
+        $returnedRequestId = $returnedRequest !== ''
+            ? basename(parse_url($returnedRequest, PHP_URL_PATH) ?: $returnedRequest)
+            : (string) ($response->json('payment_request_id') ?? '');
+        if ($returnedRequestId !== $requestId) {
             return ['paid' => false, 'message' => 'This Instamojo payment belongs to a different request.'];
+        }
+
+        $amount = (string) ($response->json('amount') ?? '');
+        if ($amount !== '' && (float) $amount !== (float) $this->amount($order)) {
+            return ['paid' => false, 'message' => 'Instamojo payment amount does not match this order.'];
         }
 
         $status = (string) $response->json('status');
@@ -1036,11 +1168,20 @@ class PaymentGatewayManager
     {
         $secret = PaymentMethods::value('paystack', 'PAYSTACK_SECRET_KEY');
         $signature = (string) $request->header('X-Paystack-Signature', '');
+        $isWebhook = $this->isWebhookRequest();
+
+        if ($isWebhook && $signature === '') {
+            return ['paid' => false, 'message' => 'Paystack webhook signature is missing.'];
+        }
         if ($signature !== '' && ! hash_equals(hash_hmac('sha512', $request->getContent(), $secret), $signature)) {
             return ['paid' => false, 'message' => 'Paystack webhook signature is invalid.'];
         }
 
-        $reference = (string) ($request->input('reference') ?: $request->input('trxref') ?: $request->input('data.reference') ?: $order->order_number);
+        $reference = (string) ($request->input('data.reference') ?: $request->input('reference') ?: $request->input('trxref') ?: $order->order_number);
+        if ($reference !== $order->order_number) {
+            return ['paid' => false, 'message' => 'This Paystack payment belongs to a different order.'];
+        }
+
         $response = Http::withToken($secret)->timeout(20)->get('https://api.paystack.co/transaction/verify/'.rawurlencode($reference));
 
         if ($response->failed() || $response->json('data.status') !== 'success') {
@@ -1048,8 +1189,11 @@ class PaymentGatewayManager
         }
 
         $currency = PaymentMethods::value('paystack', 'PAYSTACK_CURRENCY_CODE', $this->currency());
-        if ((int) $response->json('data.amount') !== $this->minorUnits($order, $currency)) {
-            return ['paid' => false, 'message' => 'Paystack payment amount does not match this order.'];
+        if (
+            (int) $response->json('data.amount') !== $this->minorUnits($order, $currency)
+            || strtoupper((string) $response->json('data.currency')) !== strtoupper($currency)
+        ) {
+            return ['paid' => false, 'message' => 'Paystack payment amount or currency does not match this order.'];
         }
 
         return ['paid' => true, 'transaction_id' => (string) ($response->json('data.id') ?: $reference), 'extra' => ['paystack_reference' => $reference]];
@@ -1058,8 +1202,8 @@ class PaymentGatewayManager
     private function verifyVoguePay(Order $order, Request $request): array
     {
         $transaction = (string) ($request->input('v_transaction') ?: $request->input('transaction_id') ?: $request->input('id') ?? '');
-        if ($transaction === '') {
-            return ['paid' => false, 'message' => 'Missing VoguePay transaction reference.'];
+        if ($transaction === '' || $transaction !== $order->order_number) {
+            return ['paid' => false, 'message' => 'VoguePay transaction reference does not match this order.'];
         }
 
         $response = Http::timeout(20)->get('https://voguepay.com/', [
@@ -1076,7 +1220,19 @@ class PaymentGatewayManager
             return ['paid' => false, 'message' => 'VoguePay has not confirmed this payment yet.'];
         }
 
-        return ['paid' => true, 'transaction_id' => $transaction];
+        $data = json_decode($response->body(), true) ?: [];
+        $returnedTransaction = (string) ($data['v_transaction'] ?? '');
+        $amount = (string) ($data['total'] ?? $data['v_total'] ?? '');
+        $merchant = (string) ($data['merchant_id'] ?? '');
+        if (
+            ($returnedTransaction !== '' && $returnedTransaction !== $order->order_number)
+            || ($amount !== '' && (float) $amount !== (float) $this->amount($order))
+            || ($merchant !== '' && $merchant !== PaymentMethods::value('voguepay', 'VOGUE_MERCHANT_ID'))
+        ) {
+            return ['paid' => false, 'message' => 'VoguePay payment does not match this order.'];
+        }
+
+        return ['paid' => true, 'transaction_id' => (string) ($data['transaction_id'] ?? $transaction)];
     }
 
     private function verifyPayHere(Order $order, Request $request): array
@@ -1101,10 +1257,12 @@ class PaymentGatewayManager
     {
         $outlet = PaymentMethods::value('ngenius', 'NGENIUS_OUTLET_ID');
         $apiKey = PaymentMethods::value('ngenius', 'NGENIUS_API_KEY');
-        $base = PaymentMethods::isSandbox('ngenius') ? 'https://api-gateway.sandbox.ngenius-payments.com' : 'https://api-gateway.ngenius-payments.com';
-        $orderUrl = (string) ($this->details($order)['ngenius_order_id'] ?? '');
+        $base = PaymentMethods::isSandbox('ngenius')
+            ? 'https://api-gateway.sandbox.ngenius-payments.com'
+            : 'https://api-gateway.ngenius-payments.com';
+        $stored = (string) ($this->details($order)['ngenius_order_id'] ?? '');
 
-        if ($orderUrl === '') {
+        if ($stored === '') {
             return ['paid' => false, 'message' => 'Missing N-Genius order reference.'];
         }
 
@@ -1115,6 +1273,10 @@ class PaymentGatewayManager
         if ($tokenResponse->failed()) {
             return ['paid' => false, 'message' => 'N-Genius verification could not authenticate.'];
         }
+
+        $orderUrl = str_starts_with($stored, 'http')
+            ? $stored
+            : $base.'/transactions/outlets/'.rawurlencode($outlet).'/orders/'.rawurlencode($stored);
 
         $response = Http::withToken($tokenResponse->json('access_token'))
             ->withHeaders(['Accept' => 'application/vnd.ni-payment.v2+json'])
@@ -1128,6 +1290,18 @@ class PaymentGatewayManager
         $state = (string) $response->json('state');
         if (! in_array($state, ['PURCHASED', 'CAPTURED'], true)) {
             return ['paid' => false, 'message' => 'N-Genius payment is '.$state.'.'];
+        }
+
+        $reference = (string) ($response->json('merchantOrderReference') ?? $this->details($order)['ngenius_order_reference'] ?? '');
+        $amount = (int) ($response->json('amount.value') ?? 0);
+        $currency = strtoupper((string) ($response->json('amount.currencyCode') ?? ''));
+        $expectedCurrency = strtoupper(PaymentMethods::value('ngenius', 'NGENIUS_CURRENCY', 'AED'));
+        if (
+            ($reference !== '' && $reference !== $order->order_number)
+            || ($amount > 0 && $amount !== $this->minorUnits($order, $expectedCurrency))
+            || ($currency !== '' && $currency !== $expectedCurrency)
+        ) {
+            return ['paid' => false, 'message' => 'N-Genius payment does not match this order.'];
         }
 
         return ['paid' => true, 'transaction_id' => (string) ($response->json('id') ?: $order->order_number), 'extra' => ['ngenius_state' => $state]];
@@ -1148,7 +1322,7 @@ class PaymentGatewayManager
             'token' => $token,
         ];
         $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
-        $response = Http::withHeaders($this->iyzicoHeaders($body, $conversationId))
+        $response = Http::withHeaders($this->iyzicoHeaders($body, '/payment/3dsecure/auth'))
             ->withBody($body, 'application/json')
             ->timeout(20)
             ->post($base.'/payment/3dsecure/auth');
@@ -1167,46 +1341,105 @@ class PaymentGatewayManager
             return ['paid' => false, 'message' => 'Missing bKash payment ID.'];
         }
 
-        $base = PaymentMethods::isSandbox('bkash')
-            ? 'https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized'
-            : 'https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized';
+        $base = $this->bkashBaseUrl();
         $appKey = PaymentMethods::value('bkash', 'BKASH_CHECKOUT_APP_KEY');
-        $tokenResponse = Http::withHeaders(['X-App-Key' => $appKey, 'Accept' => 'application/json'])
+        $tokenResponse = Http::withHeaders($this->bkashHeaders())
             ->timeout(20)
-            ->post($base.'/grant', [
+            ->post($base.'/token/grant', [
                 'app_key' => $appKey,
                 'app_secret' => PaymentMethods::value('bkash', 'BKASH_CHECKOUT_APP_SECRET'),
             ]);
-        if ($tokenResponse->failed()) {
+        if ($tokenResponse->failed() || ! $tokenResponse->json('id_token')) {
             return ['paid' => false, 'message' => 'bKash verification could not authenticate.'];
         }
 
-        $response = Http::withToken($tokenResponse->json('id_token'))
-            ->withHeaders(['X-App-Key' => $appKey, 'Accept' => 'application/json'])
-            ->withBasicAuth(
-                PaymentMethods::value('bkash', 'BKASH_CHECKOUT_USER_NAME'),
-                PaymentMethods::value('bkash', 'BKASH_CHECKOUT_PASSWORD')
-            )
+        $response = Http::withHeaders($this->bkashHeaders($tokenResponse->json('id_token')))
             ->timeout(20)
-            ->post($base.'/payment/execute', ['paymentID' => $paymentId]);
+            ->post($base.'/execute', ['paymentID' => $paymentId]);
 
         if ($response->failed() || strtolower((string) $response->json('transactionStatus')) !== 'completed') {
             return ['paid' => false, 'message' => 'bKash has not completed this payment yet.'];
         }
 
+        $invoice = (string) ($response->json('merchantInvoiceNumber') ?? '');
+        $amount = (string) ($response->json('amount') ?? '');
+        if (
+            ($invoice !== '' && $invoice !== $order->order_number)
+            || ($amount !== '' && (float) $amount !== (float) $this->amount($order))
+        ) {
+            return ['paid' => false, 'message' => 'bKash payment does not match this order.'];
+        }
+
         return ['paid' => true, 'transaction_id' => (string) ($response->json('trxID') ?: $paymentId)];
+    }
+
+    private function verifyNagad(Order $order, Request $request): array
+    {
+        $paymentReference = (string) ($request->input('payment_ref_id')
+            ?: $request->input('paymentReferenceId')
+            ?: $request->input('paymentRefId')
+            ?: $request->input('ref')
+            ?: $this->details($order)['nagad_payment_reference_id']
+            ?? '');
+        if ($paymentReference === '') {
+            return ['paid' => false, 'message' => 'Missing Nagad payment reference.'];
+        }
+
+        $response = Http::withHeaders($this->nagadHeaders())
+            ->timeout(20)
+            ->get($this->nagadBaseUrl().'verify/payment/'.rawurlencode($paymentReference));
+
+        if ($response->failed()) {
+            return ['paid' => false, 'message' => 'Nagad could not confirm this payment yet.'];
+        }
+
+        $data = $this->nagadResponseData($response->json() ?: []);
+        if ($data === []) {
+            return ['paid' => false, 'message' => 'Nagad response could not be verified.'];
+        }
+
+        $status = strtolower((string) ($data['status'] ?? ''));
+        if ($status !== 'success') {
+            return ['paid' => false, 'message' => 'Nagad payment is '.$status.'.'];
+        }
+
+        $invoice = (string) ($data['orderId'] ?? '');
+        $amount = (string) ($data['amount'] ?? '');
+        $merchantId = (string) ($data['merchantId'] ?? '');
+        $expectedInvoice = (string) ($this->details($order)['nagad_invoice'] ?? $order->order_number);
+        if (
+            ($invoice !== '' && $invoice !== $expectedInvoice)
+            || ($amount !== '' && (float) $amount !== (float) $this->amount($order))
+            || ($merchantId !== '' && $merchantId !== PaymentMethods::value('nagad', 'NAGAD_MERCHANT_ID'))
+        ) {
+            return ['paid' => false, 'message' => 'Nagad payment does not match this order.'];
+        }
+
+        return [
+            'paid' => true,
+            'transaction_id' => (string) ($data['paymentRefId'] ?? $paymentReference),
+            'extra' => ['nagad_status' => $status],
+        ];
     }
 
     private function verifyProxypay(Order $order, Request $request): array
     {
         $provided = (string) $request->input('signature', '');
         $params = $request->except(['signature', '_token']);
-        ksort($params);
-        $expected = hash_hmac('sha256', implode('|', array_map('strval', $params)), PaymentMethods::value('proxypay', 'PROXYPAY_SECRET_KEY'));
+        $expected = $this->proxypaySignature($params);
 
         $status = strtolower((string) ($request->input('status') ?? $request->input('payment_status') ?? ''));
         $successful = in_array($status, ['success', 'paid', 'approved', 'completed'], true);
-        if (! $successful || $provided === '' || ! hash_equals($expected, $provided)) {
+        $amount = (string) ($request->input('amount') ?? '');
+        $currency = strtoupper((string) ($request->input('currency') ?? ''));
+
+        if (
+            ! $successful
+            || $provided === ''
+            || ! hash_equals($expected, $provided)
+            || ($amount !== '' && (float) $amount !== (float) $this->amount($order))
+            || ($currency !== '' && $currency !== strtoupper($this->currency()))
+        ) {
             return ['paid' => false, 'message' => 'ProxyPay response could not be verified.'];
         }
 
@@ -1237,6 +1470,11 @@ class PaymentGatewayManager
             return ['paid' => false, 'message' => 'Missing Authorize.Net transaction ID.'];
         }
 
+        $invoice = (string) ($request->input('x_invoice_num') ?: $request->input('invoiceNumber') ?? '');
+        if ($invoice !== '' && $invoice !== $order->order_number) {
+            return ['paid' => false, 'message' => 'Authorize.Net payment belongs to a different order.'];
+        }
+
         $endpoint = PaymentMethods::isSandbox('authorizenet')
             ? 'https://apitest.authorize.net/xml/v1/request.api'
             : 'https://api.authorize.net/xml/v1/request.api';
@@ -1251,10 +1489,20 @@ class PaymentGatewayManager
             ->withBody($xml, 'text/xml')
             ->post($endpoint);
 
-        $resultCode = $this->xmlValue($response->body(), 'resultCode');
-        $transactionStatus = $this->xmlValue($response->body(), 'status');
+        $body = $response->body();
+        $resultCode = $this->xmlValue($body, 'resultCode');
+        $transactionStatus = $this->xmlValue($body, 'status');
         if ($response->failed() || $resultCode !== 'Ok' || ! in_array($transactionStatus, ['settledSuccessfully', 'capturedPendingSettlement'], true)) {
             return ['paid' => false, 'message' => 'Authorize.Net has not settled this transaction yet.'];
+        }
+
+        $responseInvoice = $this->xmlValue($body, 'invoiceNumber');
+        $responseAmount = $this->xmlValue($body, 'amount');
+        if (
+            ($responseInvoice !== '' && $responseInvoice !== $order->order_number)
+            || ($responseAmount !== '' && (float) $responseAmount !== (float) $this->amount($order))
+        ) {
+            return ['paid' => false, 'message' => 'Authorize.Net payment does not match this order.'];
         }
 
         return ['paid' => true, 'transaction_id' => $transactionId, 'extra' => ['authorizenet_status' => $transactionStatus]];
@@ -1290,17 +1538,7 @@ class PaymentGatewayManager
 
     private function resolveOrder(string $method, Request $request): ?Order
     {
-        $orderId = session('pending_gateway_order_id');
-        $provider = session('pending_gateway_provider');
-
-        if ($orderId && $provider === $method) {
-            $order = Order::find($orderId);
-            if ($order && $order->payment_method === $method) {
-                return $order;
-            }
-        }
-
-        $reference = collect([
+        $references = collect([
             $request->input('order_id'),
             $request->input('order_number'),
             $request->input('external_reference'),
@@ -1310,6 +1548,9 @@ class PaymentGatewayManager
             $request->input('paymentID'),
             $request->input('merchantOrderReference'),
             $request->input('merchant_order_reference'),
+            $request->input('order.reference'),
+            $request->input('order.merchantOrderReference'),
+            $request->input('x_invoice_num'),
             $request->input('receipt'),
             $request->input('reference'),
             $request->input('resource.supplementary_data.related_ids.order_id'),
@@ -1319,54 +1560,100 @@ class PaymentGatewayManager
             $request->input('data.reference'),
             $request->input('payment.id'),
             $request->input('id'),
-        ])->first(fn ($value) => filled($value));
+        ])->filter(fn ($value) => filled($value));
 
-        if (! $reference) {
-            return null;
+        // An explicit order reference in a provider callback is stronger than a
+        // lingering checkout session from another browser tab.
+        foreach ($references as $reference) {
+            $order = Order::where('order_number', (string) $reference)->first();
+            if ($order && $order->payment_method === $method) {
+                return $order;
+            }
         }
 
-        $reference = (string) $reference;
-        $order = Order::where('order_number', $reference)->first();
+        $orderId = session('pending_gateway_order_id');
+        $provider = session('pending_gateway_provider');
+        if ($orderId && $provider === $method) {
+            $order = Order::find($orderId);
+            if ($order && $order->payment_method === $method) {
+                return $order;
+            }
+        }
 
-        if (! $order) {
-            // Webhooks have no checkout session, so match the provider reference
-            // saved on the order when the hosted payment was started.
+        // Webhooks have no checkout session, so match the provider reference
+        // saved on the order when the hosted payment was started.
+        $escaped = addcslashes((string) ($references->first() ?? ''), '%_\\');
+        if ($escaped !== '') {
             $order = Order::where('payment_method', $method)
-                ->where('payment_details', 'like', '%'.$reference.'%')
+                ->where('payment_details', 'like', '%'.$escaped.'%')
                 ->latest()
                 ->first();
+
+            if ($order) {
+                return $order;
+            }
         }
 
-        return $order && $order->payment_method === $method ? $order : null;
+        // MercadoPago webhooks only carry an opaque payment id. Query the
+        // payment so its external_reference can identify the order.
+        if ($method === 'mercadopago') {
+            $paymentId = (string) ($request->input('data.id') ?: $request->input('collection_id') ?: $request->input('id') ?? '');
+            if ($paymentId !== '') {
+                $response = Http::withToken(PaymentMethods::value('mercadopago', 'MERCADOPAGO_ACCESS'))
+                    ->timeout(20)
+                    ->get('https://api.mercadopago.com/v1/payments/'.rawurlencode($paymentId));
+                $external = (string) ($response->json('external_reference') ?? '');
+                if ($external !== '') {
+                    $order = Order::where('order_number', $external)->first() ?: Order::find($external);
+                    if ($order && $order->payment_method === $method) {
+                        return $order;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
-    private function markPaid(Order $order, string $provider, ?string $transactionId, array $extra = []): void
+    private function markPaid(Order $order, string $provider, ?string $transactionId, array $extra = []): bool
     {
-        if ($order->payment_status === 'paid') {
-            return;
+        $fresh = DB::transaction(function () use ($order, $provider, $transactionId, $extra) {
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+            if (! $locked || $locked->payment_status === 'paid' || $locked->status === 'cancelled') {
+                return null;
+            }
+
+            $details = $this->details($locked);
+            $details['provider'] = $provider;
+            $details['transaction_id'] = $transactionId;
+            $details['confirmed_at'] = now()->toDateTimeString();
+            $details = array_merge($details, $extra);
+
+            $update = [
+                'payment_status' => 'paid',
+                'payment_details' => json_encode($details),
+            ];
+            if ($locked->status === 'pending') {
+                $update['status'] = 'processing';
+            }
+
+            $locked->update($update);
+            $locked->recordStatusChange(
+                $update['status'] ?? $locked->status,
+                'Payment received through '.$this->label($provider).($transactionId ? ' ('.$transactionId.')' : '')
+            );
+
+            return $locked;
+        });
+
+        if (! $fresh) {
+            return false;
         }
 
-        $details = $this->details($order);
-        $details['provider'] = $provider;
-        $details['transaction_id'] = $transactionId;
-        $details['confirmed_at'] = now()->toDateTimeString();
-        $details = array_merge($details, $extra);
+        $order->forceFill($fresh->getAttributes());
+        $this->notify($fresh);
 
-        $update = [
-            'payment_status' => 'paid',
-            'payment_details' => json_encode($details),
-        ];
-        if ($order->status === 'pending') {
-            $update['status'] = 'processing';
-        }
-
-        $order->update($update);
-        $order->recordStatusChange(
-            $update['status'] ?? $order->status,
-            'Payment received through '.$this->label($provider).($transactionId ? ' ('.$transactionId.')' : '')
-        );
-
-        $this->notify($order);
+        return true;
     }
 
     private function cancelPending(Order $order, string $reason): void
@@ -1410,8 +1697,18 @@ class PaymentGatewayManager
         $billing = json_decode($order->shipping_details ?? '[]', true) ?: [];
         $toEmail = ($billing['email'] ?? null) ?: ($order->user?->email ?? null);
         if ($toEmail) {
-            Mail::to($toEmail)->queue(new OrderConfirmationMail($order));
+            try {
+                Mail::to($toEmail)->send(new OrderConfirmationMail($order));
+            } catch (Throwable $exception) {
+                logger()->warning('Order confirmation email failed: '.$exception->getMessage());
+            }
         }
+    }
+
+    private function isWebhookRequest(): bool
+    {
+        return app()->bound('request')
+            && str_contains((string) request()->route()?->getName(), 'webhook');
     }
 
     private function details(Order $order): array
@@ -1467,15 +1764,162 @@ class PaymentGatewayManager
             : (int) round((float) $order->total_amount * 100);
     }
 
-    private function iyzicoHeaders(string $body, string $conversationId): array
+    private function bkashBaseUrl(): string
+    {
+        return PaymentMethods::isSandbox('bkash')
+            ? 'https://tokenized.sandbox.bka.sh/v1.2.0-beta/tokenized/checkout'
+            : 'https://tokenized.pay.bka.sh/v1.2.0-beta/tokenized/checkout';
+    }
+
+    private function bkashHeaders(?string $token = null): array
+    {
+        $headers = [
+            'X-App-Key' => PaymentMethods::value('bkash', 'BKASH_CHECKOUT_APP_KEY'),
+            'Username' => PaymentMethods::value('bkash', 'BKASH_CHECKOUT_USER_NAME'),
+            'Password' => PaymentMethods::value('bkash', 'BKASH_CHECKOUT_PASSWORD'),
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+        ];
+
+        if ($token) {
+            $headers['Authorization'] = 'Bearer '.$token;
+        }
+
+        return $headers;
+    }
+
+    private function nagadBaseUrl(): string
+    {
+        $mode = strtolower(trim(PaymentMethods::value('nagad', 'NAGAD_MODE', 'sandbox')));
+
+        return in_array($mode, ['live', 'production', 'prod'], true)
+            ? 'https://api.mynagad.com/api/dfs/'
+            : 'http://sandbox.mynagad.com:10080/remote-payment-gateway-1.0/api/dfs/';
+    }
+
+    private function nagadHeaders(): array
+    {
+        return [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'X-KM-Api-Version' => 'v-0.2.0',
+            'X-KM-IP-V4' => request()->ip() ?: '127.0.0.1',
+            'X-KM-Client-Type' => 'PC_WEB',
+        ];
+    }
+
+    /** @return array<int, string> */
+    private function nagadPrivateKeys(): array
+    {
+        $value = trim(PaymentMethods::value('nagad', 'NAGAD_MERCHANT_PRIVATE_KEY'));
+        if ($value === '') {
+            return [];
+        }
+
+        if (str_contains($value, 'BEGIN')) {
+            $keys = [$value];
+            if (str_contains($value, 'BEGIN PRIVATE KEY')) {
+                $body = trim(preg_replace('/-----[^-]+-----/', '', $value) ?: '');
+                $keys[] = "-----BEGIN RSA PRIVATE KEY-----\n".$body."\n-----END RSA PRIVATE KEY-----\n";
+            }
+
+            return array_values(array_unique($keys));
+        }
+
+        $body = chunk_split(preg_replace('/\s+/', '', $value) ?: '', 64, "\n");
+
+        return [
+            "-----BEGIN PRIVATE KEY-----\n".$body."-----END PRIVATE KEY-----\n",
+            "-----BEGIN RSA PRIVATE KEY-----\n".$body."-----END RSA PRIVATE KEY-----\n",
+        ];
+    }
+
+    private function nagadPublicKey(): string
+    {
+        $value = trim(PaymentMethods::value('nagad', 'NAGAD_PG_PUBLIC_KEY'));
+        if ($value === '') {
+            return '';
+        }
+
+        if (str_contains($value, 'BEGIN')) {
+            return $value;
+        }
+
+        return "-----BEGIN PUBLIC KEY-----\n".chunk_split(preg_replace('/\s+/', '', $value) ?: '', 64, "\n")."-----END PUBLIC KEY-----\n";
+    }
+
+    private function nagadEncrypt(string $data): string
+    {
+        $key = $this->nagadPublicKey();
+        if ($key === '' || ! openssl_public_encrypt($data, $encrypted, $key, OPENSSL_PKCS1_PADDING)) {
+            throw new RuntimeException('Nagad gateway public key is invalid.');
+        }
+
+        return base64_encode($encrypted);
+    }
+
+    private function nagadDecrypt(string $data): string
+    {
+        $encrypted = base64_decode($data, true) ?: $data;
+        foreach ($this->nagadPrivateKeys() as $key) {
+            if (openssl_private_decrypt($encrypted, $plain, $key, OPENSSL_PKCS1_PADDING)) {
+                return (string) $plain;
+            }
+        }
+
+        throw new RuntimeException('Nagad merchant private key is invalid.');
+    }
+
+    private function nagadSign(string $data): string
+    {
+        foreach ($this->nagadPrivateKeys() as $key) {
+            if (openssl_sign($data, $signature, $key, OPENSSL_ALGO_SHA256)) {
+                return base64_encode($signature);
+            }
+        }
+
+        throw new RuntimeException('Nagad merchant private key is invalid.');
+    }
+
+    private function nagadVerify(string $data, string $signature): bool
+    {
+        $key = $this->nagadPublicKey();
+        if ($key === '') {
+            return false;
+        }
+
+        return openssl_verify($data, base64_decode($signature, true) ?: $signature, $key, OPENSSL_ALGO_SHA256) === 1;
+    }
+
+    private function nagadResponseData(array $response): array
+    {
+        $sensitive = (string) ($response['sensitiveData'] ?? '');
+        $signature = (string) ($response['signature'] ?? '');
+        if ($sensitive === '') {
+            return [];
+        }
+
+        $plain = $this->nagadDecrypt($sensitive);
+        if ($signature !== '' && ! $this->nagadVerify($plain, $signature)) {
+            return [];
+        }
+
+        $decoded = json_decode($plain, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function iyzicoHeaders(string $body, string $uriPath): array
     {
         $apiKey = PaymentMethods::value('iyzico', 'IYZICO_API_KEY');
         $secret = PaymentMethods::value('iyzico', 'IYZICO_SECRET_KEY');
         $random = Str::random(12);
-        $hash = base64_encode(hash_hmac('sha256', $apiKey.$random.$conversationId.$body, $secret, true));
+        $signature = base64_encode(hash_hmac('sha256', $random.$uriPath.$body, $secret, true));
+        $authorization = base64_encode('apiKey:'.$apiKey.'&randomKey:'.$random.'&signature:'.$signature);
 
         return [
-            'Authorization' => 'IYZWS '.$apiKey.':'.$hash,
+            'Authorization' => 'IYZWSv2 '.$authorization,
+            'x-iyzi-rnd' => $random,
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
         ];

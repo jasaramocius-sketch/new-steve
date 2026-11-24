@@ -44,14 +44,14 @@ class HomePageController extends Controller
         $sections = HomePageSection::orderBy($sortBy, $sortDir)->paginate($perPage);
         $sections->appends($request->query())->onEachSide(1);
 
-        return view('admin.home-page.index', compact('sections', 'sortBy', 'sortDir'));
+        return view('backend.home-page.index', compact('sections', 'sortBy', 'sortDir'));
     }
 
     public function edit($id)
     {
         $section = HomePageSection::findOrFail($id);
 
-        return view('admin.home-page.edit', compact('section'));
+        return view('backend.home-page.edit', compact('section'));
     }
 
     public function searchProducts(Request $request)

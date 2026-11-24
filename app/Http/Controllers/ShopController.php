@@ -265,7 +265,7 @@ class ShopController extends Controller
 
         $currentBrand = $request->attributes->get('currentBrand');
 
-        return view('shop.index', array_merge(
+        return view('frontend.shop.index', array_merge(
             $vehicleData,
             compact('products', 'currentBrand'),
             $this->getSharedData($request, $baseQuery),
@@ -322,6 +322,44 @@ class ShopController extends Controller
         return response()->json($this->vehicleCatalog->models($year, $make));
     }
 
+    /**
+     * One level of sidebar categories, loaded only when a branch is expanded.
+     */
+    public function sidebarCategoryChildren(Request $request)
+    {
+        $parentId = (int) $request->query('parent', 0);
+        $level = max(2, min(6, (int) $request->query('level', 2)));
+        $active = $request->query('active', []);
+        $activeIds = is_array($active)
+            ? array_values(array_filter(array_map('intval', $active), fn ($id) => $id > 0))
+            : [];
+
+        $tree = \App\Services\CategoryTree::tree();
+        $findNode = function (array $nodes, int $id) use (&$findNode) {
+            foreach ($nodes as $node) {
+                if ((int) $node->id === $id) {
+                    return $node;
+                }
+                if (! empty($node->children)) {
+                    $found = $findNode($node->children, $id);
+                    if ($found) {
+                        return $found;
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        $parent = $findNode($tree, $parentId);
+
+        return view('partials.shop-sidebar-category-items', [
+            'categoryNodes' => $parent && ! empty($parent->children) ? $parent->children : [],
+            'activeCategoryIds' => $activeIds,
+            'level' => $level,
+        ]);
+    }
+
     public function clearVehicleFilter(Request $request)
     {
         session(['shop_vehicle_cleared' => true]);
@@ -365,7 +403,7 @@ class ShopController extends Controller
         $products = $this->paginateProducts($productsQuery);
         $pageTitle = 'Classified Products';
 
-        return view('shop.index', array_merge(
+        return view('frontend.shop.index', array_merge(
             compact('products', 'pageTitle'),
             $this->getSharedData($request, $baseQuery)
         ));
@@ -410,8 +448,10 @@ class ShopController extends Controller
         $this->filterProducts($request, $productsQuery, true);
         $products = $this->paginateProducts($productsQuery);
 
-        return view('shop.index', array_merge(
-            compact('products', 'currentCategory'),
+        $activeCategoryIds = \App\Services\CategoryTree::pathTo((int) $category->id);
+
+        return view('frontend.shop.index', array_merge(
+            compact('products', 'currentCategory', 'activeCategoryIds'),
             $vehicleData,
             array_filter(compact('currentSubcategory', 'currentChildcategory')),
             $this->getSharedData($request, $baseQuery)
@@ -448,8 +488,10 @@ class ShopController extends Controller
         $this->filterProducts($request, $productsQuery, true);
         $products = $this->paginateProducts($productsQuery);
 
-        return view('shop.index', array_merge(
-            compact('products', 'currentCategory', 'currentSubcategory', 'currentChildcategory'),
+        $activeCategoryIds = \App\Services\CategoryTree::pathTo((int) $category->id);
+
+        return view('frontend.shop.index', array_merge(
+            compact('products', 'currentCategory', 'currentSubcategory', 'currentChildcategory', 'activeCategoryIds'),
             $vehicleData,
             $this->getSharedData($request, $baseQuery)
         ));
@@ -494,7 +536,7 @@ class ShopController extends Controller
             }
         }
 
-        return view('product.show', compact('product', 'productFitments', 'userVehicle', 'vehicleFit'));
+        return view('frontend.product.show', compact('product', 'productFitments', 'userVehicle', 'vehicleFit'));
     }
 
     public function suggestions(Request $request)
@@ -517,7 +559,7 @@ class ShopController extends Controller
 
         $seen = [];
         $results = $products->map(function ($product) {
-            $name = preg_replace('/\s+/u', ' ', trim((string) $product->name));
+            $name = cleanProductTitle($product->name);
 
             return [
                 'name' => $name,
@@ -530,7 +572,8 @@ class ShopController extends Controller
                 '_dedupe' => $product->part_number ?: $product->slug,
             ];
         })->filter(function ($item) use (&$seen) {
-            $key = mb_strtolower((string) ($item['_dedupe'] ?? ''));
+            $nameKey = preg_replace('/[^\p{L}\p{N}]+/u', '', mb_strtolower((string) $item['name']));
+            $key = $nameKey !== '' ? $nameKey : mb_strtolower((string) ($item['_dedupe'] ?? ''));
             if ($key === '' || isset($seen[$key])) {
                 return false;
             }

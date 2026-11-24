@@ -2,13 +2,11 @@
 @if ($paginator->hasPages())
     @include('vendor.pagination._go-to-page', ['paginator' => $paginator])
     <div class="small text-muted">
-        {!! __('Showing') !!}
-        <span class="fw-semibold">{{ $paginator->firstItem() }}</span>
-        {!! __('to') !!}
-        <span class="fw-semibold">{{ $paginator->lastItem() }}</span>
-        {!! __('of') !!}
-        <span class="fw-semibold">{{ $paginator->total() }}</span>
-        {!! __('results') !!}
+        Page
+        <span class="fw-semibold">{{ $paginator->currentPage() }}</span>
+        of
+        <span class="fw-semibold">{{ $paginator->lastPage() }}</span>
+        (<span class="fw-semibold">{{ $paginator->total() }}</span> Total)
     </div>
     <div class="d-flex justify-content-end align-items-center">
         <ul class="gs-pagination mb-0">

@@ -1,5 +1,5 @@
 @php
-    $rvIdList = collect(session('recently_viewed', []))->map(fn ($id) => (int) $id)->filter()->take(4)->values()->all();
+    $rvIdList = collect($recentlyViewedIds ?? session('recently_viewed', []))->map(fn ($id) => (int) $id)->filter()->take(4)->values()->all();
     $rvProducts = collect();
     if (count($rvIdList) > 0) {
         $rvProducts = \App\Models\Product::whereIn('id', $rvIdList)

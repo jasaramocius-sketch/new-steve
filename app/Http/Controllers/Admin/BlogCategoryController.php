@@ -25,7 +25,7 @@ class BlogCategoryController extends Controller
         $categories = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
         $categories->appends($request->query())->onEachSide(1);
 
-        return view('admin.blog-categories.index', compact('categories', 'sortBy', 'sortDir'));
+        return view('backend.blog-categories.index', compact('categories', 'sortBy', 'sortDir'));
     }
 
     public function restore($id)
@@ -48,7 +48,7 @@ class BlogCategoryController extends Controller
     {
         $parents = BlogCategory::whereNull('parent_id')->where('status', 'active')->get();
 
-        return view('admin.blog-categories.create', compact('parents'));
+        return view('backend.blog-categories.create', compact('parents'));
     }
 
     public function store(Request $request)
@@ -74,7 +74,7 @@ class BlogCategoryController extends Controller
             ->where('id', '!=', $id)
             ->get();
 
-        return view('admin.blog-categories.edit', compact('category', 'parents'));
+        return view('backend.blog-categories.edit', compact('category', 'parents'));
     }
 
     public function update(Request $request, $id)

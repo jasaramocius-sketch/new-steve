@@ -17,6 +17,10 @@ class ContactController extends Controller
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 20;
 
+        $search = trim((string) $request->query('search', ''));
+        $category = (string) $request->query('category', '');
+        $categories = Contact::categories();
+
         $query = Contact::with('product');
 
         if ($source = $request->query('source')) {
@@ -27,17 +31,30 @@ class ContactController extends Controller
             }
         }
 
+        if ($category !== '' && array_key_exists($category, $categories)) {
+            $query->where('category', $category);
+        }
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('subject', 'like', '%'.$search.'%')
+                    ->orWhere('name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('message', 'like', '%'.$search.'%');
+            });
+        }
+
         $contacts = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
         $contacts->appends($request->query())->onEachSide(1);
 
-        return view('admin.contacts.index', compact('contacts', 'sortBy', 'sortDir'));
+        return view('backend.contacts.index', compact('contacts', 'sortBy', 'sortDir', 'categories', 'category', 'search'));
     }
 
     public function show($id)
     {
         $contact = Contact::with('product', 'user', 'replier')->findOrFail($id);
 
-        return view('admin.contacts.show', compact('contact'));
+        return view('backend.contacts.show', compact('contact'));
     }
 
     public function reply(Request $request, $id)

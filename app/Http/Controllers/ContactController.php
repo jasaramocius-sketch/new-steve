@@ -6,28 +6,34 @@ use App\Mail\ContactReceivedMail;
 use App\Models\Contact;
 use App\Models\Page;
 use App\Models\Setting;
-use App\Models\SupportTicket;
 use App\Services\Recaptcha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
 class ContactController extends Controller
 {
     public function submit(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required',
             'email' => 'required|email',
+            'phone' => 'nullable|string|max:20',
             'subject' => 'required',
             'message' => 'required',
+            'category' => ['nullable', Rule::in(array_keys(Contact::categories()))],
+            'priority' => ['nullable', Rule::in(array_keys(Contact::priorities()))],
         ]);
 
         if (Recaptcha::enabled('contact') && ! Recaptcha::verify($request, 'contact')) {
             return back()->withErrors(['g-recaptcha-response' => 'Please complete the reCAPTCHA verification.'])->withInput();
         }
 
-        $contact = Contact::create($request->all() + ['user_id' => auth()->id()]);
-        $this->createSupportTicket($contact);
+        $validated['category'] = $validated['category'] ?? 'General';
+        $validated['priority'] = $validated['priority'] ?? 'medium';
+        $validated['user_id'] = auth()->id();
+
+        $contact = Contact::create($validated);
 
         try {
             Mail::to($contact->email)->send(new ContactReceivedMail($contact, true));
@@ -51,24 +57,30 @@ class ContactController extends Controller
     {
         $page = Page::where('slug', 'contact')->where('status', true)->first();
 
-        return view('pages.contact', compact('page'));
+        return view('frontend.pages.contact', compact('page'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required',
             'email' => 'required|email',
+            'phone' => 'nullable|string|max:20',
             'subject' => 'required',
             'message' => 'required',
+            'category' => ['nullable', Rule::in(array_keys(Contact::categories()))],
+            'priority' => ['nullable', Rule::in(array_keys(Contact::priorities()))],
         ]);
 
         if (Recaptcha::enabled('contact') && ! Recaptcha::verify($request, 'contact')) {
             return back()->withErrors(['g-recaptcha-response' => 'Please complete the reCAPTCHA verification.'])->withInput();
         }
 
-        $contact = Contact::create($request->all() + ['user_id' => auth()->id()]);
-        $this->createSupportTicket($contact);
+        $validated['category'] = $validated['category'] ?? 'General';
+        $validated['priority'] = $validated['priority'] ?? 'medium';
+        $validated['user_id'] = auth()->id();
+
+        $contact = Contact::create($validated);
 
         try {
             Mail::to($contact->email)->send(new ContactReceivedMail($contact, true));
@@ -90,25 +102,6 @@ class ContactController extends Controller
 
     public function thankYou()
     {
-        return view('pages.contact-thank-you');
-    }
-
-    private function createSupportTicket(Contact $contact): void
-    {
-        try {
-            SupportTicket::create([
-                'user_id' => $contact->user_id,
-                'name' => $contact->name,
-                'email' => $contact->email,
-                'subject' => $contact->subject ?: 'Contact inquiry',
-                'category' => 'Contact Form',
-                'priority' => 'medium',
-                'status' => 'open',
-                'message' => $contact->message,
-            ]);
-        } catch (\Throwable $e) {
-            // Never block a contact submission if the support module is unavailable.
-            logger()->warning('Support ticket could not be created from contact form: '.$e->getMessage());
-        }
+        return view('frontend.pages.contact-thank-you');
     }
 }

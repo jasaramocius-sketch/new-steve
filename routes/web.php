@@ -27,8 +27,6 @@ use App\Http\Controllers\Admin\ShippingLocationController;
 use App\Http\Controllers\Admin\ShippingSettingsController;
 use App\Http\Controllers\Admin\TaxTypeController;
 use App\Http\Controllers\Admin\SubscriberController;
-use App\Http\Controllers\Admin\SupportTicketController;
-use App\Http\Controllers\Admin\ProductConversationController;
 use App\Http\Controllers\Admin\ApiIntegrationController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
@@ -91,6 +89,10 @@ foreach ($sitemapTypes as $sitemapSlug => $sitemapType) {
 Route::get('/robots.txt', [HomeController::class, 'robots'])->name('robots');
 
 Route::get('/search', [ShopController::class, 'index'])->name('shop');
+Route::redirect('/shop', '/search', 301);
+Route::redirect('/login', '/users/login', 301);
+Route::redirect('/register', '/users/registration', 301);
+Route::redirect('/about', '/about-us', 301);
 Route::post('/search/clear-vehicle', [ShopController::class, 'clearVehicleFilter'])->middleware('auth')->name('shop.clear-vehicle');
 Route::post('/search/clear-filters', [ShopController::class, 'clearAllFilters'])->name('shop.clear-filters');
 Route::get('/api/vehicles/years', [ShopController::class, 'vehicleYears'])->name('vehicles.years');
@@ -98,6 +100,7 @@ Route::get('/api/vehicles/makes', [ShopController::class, 'vehicleMakes'])->name
 Route::get('/api/vehicles/models', [ShopController::class, 'vehicleModels'])->name('vehicles.models');
 Route::get('/api/search/suggestions', [ShopController::class, 'suggestions'])->name('search.suggestions');
 Route::get('/ajax/mobile-categories', [HomeController::class, 'mobileCategories'])->name('ajax.mobile-categories');
+Route::get('/ajax/shop-category-children', [ShopController::class, 'sidebarCategoryChildren'])->name('ajax.shop-category-children');
 
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product');
 Route::post('/contact-seller', [ProductController::class, 'contactSeller'])->name('contact.seller');
@@ -126,7 +129,7 @@ Route::get('/terms-and-conditions', [HomeController::class, 'terms'])->name('ter
 Route::get('/terms', fn () => redirect()->route('terms.conditions', [], 301));
 Route::get('/return-policy', [HomeController::class, 'returnPolicy'])->name('return.policy');
 Route::get('/support-policy', [HomeController::class, 'supportPolicy'])->name('support.policy');
-Route::get('/page/{slug}', [HomeController::class, 'page'])->name('page.show');
+Route::get('/page/{slug}', [HomeController::class, 'legacyPage']);
 
 /*
 |--------------------------------------------------------------------------
@@ -437,19 +440,6 @@ Route::prefix('admin')
         Route::delete('/subscribers/{id}', [SubscriberController::class, 'destroy'])->name('admin.subscribers.destroy');
         Route::get('/subscribers/export/csv', [SubscriberController::class, 'exportCsv'])->name('admin.subscribers.export-csv');
 
-        Route::get('/support/tickets', [SupportTicketController::class, 'index'])->name('admin.support.tickets.index');
-        Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('admin.support.tickets.show');
-        Route::post('/support/tickets/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('admin.support.tickets.reply');
-        Route::post('/support/tickets/{ticket}/status', [SupportTicketController::class, 'updateStatus'])->name('admin.support.tickets.status');
-        Route::delete('/support/tickets/{ticket}', [SupportTicketController::class, 'destroy'])->name('admin.support.tickets.destroy');
-
-        Route::middleware('feature:conversation_system')->group(function () {
-            Route::get('/support/conversations', [ProductConversationController::class, 'index'])->name('admin.support.conversations.index');
-            Route::get('/support/conversations/{conversation}', [ProductConversationController::class, 'show'])->name('admin.support.conversations.show');
-            Route::post('/support/conversations/{conversation}/reply', [ProductConversationController::class, 'reply'])->name('admin.support.conversations.reply');
-            Route::post('/support/conversations/{conversation}/status', [ProductConversationController::class, 'updateStatus'])->name('admin.support.conversations.status');
-            Route::delete('/support/conversations/{conversation}', [ProductConversationController::class, 'destroy'])->name('admin.support.conversations.destroy');
-        });
         Route::get('/orders/export/csv', [AdminOrderController::class, 'exportCsv'])->name('admin.orders.export-csv');
         Route::post('/orders/{id}/email-customer', [AdminOrderController::class, 'emailCustomer'])->name('admin.orders.email-customer');
         Route::get('/orders/{id}/invoice', [AdminOrderController::class, 'invoice'])->name('admin.orders.invoice');
@@ -737,6 +727,8 @@ Route::prefix('admin')
         Route::delete('/settings/tax-types/{taxType}', [TaxTypeController::class, 'destroy'])
             ->name('admin.settings.tax-types.destroy');
 
+        Route::get('/settings/header/links', [AdminController::class, 'headerLinkOptions'])
+            ->name('admin.settings.header.links');
         Route::get('/settings/header', [AdminController::class, 'headerSettings'])
             ->name('admin.settings.header');
         Route::post('/settings/header', [AdminController::class, 'updateHeaderSettings'])
@@ -757,14 +749,24 @@ Route::prefix('admin')
             ->name('admin.settings.commission');
         Route::post('/settings/commission', [AdminController::class, 'updateCommissionSettings'])
             ->name('admin.settings.commission.update');
+        Route::get('/settings/stock-sync', [AdminController::class, 'stockSyncSettings'])
+            ->name('admin.settings.stock-sync');
+        Route::post('/settings/stock-sync', [AdminController::class, 'updateStockSyncSettings'])
+            ->name('admin.settings.stock-sync.update');
+        Route::post('/settings/stock-sync/run', [AdminController::class, 'runStockSync'])
+            ->name('admin.settings.stock-sync.run');
         Route::post('/settings/footer', [AdminController::class, 'updateFooterSettings'])
             ->name('admin.settings.footer.update');
         Route::get('/settings/search-categories', [AdminController::class, 'searchCategorySettings'])
             ->name('admin.settings.search-categories');
+        Route::get('/settings/search-categories/lookup', [AdminController::class, 'searchCategoryOptions'])
+            ->name('admin.settings.search-categories.lookup');
         Route::post('/settings/search-categories', [AdminController::class, 'updateSearchCategorySettings'])
             ->name('admin.settings.search-categories.update');
         Route::get('/system/server-status', [SystemStatusController::class, 'serverStatus'])
             ->name('admin.system.server-status');
+        Route::get('/system/debug-errors', [SystemStatusController::class, 'debugErrors'])
+            ->name('admin.system.debug-errors');
         Route::get('/system/update', [SystemStatusController::class, 'update'])
             ->name('admin.system.update');
         Route::post('/system/update/clear-all', [SystemStatusController::class, 'clearAll'])
@@ -1027,6 +1029,7 @@ Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(fun
     Route::post('/notifications/{id}/read', [DashboardController::class, 'markNotificationRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [DashboardController::class, 'markAllNotificationsRead'])->name('notifications.read-all');
     Route::get('/inquiries', [DashboardController::class, 'inquiries'])->name('inquiries');
+    Route::post('/inquiries', [DashboardController::class, 'storeInquiry'])->name('inquiries.store');
     Route::put('/inquiries/{id}', [DashboardController::class, 'updateInquiry'])->name('inquiries.update');
     Route::delete('/inquiries/{id}', [DashboardController::class, 'destroyInquiry'])->name('inquiries.destroy');
     Route::get('/support', [UserSupportController::class, 'index'])->name('support.index');
@@ -1039,7 +1042,7 @@ Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(fun
     Route::get('/profile/edit', [UserController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile/update', [UserController::class, 'updateProfile'])->name('profile.update');
     Route::get('/change-password', function () {
-        return view('user.change-password');
+        return view('frontend.user.change-password');
     })->name('change.password');
     Route::post('/change-password', [UserController::class, 'updatePassword'])->name('change.password.update');
 });
@@ -1088,3 +1091,9 @@ Route::post('/contact-us', [ContactController::class, 'store'])
 
 Route::get('/contact/thank-you', [ContactController::class, 'thankYou'])
     ->name('contact.thank-you');
+
+// Custom pages live at the root (/{slug}). Must stay last so it cannot shadow
+// any explicit single-segment route defined above.
+Route::get('/{slug}', [HomeController::class, 'page'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('page.show');

@@ -11,7 +11,7 @@ class TaxTypeController extends Controller
 {
     public function create()
     {
-        return view('admin.settings.tax-types.form', [
+        return view('backend.settings.tax-types.form', [
             'taxType' => new TaxType(['is_active' => true]),
             'isEditing' => false,
         ]);
@@ -39,7 +39,7 @@ class TaxTypeController extends Controller
 
     public function edit(TaxType $taxType)
     {
-        return view('admin.settings.tax-types.form', compact('taxType') + ['isEditing' => true]);
+        return view('backend.settings.tax-types.form', compact('taxType') + ['isEditing' => true]);
     }
 
     public function update(Request $request, TaxType $taxType)

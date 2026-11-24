@@ -25,6 +25,18 @@ class Product extends Model
         'short_description',
         'overview',
         'description',
+        'meta_title',
+        'meta_description',
+        'oem_numbers',
+        'oem_numbers_json',
+        'interchange_numbers',
+        'interchange_numbers_json',
+        'weight_kg',
+        'dimensions',
+        'dimensions_json',
+        'condition',
+        'warranty_months',
+        'warranty_text',
         'features_json',
         'specs_json',
         'images_json',
@@ -53,6 +65,11 @@ class Product extends Model
         'features_json' => 'array',
         'specs_json' => 'array',
         'images_json' => 'array',
+        'oem_numbers_json' => 'array',
+        'interchange_numbers_json' => 'array',
+        'dimensions_json' => 'array',
+        'weight_kg' => 'decimal:2',
+        'warranty_months' => 'integer',
         'cost' => 'decimal:2',
         'shipping_cost' => 'decimal:2',
         'commission' => 'decimal:2',
@@ -224,6 +241,77 @@ class Product extends Model
         return $this->attributes['gtin_upc'] ?? null;
     }
 
+    public function getOemNumbersAttribute()
+    {
+        return $this->asArray($this->attributes['oem_numbers_json'] ?? null);
+    }
+
+    public function setOemNumbersAttribute($value)
+    {
+        $this->attributes['oem_numbers_json'] = $this->encodeStringList($value);
+    }
+
+    public function getInterchangeNumbersAttribute()
+    {
+        return $this->asArray($this->attributes['interchange_numbers_json'] ?? null);
+    }
+
+    public function setInterchangeNumbersAttribute($value)
+    {
+        $this->attributes['interchange_numbers_json'] = $this->encodeStringList($value);
+    }
+
+    public function getDimensionsAttribute()
+    {
+        return $this->asArray($this->attributes['dimensions_json'] ?? null);
+    }
+
+    public function setDimensionsAttribute($value)
+    {
+        $dimensions = is_array($value) ? $value : [];
+        $clean = [];
+
+        foreach (['length_cm', 'width_cm', 'height_cm'] as $key) {
+            $clean[$key] = ($dimensions[$key] ?? null) === null || ($dimensions[$key] ?? '') === ''
+                ? null
+                : (float) $dimensions[$key];
+        }
+
+        $this->attributes['dimensions_json'] = array_filter($clean, fn ($v) => $v !== null) ? json_encode($clean) : null;
+    }
+
+    public function getConditionAttribute()
+    {
+        return $this->attributes['condition'] ?? 'New';
+    }
+
+    public function getWarrantyLabelAttribute(): ?string
+    {
+        $text = trim((string) ($this->attributes['warranty_text'] ?? ''));
+        if ($text !== '') {
+            return $text;
+        }
+
+        $months = (int) ($this->attributes['warranty_months'] ?? 0);
+
+        return $months > 0 ? $months.' months' : null;
+    }
+
+    private function encodeStringList($value): ?string
+    {
+        if (is_array($value)) {
+            $items = $value;
+        } elseif (is_string($value) && trim($value) !== '') {
+            $items = preg_split('/\r\n|\r|\n|,|;|\|/', $value);
+        } else {
+            return null;
+        }
+
+        $items = array_values(array_filter(array_map('trim', $items), fn ($item) => $item !== ''));
+
+        return $items ? json_encode($items) : null;
+    }
+
     public function getFeaturesAttribute()
     {
         return $this->asArray($this->features_json ?? $this->attributes['features_json'] ?? null);
@@ -331,6 +419,11 @@ class Product extends Model
     public function galleryImages()
     {
         return $this->belongsToMany(Image::class, 'image_product', 'product_id', 'image_id');
+    }
+
+    public function fitments()
+    {
+        return $this->hasMany(ProductFitment::class)->orderBy('sort_order');
     }
 
     public static function generateSku(string $name, ?int $excludeId = null): string

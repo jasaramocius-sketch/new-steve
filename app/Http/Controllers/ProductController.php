@@ -9,17 +9,20 @@ use App\Models\CommissionHistory;
 use App\Models\Contact;
 use App\Models\Image;
 use App\Models\Product;
-use App\Models\ProductConversation;
+use App\Models\ProductFitment;
 use App\Models\Seller;
-use App\Models\SupportTicket;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Wishlist;
+use App\Services\ProductReviewEligibility;
+use App\Services\VehicleCatalog;
 use App\Support\DescriptionMarkdown;
 use App\Support\FeatureFlags;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -245,7 +248,7 @@ class ProductController extends Controller
         $brands = $this->productLookupOptions('brand', [$request->query('brand_id')]);
         $sellers = $this->productLookupOptions('seller', [$request->query('seller_id')]);
 
-        return view('admin.products.index', compact('products', 'sortBy', 'sortDir', 'categories', 'brands', 'sellers'));
+        return view('backend.products.index', compact('products', 'sortBy', 'sortDir', 'categories', 'brands', 'sellers'));
     }
 
     public function restore($id)
@@ -265,7 +268,7 @@ class ProductController extends Controller
 
     public function show($slug)
     {
-        $product = Product::with(['galleryImages', 'category.parent', 'brand', 'seller' => fn ($q) => $q->withCount('products')])
+        $product = Product::with(['galleryImages', 'category.parent', 'brand', 'fitments', 'seller' => fn ($q) => $q->withCount('products')])
             ->where('slug', $slug)
             ->where('status', true)
             ->hasUsableImage()
@@ -277,9 +280,43 @@ class ProductController extends Controller
             abort(404);
         }
 
+        $fitmentSummary = $product->fitments->map(fn ($fitment) => $fitment->label())->values()->all();
+
+        $productSpecs = [];
+        $addSpec = function (string $label, $value) use (&$productSpecs) {
+            $value = trim((string) $value);
+            if ($value === '') {
+                return;
+            }
+            foreach ($productSpecs as $spec) {
+                if (strcasecmp($spec['label'], $label) === 0) {
+                    return;
+                }
+            }
+            $productSpecs[] = ['label' => $label, 'value' => $value];
+        };
+
+        $addSpec('Condition', $product->condition);
+        $addSpec('Warranty', $product->warranty_label);
+        $addSpec('Weight', $product->weight_kg ? $product->weight_kg.' kg' : null);
+
+        $dimensionParts = [];
+        foreach (['length_cm' => 'L', 'width_cm' => 'W', 'height_cm' => 'H'] as $key => $prefix) {
+            if (! empty($product->dimensions[$key])) {
+                $dimensionParts[] = $prefix.' '.$product->dimensions[$key];
+            }
+        }
+        $addSpec('Dimensions', $dimensionParts ? implode(' × ', $dimensionParts).' cm' : null);
+        $addSpec('OEM Numbers', implode(', ', $product->oem_numbers));
+        $addSpec('Interchange Numbers', implode(', ', $product->interchange_numbers));
+
+        foreach ($product->specifications as $spec) {
+            $addSpec((string) ($spec['label'] ?? $spec['title'] ?? ''), (string) ($spec['value'] ?? ''));
+        }
+
         $related = Product::with('category')->where('status', true)->hasUsableImage()->where('id', '!=', $product->id)->take(4)->get();
 
-        // "Similar Products To Compare" — same part, other brands (Moglix-style).
+        // "Similar Products To Compare" — same fitment/category, other brands.
         $similar = collect();
         $similarLimit = 2;
         $similarBase = Product::with('brand', 'category')
@@ -287,12 +324,16 @@ class ProductController extends Controller
             ->hasUsableImage()
             ->where('id', '!=', $product->id);
 
-        if (! empty($product->category_id) && ! empty($product->year) && ! empty($product->make) && ! empty($product->model)) {
+        $primaryFitment = $product->fitments->first();
+        if (! empty($product->category_id) && $primaryFitment) {
             $fitmentMatches = (clone $similarBase)
                 ->where('category_id', $product->category_id)
-                ->where('year', $product->year)
-                ->where('make', $product->make)
-                ->where('model', $product->model)
+                ->whereHas('fitments', function ($q) use ($primaryFitment) {
+                    $q->where('make', $primaryFitment->make)
+                        ->where('model', $primaryFitment->model)
+                        ->where('year_from', '<=', $primaryFitment->year_from)
+                        ->where('year_to', '>=', $primaryFitment->year_from);
+                })
                 ->orderByRaw('IF(brand_id = '.(int) $product->brand_id.', 1, 0) ASC, id ASC')
                 ->limit($similarLimit)
                 ->get();
@@ -329,7 +370,18 @@ class ProductController extends Controller
         }
         $inWishlist = in_array($product->id, $wishedProductIds);
 
-        $hasPurchased = ReviewController::hasPurchased(auth()->id(), $product->id);
+        $purchasedOrders = auth()->check()
+            ? app(ProductReviewEligibility::class)->purchasedOrders((int) auth()->id(), (int) $product->id)
+            : collect();
+        $reviewedOrderIds = app(ProductReviewEligibility::class)->reviewedOrderIds(
+            $product->reviews_data ?? [],
+            (int) auth()->id(),
+            $purchasedOrders
+        );
+        $hasPurchased = $purchasedOrders->isNotEmpty();
+        $canReview = $purchasedOrders->contains(
+            fn ($order) => ! in_array((int) $order->id, $reviewedOrderIds, true)
+        );
 
         // Fitment badge against the user's selected/default saved vehicle
         $userVehicle = null;
@@ -342,27 +394,48 @@ class ProductController extends Controller
             if (! $userVehicle) {
                 $userVehicle = Vehicle::where('user_id', auth()->id())->first();
             }
-            if ($userVehicle && $product->year && $product->make && $product->model) {
-                $vehicleFit = (
-                    strtolower(trim((string) $userVehicle->year)) === strtolower(trim((string) $product->year)) &&
-                    strtolower(trim((string) $userVehicle->make)) === strtolower(trim((string) $product->make)) &&
-                    strtolower(trim((string) $userVehicle->model)) === strtolower(trim((string) $product->model))
-                );
+            if ($userVehicle && $product->fitments->isNotEmpty()) {
+                $vehicleFit = $product->fitments->contains(function ($fitment) use ($userVehicle) {
+                    $year = (int) $userVehicle->year;
+
+                    return $year >= (int) $fitment->year_from
+                        && $year <= (int) $fitment->year_to
+                        && strcasecmp(trim((string) $userVehicle->make), trim((string) $fitment->make)) === 0
+                        && strcasecmp(trim((string) $userVehicle->model), trim((string) $fitment->model)) === 0;
+                });
             }
         }
 
-        // Recently viewed (session-based, most recent first, max 4)
-        $recentlyViewed = collect(session('recently_viewed', []))
+        // Recently viewed (session-based, most recent first, max 4).
+        // Show only products viewed before this one; store the current product
+        // so it appears as "recently viewed" on the next product page.
+        $recentlyViewedIds = collect(session('recently_viewed', []))
             ->filter(fn ($id) => (int) $id !== (int) $product->id)
             ->values()
-            ->prepend($product->id)
+            ->take(4)
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $recentlyViewed = collect($recentlyViewedIds)->prepend($product->id)
             ->unique()
             ->take(4)
             ->values()
             ->all();
         session(['recently_viewed' => $recentlyViewed]);
 
-        return view('product.show', compact('product', 'related', 'inWishlist', 'wishedProductIds', 'hasPurchased', 'similar', 'userVehicle', 'vehicleFit'));
+        return view('frontend.product.show', compact(
+            'product',
+            'related',
+            'inWishlist',
+            'wishedProductIds',
+            'hasPurchased',
+            'canReview',
+            'recentlyViewedIds',
+            'similar',
+            'userVehicle',
+            'vehicleFit',
+            'fitmentSummary',
+            'productSpecs'
+        ));
     }
 
     public function create()
@@ -371,11 +444,25 @@ class ProductController extends Controller
         $brands = $this->productLookupOptions('brand', [old('brand_id')]);
         $sellers = $this->productLookupOptions('seller', [old('seller_id')]);
 
-        return view('admin.products.create', compact('categories', 'brands', 'sellers'));
+        return view('backend.products.create', array_merge(
+            compact('categories', 'brands', 'sellers'),
+            $this->vehicleFormData()
+        ));
+    }
+
+    private function vehicleFormData(): array
+    {
+        $catalog = app(VehicleCatalog::class);
+
+        return [
+            'vehicleYears' => $catalog->years()->all(),
+            'vehicleMakes' => $catalog->makes()->all(),
+        ];
     }
 
     public function store(Request $request)
     {
+        $maxYear = (int) date('Y') + 1;
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
@@ -386,9 +473,24 @@ class ProductController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'seller_id' => 'nullable|exists:sellers,id',
-            'year' => 'nullable|integer|min:1900|max:2026',
-            'make' => 'nullable|string|max:100',
-            'model' => 'nullable|string|max:100',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'slug' => 'nullable|string|max:255',
+            'condition' => 'nullable|string|max:40',
+            'warranty_months' => 'nullable|integer|min:0|max:600',
+            'warranty_text' => 'nullable|string|max:255',
+            'weight_kg' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.length_cm' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.width_cm' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.height_cm' => 'nullable|numeric|min:0|max:100000',
+            'oem_numbers' => 'nullable|string|max:5000',
+            'interchange_numbers' => 'nullable|string|max:5000',
+            'fitments' => 'nullable|array|max:100',
+            'fitments.*.year_from' => 'nullable|integer|min:1900|max:'.$maxYear,
+            'fitments.*.year_to' => 'nullable|integer|min:1900|max:'.$maxYear,
+            'fitments.*.make' => 'nullable|string|max:100',
+            'fitments.*.model' => 'nullable|string|max:150',
+            'fitments.*.engine' => 'nullable|string|max:150',
             'tab_label_1' => 'nullable|string|max:100',
             'tab_label_2' => 'nullable|string|max:100',
             'tab_label_3' => 'nullable|string|max:100',
@@ -399,7 +501,9 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
+        $fitmentRows = $this->validatedFitmentRows($request, $maxYear);
+
+        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text', 'meta_title', 'meta_description', 'condition', 'warranty_months', 'warranty_text', 'weight_kg']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
@@ -409,8 +513,15 @@ class ProductController extends Controller
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
         $data['specifications'] = self::parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
+        $data['oem_numbers'] = $request->oem_numbers;
+        $data['interchange_numbers'] = $request->interchange_numbers;
+        $data['dimensions'] = [
+            'length_cm' => $request->input('dimensions.length_cm'),
+            'width_cm' => $request->input('dimensions.width_cm'),
+            'height_cm' => $request->input('dimensions.height_cm'),
+        ];
         $data['part_number'] = Product::generateSku((string) $request->name);
-        $data['slug'] = Str::slug($request->name.'-'.$data['part_number']);
+        $data['slug'] = $this->resolveProductSlug($request, null, (string) $request->name, $data['part_number']);
 
         if (! FeatureFlags::enabled('vendor_system_activation') || ! FeatureFlags::enabled('product_manage_by_admin')) {
             unset($data['seller_id']);
@@ -440,6 +551,8 @@ class ProductController extends Controller
 
         $this->attachGalleryUploads($product, $request->file('gallery_images'));
 
+        $this->syncProductFitments($product, $fitmentRows);
+
         if ($product->category_id) {
             $userIds = Wishlist::whereHas('product', fn ($q) => $q->where('category_id', $product->category_id))
                 ->where('user_id', '!=', auth()->id())
@@ -460,24 +573,35 @@ class ProductController extends Controller
 
     public function details($id)
     {
-        $product = Product::with(['category', 'brand', 'galleryImages'])->findOrFail($id);
+        $product = Product::with(['category', 'brand', 'fitments', 'galleryImages'])->findOrFail($id);
 
-        return view('admin.products.show', compact('product'));
+        return view('backend.products.show', compact('product'));
     }
 
     public function edit($id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::with('fitments')->findOrFail($id);
         $categories = $this->productLookupOptions('category', [old('category_id', $product->category_id)]);
         $brands = $this->productLookupOptions('brand', [old('brand_id', $product->brand_id)]);
         $sellers = $this->productLookupOptions('seller', [old('seller_id', $product->seller_id)]);
+        $fitments = old('fitments', $product->fitments->map(fn ($fitment) => [
+            'year_from' => $fitment->year_from,
+            'year_to' => $fitment->year_to,
+            'make' => $fitment->make,
+            'model' => $fitment->model,
+            'engine' => $fitment->engine,
+        ])->all());
 
-        return view('admin.products.edit', compact('product', 'categories', 'brands', 'sellers'));
+        return view('backend.products.edit', array_merge(
+            compact('product', 'categories', 'brands', 'sellers', 'fitments'),
+            $this->vehicleFormData()
+        ));
     }
 
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
+        $maxYear = (int) date('Y') + 1;
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -489,9 +613,24 @@ class ProductController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'seller_id' => 'nullable|exists:sellers,id',
-            'year' => 'nullable|integer|min:1900|max:2026',
-            'make' => 'nullable|string|max:100',
-            'model' => 'nullable|string|max:100',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'slug' => 'nullable|string|max:255',
+            'condition' => 'nullable|string|max:40',
+            'warranty_months' => 'nullable|integer|min:0|max:600',
+            'warranty_text' => 'nullable|string|max:255',
+            'weight_kg' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.length_cm' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.width_cm' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.height_cm' => 'nullable|numeric|min:0|max:100000',
+            'oem_numbers' => 'nullable|string|max:5000',
+            'interchange_numbers' => 'nullable|string|max:5000',
+            'fitments' => 'nullable|array|max:100',
+            'fitments.*.year_from' => 'nullable|integer|min:1900|max:'.$maxYear,
+            'fitments.*.year_to' => 'nullable|integer|min:1900|max:'.$maxYear,
+            'fitments.*.make' => 'nullable|string|max:100',
+            'fitments.*.model' => 'nullable|string|max:150',
+            'fitments.*.engine' => 'nullable|string|max:150',
             'tab_label_1' => 'nullable|string|max:100',
             'tab_label_2' => 'nullable|string|max:100',
             'tab_label_3' => 'nullable|string|max:100',
@@ -502,7 +641,9 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
+        $fitmentRows = $this->validatedFitmentRows($request, $maxYear);
+
+        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text', 'meta_title', 'meta_description', 'condition', 'warranty_months', 'warranty_text', 'weight_kg']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
@@ -512,6 +653,14 @@ class ProductController extends Controller
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
         $data['specifications'] = self::parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
+        $data['oem_numbers'] = $request->oem_numbers;
+        $data['interchange_numbers'] = $request->interchange_numbers;
+        $data['dimensions'] = [
+            'length_cm' => $request->input('dimensions.length_cm'),
+            'width_cm' => $request->input('dimensions.width_cm'),
+            'height_cm' => $request->input('dimensions.height_cm'),
+        ];
+        $data['slug'] = $this->resolveProductSlug($request, $product, (string) $request->name, (string) $product->part_number);
 
         if (! FeatureFlags::enabled('vendor_system_activation') || ! FeatureFlags::enabled('product_manage_by_admin')) {
             unset($data['seller_id']);
@@ -546,6 +695,8 @@ class ProductController extends Controller
         $this->attachGalleryUploads($product, $request->file('gallery_images'));
 
         $this->attachGalleryImagesFromManager($product, $request->gallery_images_from_manager);
+
+        $this->syncProductFitments($product, $fitmentRows);
 
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully!');
     }
@@ -841,9 +992,9 @@ class ProductController extends Controller
             'message' => "Product: {$product->name}\nProduct URL: ".route('product', $product->slug)."\n\n{$request->message}",
             'user_id' => auth()->id(),
             'product_id' => $product->id,
+            'category' => 'Product',
+            'priority' => 'medium',
         ]);
-
-        $this->createProductConversation($request, $product);
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Your message has been sent to the seller.']);
@@ -852,65 +1003,9 @@ class ProductController extends Controller
         return back()->with('success', 'Your message has been sent to the seller.');
     }
 
-    private function createProductConversation(Request $request, Product $product): void
-    {
-        if (! FeatureFlags::enabled('conversation_system')) {
-            return;
-        }
-
-        try {
-            if (auth()->check()) {
-                $conversation = ProductConversation::query()
-                    ->where('product_id', $product->id)
-                    ->where('user_id', auth()->id())
-                    ->where('status', 'open')
-                    ->latest()
-                    ->first();
-
-                if (! $conversation) {
-                    $conversation = ProductConversation::create([
-                        'product_id' => $product->id,
-                        'user_id' => auth()->id(),
-                        'seller_id' => $product->seller_id,
-                        'subject' => 'Product inquiry: '.$product->name,
-                        'status' => 'open',
-                        'last_message_at' => now(),
-                    ]);
-                }
-
-                $conversation->messages()->create([
-                    'sender_id' => auth()->id(),
-                    'sender_type' => 'customer',
-                    'message' => $request->input('message'),
-                ]);
-
-                $conversation->update([
-                    'status' => 'open',
-                    'last_message_at' => now(),
-                ]);
-
-                return;
-            }
-
-            SupportTicket::create([
-                'user_id' => null,
-                'name' => $request->input('name'),
-                'email' => $request->input('email'),
-                'subject' => 'Product inquiry: '.($product->name ?? 'Product'),
-                'category' => 'Product',
-                'priority' => 'medium',
-                'status' => 'open',
-                'message' => "Product: {$product->name}\nProduct URL: ".route('product', $product->slug)."\n\n{$request->input('message')}",
-            ]);
-        } catch (\Throwable $e) {
-            // Never block a product inquiry if the support module is unavailable.
-            logger()->warning('Support conversation could not be created from product inquiry: '.$e->getMessage());
-        }
-    }
-
     public function importForm()
     {
-        return view('admin.products.import', [
+        return view('backend.products.import', [
             'maxUploadLabel' => '64MB',
         ]);
     }
@@ -937,6 +1032,147 @@ class ProductController extends Controller
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="sample-products-import.csv"',
         ]);
+    }
+
+    private function validatedFitmentRows(Request $request, int $maxYear): array
+    {
+        $rows = [];
+
+        foreach ((array) $request->input('fitments', []) as $index => $item) {
+            $item = is_array($item) ? $item : [];
+            $row = [
+                'year_from' => ($item['year_from'] ?? '') === '' ? null : (int) $item['year_from'],
+                'year_to' => ($item['year_to'] ?? '') === '' ? null : (int) $item['year_to'],
+                'make' => trim((string) ($item['make'] ?? '')),
+                'model' => trim((string) ($item['model'] ?? '')),
+                'engine' => trim((string) ($item['engine'] ?? '')),
+            ];
+
+            if (! $row['year_from'] && ! $row['year_to'] && $row['make'] === '' && $row['model'] === '' && $row['engine'] === '') {
+                continue;
+            }
+
+            $messages = [];
+            if (! $row['year_from']) {
+                $messages['fitments.'.$index.'.year_from'] = 'A start year is required for each fitment row.';
+            }
+            if (! $row['year_to']) {
+                $messages['fitments.'.$index.'.year_to'] = 'An end year is required for each fitment row.';
+            }
+            if ($row['year_from'] && $row['year_to'] && $row['year_from'] > $row['year_to']) {
+                $messages['fitments.'.$index.'.year_to'] = 'The end year must be greater than or equal to the start year.';
+            }
+            if ($row['make'] === '') {
+                $messages['fitments.'.$index.'.make'] = 'Make is required for each fitment row.';
+            }
+            if ($row['model'] === '') {
+                $messages['fitments.'.$index.'.model'] = 'Model is required for each fitment row.';
+            }
+            if ($row['year_to'] && $row['year_to'] > $maxYear) {
+                $messages['fitments.'.$index.'.year_to'] = 'The end year cannot be in the future.';
+            }
+
+            if ($messages) {
+                throw ValidationException::withMessages($messages);
+            }
+
+            $rows[] = $row;
+        }
+
+        return $rows;
+    }
+
+    private function resolveProductSlug(Request $request, ?Product $product, string $name, string $partNumber): string
+    {
+        $raw = trim((string) $request->input('slug', ''));
+        if ($raw === '' && $product) {
+            $raw = (string) $product->slug;
+        }
+        if ($raw === '') {
+            $raw = $name.'-'.$partNumber;
+        }
+
+        $base = Str::slug($raw);
+        if ($base === '') {
+            $base = Str::slug($name).'-'.Str::lower($partNumber);
+        }
+        if ($base === '') {
+            $base = 'product-'.Str::lower($partNumber);
+        }
+
+        $candidate = $base;
+        $suffix = Str::lower($partNumber);
+        $attempt = 1;
+        while (Product::query()->where('slug', $candidate)
+            ->when($product, fn ($q) => $q->where('id', '!=', $product->id))
+            ->exists()) {
+            $candidate = $base.'-'.$suffix.($attempt > 1 ? '-'.$attempt : '');
+            $attempt++;
+        }
+
+        return $candidate;
+    }
+
+    private function syncProductFitments(Product $product, array $rows): void
+    {
+        $normalize = function ($row) {
+            return [
+                'year_from' => (int) ($row['year_from'] ?? 0),
+                'year_to' => (int) ($row['year_to'] ?? 0),
+                'make' => trim((string) ($row['make'] ?? '')),
+                'model' => trim((string) ($row['model'] ?? '')),
+                'engine' => trim((string) ($row['engine'] ?? '')),
+            ];
+        };
+
+        $existing = $product->fitments()
+            ->orderBy('sort_order')
+            ->get(['year_from', 'year_to', 'make', 'model', 'engine'])
+            ->map($normalize)
+            ->all();
+        $incoming = array_values(array_map($normalize, $rows));
+
+        if ($existing === $incoming) {
+            return;
+        }
+
+        DB::transaction(function () use ($product, $rows) {
+            DB::table('product_fitments')->where('product_id', $product->id)->delete();
+            DB::table('product_vehicle')
+                ->where('product_id', $product->id)
+                ->where('note', 'like', ProductFitment::PIVOT_NOTE_PREFIX.'%')
+                ->delete();
+
+            $mirrorRows = [];
+
+            foreach ($rows as $sortOrder => $row) {
+                $fitment = $product->fitments()->create([
+                    'year_from' => $row['year_from'],
+                    'year_to' => $row['year_to'],
+                    'make' => $row['make'],
+                    'model' => $row['model'],
+                    'engine' => $row['engine'] ?: null,
+                    'sort_order' => $sortOrder,
+                ]);
+
+                for ($year = $fitment->year_from; $year <= $fitment->year_to; $year++) {
+                    $mirrorRows[] = [
+                        'product_id' => $product->id,
+                        'year' => $year,
+                        'make' => $fitment->make,
+                        'model' => $fitment->model,
+                        'engine' => $fitment->engine,
+                        'note' => ProductFitment::PIVOT_NOTE_PREFIX.$fitment->id,
+                    ];
+                }
+            }
+
+            foreach (array_chunk($mirrorRows, 500) as $chunk) {
+                DB::table('product_vehicle')->insert($chunk);
+            }
+        });
+
+        app(VehicleCatalog::class)->flush();
     }
 
     private function normalizeEditorContent(string $description, string $policyText): array
@@ -981,7 +1217,9 @@ class ProductController extends Controller
 
     public function stockIndex(Request $request)
     {
-        $threshold = max(0, (int) $request->query('threshold', 5));
+        $threshold = $request->has('threshold')
+            ? max(0, (int) $request->query('threshold'))
+            : max(0, (int) Setting::get('low_stock_threshold', 5));
         $perPage = in_array((int) $request->query('per_page'), [10, 20, 50, 100], true) ? (int) $request->query('per_page') : 20;
 
         $query = Product::with(['category', 'seller'])->where('vendor_stock', '<=', $threshold);
@@ -1004,7 +1242,7 @@ class ProductController extends Controller
         $products = $query->orderBy('vendor_stock', 'asc')->paginate($perPage);
         $products->appends($request->query())->onEachSide(1);
 
-        return view('admin.products.stock', compact('products', 'threshold'));
+        return view('backend.products.stock', compact('products', 'threshold'));
     }
 
     public function bulkStockUpdate(Request $request)

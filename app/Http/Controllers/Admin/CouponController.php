@@ -18,12 +18,12 @@ class CouponController extends Controller
         $coupons = Coupon::orderBy($sortBy, $sortDir)->paginate($perPage);
         $coupons->appends($request->query())->onEachSide(1);
 
-        return view('admin.coupons.index', compact('coupons', 'sortBy', 'sortDir'));
+        return view('backend.coupons.index', compact('coupons', 'sortBy', 'sortDir'));
     }
 
     public function create()
     {
-        return view('admin.coupons.create');
+        return view('backend.coupons.create');
     }
 
     public function store(Request $request)
@@ -51,7 +51,7 @@ class CouponController extends Controller
     {
         $coupon = Coupon::findOrFail($id);
 
-        return view('admin.coupons.edit', compact('coupon'));
+        return view('backend.coupons.edit', compact('coupon'));
     }
 
     public function update(Request $request, $id)
@@ -98,6 +98,6 @@ class CouponController extends Controller
         $totalDiscount = Order::where('coupon_code', $coupon->code)->sum('coupon_discount');
         $orderCount = $orders->total();
 
-        return view('admin.coupons.show', compact('coupon', 'orders', 'totalDiscount', 'orderCount'));
+        return view('backend.coupons.show', compact('coupon', 'orders', 'totalDiscount', 'orderCount'));
     }
 }

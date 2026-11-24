@@ -77,7 +77,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.login');
+        return view('frontend.auth.login');
     }
 
     public function registerForm()
@@ -86,7 +86,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.register');
+        return view('frontend.auth.register');
     }
 
     /**
@@ -266,14 +266,14 @@ class AuthController extends Controller
                 return redirect()->to($this->dashboardRoute() ?? route('home'));
             }
 
-            return view('auth.verify-email', [
+            return view('frontend.auth.verify-email', [
                 'email' => $user->email,
             ]);
         }
 
         $email = $request->session()->get('pending_verification_email');
 
-        return view('auth.verify-email', [
+        return view('frontend.auth.verify-email', [
             'email' => $email,
         ]);
     }
@@ -385,7 +385,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.login');
+        return view('frontend.auth.login');
     }
 
     public function showForgot()
@@ -394,7 +394,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.forgot');
+        return view('frontend.auth.forgot');
     }
 
     public function sendResetLink(Request $request)
@@ -426,7 +426,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.reset', [
+        return view('frontend.auth.reset', [
             'token' => $token,
             'email' => $request->query('email'),
         ]);

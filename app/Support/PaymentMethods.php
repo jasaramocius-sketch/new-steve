@@ -33,6 +33,7 @@ class PaymentMethods
                 'fields' => [
                     ['name' => 'STRIPE_KEY', 'label' => 'Stripe Key', 'secret' => false, 'required' => true],
                     ['name' => 'STRIPE_SECRET', 'label' => 'Stripe Secret', 'secret' => true, 'required' => true],
+                    ['name' => 'STRIPE_WEBHOOK_SECRET', 'label' => 'Stripe Webhook Signing Secret', 'secret' => true, 'required' => false, 'help' => 'Optional, but strongly recommended. Copy the signing secret from the Stripe webhook endpoint so callbacks can be verified.'],
                 ],
             ],
             'mercadopago' => [
@@ -40,7 +41,7 @@ class PaymentMethods
                 'fields' => [
                     ['name' => 'MERCADOPAGO_KEY', 'label' => 'Mercadopago Key', 'secret' => false, 'required' => true],
                     ['name' => 'MERCADOPAGO_ACCESS', 'label' => 'Mercadopago Access', 'secret' => true, 'required' => true],
-                    ['name' => 'MERCADOPAGO_CURRENCY', 'label' => 'Mercadopago Currency', 'secret' => false, 'required' => false, 'help' => 'Examples: es-AR, es-CL, es-CO, es-MX, es-VE, es-UY, es-PE, pt-BR. Defaults to en-US.'],
+                    ['name' => 'MERCADOPAGO_CURRENCY', 'label' => 'Mercadopago Currency', 'secret' => false, 'required' => false, 'help' => 'Three-letter currency code for this merchant account, e.g. USD, ARS, CLP, COP, MXN. Defaults to the store currency.'],
                 ],
             ],
             'bkash' => [
@@ -55,7 +56,7 @@ class PaymentMethods
             'nagad' => [
                 'title' => 'Nagad Credential',
                 'fields' => [
-                    ['name' => 'NAGAD_MODE', 'label' => 'NAGAD MODE', 'secret' => false, 'required' => true],
+                    ['name' => 'NAGAD_MODE', 'label' => 'NAGAD MODE', 'secret' => false, 'required' => true, 'default' => 'sandbox', 'help' => 'Use sandbox or live. Paste the PEM keys exactly as downloaded from the Nagad merchant panel.'],
                     ['name' => 'NAGAD_MERCHANT_ID', 'label' => 'NAGAD MERCHANT ID', 'secret' => false, 'required' => true],
                     ['name' => 'NAGAD_MERCHANT_NUMBER', 'label' => 'NAGAD MERCHANT NUMBER', 'secret' => false, 'required' => true],
                     ['name' => 'NAGAD_PG_PUBLIC_KEY', 'label' => 'NAGAD PG PUBLIC KEY', 'secret' => false, 'required' => true],
@@ -110,6 +111,7 @@ class PaymentMethods
             ],
             'ngenius' => [
                 'title' => 'Ngenius Credential',
+                'sandbox' => 'ngenius_sandbox',
                 'fields' => [
                     ['name' => 'NGENIUS_OUTLET_ID', 'label' => 'NGENIUS OUTLET ID', 'secret' => false, 'required' => true],
                     ['name' => 'NGENIUS_API_KEY', 'label' => 'NGENIUS API KEY', 'secret' => true, 'required' => true],
@@ -149,7 +151,7 @@ class PaymentMethods
                 'fields' => [
                     ['name' => 'PROXYPAY_BASE_URL', 'label' => 'PROXYPAY CHECKOUT URL', 'secret' => false, 'required' => true, 'help' => 'Full hosted checkout URL, e.g. https://pay.example.com/checkout'],
                     ['name' => 'PROXYPAY_MERCHANT_ID', 'label' => 'PROXYPAY MERCHANT ID', 'secret' => false, 'required' => true],
-                    ['name' => 'PROXYPAY_SECRET_KEY', 'label' => 'PROXYPAY SECRET KEY', 'secret' => true, 'required' => true],
+                    ['name' => 'PROXYPAY_SECRET_KEY', 'label' => 'PROXYPAY SECRET KEY', 'secret' => true, 'required' => true, 'help' => 'Signature: HMAC-SHA256 over the sorted key=value request fields joined with & (signature excluded). Configure the same scheme in ProxyPay.'],
                 ],
             ],
         ];

@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class DashboardController extends Controller
 {
@@ -39,7 +40,7 @@ class DashboardController extends Controller
             $monthlyRevenueData->put($key, (float) ($dbRevenue->get($key) ?? 0));
         }
 
-        return view('admin.dashboard', [
+        return view('backend.dashboard', [
             'totalOrders' => Order::count(),
             'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
@@ -107,7 +108,7 @@ class DashboardController extends Controller
             ->where('user_id', auth()->id())->get();
         $userVehicles = Vehicle::where('user_id', $userId)->latest()->get();
 
-        return view('user.dashboard', compact(
+        return view('frontend.user.dashboard', compact(
             'orders', 'total_orders', 'pending_orders',
             'completed_orders', 'total_spent', 'profile', 'wishlist', 'userVehicles'
         ));
@@ -164,7 +165,7 @@ class DashboardController extends Controller
             $monthlyRevenueData->put($key, (float) ($dbRevenue->get($key) ?? 0));
         }
 
-        return view('admin.dashboard', [
+        return view('backend.dashboard', [
             'totalOrders' => Order::count(),
             'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
@@ -196,7 +197,7 @@ class DashboardController extends Controller
 
         $orders = $query->latest()->paginate(10);
 
-        return view('user.orders.index', compact('orders'));
+        return view('frontend.user.orders.index', compact('orders'));
     }
 
     public function wishlist()
@@ -209,7 +210,7 @@ class DashboardController extends Controller
 
         $wishlist = Wishlist::where('user_id', $userId)->latest()->paginate(9)->withQueryString();
 
-        return view('user.wishlist', compact('wishlist'));
+        return view('frontend.user.wishlist', compact('wishlist'));
     }
 
     public function followedSellers()
@@ -233,7 +234,7 @@ class DashboardController extends Controller
 
         $availableSellers = Seller::where('status', true)->orderBy('name')->get();
 
-        return view('user.followed-sellers', compact('followedSellers', 'availableSellers'));
+        return view('frontend.user.followed-sellers', compact('followedSellers', 'availableSellers'));
     }
 
     public function wallet()
@@ -242,7 +243,7 @@ class DashboardController extends Controller
 
         $user = Auth::user();
 
-        return view('user.wallet', [
+        return view('frontend.user.wallet', [
             'user' => $user,
             'balance' => (float) ($user->balance ?? 0),
         ]);
@@ -387,7 +388,7 @@ class DashboardController extends Controller
 
         $vehicles = Vehicle::where('user_id', $userId)->get();
 
-        return view('user.vehicles', compact('vehicles'));
+        return view('frontend.user.vehicles', compact('vehicles'));
     }
 
     public function selectVehicle($id)
@@ -419,7 +420,7 @@ class DashboardController extends Controller
 
         $addresses = Address::where('user_id', $userId)->orderBy('set_default', 'desc')->latest()->get();
 
-        return view('user.addresses', compact('addresses'));
+        return view('frontend.user.addresses', compact('addresses'));
     }
 
     public function notifications()
@@ -433,7 +434,7 @@ class DashboardController extends Controller
         $notifications = Notification::where('user_id', $userId)->latest()->paginate(10);
         Notification::where('user_id', $userId)->unread()->update(['is_read' => true]);
 
-        return view('user.notifications', compact('notifications', 'unreadCount'));
+        return view('frontend.user.notifications', compact('notifications', 'unreadCount'));
     }
 
     public function markNotificationRead($id)
@@ -456,9 +457,35 @@ class DashboardController extends Controller
         $inquiries = Contact::with(['product', 'replier'])
             ->where('user_id', Auth::id())
             ->latest()
-            ->paginate(20);
+            ->paginate(20, ['*'], 'inquiry_page')
+            ->withQueryString();
 
-        return view('user.inquiries', compact('inquiries'));
+        return view('frontend.user.inquiries', compact('inquiries'));
+    }
+
+    public function storeInquiry(Request $request)
+    {
+        $validated = $request->validate([
+            'subject' => 'required|string|max:255',
+            'category' => ['required', Rule::in(array_keys(Contact::categories()))],
+            'priority' => ['required', Rule::in(array_keys(Contact::priorities()))],
+            'message' => 'required|string|max:5000',
+        ]);
+
+        $user = Auth::user();
+
+        Contact::create([
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'subject' => $validated['subject'],
+            'message' => $validated['message'],
+            'category' => $validated['category'],
+            'priority' => $validated['priority'],
+        ]);
+
+        return redirect()->route('user.inquiries')
+            ->with('success', 'Your inquiry has been submitted. Our team will reply soon.');
     }
 
     public function updateInquiry(Request $request, $id)
@@ -626,7 +653,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        return view('user.profile', compact('user', 'profile'));
+        return view('frontend.user.profile', compact('user', 'profile'));
     }
 
     public function updateProfile(Request $request)
@@ -688,7 +715,7 @@ class DashboardController extends Controller
     {
         $wishlist = Wishlist::with('product')->where('user_id', auth()->id())->get();
 
-        return view('user.dashboard', compact('wishlist'));
+        return view('frontend.user.dashboard', compact('wishlist'));
     }
 
     public function reviews(Request $request)
@@ -874,6 +901,6 @@ class DashboardController extends Controller
             ['path' => route('user.reviews', array_filter(['search' => $search, 'status' => $status]))]
         );
 
-        return view('user.reviews', ['items' => $paginatedItems, 'search' => $search, 'statusFilter' => $status]);
+        return view('frontend.user.reviews', ['items' => $paginatedItems, 'search' => $search, 'statusFilter' => $status]);
     }
 }

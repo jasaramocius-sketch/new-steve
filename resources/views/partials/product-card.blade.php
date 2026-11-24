@@ -76,7 +76,7 @@
     </div>
     <div class="content-wrapper single-product-col">
         <a href="{{ route('product', $p->slug) }}" class="text-decoration-none">
-            <{{ $titleTag }} class="product-title {{ $titleClass }}">{{ $p->name }}</{{ $titleTag }}>
+            <{{ $titleTag }} class="product-title {{ $titleClass }}">{{ cleanProductTitle($p->name) }}</{{ $titleTag }}>
         </a>
         <div class="price-wrapper">
             <{{ $priceTag }}>{{ currency_format(buyerPrice($p->price, $p)) }}</{{ $priceTag }}>

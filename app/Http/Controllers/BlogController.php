@@ -27,7 +27,7 @@ class BlogController extends Controller
             ->get();
         $page = Page::where('slug', 'blog')->where('status', true)->first();
 
-        return view('blog.index', compact('blogs', 'recentBlogs', 'categories', 'tags', 'search', 'page'));
+        return view('frontend.blog.index', compact('blogs', 'recentBlogs', 'categories', 'tags', 'search', 'page'));
     }
 
     public function show($slug)
@@ -43,7 +43,7 @@ class BlogController extends Controller
             ->take(15)
             ->get();
 
-        return view('blog.show', compact('blog', 'previous', 'next', 'recentBlogs', 'categories', 'tags'));
+        return view('frontend.blog.show', compact('blog', 'previous', 'next', 'recentBlogs', 'categories', 'tags'));
     }
 
     public function category($slug)
@@ -75,7 +75,7 @@ class BlogController extends Controller
             ->get();
         $page = Page::where('slug', 'blog')->where('status', true)->first();
 
-        return view('blog.index', compact('blogs', 'recentBlogs', 'categories', 'tags', 'category', 'search', 'sort', 'page'));
+        return view('frontend.blog.index', compact('blogs', 'recentBlogs', 'categories', 'tags', 'category', 'search', 'sort', 'page'));
     }
 
     public function tag($slug)
@@ -102,7 +102,7 @@ class BlogController extends Controller
             ->get();
         $page = Page::where('slug', 'blog')->where('status', true)->first();
 
-        return view('blog.index', compact('blogs', 'recentBlogs', 'categories', 'tags', 'tag', 'search', 'sort', 'page'));
+        return view('frontend.blog.index', compact('blogs', 'recentBlogs', 'categories', 'tags', 'tag', 'search', 'sort', 'page'));
     }
 
     protected function blogCategories()

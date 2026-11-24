@@ -16,7 +16,7 @@ class ShippingSettingsController extends Controller
 {
     public function configuration()
     {
-        return view('admin.settings.shipping.configuration', [
+        return view('backend.settings.shipping.configuration', [
             'homeDeliveryEnabled' => Setting::get('home_delivery_enabled', '1') === '1',
             'shippingType' => Setting::get('shipping_type', 'carrier_wise_shipping'),
             'flatRateShippingCost' => Setting::get('flat_rate_shipping_cost', '0'),
@@ -89,12 +89,12 @@ class ShippingSettingsController extends Controller
             ->orderBy('name')
             ->paginate(20);
 
-        return view('admin.settings.shipping.carriers.index', compact('carriers'));
+        return view('backend.settings.shipping.carriers.index', compact('carriers'));
     }
 
     public function createCarrier()
     {
-        return view('admin.settings.shipping.carriers.form', [
+        return view('backend.settings.shipping.carriers.form', [
             'carrier' => new ShippingCarrier(['is_active' => true]),
             'isEditing' => false,
         ]);
@@ -123,7 +123,7 @@ class ShippingSettingsController extends Controller
 
     public function editCarrier(ShippingCarrier $carrier)
     {
-        return view('admin.settings.shipping.carriers.form', compact('carrier') + ['isEditing' => true]);
+        return view('backend.settings.shipping.carriers.form', compact('carrier') + ['isEditing' => true]);
     }
 
     public function updateCarrier(Request $request, ShippingCarrier $carrier)
@@ -155,12 +155,12 @@ class ShippingSettingsController extends Controller
     {
         $zones = ShippingZone::with('rates.carrier')->orderByDesc('priority')->orderBy('name')->paginate(20);
 
-        return view('admin.settings.shipping.zones.index', compact('zones'));
+        return view('backend.settings.shipping.zones.index', compact('zones'));
     }
 
     public function createZone()
     {
-        return view('admin.settings.shipping.zones.form', [
+        return view('backend.settings.shipping.zones.form', [
             'zone' => new ShippingZone(['country' => '*', 'is_active' => true]),
             'countries' => $this->zoneCountries(),
             'carriers' => ShippingCarrier::orderBy('sort_order')->orderBy('name')->get(),
@@ -184,7 +184,7 @@ class ShippingSettingsController extends Controller
     {
         $zone->load('rates');
 
-        return view('admin.settings.shipping.zones.form', [
+        return view('backend.settings.shipping.zones.form', [
             'zone' => $zone,
             'countries' => $this->zoneCountries($zone->country),
             'carriers' => ShippingCarrier::orderBy('sort_order')->orderBy('name')->get(),

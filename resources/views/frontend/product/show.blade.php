@@ -1,0 +1,1064 @@
+@extends('layouts.app')
+@push('slider-js')
+    <script src="{{ asset('assets/front/js/swiper-bundle.min.js') }}" defer></script>
+@endpush
+{{-- Add your custom page ID and classes right here --}}
+@include('partials.page-attributes', ['pageId' => 'product-page', 'pageClass' => 'product-page'])
+@php $prodName = $product['name'] ?? 'Product'; $prodDesc = trim(strip_tags(html_entity_decode($product['description'] ?? ''))); $prodDesc = mb_strlen($prodDesc) > 160 ? mb_substr($prodDesc, 0, 157) . '...' : $prodDesc; @endphp
+@section('meta_tags')
+    @include('partials.meta-tags', [
+        'pageTitle' => $prodName . ' - ' . config('app.name', 'StAutoparts'),
+        'metaTitle' => ($product['meta_title'] ?? '') ?: ($prodName . ' | ' . config('app.name', 'StAutoparts')),
+        'metaDescription' => ($product['meta_description'] ?? '') ?: ($prodDesc ?: ('Buy ' . $prodName . ' at ' . config('app.name', 'StAutoparts'))),
+        'ogImage' => $product['image'] ?? null,
+        'ogImagePrefix' => 'assets/images/thumbnails',
+        'robots' => 'index, follow',
+    ])
+@endsection
+
+@section('style')
+<style>
+
+</style>
+@endsection
+
+@section('content')
+
+<!-- SHOP DETAILS START -->
+<section class="shop_details">
+  <div class="container">
+    <div class="row">
+      <div class="col-xxl-10">
+        <div class="row">
+          <!-- Gallery Column -->
+          <div class="col-lg-6">
+            <div class="shop_details_slider_area">
+              <div class="zoom-wrapper">
+                <div class="zoom-container">
+                  <div class="swiper details_slider_thumb" id="productGallery">
+                    <div class="swiper-wrapper">
+                    @php
+                      $galleryImages = collect($product['images_json'] ?? [])
+                        ->map(fn ($image) => (object) ['path' => is_array($image) ? ($image['file'] ?? null) : $image])
+                        ->filter(fn ($image) => isSourceS3ImageReference($image->path));
+                      $hasProductImages = filled($product['image']) || $galleryImages->isNotEmpty();
+                    @endphp
+                    @if($product['image'])
+                      <div class="swiper-slide details_slider_thumb_item swiper-zoom-container">
+                        {!! imgTag(storedPath($product['image'], 'assets/images/thumbnails'), $product['name'], 'img-fluid w-100') !!}
+                      </div>
+                    @endif
+                    @foreach($galleryImages as $gi)
+                      <div class="swiper-slide details_slider_thumb_item swiper-zoom-container">
+                        {!! imgTag(storedPath($gi->path), $product['name'], 'img-fluid w-100') !!}
+                      </div>
+                    @endforeach
+                    @if(!$hasProductImages)
+                      <div class="swiper-slide details_slider_thumb_item swiper-zoom-container">
+                        {!! imgTag('assets/images/placeholder.png', $product['name'], 'img-fluid w-100') !!}
+                      </div>
+                    @endif
+                    </div>
+                  </div>
+                  <div class="zoom-lens" id="zoomLens"></div>
+                </div>
+                <div class="zoom-result" id="zoomResult"></div>
+              </div>
+              <div class="swiper details_slider_nav position-relative" id="productGalleryNav">
+                <div class="swiper-wrapper">
+                @if($product['image'])
+                  <div class="swiper-slide details_slider_nav_item">
+                    {!! imgTag(storedPath($product['image'], 'assets/images/thumbnails'), $product['name'], 'img-fluid w-100') !!}
+                  </div>
+                @endif
+                @foreach($galleryImages as $gi)
+                  <div class="swiper-slide details_slider_nav_item">
+                    {!! imgTag(storedPath($gi->path), $product['name'], 'img-fluid w-100') !!}
+                  </div>
+                @endforeach
+                @if(!$hasProductImages)
+                  <div class="swiper-slide details_slider_nav_item">
+                    {!! imgTag('assets/images/placeholder.png', $product['name'], 'img-fluid w-100') !!}
+                  </div>
+                @endif
+                </div>
+                <div class="product-detail-blade-img-gallery-nav w-100 slider-nav d-flex position-absolute top-0 justify-content-between align-items-center mt-4 z-1 px-1">
+                  <button class="swiper-btn-prev steve-btn position-absolute top-0">
+                      <i class="fas fa-chevron-left"></i>
+                  </button>
+
+                  <button class="swiper-btn-next steve-btn position-absolute top-0 right-0">
+                      <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Info Column -->
+          <div class="col-lg-6">
+            <div class="shop_details_text">
+              @if(isset($product['category']) && $product['category'])
+                <p class="category">{{ $product['category']['name'] ?? $product['category']->name }}</p>
+              @endif
+              <h2 class="details_title">{{ $product['name'] }}</h2>
+
+              <div class="d-flex flex-wrap align-items-center">
+                <p class="stock {{ $product['stock'] > 0 ? 'in-stock' : 'out-stock' }}">{{ $product['stock'] > 0 ? 'In Stock' : 'Out of Stock' }}</p>
+              </div>
+                @php
+                  $visibleReviews = collect($product['reviews_data'] ?? [])->filter(fn ($r) => ! ($r['deleted'] ?? false) && ($r['approved'] ?? true) !== false);
+                  $avgRating = $visibleReviews->avg('rating');
+                  $displayRating = round($avgRating);
+                @endphp
+                @if($visibleReviews->count() > 0)
+                <p class="rating mt-2" id="product-rating">
+                  @for($i = 0; $i < 5; $i++)
+                  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="16" viewBox="0 0 17 16" fill="none">
+                      <path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="{{ $i < $displayRating ? '#EEAE0B' : '#E2E8F0' }}" />
+                  </svg>
+                  @endfor
+                  <span id="product-review-count">({{ $visibleReviews->count() }})</span>
+                </p>
+                @endif
+
+              @if(!empty($fitmentSummary))
+                <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 8px;">
+                  @foreach(array_slice($fitmentSummary, 0, 5) as $fitmentLabel)
+                    <span class="badge" style="background: #e3f2fd; color: var(--secondary); font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 6px; margin-top:10px;">
+                      <i class="las la-car mr-1"></i> Fits: {{ $fitmentLabel }}
+                    </span>
+                  @endforeach
+                  @if(count($fitmentSummary) > 5)
+                    <span class="badge bg-light text-muted">+{{ count($fitmentSummary) - 5 }} more</span>
+                  @endif
+                </div>
+              @endif
+
+              @if(isset($userVehicle) && $userVehicle && $vehicleFit !== null)
+                <div class="mb-2" style="font-size: 13px;">
+                  @if($vehicleFit)
+                    <span style="color: #2e7d32; font-weight: 600;">
+                      <i class="las la-check-circle"></i> Fits your {{ $userVehicle->year }} {{ $userVehicle->make }} {{ $userVehicle->model }}
+                    </span>
+                  @else
+                    <span style="color: #c62828; font-weight: 600;">
+                      <i class="las la-times-circle"></i> Does not fit your {{ $userVehicle->year }} {{ $userVehicle->make }} {{ $userVehicle->model }}
+                    </span>
+                  @endif
+                </div>
+              @endif
+
+              <h3 class="price">
+                {{ currency_format(buyerPrice($product['price'], $product)) }}
+                @if($product['old_price'])
+                  <del>{{ currency_format(buyerPrice($product['old_price'], $product)) }}</del>
+                @endif
+              </h3>
+
+              <!-- <div class="short_description">{!! $product['description'] ?? 'Auctor urna nunc id cursus. Scelerisque purus semper eget duis at pharetra vel turpis nunc eget.' !!}</div> -->
+
+              <form action="{{ route('cart.add') }}" method="POST">
+                @csrf
+                <input type="hidden" name="product_id" value="{{ $product['id'] }}">
+                <input type="hidden" name="product_name" value="{{ $product['name'] }}">
+                <input type="hidden" name="product_price" value="{{ buyerPrice($product['price'], $product) }}">
+                <input type="hidden" name="product_image" value="{{ storedImageUrl($product['image'], 'assets/images/thumbnails') }}">
+
+                <div class="d-flex flex-column align-items-start">
+                  <div class="details_qty_input aiz-plus-minus">
+                    <button type="button" class="btn col-auto btn-icon btn-sm btn-circle btn-light steve-btn minus" id="qty-minus" onclick="updateQty(-1)" disabled><i class="las la-minus"></i></button>
+                    <input type="text" class="col border-0 text-center flex-grow-1 fs-16" id="qty" name="qty" value="1" min="1" max="{{ max(1, (int) $product['stock']) }}" @disabled((int) $product['stock'] <= 0)
+                           data-unit-price="{{ buyerPrice($product['price'], $product) * config('currencies.' . session('currency', 'USD') . '.rate', config('currencies.USD.rate')) }}"
+                           data-currency-symbol="{{ config('currencies.' . session('currency', 'USD') . '.symbol', '$') }}">
+                    <button type="button" class="btn col-auto btn-icon btn-sm btn-circle btn-light steve-btn plus" id="qty-plus" onclick="updateQty(1)"><i class="las la-plus"></i></button>
+                  </div>
+                  <div class="details_total_price">
+                    <span class="details_total_price_label">Total Price:</span>
+                    <span class="details_total_price_value" id="total-price"></span>
+                  </div>
+                </div>
+                <div class="details_btn_area">
+                  @if((int) $product['stock'] > 0)
+                  <div class="buy-now-btn">
+                    <button type="submit" name="buy_now" value="1" class="template-btn steve-btn w-100 buy-now">Buy Now</button>
+                    </div>
+                    <div class="add-cart-btn">
+                    <button type="submit" class="template-btn steve-btn w-100">Add to Cart</button>
+                    </div>
+                  @else
+                    <div class="add-cart-btn">
+                      <button type="button" class="template-btn steve-btn w-100" disabled>Out of Stock</button>
+                    </div>
+                  @endif
+                  </div>
+              </form>
+
+              <ul class="details_list_btn">
+                <li>
+                  <form action="{{ route('wishlist.add') }}" method="POST" class="wishlist-form d-inline">
+                    @csrf
+                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                    <button type="button" class="wishlist-btn" style="background:none;border:none;padding:0;font-size:16px;color:#7d7b7b;cursor:pointer;">
+                      <i class="{{ $inWishlist ? 'fas' : 'far' }} fa-heart"></i> <span>{{ $inWishlist ? 'Remove Wishlist' : 'Add Wishlist' }}</span>
+                    </button>
+                  </form>
+                </li>
+                <li>
+                  <a href="javascript:;" data-href="{{ route('compare.add', ['product_id' => $product->id]) }}" class="compare_product"><i class="fas fa-exchange-alt"></i> Compare</a>
+                </li>
+                @if (\App\Support\FeatureFlags::enabled('product_query_activation'))
+                <li>
+                   <a href="javascript:void(0)" id="contact-seller-btn" style="cursor:pointer;"><i class="fas fa-question-circle"></i> Ask a question</a>
+                 </li>
+                @endif
+              </ul>
+
+              <ul class="details_tags_sku">
+                @if(isset($product['category']) && $product['category'])
+                <li><span>Category:</span><a href="{{ route('category', $product['category']['slug'] ?? $product['category']->slug) }}" class="text-decoration-none">{{ $product['category']['name'] ?? $product['category']->name }}</a></li>
+                @endif
+                @if(!empty($product['part_number']))
+                <li><span>Part Number:</span> {{ $product['part_number'] }}</li>
+                @endif
+                @if(!empty($product['brand']) && $product['brand'])
+                <li>
+                  <span>Brand:</span>
+                  @php
+                    $brandName = $product['brand']['name'] ?? $product['brand']->name;
+                    $brandSlug = $product['brand']['slug'] ?? ($product['brand']->slug ?? null);
+                  @endphp
+                  @if($brandSlug)
+                    <a href="{{ route('brand', ['slug' => $brandSlug]) }}" class="text-decoration-none" style="text-transform: uppercase;">{{ $brandName }}</a>
+                  @else
+                    <span style="text-transform: uppercase;">{{ $brandName }}</span>
+                  @endif
+                </li>
+                @endif
+              </ul>
+
+              <ul class="shop_details_shate">
+                <li>Share:</li>
+                @php $shareUrl = url()->current(); $shareText = ($product['name'] ?? 'Check this product'); @endphp
+                <li><a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($shareUrl) }}" target="_blank" rel="noopener" aria-label="Share on Facebook"><i class="fab fa-facebook-f"></i></a></li>
+                <li><a href="https://twitter.com/intent/tweet?url={{ urlencode($shareUrl) }}&text={{ urlencode($shareText) }}" target="_blank" rel="noopener" aria-label="Share on Twitter"><i class="fab fa-twitter"></i></a></li>
+                <li><a href="https://www.linkedin.com/sharing/share-offsite/?url={{ urlencode($shareUrl) }}" target="_blank" rel="noopener" aria-label="Share on LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
+                <li><a href="https://api.whatsapp.com/send?text={{ urlencode($shareText . ' ' . $shareUrl) }}" target="_blank" rel="noopener" aria-label="Share on WhatsApp"><i class="fab fa-whatsapp"></i></a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description & Reviews Tabs -->
+        <div class="tab-product-des-wrapper pt-4">
+          <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link template-btn steve-btn active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description-tab-pane" type="button" role="tab" aria-controls="description-tab-pane" aria-selected="true">Description</button>
+            </li>
+            <!-- <li class="nav-item" role="presentation">
+              <button class="nav-link template-btn steve-btn" id="policy-tab" data-bs-toggle="tab" data-bs-target="#policy-tab-pane" type="button" role="tab" aria-controls="policy-tab-pane" aria-selected="false">Buy / Return Policy</button>
+            </li> -->
+            <li class="nav-item" role="presentation">
+              <button class="nav-link template-btn steve-btn" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-tab-pane" type="button" role="tab" aria-controls="reviews-tab-pane" aria-selected="false">Reviews ({{ collect($product['reviews_data'] ?? [])->filter(fn ($r) => ! ($r['deleted'] ?? false) && ($r['approved'] ?? true) !== false)->count() }})</button>
+            </li>
+          </ul>
+          <div class="tab-content border px-4 " id="myTabContent">
+            <div class="tab-pane fade show active py-4" id="description-tab-pane" role="tabpanel" aria-labelledby="description-tab" tabindex="0">
+              @php
+                  $overview = trim((string) ($product['overview'] ?? ''));
+                  $description = trim((string) ($product['description'] ?? ''));
+                  $descText = $overview !== '' ? $overview : $description;
+                  $descLower = strtolower(strip_tags($descText));
+                  $hasFeaturesInDesc = str_contains($descLower, 'key features') || preg_match('/^\s*[•\-*]\s/m', $descText);
+              @endphp
+              @if($overview !== '')
+              <div class="product-description-body">{!! $description !!} {!! $overview !!}</div>
+              @elseif($description !== '')
+              <div class="product-description-body">{!! $description !!}</div>
+              @else
+              <p class="text-muted mb-0">No description available for this product yet.</p>
+              @endif
+              @if(!empty($product['features']) && !$hasFeaturesInDesc)
+                <h5 class="mt-4 mb-3 fw-bold">Key Features:</h5>
+                <ul class="key-features-list">
+                  @foreach($product['features'] ?? [] as $feature)
+                    <li>{!! $feature !!}</li>
+                  @endforeach
+                </ul>
+              @endif
+              @if(!empty($productSpecs))
+                <h5 class="mt-4 mb-3 fw-bold">Specifications:</h5>
+                <div class="table-responsive">
+                  <table class="table table-bordered product-specifications-table">
+                    <tbody>
+                      @foreach($productSpecs as $spec)
+                        <tr>
+                          <th class="text-muted" style="width: 40%;">{{ $spec['label'] }}</th>
+                          <td>{{ $spec['value'] }}</td>
+                        </tr>
+                      @endforeach
+                    </tbody>
+                  </table>
+                </div>
+              @endif
+            </div>
+            <div class="tab-pane fade py-4" id="policy-tab-pane" role="tabpanel" aria-labelledby="policy-tab" tabindex="0">
+                <div class="product-policy-tab-body">
+                  <!-- @include('partials.product-buy-return-policy', ['product' => $product]) -->
+                </div>
+            </div>
+            <div class="tab-pane fade py-4" id="reviews-tab-pane" role="tabpanel" aria-labelledby="reviews-tab" tabindex="0">
+              <div class="review-tab-content-wrapper bg-white">
+
+                <!-- Review Form (purchase-only policy) -->
+                <div class="write-review-form mb-4 pb-4 border-bottom" id="writeReviewForm">
+                  <div id="reviewFormAlert" class="d-none mb-3"></div>
+                  @if($canReview)
+                    <h5 class="mb-3" style="font-weight: 600;">Write a Review</h5>
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">Your Rating *</label>
+                      <div class="star-picker" id="starPicker">
+                        @for($i = 1; $i <= 5; $i++)
+                          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="21" viewBox="0 0 17 16" fill="none" data-rating="{{ $i }}" style="cursor:pointer;transition:fill .2s;">
+                            <path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="#E2E8F0" />
+                          </svg>
+                        @endfor
+                        <input type="hidden" name="rating" id="reviewRating" value="0">
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">Your Review *</label>
+                      <textarea class="form-control textarea-control" id="reviewText" rows="3" maxlength="1000" placeholder="Share your experience with this product..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">Review Images</label>
+                      <input type="file" id="reviewImagesInput" multiple accept="image/jpg,image/jpeg,image/png,image/webp" class="d-none">
+                      <button type="button" class="btn btn-outline-secondary btn-sm steve-btn" id="reviewImagesBrowseBtn"><i class="fas fa-cloud-upload-alt"></i> Browse</button>
+                      <span class="text-muted ms-2" style="font-size:12px;">Max 5 images, 2MB each</span>
+                      <div id="reviewImagesPreview" class="d-flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+                    <button type="button" class="template-btn steve-btn" id="submitReviewBtn">Submit Review</button>
+                  @else
+                    <h5 class="mb-2" style="font-weight: 600;">Review this product</h5>
+                    @guest
+                      <p class="text-muted mb-0">Only customers who purchased this product can write a review. Please <a href="{{ route('login') }}">log in</a> with the account used at checkout.</p>
+                    @elseif($hasPurchased)
+                      <p class="text-muted mb-0">You have already reviewed all your purchases of this product. You can edit an existing review from <a href="{{ route('user.reviews') }}">My Reviews</a>.</p>
+                    @else
+                      <p class="text-muted mb-0">Only customers who purchased this product can write a review. If you bought as a guest, log in with the checkout email and check <a href="{{ route('user.orders') }}">My Orders</a>.</p>
+                    @endguest
+                  @endif
+                </div>
+
+                <!-- Reviews List -->
+                <div id="reviewsList">
+                @php $reviews = collect($product['reviews_data'] ?? [])->filter(fn ($r) => ! ($r['deleted'] ?? false) && ($r['approved'] ?? true) !== false); @endphp
+                @forelse($reviews as $review)
+                  <div class="d-flex gap-3 mb-4 pb-3 border-bottom review-item" data-review-id="{{ $review['id'] ?? '' }}">
+                    <div class="flex-shrink-0">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 50px; height: 50px; background: var(--primary); font-weight: 600; font-size: 18px;">{{ substr($review['name'] ?? '?', 0, 1) }}</div>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex align-items-center gap-2 mb-1">
+                        <h6 class="mb-0 fw-semibold">{{ $review['name'] ?? 'Anonymous' }}</h6>
+                        <small class="text-muted">{{ $review['date'] ?? '' }}</small>
+                        @auth
+                          @if(($review['user_id'] ?? null) == Auth::id())
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-auto delete-review-btn" data-review-id="{{ $review['id'] ?? '' }}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete review" style="padding:6px 12px;font-size:13px;">
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          @endif
+                        @endauth
+                      </div>
+                      <div class="mb-1">
+                        @for($i = 0; $i < 5; $i++)
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="13" viewBox="0 0 17 16" fill="none">
+                              <path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="{{ $i < ($review['rating'] ?? 0) ? '#EEAE0B' : '#E2E8F0' }}" />
+                          </svg>
+                        @endfor
+                      </div>
+                      <p class="mb-0" style="color: #4c3533;">{{ $review['text'] ?? '' }}</p>
+                      @if(!empty($review['images']) && count($review['images']) > 0)
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                          @foreach($review['images'] as $img)
+                            <a href="{{ asset($img) }}" target="_blank">
+                              <img src="{{ asset($img) }}" alt="Review image" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #ddd;">
+                            </a>
+                          @endforeach
+                        </div>
+                      @endif
+                    </div>
+                  </div>
+                @empty
+                  <p class="text-muted mb-0" id="noReviewsMsg">No reviews yet. Be the first to review this product!</p>
+                @endforelse
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="col-xxl-2">
+        <div class="shop_details_sidebar">
+          <div class="shop_details_sidebar_info">
+            <ul>
+              <li>
+                <span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247" />
+                  </svg>
+                </span>
+                Shipping worldwide
+              </li>
+              <li>
+                <span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                  </svg>
+                </span>
+                Always Authentic
+              </li>
+              <li>
+                <span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                </span>
+                Cash on Delivery Available
+              </li>
+            </ul>
+            <h5>Return & Warranty</h5>
+            <ul>
+              <li>
+                <span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+                  </svg>
+                </span>
+                14 days easy return
+              </li>
+              <li>
+                <span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
+                  </svg>
+                </span>
+                Warranty not available
+              </li>
+            </ul>
+          </div>
+
+          <!-- <div class="shop_details_sidebar_store">
+            @php $seller = $product->seller ?? null; @endphp
+            @if($seller)
+            <p class="sold_by">Sold by</p>
+            <h4 class="store_name">{{ $seller->name }}</h4>
+              <ul>
+                @if($seller->location)
+                <li>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 21s-6-5.35-6-10a6 6 0 1 1 12 0c0 4.65-6 10-6 10Z" stroke="var(--primary)" stroke-width="1.5" stroke-linejoin="round"/>
+                      <circle cx="12" cy="11" r="2.25" stroke="var(--primary)" stroke-width="1.5"/>
+                    </svg>
+                  <p>Location</p>
+                  <span>{{ $seller->location }}</span>
+                </li>
+                @endif
+                <li>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+                      <circle cx="9" cy="7" r="4" stroke="var(--primary)" stroke-width="1.5"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                  <p>Followers</p>
+                  <span>({{ $seller->followers_count }})</span>
+                </li>
+                @if(!empty($seller->products_count))
+                <li>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" stroke="var(--primary)" stroke-width="1.5" stroke-linejoin="round"/>
+                      <path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" stroke="var(--primary)" stroke-width="1.5" stroke-linejoin="round"/>
+                    </svg>
+                  <p>Products</p>
+                  <span>({{ $seller->products_count }})</span>
+                </li>
+                @endif
+              </ul>
+            @endif
+          </div> -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- SHOP DETAILS END -->
+
+<!-- Similar Products To Compare -->
+@if(isset($similar) && count($similar) > 0)
+    @include('partials.product-similar-compare', ['current' => $product, 'similar' => $similar])
+@endif
+
+<!-- Related Products Area -->
+@if(isset($related) && $related->count() > 0)
+<section class="gs-product-cards-slider-area">
+  <div class="container">
+    <div class="title text-center m-0 pb-20">
+      <h3 style="font-weight: 600;">Related Products</h3>
+      <p class="text-muted">Explore other premium products in this category</p>
+    </div>
+    <div class="related-products-grid d-grid">
+      @foreach($related as $rel)
+        <div class="grid-item">
+          @include("partials.product-card", ["product" => $rel, "cardClass" => "h-100 shadow-sm overflow-hidden", "titleTag" => "h5", "titleClass" => "mb-2", "priceTag" => "h4", "wishedProductIds" => $wishedProductIds ?? []])
+        </div>
+      @endforeach
+    </div>
+  </div>
+</section>
+@endif
+
+<!-- Recently Viewed Products -->
+@include('partials.recently-viewed')
+
+<!-- Contact Seller Modal -->
+@if (\App\Support\FeatureFlags::enabled('product_query_activation'))
+<div class="modal fade" id="contactSellerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div id="contactSellerAlert" class="d-none" style="margin:0; border-radius:0;"></div>
+      <form action="{{ route('contact.seller') }}" method="POST" id="contactSellerForm">
+        @csrf
+        <input type="hidden" name="product_id" value="{{ $product['id'] }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Contact Seller</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Name *</label>
+            <input type="text" name="name" class="form-control" required maxlength="255" value="{{ Auth::check() ? Auth::user()->name : '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email *</label>
+            <input type="email" name="email" class="form-control" required maxlength="255" value="{{ Auth::check() ? Auth::user()->email : '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <input type="tel" name="phone" class="form-control" inputmode="numeric" maxlength="20" value="{{ Auth::check() ? Auth::user()->phone ?? '' : '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Message *</label>
+            <textarea name="message" class="form-control textarea-control" required rows="4" maxlength="2000"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary steve-btn" data-bs-dismiss="modal"><i class="fas fa-times"></i>Close</button>
+          <button type="submit" class="btn btn-primary steve-btn" id="contactSellerSubmitBtn">
+            <span id="contactSellerBtnText" class="d-inline-flex align-items-center gap-1"><i class="fas fa-save"></i>Send Message</span>
+            <span id="contactSellerBtnSpinner" class="d-none">
+              <span class="spinner-border spinner-border-sm" role="status"></span> Sending...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+@endif
+
+@endsection
+
+@section('scripts')
+<script src="{{ asset('assets/front/js/marked.min.js') }}" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof marked !== 'undefined') {
+    marked.setOptions({ breaks: true, gfm: true });
+    document.querySelectorAll('.product-description-body').forEach(function(el) {
+      var html = el.innerHTML;
+      // Already rich HTML (e.g. saved by the WYSIWYG editor) -> render as-is, skip markdown
+      if (/<[a-z][^>]*>/i.test(html)) return;
+      var raw = el.textContent;
+      raw = raw.replace(/^[ \t]*\u2022[ \t]+/gm, '- ');
+      el.innerHTML = marked.parse(raw);
+    });
+  }
+});
+document.getElementById('contact-seller-btn')?.addEventListener('click', function(e) {
+  e.preventDefault();
+  var modal = new bootstrap.Modal(document.getElementById('contactSellerModal'));
+  modal.show();
+});
+document.getElementById('contact-seller-btn-sidebar')?.addEventListener('click', function(e) {
+  e.preventDefault();
+  var modal = new bootstrap.Modal(document.getElementById('contactSellerModal'));
+  modal.show();
+});
+
+document.getElementById('contactSellerForm')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  var form = this;
+  var alertBox = document.getElementById('contactSellerAlert');
+  var submitBtn = document.getElementById('contactSellerSubmitBtn');
+  var btnText = document.getElementById('contactSellerBtnText');
+  var btnSpinner = document.getElementById('contactSellerBtnSpinner');
+
+  alertBox.className = 'd-none';
+  submitBtn.disabled = true;
+  btnText.classList.add('d-none');
+  btnSpinner.classList.remove('d-none');
+
+  var formData = new FormData(form);
+
+  fetch(form.action, {
+    method: 'POST',
+    headers: {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json'
+    },
+    body: formData
+  }).then(function(response) {
+    return response.json().then(function(data) {
+      return { status: response.status, data: data };
+    });
+  }).then(function(result) {
+    submitBtn.disabled = false;
+    btnText.classList.remove('d-none');
+    btnSpinner.classList.add('d-none');
+
+    if (result.status === 200 || result.status === 201) {
+      toastr.success(result.data.message || 'Message sent successfully!');
+      form.reset();
+      form.querySelectorAll('input, textarea').forEach(function(el) { el.value = ''; });
+      bootstrap.Modal.getInstance(document.getElementById('contactSellerModal')).hide();
+    } else if (result.status === 422) {
+      var errors = result.data.errors || {};
+      var msgs = [];
+      Object.values(errors).forEach(function(arr) { arr.forEach(function(m) { msgs.push(m); }); });
+      alertBox.className = 'alert alert-danger m-0 rounded-0';
+      alertBox.textContent = msgs.join(' ');
+    } else {
+      alertBox.className = 'alert alert-danger m-0 rounded-0';
+      alertBox.textContent = result.data.message || 'Something went wrong. Please try again.';
+    }
+  }).catch(function() {
+    submitBtn.disabled = false;
+    btnText.classList.remove('d-none');
+    btnSpinner.classList.add('d-none');
+    alertBox.className = 'alert alert-danger m-0 rounded-0';
+    alertBox.textContent = 'Network error. Please try again.';
+  });
+});
+
+const qtyInput = document.getElementById('qty');
+const qtyMinus = document.getElementById('qty-minus');
+const qtyPlus = document.getElementById('qty-plus');
+const totalPriceEl = document.getElementById('total-price');
+const maxQty = {{ $product['stock'] }};
+const unitPrice = parseFloat(qtyInput.dataset.unitPrice) || 0;
+const currencySymbol = qtyInput.dataset.currencySymbol || '$';
+
+function formatPrice(amount) {
+  return currencySymbol + Number(amount).toFixed(2);
+}
+
+function updateTotalPrice(val) {
+  if (totalPriceEl) {
+    totalPriceEl.textContent = formatPrice(unitPrice * val);
+  }
+}
+
+function updateQty(change) {
+  let val = parseInt(qtyInput.value) + change;
+  if (val < 1) val = 1;
+  if (val > maxQty) val = maxQty;
+  qtyInput.value = val;
+  qtyMinus.disabled = val <= 1;
+  qtyPlus.disabled = val >= maxQty;
+  updateTotalPrice(val);
+}
+
+qtyInput.addEventListener('input', function () {
+  let val = parseInt(this.value) || 1;
+  if (val < 1) val = 1;
+  if (val > maxQty) val = maxQty;
+  this.value = val;
+  qtyMinus.disabled = val <= 1;
+  qtyPlus.disabled = val >= maxQty;
+  updateTotalPrice(val);
+});
+
+updateQty(0);
+
+
+// Star picker
+const starPicker = document.getElementById('starPicker');
+const reviewRating = document.getElementById('reviewRating');
+if (starPicker) {
+  const stars = starPicker.querySelectorAll('svg');
+  stars.forEach(star => {
+    star.addEventListener('mouseenter', () => {
+      const val = parseInt(star.dataset.rating);
+      stars.forEach(s => {
+        s.querySelector('path').setAttribute('fill', parseInt(s.dataset.rating) <= val ? '#EEAE0B' : '#E2E8F0');
+      });
+    });
+    star.addEventListener('click', () => {
+      reviewRating.value = star.dataset.rating;
+    });
+  });
+  starPicker.addEventListener('mouseleave', () => {
+    const val = parseInt(reviewRating.value) || 0;
+    stars.forEach(s => {
+      s.querySelector('path').setAttribute('fill', parseInt(s.dataset.rating) <= val ? '#EEAE0B' : '#E2E8F0');
+    });
+  });
+}
+
+// Review images
+let reviewPageImages = [];
+const reviewImagesInput = document.getElementById('reviewImagesInput');
+const reviewImagesBrowseBtn = document.getElementById('reviewImagesBrowseBtn');
+const reviewImagesPreview = document.getElementById('reviewImagesPreview');
+
+if (reviewImagesBrowseBtn) {
+  reviewImagesBrowseBtn.addEventListener('click', () => reviewImagesInput.click());
+}
+if (reviewImagesInput) {
+  reviewImagesInput.addEventListener('change', (e) => {
+    Array.from(e.target.files).forEach(file => {
+      if (reviewPageImages.length >= 5) return;
+      if (file.size > 2 * 1024 * 1024) { alert(file.name + ' is larger than 2MB.'); return; }
+      if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { alert(file.name + ' is not supported.'); return; }
+      reviewPageImages.push(file);
+    });
+    renderReviewPageImages();
+    e.target.value = '';
+  });
+}
+function renderReviewPageImages() {
+  if (!reviewImagesPreview) return;
+  reviewImagesPreview.innerHTML = '';
+  reviewPageImages.forEach((file, idx) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:relative;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid #ddd;';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+    const rm = document.createElement('button');
+    rm.innerHTML = '&times;';
+    rm.style.cssText = 'position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+    rm.addEventListener('click', () => { reviewPageImages.splice(idx, 1); renderReviewPageImages(); });
+    div.appendChild(img);
+    div.appendChild(rm);
+    reviewImagesPreview.appendChild(div);
+  });
+}
+
+// Submit review
+const submitReviewBtn = document.getElementById('submitReviewBtn');
+if (submitReviewBtn) {
+  submitReviewBtn.addEventListener('click', () => {
+    const rating = parseInt(reviewRating.value);
+    const text = document.getElementById('reviewText').value.trim();
+    const alertEl = document.getElementById('reviewFormAlert');
+
+    if (!rating || rating < 1 || rating > 5) {
+      alertEl.className = 'alert alert-danger';
+      alertEl.textContent = 'Please select a rating.';
+      alertEl.classList.remove('d-none');
+      return;
+    }
+    if (!text) {
+      alertEl.className = 'alert alert-danger';
+      alertEl.textContent = 'Please write your review.';
+      alertEl.classList.remove('d-none');
+      return;
+    }
+
+    submitReviewBtn.disabled = true;
+    submitReviewBtn.textContent = 'Submitting...';
+
+    const formData = new FormData();
+    formData.append('rating', rating);
+    formData.append('text', text);
+    reviewPageImages.forEach(file => formData.append('images[]', file));
+
+    fetch('{{ route("product.review", $product->slug) }}', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    })
+    .then(async (r) => {
+      let body = {};
+      try { body = await r.json(); } catch (e) { body = { success: false, message: 'Unexpected server response. Please try again.' }; }
+      return { status: r.status, body };
+    })
+    .then(({ status, body }) => {
+      if (status === 401) {
+        alertEl.className = 'alert alert-danger';
+        alertEl.innerHTML = 'Please <a href="{{ route("login") }}">log in</a> with the account used for your order to write a review.';
+        alertEl.classList.remove('d-none');
+        submitReviewBtn.disabled = false;
+        submitReviewBtn.textContent = 'Submit Review';
+      } else if (status === 403) {
+        alertEl.className = 'alert alert-danger';
+        alertEl.textContent = body.message || 'Only customers who purchased this product can write a review.';
+        alertEl.classList.remove('d-none');
+        submitReviewBtn.disabled = false;
+        submitReviewBtn.textContent = 'Submit Review';
+      } else if (body.success) {
+        const review = body.review;
+        const svgTpl = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="13" viewBox="0 0 17 16" fill="none"><path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="FILL_COLOR"></path></svg>';
+        const starsHtml = Array.from({length: 5}, (_, i) =>
+          svgTpl.replace('FILL_COLOR', i < review.rating ? '#EEAE0B' : '#E2E8F0')
+        ).join('');
+
+        let imagesHtml = '';
+        if (review.images && review.images.length > 0) {
+          imagesHtml = '<div class="d-flex flex-wrap gap-2 mt-2">' +
+            review.images.map(img => '<a href="' + '{{ asset("/") }}' + img + '" target="_blank"><img src="' + '{{ asset("/") }}' + img + '" alt="Review image" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #ddd;"></a>').join('') +
+            '</div>';
+        }
+
+        const html = `
+          <div class="d-flex gap-3 mb-4 pb-3 border-bottom review-item" data-review-id="${review.id}">
+            <div class="flex-shrink-0">
+              <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 50px; height: 50px; background: var(--primary); font-weight: 600; font-size: 18px;">${review.name.charAt(0)}</div>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <h6 class="mb-0 fw-semibold">${review.name}</h6>
+                <small class="text-muted">${review.date}</small>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-auto delete-review-btn" data-review-id="${review.id}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Delete review" style="padding:2px 8px;font-size:12px;">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+              <div class="mb-1">${starsHtml}</div>
+              <p class="mb-0" style="color: #4c3533;">${review.text}</p>
+              ${imagesHtml}
+            </div>
+          </div>`;
+
+        const noMsg = document.getElementById('noReviewsMsg');
+        if (noMsg) noMsg.remove();
+
+        document.getElementById('reviewsList').insertAdjacentHTML('afterbegin', html);
+        updateProductRating(body.rating, body.count);
+
+        // Reset form
+        document.getElementById('reviewText').value = '';
+        reviewRating.value = 0;
+        reviewPageImages = [];
+        renderReviewPageImages();
+        starPicker.querySelectorAll('svg').forEach(s => {
+          s.querySelector('path').setAttribute('fill', '#E2E8F0');
+        });
+        alertEl.classList.add('d-none');
+        submitReviewBtn.disabled = false;
+        submitReviewBtn.textContent = 'Submit Review';
+
+        // Update tab count
+        document.getElementById('reviews-tab').textContent = `Reviews (${body.count})`;
+      } else {
+        alertEl.className = 'alert alert-danger';
+        alertEl.textContent = body.message || 'You are not eligible to review this product.';
+        alertEl.classList.remove('d-none');
+        submitReviewBtn.disabled = false;
+        submitReviewBtn.textContent = 'Submit Review';
+      }
+    })
+    .catch(() => {
+      alertEl.className = 'alert alert-danger';
+      alertEl.textContent = 'Something went wrong. Please try again.';
+      alertEl.classList.remove('d-none');
+      submitReviewBtn.disabled = false;
+      submitReviewBtn.textContent = 'Submit Review';
+    });
+  });
+}
+
+// Delete review
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.delete-review-btn');
+  if (!btn) return;
+  if (!confirm('Are you sure you want to delete this review?')) return;
+
+  const reviewId = btn.dataset.reviewId;
+  const alertEl = document.getElementById('reviewFormAlert');
+  btn.disabled = true;
+
+  fetch('{{ route("product.review.delete", ["slug" => $product->slug, "reviewId" => "REVIEW_ID"]) }}'.replace('REVIEW_ID', reviewId), {
+    method: 'DELETE',
+    headers: {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+    .then(r => r.json().then(data => ({ status: r.status, data })))
+    .then(result => {
+      if (result.status === 401 || result.status === 403 || !result.data.success) {
+        if (alertEl) {
+          alertEl.className = 'alert alert-danger';
+          alertEl.textContent = result.data.message || 'You are not allowed to manage this review.';
+          alertEl.classList.remove('d-none');
+        }
+        btn.disabled = false;
+        return;
+      }
+
+      const item = document.querySelector(`.review-item[data-review-id="${reviewId}"]`);
+      if (item) {
+        item.style.transition = 'opacity 0.3s';
+        item.style.opacity = '0';
+        setTimeout(() => item.remove(), 300);
+      }
+      updateProductRating(result.data.rating, result.data.count);
+      const reviewsTab = document.getElementById('reviews-tab');
+      if (reviewsTab) {
+        reviewsTab.textContent = `Reviews (${result.data.count})`;
+      }
+    })
+    .catch(() => {
+      btn.disabled = false;
+    });
+});
+
+function updateProductRating(rating, count) {
+  let container = document.getElementById('product-rating');
+  if (!container) {
+    if (!count) return;
+    const stockP = document.querySelector('p.stock');
+    if (!stockP) return;
+    container = document.createElement('p');
+    container.className = 'rating';
+    container.id = 'product-rating';
+    stockP.parentNode.appendChild(container);
+  }
+  const svgTemplate = '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="16" viewBox="0 0 17 16" fill="none"><path d="M8.5 0.5L10.4084 6.37336L16.584 6.37336L11.5878 10.0033L13.4962 15.8766L8.5 12.2467L3.50383 15.8766L5.41219 10.0033L0.416019 6.37336L6.59163 6.37336L8.5 0.5Z" fill="FILL_COLOR"></path></svg>';
+  const starsHtml = Array.from({length: 5}, (_, i) =>
+    svgTemplate.replace('FILL_COLOR', i < rating ? '#EEAE0B' : '#E2E8F0')
+  ).join('');
+  container.innerHTML = starsHtml + ` <span>(${count})</span>`;
+}
+
+$(document).ready(function() {
+  var galleryNav = new Swiper('#productGalleryNav', {
+    slidesPerView: 4,
+    spaceBetween: 10,
+    allowTouchMove: false,
+    centeredSlides: true,
+    centeredSlidesBounds: true,
+    breakpoints: {
+      992: { slidesPerView: 3 },
+      768: { slidesPerView: 2 },
+    },
+  });
+
+  var thumbSwiper = new Swiper('#productGallery', {
+    slidesPerView: 1,
+    spaceBetween: 0,
+    effect: 'fade',
+    fadeEffect: { crossFade: true },
+    grabCursor: true,
+    allowTouchMove: true,
+    zoom: {
+      maxRatio: 3,
+      minRatio: 1,
+    },
+    navigation: {
+      nextEl: '#productGalleryNav .swiper-btn-next',
+      prevEl: '#productGalleryNav .swiper-btn-prev',
+    },
+    thumbs: {
+      swiper: galleryNav,
+    },
+  });
+
+  function centerNavSlide(index) {
+    var slide = galleryNav.slides[index];
+    if (!slide) return;
+    var slideLeft = slide.offsetLeft;
+    var slideWidth = slide.offsetWidth;
+    var containerWidth = galleryNav.el.offsetWidth;
+    var offset = slideLeft - (containerWidth - slideWidth) / 2;
+    offset = Math.max(0, Math.min(offset, galleryNav.wrapperEl.scrollWidth - containerWidth));
+    galleryNav.wrapperEl.style.transition = 'transform 300ms ease';
+    galleryNav.setTranslate(-offset);
+  }
+
+  galleryNav.on('click', function(swiper) {
+    thumbSwiper.slideTo(swiper.clickedIndex);
+  });
+
+  thumbSwiper.on('slideChangeTransitionEnd', function() {
+    centerNavSlide(thumbSwiper.activeIndex);
+    resetZoom();
+  });
+
+  /* ── Amazon-style hover zoom (desktop only) ── */
+  var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (!isMobile && window.innerWidth > 991) {
+    var wrapper = document.querySelector('.zoom-wrapper');
+    var container = document.querySelector('.zoom-container');
+    var lens = document.getElementById('zoomLens');
+    var result = document.getElementById('zoomResult');
+    if (!wrapper || !container || !lens || !result) return;
+
+    var zoomFactor = 3;
+
+    function updateZoom(e) {
+      var activeSlide = thumbSwiper.slides[thumbSwiper.activeIndex];
+      if (!activeSlide) return;
+      var img = activeSlide.querySelector('img');
+      if (!img) return;
+
+      var rect = container.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+
+      if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
+        resetZoom();
+        return;
+      }
+
+      var lensX = x - lens.offsetWidth / 2;
+      var lensY = y - lens.offsetHeight / 2;
+      lens.style.left = lensX + 'px';
+      lens.style.top = lensY + 'px';
+
+      var bgW = rect.width * zoomFactor;
+      var bgH = rect.height * zoomFactor;
+      var bgX = -(x * zoomFactor - result.offsetWidth / 2);
+      var bgY = -(y * zoomFactor - result.offsetHeight / 2);
+
+      lens.style.backgroundImage = 'url(' + img.src + ')';
+      lens.style.backgroundSize = bgW + 'px ' + bgH + 'px';
+      lens.style.backgroundPosition = bgX + 'px ' + bgY + 'px';
+      lens.style.display = 'block';
+
+      result.style.backgroundImage = 'url(' + img.src + ')';
+      result.style.backgroundSize = bgW + 'px ' + bgH + 'px';
+      result.style.backgroundPosition = bgX + 'px ' + bgY + 'px';
+      result.style.display = 'block';
+    }
+
+    function resetZoom() {
+      lens.style.display = 'none';
+      result.style.display = 'none';
+    }
+
+    wrapper.addEventListener('mousemove', updateZoom);
+    wrapper.addEventListener('mouseleave', resetZoom);
+  }
+});
+</script>
+@endsection

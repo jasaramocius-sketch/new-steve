@@ -78,7 +78,12 @@ class FeatureFlags
                     ],
                     ['key' => 'coupon_system', 'label' => 'Coupon System Activation', 'default' => true],
                     ['key' => 'pickup_point', 'label' => 'Pickup Point Activation', 'default' => true],
-                    ['key' => 'conversation_system', 'label' => 'Conversation Activation', 'default' => true],
+                    [
+                        'key' => 'conversation_system',
+                        'label' => 'Conversation Activation (Legacy)',
+                        'default' => true,
+                        'description' => 'Product conversation messages now live in Questions / Inquiries. This toggle is kept for legacy settings compatibility.',
+                    ],
                     [
                         'key' => 'product_manage_by_admin',
                         'label' => 'Seller Product Manage By Admin',

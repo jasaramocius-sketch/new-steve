@@ -66,7 +66,7 @@ class BulkOperationController extends Controller
             abort(404, 'This bulk operation was not found or has expired.');
         }
 
-        return view('admin.products.bulk-progress', [
+        return view('backend.products.bulk-progress', [
             'operation' => $state,
             'pollingUrl' => route('admin.products.bulk-progress-json', $id),
         ]);

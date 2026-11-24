@@ -19,6 +19,7 @@ use App\Services\ShippingChargeService;
 use App\Services\ShippingRateService;
 use App\Services\StripeCheckoutService;
 use App\Support\FeatureFlags;
+use App\Support\PaymentMethods;
 use App\Rules\ZipCodeForCountry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,7 +44,7 @@ class CartController extends Controller
         $taxRate = (float) (Setting::where('key', 'tax_rate')->value('value') ?? 0);
         $tax = round($total * ($taxRate / 100), 2);
         $grandTotal = $total - $couponDiscount + $tax;
-        return view('cart.index', compact('cart', 'total', 'cartItems', 'page', 'couponData', 'couponDiscount', 'couponEnabled', 'minimumOrderAmountEnabled', 'minimumOrderAmount', 'minimumOrderRemaining', 'tax', 'grandTotal', 'taxRate'));
+        return view('frontend.cart.index', compact('cart', 'total', 'cartItems', 'page', 'couponData', 'couponDiscount', 'couponEnabled', 'minimumOrderAmountEnabled', 'minimumOrderAmount', 'minimumOrderRemaining', 'tax', 'grandTotal', 'taxRate'));
     }
 
     public function add(Request $request)
@@ -357,7 +358,7 @@ class CartController extends Controller
 
         // Guests enter their delivery details directly on the checkout page.
         if (! auth()->check()) {
-            return view('checkout.guest', compact('cart'));
+            return view('frontend.checkout.guest', compact('cart'));
         }
 
         $total = array_sum(array_map(fn ($item) => $item['price'] * $item['qty'], $cart));
@@ -367,7 +368,7 @@ class CartController extends Controller
         $vehicles = Vehicle::where('user_id', auth()->id())->get();
         $selectedVehicleId = session('selected_vehicle_id');
 
-        return view('checkout.index', compact('cart', 'total', 'addresses', 'vehicles', 'selectedVehicleId', 'couponData', 'couponDiscount'));
+        return view('frontend.checkout.index', compact('cart', 'total', 'addresses', 'vehicles', 'selectedVehicleId', 'couponData', 'couponDiscount'));
     }
 
     public function checkoutSubmitGuest(Request $request)
@@ -492,7 +493,7 @@ class CartController extends Controller
             }
         }
 
-        return view('checkout.delivery-info', compact(
+        return view('frontend.checkout.delivery-info', compact(
             'cart',
             'total',
             'billing',
@@ -664,7 +665,7 @@ class CartController extends Controller
         $shippingMethod = $shipping['method'];
         $paymentMethods = $this->enabledCheckoutPaymentMethods();
 
-        return view('checkout.payment', compact('cart', 'total', 'shippingCost', 'grandTotal', 'shippingMethod', 'couponData', 'couponDiscount', 'taxRate', 'tax', 'paymentMethods'));
+        return view('frontend.checkout.payment', compact('cart', 'total', 'shippingCost', 'grandTotal', 'shippingMethod', 'couponData', 'couponDiscount', 'taxRate', 'tax', 'paymentMethods'));
     }
 
     public function paymentSubmit(Request $request)
@@ -814,7 +815,7 @@ class CartController extends Controller
         }
 
         if (! empty($result['pending'])) {
-            return view('checkout.gateway.pending', [
+            return view('frontend.checkout.gateway.pending', [
                 'order' => $result['order'] ?? $dbOrder,
                 'gateway' => app(PaymentGatewayManager::class)->label($paymentMethod),
             ]);
@@ -1014,6 +1015,11 @@ class CartController extends Controller
      */
     public function stripeWebhook(Request $request)
     {
+        $webhookSecret = PaymentMethods::value('stripe', 'STRIPE_WEBHOOK_SECRET');
+        if ($webhookSecret !== '' && ! $this->validStripeSignature($request, $webhookSecret)) {
+            return response()->json(['received' => false, 'message' => 'Invalid Stripe signature.'], 400);
+        }
+
         $event = json_decode($request->getContent(), true) ?: [];
         $type = (string) ($event['type'] ?? '');
         $sessionId = (string) ($event['data']['object']['id'] ?? '');
@@ -1041,6 +1047,36 @@ class CartController extends Controller
         }
 
         return response()->json(['received' => true]);
+    }
+
+    private function validStripeSignature(Request $request, string $secret): bool
+    {
+        $header = (string) $request->header('Stripe-Signature', '');
+        $payload = $request->getContent();
+        $parts = [];
+
+        foreach (explode(',', $header) as $item) {
+            [$key, $value] = array_pad(explode('=', trim($item), 2), 2, '');
+            $parts[trim($key)][] = trim($value);
+        }
+
+        if (empty($parts['t'][0]) || empty($parts['v1'])) {
+            return false;
+        }
+
+        $timestamp = (int) $parts['t'][0];
+        if (abs(time() - $timestamp) > 300) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', $timestamp.'.'.$payload, $secret);
+        foreach ($parts['v1'] as $signature) {
+            if (hash_equals($expected, $signature)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function markOrderPaid(Order $order, object $session): void
@@ -1103,7 +1139,11 @@ class CartController extends Controller
         $billing = json_decode($order->shipping_details ?? '[]', true) ?: [];
         $toEmail = ($billing['email'] ?? null) ?: ($order->user?->email ?? null);
         if ($toEmail) {
-            Mail::to($toEmail)->queue(new OrderConfirmationMail($order));
+            try {
+                Mail::to($toEmail)->send(new OrderConfirmationMail($order));
+            } catch (Throwable $exception) {
+                logger()->warning('Order confirmation email failed: '.$exception->getMessage());
+            }
         }
     }
 
@@ -1175,7 +1215,7 @@ class CartController extends Controller
             return redirect()->route('home');
         }
 
-        return view('checkout.order-confirmed', compact('order'));
+        return view('frontend.checkout.order-confirmed', compact('order'));
     }
 
     private function minimumOrderAmountIsMet(array $cart): bool

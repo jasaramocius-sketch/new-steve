@@ -18,12 +18,12 @@ class BlogCategoryController extends Controller
         $categories = BlogCategory::withCount('blogs')->orderBy($sortBy, $sortDir)->paginate($perPage);
         $categories->appends($request->query())->onEachSide(1);
 
-        return view('admin.blog-categories.index', compact('categories', 'sortBy', 'sortDir'));
+        return view('backend.blog-categories.index', compact('categories', 'sortBy', 'sortDir'));
     }
 
     public function create()
     {
-        return view('admin.blog-categories.create');
+        return view('backend.blog-categories.create');
     }
 
     public function store(Request $request)
@@ -45,7 +45,7 @@ class BlogCategoryController extends Controller
     {
         $category = BlogCategory::findOrFail($id);
 
-        return view('admin.blog-categories.edit', compact('category'));
+        return view('backend.blog-categories.edit', compact('category'));
     }
 
     public function update(Request $request, $id)

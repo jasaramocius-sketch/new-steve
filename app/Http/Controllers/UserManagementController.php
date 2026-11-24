@@ -15,15 +15,38 @@ class UserManagementController extends Controller
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 10;
 
-        $users = User::whereIn('role', ['staff', 'admin'])->orderBy($sortBy, $sortDir)->paginate($perPage);
+        $users = User::query()->orderBy($sortBy, $sortDir)->paginate($perPage);
         $users->appends($request->query())->onEachSide(1);
 
-        return view('admin.users.index', compact('users', 'sortBy', 'sortDir'));
+        // Counters must cover the whole table, not the current paginator page.
+        $counts = User::query()
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(role IN ('master_admin', 'admin')) as admin,
+                SUM(role = 'staff') as staff,
+                SUM(role IN ('customer', 'user')) as customer
+            ")
+            ->first();
+
+        $totalCount = (int) $counts->total;
+        $adminCount = (int) $counts->admin;
+        $staffCount = (int) $counts->staff;
+        $customerCount = (int) $counts->customer;
+
+        return view('backend.users.index', compact(
+            'users',
+            'sortBy',
+            'sortDir',
+            'totalCount',
+            'adminCount',
+            'staffCount',
+            'customerCount'
+        ));
     }
 
     public function create()
     {
-        return view('admin.users.form');
+        return view('backend.users.form');
     }
 
     public function store(Request $request)
@@ -66,7 +89,7 @@ class UserManagementController extends Controller
     {
         $user = User::findOrFail($id);
 
-        return view('admin.users.form', compact('user'));
+        return view('backend.users.form', compact('user'));
     }
 
     public function update(Request $request, $id)

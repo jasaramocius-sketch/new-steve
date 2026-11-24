@@ -36,7 +36,7 @@ class PaymentMethodSettingsController extends Controller
             ];
         }
 
-        return view('admin.settings.payment-methods', compact('settings'));
+        return view('backend.settings.payment-methods', compact('settings'));
     }
 
     public function update(Request $request, string $provider)

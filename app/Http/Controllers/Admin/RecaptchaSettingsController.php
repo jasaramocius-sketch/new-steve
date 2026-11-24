@@ -15,7 +15,7 @@ class RecaptchaSettingsController extends Controller
     {
         $settings = Setting::getAllAsArray();
 
-        return view('admin.settings.google-recaptcha', [
+        return view('backend.settings.google-recaptcha', [
             'settings' => $settings,
             'globalEnabled' => Recaptcha::globallyEnabled(),
             'secretConfigured' => !empty($settings['recaptcha_secret_key']),

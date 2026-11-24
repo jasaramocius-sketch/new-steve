@@ -12,7 +12,7 @@ class EnforceFeatureFlags
     public function handle(Request $request, Closure $next): Response
     {
         if (FeatureFlags::enabled('maintenance_mode') && $this->shouldShowMaintenance($request)) {
-            return response()->view('maintenance', [], 503);
+            return response()->view('frontend.maintenance', [], 503);
         }
 
         if (FeatureFlags::enabled('FORCE_HTTPS') && $this->shouldRedirectToHttps($request)) {
@@ -47,6 +47,17 @@ class EnforceFeatureFlags
     private function shouldRedirectToHttps(Request $request): bool
     {
         if ($request->secure() || $request->header('X-Forwarded-Proto') === 'https') {
+            return false;
+        }
+
+        // Provider webhooks are POSTs; a 302 would be replayed as GET and break
+        // signature verification. Let them arrive on the original scheme.
+        if ($request->isMethod('POST') && $request->is(
+            'checkout/stripe/webhook',
+            '*/checkout/stripe/webhook',
+            'checkout/gateway/*/webhook',
+            '*/checkout/gateway/*/webhook'
+        )) {
             return false;
         }
 

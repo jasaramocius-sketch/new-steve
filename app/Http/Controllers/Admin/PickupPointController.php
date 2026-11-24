@@ -21,12 +21,12 @@ class PickupPointController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.settings.pickup-points.index', compact('pickupPoints', 'search'));
+        return view('backend.settings.pickup-points.index', compact('pickupPoints', 'search'));
     }
 
     public function create()
     {
-        return view('admin.settings.pickup-points.form', ['pickupPoint' => new PickupPoint(), 'isEditing' => false]);
+        return view('backend.settings.pickup-points.form', ['pickupPoint' => new PickupPoint(), 'isEditing' => false]);
     }
 
     public function store(Request $request)
@@ -46,7 +46,7 @@ class PickupPointController extends Controller
 
     public function edit(PickupPoint $pickupPoint)
     {
-        return view('admin.settings.pickup-points.form', compact('pickupPoint') + ['isEditing' => true]);
+        return view('backend.settings.pickup-points.form', compact('pickupPoint') + ['isEditing' => true]);
     }
 
     public function update(Request $request, PickupPoint $pickupPoint)

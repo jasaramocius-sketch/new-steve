@@ -24,7 +24,7 @@ class UserController extends Controller
             ->orderBy($sortBy, $sortDir)->paginate($perPage);
         $customers->appends($request->query())->onEachSide(1);
 
-        return view('admin.customers.index', compact('customers', 'sortBy', 'sortDir'));
+        return view('backend.customers.index', compact('customers', 'sortBy', 'sortDir'));
     }
 
     public function edit($id)
@@ -35,7 +35,7 @@ class UserController extends Controller
             return redirect()->route('admin.customers.index')->with('error', 'You cannot edit master admin users.');
         }
 
-        return view('admin.customers.edit', compact('customer'));
+        return view('backend.customers.edit', compact('customer'));
     }
 
     public function show(Request $request, $id)
@@ -58,7 +58,7 @@ class UserController extends Controller
                 ->count(),
         ];
 
-        return view('admin.customers.show', compact('customer', 'orders', 'stats'));
+        return view('backend.customers.show', compact('customer', 'orders', 'stats'));
     }
 
     public function profile()
@@ -71,7 +71,7 @@ class UserController extends Controller
         $profile = $user;
         $addresses = $user->addresses()->orderBy('set_default', 'desc')->latest()->get();
 
-        return view('user.profile', compact('profile', 'addresses'));
+        return view('frontend.user.profile', compact('profile', 'addresses'));
     }
 
     public function editProfile()
@@ -82,7 +82,7 @@ class UserController extends Controller
 
         $profile = Auth::user();
 
-        return view('user.profile-edit', compact('profile'));
+        return view('frontend.user.profile-edit', compact('profile'));
     }
 
     public function destroy($id)
@@ -100,7 +100,7 @@ class UserController extends Controller
 
     public function dashboard()
     {
-        return view('user.dashboard');
+        return view('frontend.user.dashboard');
     }
 
     public function updateProfile(Request $request)
@@ -189,7 +189,7 @@ class UserController extends Controller
         $users = User::where('role', 'customer')->orderBy($sortBy, $sortDir)->paginate($perPage);
         $users->appends($request->query())->onEachSide(1);
 
-        return view('admin.customers.index', compact('users', 'sortBy', 'sortDir'));
+        return view('backend.customers.index', compact('users', 'sortBy', 'sortDir'));
     }
 
     public function staff(Request $request)
@@ -201,12 +201,12 @@ class UserController extends Controller
         $users = User::whereIn('role', ['master_admin', 'admin', 'staff'])->orderBy($sortBy, $sortDir)->paginate($perPage);
         $users->appends($request->query())->onEachSide(1);
 
-        return view('admin.staff.index', compact('users', 'sortBy', 'sortDir'));
+        return view('backend.staff.index', compact('users', 'sortBy', 'sortDir'));
     }
 
     public function createCustomer()
     {
-        return view('admin.customers.create');
+        return view('backend.customers.create');
     }
 
     public function storeCustomer(Request $request)
@@ -286,7 +286,7 @@ class UserController extends Controller
 
     public function createStaff()
     {
-        return view('admin.staff.create');
+        return view('backend.staff.create');
     }
 
     public function storeStaff(Request $request)
@@ -327,7 +327,7 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        return view('admin.staff.edit', compact('user'));
+        return view('backend.staff.edit', compact('user'));
     }
 
     public function updateStaff(Request $request, $id)

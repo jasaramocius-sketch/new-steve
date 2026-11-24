@@ -32,7 +32,7 @@ class CompareController extends Controller
             }
         }
 
-        return view('compare.index', compact('compareItems', 'page'));
+        return view('frontend.compare.index', compact('compareItems', 'page'));
     }
 
     public function add(Request $request)

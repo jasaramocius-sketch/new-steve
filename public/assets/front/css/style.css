@@ -17704,6 +17704,19 @@ span.product-badge.product-cat {
   background: #0d6efd;
 }
 
+.action-buttons .action-btn.btn-builder,
+.address-action-menu .action-btn.btn-builder {
+  color: #6f42c1;
+  border: 1px solid rgba(111, 66, 193, .2);
+  background: rgba(111, 66, 193, .08);
+}
+
+.action-buttons .action-btn.btn-builder:hover,
+.address-action-menu .action-btn.btn-builder:hover {
+  color: #fff;
+  background: #6f42c1;
+}
+
 .action-buttons .action-btn.btn-restore,
 .address-action-menu .action-btn.btn-restore {
   color: #198754;
