@@ -24,8 +24,11 @@ class OrderController extends Controller
         $sortBy = in_array($request->sort_by, ['id', 'order_number', 'total_amount', 'total', 'status', 'payment_status', 'created_at']) ? $request->sort_by : 'created_at';
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 10;
+        $includeInternal = $request->boolean('include_internal');
 
-        $query = Order::with('user');
+        // Staff/admin orders are internal test activity: keep them out of the
+        // normal list and export, but allow admins to opt in for cleanup.
+        $query = $includeInternal ? Order::with('user') : Order::customerPlaced()->with('user');
 
         $statusFilter = $request->status;
         if (in_array($statusFilter, ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], true)) {
@@ -40,7 +43,7 @@ class OrderController extends Controller
         $orders = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
         $orders->appends($request->query())->onEachSide(1);
 
-        return view('backend.orders.index', compact('orders', 'sortBy', 'sortDir', 'statusFilter', 'paymentStatusFilter'));
+        return view('backend.orders.index', compact('orders', 'sortBy', 'sortDir', 'statusFilter', 'paymentStatusFilter', 'includeInternal'));
     }
 
     public function show($id)
@@ -359,7 +362,9 @@ class OrderController extends Controller
 
     public function exportCsv(Request $request): StreamedResponse
     {
-        $query = Order::with(['user', 'items.product']);
+        $query = $request->boolean('include_internal')
+            ? Order::with(['user', 'items.product'])
+            : Order::customerPlaced()->with(['user', 'items.product']);
 
         $statusFilter = $request->status;
         if (in_array($statusFilter, ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], true)) {

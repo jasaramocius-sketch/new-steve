@@ -23,7 +23,7 @@ class ExportProductsJob implements ShouldQueue
     private const CHUNK_SIZE = 500;
 
     private const HEADERS = [
-        'id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description',
+        'id', 'name', 'part_number', 'sku', 'price', 'old_price', 'category', 'stock', 'description',
         'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year',
         'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications',
         'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3',
@@ -95,6 +95,7 @@ class ExportProductsJob implements ShouldQueue
                                 $product->id,
                                 $product->name,
                                 $product->part_number ?? '',
+                                $product->sku ?? '',
                                 $product->price,
                                 $product->old_price ?? '',
                                 $product->category->name ?? '',

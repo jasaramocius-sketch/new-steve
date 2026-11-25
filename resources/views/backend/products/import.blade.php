@@ -27,6 +27,7 @@
                 <code>id</code> (leave empty for new product, provide ID to update existing),
                 <code>name</code> (required),
                 <code>part_number</code> (leave empty to auto-generate),
+                <code>sku</code> (separate from Part Number; leave empty to auto-generate),
                 <code>price</code> (required),
                 <code>old_price</code>,
                 <code>category</code> (matched by name — <strong>auto-created if missing</strong>),

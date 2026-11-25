@@ -1,6 +1,6 @@
 @php
     if (! is_array($fitmentRows ?? null) || count($fitmentRows) === 0) {
-        $fitmentRows = [['year_from' => '', 'year_to' => '', 'make' => '', 'model' => '', 'engine' => '']];
+        $fitmentRows = [['year_from' => '', 'year_to' => '', 'make' => '', 'model' => '', 'engine' => '', 'notes' => '']];
     }
     $fitmentIndex = count($fitmentRows);
 @endphp
@@ -11,17 +11,27 @@
 <datalist id="fitment-make-hint">
     @foreach($vehicleMakes as $make)<option value="{{ $make }}"></option>@endforeach
 </datalist>
-<div class="d-flex justify-content-between align-items-center mb-2 pb-2">
-    <small class="text-muted">Add one row per year range / make / model combination. Both years, make and model are required.</small>
-    <!-- <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFitmentRow()">
-        <i class="fas fa-plus me-1"></i> Add fitment
-    </button> -->
+<div class="d-flex justify-content-between align-items-center mb-2 pb-2 flex-wrap gap-2">
+    <small class="text-muted">Add one row per year range / make / model combination. Year range, make and model are required.</small>
+    @if(isset($product) && $product->exists)
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.products.fitments.sample-csv', $product->id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-file-csv me-1"></i> Sample CSV
+            </a>
+            <a href="{{ route('admin.products.fitments.export-csv', $product->id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i> Export CSV
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fitmentImportFile').click()">
+                <i class="fas fa-upload me-1"></i> Import CSV/ACES
+            </button>
+        </div>
+    @endif
 </div>
 
 <div id="fitment-rows">
     @foreach($fitmentRows as $index => $row)
         <div class="fitment-row row g-2 align-items-end border rounded p-3 mb-2 bg-light">
-            <div class="col-6 col-sm-4 col-xl-2">
+            <div class="col-6 col-sm-4 col-xl-1">
                 <label class="form-label mb-1">Year From *</label>
                 <select name="fitments[{{ $index }}][year_from]" class="form-select">
                     <option value="">Select</option>
@@ -30,7 +40,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-sm-4 col-xl-2">
+            <div class="col-6 col-sm-4 col-xl-1">
                 <label class="form-label mb-1">Year To *</label>
                 <select name="fitments[{{ $index }}][year_to]" class="form-select">
                     <option value="">Select</option>
@@ -51,7 +61,11 @@
                 <label class="form-label mb-1">Engine</label>
                 <input type="text" name="fitments[{{ $index }}][engine]" class="form-control" value="{{ $row['engine'] ?? '' }}" placeholder="e.g. 2.5L I4">
             </div>
-            <div class="col-6 col-sm-4 col-xl-2">
+            <div class="col-12 col-sm-8 col-xl-3">
+                <label class="form-label mb-1">Notes</label>
+                <input type="text" name="fitments[{{ $index }}][notes]" class="form-control" value="{{ $row['notes'] ?? '' }}" placeholder="e.g. Excluding Hybrid">
+            </div>
+            <div class="col-6 col-sm-4 col-xl-1">
                 <div class="action-buttons justify-content-center justify-content-xl-end">
                     <button type="button" class="action-btn btn-view-live" onclick="addFitmentRow()" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Add fitment row" aria-label="Add fitment row" title="Add fitment row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -67,14 +81,14 @@
 
 <template id="fitment-template">
     <div class="fitment-row row g-2 align-items-end border rounded p-3 mb-2 bg-light">
-        <div class="col-6 col-sm-4 col-xl-2">
+        <div class="col-6 col-sm-4 col-xl-1">
             <label class="form-label mb-1">Year From *</label>
             <select name="fitments[__INDEX__][year_from]" class="form-select">
                 <option value="">Select</option>
                 @foreach($vehicleYears as $year)<option value="{{ $year }}">{{ $year }}</option>@endforeach
             </select>
         </div>
-        <div class="col-6 col-sm-4 col-xl-2">
+        <div class="col-6 col-sm-4 col-xl-1">
             <label class="form-label mb-1">Year To *</label>
             <select name="fitments[__INDEX__][year_to]" class="form-select">
                 <option value="">Select</option>
@@ -93,7 +107,11 @@
             <label class="form-label mb-1">Engine</label>
             <input type="text" name="fitments[__INDEX__][engine]" class="form-control" placeholder="e.g. 2.5L I4">
         </div>
-        <div class="col-6 col-sm-4 col-xl-2">
+        <div class="col-12 col-sm-8 col-xl-3">
+            <label class="form-label mb-1">Notes</label>
+            <input type="text" name="fitments[__INDEX__][notes]" class="form-control" placeholder="e.g. Excluding Hybrid">
+        </div>
+        <div class="col-6 col-sm-4 col-xl-1">
             <div class="action-buttons justify-content-center justify-content-xl-end">
                 <button type="button" class="action-btn btn-view-live" onclick="addFitmentRow()" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Add fitment row" aria-label="Add fitment row" title="Add fitment row">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -121,7 +139,6 @@
         const row = wrapper.firstElementChild;
         container.appendChild(row);
 
-        // Tooltips on injected rows are not covered by the layout's init pass.
         if (window.bootstrap && window.bootstrap.Tooltip) {
             row.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
                 new window.bootstrap.Tooltip(el, { trigger: 'hover' });

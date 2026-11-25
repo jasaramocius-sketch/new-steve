@@ -117,12 +117,12 @@
                     <form action="{{ route('admin.settings.shipping-states.store') }}" method="POST">
                         @csrf
                         <div class="form-group mb-3">
-                            <label for="new-state-name" class="form-label">Name</label>
+                            <label for="new-state-name" class="form-label mt-0">Name</label>
                             <input id="new-state-name" type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" placeholder="State name" required>
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="form-group mb-3">
-                            <label for="new-state-country" class="form-label">Country</label>
+                            <label for="new-state-country" class="form-label mt-0">Country</label>
                             <select id="new-state-country" name="country_id" class="form-select @error('country_id') is-invalid @enderror" required>
                                 <option value="">Select country</option>
                                 @foreach ($countries as $country)

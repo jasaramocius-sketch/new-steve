@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use RuntimeException;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Throwable;
 
 class SmtpSettingsController extends Controller
@@ -71,7 +72,6 @@ class SmtpSettingsController extends Controller
         ) {
             return back()->withErrors(['mail_client_secret' => 'Enter a Microsoft client secret to use this driver.'])->withInput();
         }
-
         foreach ([
             'mail_driver', 'mail_host', 'mail_port', 'mail_username', 'mail_encryption',
             'mail_from_address', 'mail_from_name', 'mailgun_domain', 'mail_tenant_id', 'mail_client_id',
@@ -115,12 +115,25 @@ class SmtpSettingsController extends Controller
                 $failureType = 'microsoft_graph_send';
                 $httpStatus = (int) $matches[1];
                 $errorMessage = 'Microsoft Graph rejected the send request. Check Mail.Send admin consent and that the From Address is a permitted mailbox.';
+            } elseif (
+                $exception instanceof TransportException
+                && preg_match('/535|534|Authentication failed|Username and Password not accepted|Application-specific password required|Bad credentials/i', $exception->getMessage())
+            ) {
+                $failureType = 'smtp_authentication';
+                $errorMessage = 'SMTP authentication was rejected. For Gmail, turn on 2-Step Verification and use a 16-character App Password instead of your normal Google password.';
+            } elseif (
+                $exception instanceof TransportException
+                && preg_match('/timed out|could not connect|connection refused|network is unreachable/i', $exception->getMessage())
+            ) {
+                $failureType = 'smtp_connection';
+                $errorMessage = 'Could not connect to the SMTP server. Check the host, port and encryption settings.';
             }
 
             logger()->warning('Mail configuration test failed.', [
                 'exception' => get_class($exception),
                 'failure_type' => $failureType,
                 'http_status' => $httpStatus,
+                'message' => $exception->getMessage(),
             ]);
 
             return back()->with('error', $errorMessage);

@@ -67,7 +67,7 @@
                         @method('PUT')
 
                         <div class="form-group mb-3">
-                            <label for="title" class="form-label"><strong>Title</strong></label>
+                            <label for="title" class="form-label mt-0"><strong>Title</strong></label>
                             <input type="text" name="title" id="title" class="form-control @error('title') is-invalid @enderror" 
                                    value="{{ old('title', $section->title) }}" placeholder="Enter section title">
                             @error('title')
@@ -76,7 +76,7 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="subtitle" class="form-label"><strong>Subtitle</strong></label>
+                            <label for="subtitle" class="form-label mt-0"><strong>Subtitle</strong></label>
                             <input type="text" name="subtitle" id="subtitle" class="form-control @error('subtitle') is-invalid @enderror" 
                                    value="{{ old('subtitle', $section->subtitle) }}" placeholder="Enter section subtitle">
                             @error('subtitle')
@@ -85,7 +85,7 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="description" class="form-label"><strong>Description</strong></label>
+                            <label for="description" class="form-label mt-0"><strong>Description</strong></label>
                             <textarea name="description" id="description" class="form-control textarea-control texteditor @error('description') is-invalid @enderror" 
                                       rows="4" placeholder="Enter section description">{{ old('description', $section->description) }}</textarea>
                             @error('description')
@@ -94,7 +94,7 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="button_text" class="form-label"><strong>Button Text</strong></label>
+                            <label for="button_text" class="form-label mt-0"><strong>Button Text</strong></label>
                             <input type="text" name="button_text" id="button_text" class="form-control @error('button_text') is-invalid @enderror" 
                                    value="{{ old('button_text', $section->button_text) }}" placeholder="e.g., Shop Now, Learn More">
                             @error('button_text')
@@ -103,7 +103,7 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="button_url" class="form-label"><strong>Button URL</strong></label>
+                            <label for="button_url" class="form-label mt-0"><strong>Button URL</strong></label>
                             <input type="text" name="button_url" id="button_url" class="form-control @error('button_url') is-invalid @enderror" 
                                    value="{{ old('button_url', $section->button_url) }}" placeholder="e.g., /shop, /products">
                             @error('button_url')
@@ -370,7 +370,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="form-group mb-3">
-                                    <label for="hotline_heading" class="form-label">Lead-in</label>
+                                    <label for="hotline_heading" class="form-label mt-0">Lead-in</label>
                                     <input type="text" id="hotline_heading" name="hotline_heading" class="form-control" maxlength="255" value="{{ old('hotline_heading', $extra['hotline_heading'] ?? 'Not sure what fits?') }}">
                                 </div>
                                 <div class="form-group">
@@ -386,13 +386,13 @@
                             <div class="card-body">
                                 @foreach($items as $i => $item)
                                 <div class="border rounded p-3 mb-3 bg-light">
-                                    <div class="row g-3 align-items-end">
+                                    <div class="row g-3">
                                         <div class="col-md-2">
-                                            <label class="form-label">Icon Class</label>
+                                            <label class="form-label mt-0">Icon Class</label>
                                             <input type="text" name="items[{{ $i }}][icon]" class="form-control" value="{{ old('items.'.$i.'.icon', $item['icon'] ?? '') }}" placeholder="fa-solid fa-circle-check">
                                         </div>
                                         <div class="col-md-5">
-                                            <label class="form-label">Title</label>
+                                            <label class="form-label mt-0">Title</label>
                                             <input type="text" name="items[{{ $i }}][title]" class="form-control" value="{{ old('items.'.$i.'.title', $item['title'] ?? '') }}">
                                         </div>
                                         <div class="col-md-5">
@@ -721,7 +721,7 @@
 
                         @if($section->section_name !== 'deal_of_day')
                         <div class="form-group mb-3">
-                            <label for="image" class="form-label"><strong>Image / Background Image</strong></label>
+                            <label for="image" class="form-label mt-0"><strong>Image / Background Image</strong></label>
                             <small class="text-muted d-block mb-2">If you set it, this image will become the background for this section on the home page (Cover + Center).</small>
                         <div class="mb-2">
                             @if($section->image)

@@ -57,7 +57,7 @@
                             <div class="form-group row">
                                 <label class="col-md-3 col-form-label" for="mail-encryption">MAIL ENCRYPTION</label>
                                 <div class="col-md-9">
-                                    <select id="mail-encryption" name="mail_encryption" class="form-control">
+                                    <select id="mail-encryption" name="mail_encryption" class="form-control form-select">
                                         <option value="tls" @selected($mailEncryption === 'tls')>TLS</option>
                                         <option value="ssl" @selected($mailEncryption === 'ssl')>SSL</option>
                                         <option value="none" @selected($mailEncryption === 'none')>None</option>
@@ -115,7 +115,7 @@
 
         <div class="col-lg-6 mb-3">
             <div class="card mb-3">
-                <div class="card-header"><h2 class="h6 mb-0">Test SMTP configuration</h2></div>
+                <div class="card-header"><h2 class="h6 mb-0">Test mail configuration</h2></div>
                 <div class="card-body">
                     <form action="{{ route('admin.settings.smtp.test') }}" method="POST" class="form-inline">
                         @csrf
@@ -137,6 +137,7 @@
                         <li class="list-group-item">Use the host and port provided by your mail provider.</li>
                         <li class="list-group-item">Use TLS with port 587 or SSL with port 465 when required by your provider.</li>
                         <li class="list-group-item">The From Address should be authorized by your provider.</li>
+                        <li class="list-group-item">Gmail SMTP requires a 16-character <strong>App Password</strong> (with 2-Step Verification enabled), not your normal Google password.</li>
                     </ul>
                     <h3 class="h6 text-muted">Microsoft 365</h3>
                     <ul class="list-group">

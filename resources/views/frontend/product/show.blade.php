@@ -122,32 +122,6 @@
                 </p>
                 @endif
 
-              @if(!empty($fitmentSummary))
-                <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 8px;">
-                  @foreach(array_slice($fitmentSummary, 0, 5) as $fitmentLabel)
-                    <span class="badge" style="background: #e3f2fd; color: var(--secondary); font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 6px; margin-top:10px;">
-                      <i class="las la-car mr-1"></i> Fits: {{ $fitmentLabel }}
-                    </span>
-                  @endforeach
-                  @if(count($fitmentSummary) > 5)
-                    <span class="badge bg-light text-muted">+{{ count($fitmentSummary) - 5 }} more</span>
-                  @endif
-                </div>
-              @endif
-
-              @if(isset($userVehicle) && $userVehicle && $vehicleFit !== null)
-                <div class="mb-2" style="font-size: 13px;">
-                  @if($vehicleFit)
-                    <span style="color: #2e7d32; font-weight: 600;">
-                      <i class="las la-check-circle"></i> Fits your {{ $userVehicle->year }} {{ $userVehicle->make }} {{ $userVehicle->model }}
-                    </span>
-                  @else
-                    <span style="color: #c62828; font-weight: 600;">
-                      <i class="las la-times-circle"></i> Does not fit your {{ $userVehicle->year }} {{ $userVehicle->make }} {{ $userVehicle->model }}
-                    </span>
-                  @endif
-                </div>
-              @endif
 
               <h3 class="price">
                 {{ currency_format(buyerPrice($product['price'], $product)) }}
@@ -403,6 +377,72 @@
       <!-- Sidebar -->
       <div class="col-xxl-2">
         <div class="shop_details_sidebar">
+          @php
+            $fitmentCheckerData = $product->fitments->map(fn ($f) => [
+                'year_from' => (int) $f->year_from,
+                'year_to' => (int) $f->year_to,
+                'make' => (string) $f->make,
+                'model' => (string) $f->model,
+                'engine' => (string) ($f->engine ?? ''),
+                'notes' => (string) ($f->notes ?? ''),
+            ])->values();
+          @endphp
+          <div class="shop_details_sidebar_info fitment-sidebar-widget mb-3" id="fitmentChecker" style="background:#f8fafc;">
+            <h5 class="mb-2 mt-0"><i class="las la-car-side me-1"></i> Does this fit my vehicle?</h5>
+            @if(isset($userVehicle) && $userVehicle && $vehicleFit !== null)
+              <div class="mb-2" style="font-size:12px; font-weight:600; color:{{ $vehicleFit ? '#2e7d32' : '#c62828' }};">
+                <i class="las {{ $vehicleFit ? 'la-check-circle' : 'la-times-circle' }}"></i>
+                {{ $vehicleFit ? 'Fits your saved vehicle' : 'Does not fit your saved vehicle' }}
+              </div>
+            @endif
+            <div class="row g-2 fitmentSelectors">
+              <div class="col-12">
+                <select class="form-select form-select-sm" id="fitmentYear" aria-label="Year" style="min-width: 164px;">
+                  <option value="">Year</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <select class="form-select form-select-sm" id="fitmentMake" aria-label="Make" disabled>
+                  <option value="">Make</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <select class="form-select form-select-sm" id="fitmentModel" aria-label="Model" disabled>
+                  <option value="">Model</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <select class="form-select form-select-sm" id="fitmentEngine" aria-label="Engine">
+                  <option value="">Engine (optional)</option>
+                </select>
+              </div>
+            </div>
+            <div class="d-flex gap-1 mt-2">
+              <button type="button" class="template-btn steve-btn" id="fitmentCheckBtn">Check</button>
+              <button type="button" class="btn btn-outline-secondary" id="fitmentResetBtn">Reset</button>
+            </div>
+            <div id="fitmentCheckResult" class="mt-2" style="font-size:13px;"></div>
+
+            @if(!empty($fitmentSummary))
+              <div class="mt-3">
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" id="toggleFitmentList" aria-expanded="false" style="font-size:12px;">
+                  <i class="las la-list-ul me-1"></i> View all compatible vehicles ({{ count($fitmentSummary) }})
+                </button>
+                <div id="fitmentListPanel" class="d-none mt-2 border rounded p-2" style="max-height:220px; overflow:auto; background:#fff;">
+                  @foreach($product->fitments as $fitment)
+                    <div class="py-1 border-bottom small">
+                      <i class="las la-check text-success me-1"></i>
+                      {{ $fitment->label() }}
+                      @if($fitment->notes)
+                        <span class="text-muted">— {{ $fitment->notes }}</span>
+                      @endif
+                    </div>
+                  @endforeach
+                </div>
+              </div>
+            @endif
+          </div>
+
           <div class="shop_details_sidebar_info">
             <ul>
               <li>
@@ -1059,6 +1099,174 @@ $(document).ready(function() {
     wrapper.addEventListener('mousemove', updateZoom);
     wrapper.addEventListener('mouseleave', resetZoom);
   }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var checker = document.getElementById('fitmentChecker');
+  if (!checker) return;
+
+  var productId = @json($product->id);
+  var checkUrl = @json(route('product.check-fitment'));
+  var yearsUrl = @json(route('vehicles.years'));
+  var makesUrl = @json(route('vehicles.makes'));
+  var modelsUrl = @json(route('vehicles.models'));
+  var fitments = @json($fitmentCheckerData);
+
+  var yearSel = document.getElementById('fitmentYear');
+  var makeSel = document.getElementById('fitmentMake');
+  var modelSel = document.getElementById('fitmentModel');
+  var engineSel = document.getElementById('fitmentEngine');
+  var resultEl = document.getElementById('fitmentCheckResult');
+  var checkBtn = document.getElementById('fitmentCheckBtn');
+  var resetBtn = document.getElementById('fitmentResetBtn');
+  var toggleList = document.getElementById('toggleFitmentList');
+  var listPanel = document.getElementById('fitmentListPanel');
+
+  function setOptions(select, items, placeholder, selectedValue) {
+    var current = selectedValue || '';
+    select.innerHTML = '';
+    var opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = placeholder;
+    select.appendChild(opt);
+    (items || []).forEach(function (item) {
+      var value = typeof item === 'object' ? (item.value ?? item.id ?? item.name ?? '') : item;
+      var label = typeof item === 'object' ? (item.label ?? item.name ?? value) : item;
+      var o = document.createElement('option');
+      o.value = String(value);
+      o.textContent = String(label);
+      if (String(value) === String(current)) o.selected = true;
+      select.appendChild(o);
+    });
+  }
+
+  function fetchJson(url) {
+    return fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.json(); });
+  }
+
+  function uniqueSorted(values) {
+    return Array.from(new Set(values.filter(function (v) { return v !== '' && v !== null && v !== undefined; })));
+  }
+
+  function productYears() {
+    var years = [];
+    fitments.forEach(function (f) {
+      for (var y = parseInt(f.year_from, 10); y <= parseInt(f.year_to, 10); y++) years.push(y);
+    });
+    return uniqueSorted(years).sort(function (a, b) { return b - a; });
+  }
+
+  function enginesForSelection() {
+    var year = parseInt(yearSel.value, 10);
+    var make = (makeSel.value || '').trim().toLowerCase();
+    var model = (modelSel.value || '').trim().toLowerCase();
+    return uniqueSorted(fitments.filter(function (f) {
+      if (year && (year < parseInt(f.year_from, 10) || year > parseInt(f.year_to, 10))) return false;
+      if (make && String(f.make || '').trim().toLowerCase() !== make) return false;
+      if (model && String(f.model || '').trim().toLowerCase() !== model) return false;
+      return String(f.engine || '').trim() !== '';
+    }).map(function (f) { return String(f.engine).trim(); })).sort();
+  }
+
+  function refreshEngines() {
+    var engines = enginesForSelection();
+    setOptions(engineSel, engines, engines.length ? 'Engine (optional)' : 'Engine (optional)', engineSel.value);
+  }
+
+  function loadYears() {
+    var years = productYears();
+    if (years.length) {
+      setOptions(yearSel, years, 'Year');
+      return Promise.resolve();
+    }
+    return fetchJson(yearsUrl).then(function (data) { setOptions(yearSel, data || [], 'Year'); });
+  }
+
+  function loadMakes() {
+    makeSel.disabled = !yearSel.value;
+    setOptions(makeSel, [], 'Make');
+    setOptions(modelSel, [], 'Model');
+    modelSel.disabled = true;
+    refreshEngines();
+    if (!yearSel.value) return Promise.resolve();
+    return fetchJson(makesUrl + '?year=' + encodeURIComponent(yearSel.value)).then(function (data) {
+      setOptions(makeSel, data || [], 'Make');
+      makeSel.disabled = false;
+    });
+  }
+
+  function loadModels() {
+    modelSel.disabled = !yearSel.value || !makeSel.value;
+    setOptions(modelSel, [], 'Model');
+    refreshEngines();
+    if (!yearSel.value || !makeSel.value) return Promise.resolve();
+    return fetchJson(modelsUrl + '?year=' + encodeURIComponent(yearSel.value) + '&make=' + encodeURIComponent(makeSel.value)).then(function (data) {
+      setOptions(modelSel, data || [], 'Model');
+      modelSel.disabled = false;
+    });
+  }
+
+  yearSel.addEventListener('change', function () { resultEl.innerHTML = ''; loadMakes(); });
+  makeSel.addEventListener('change', function () { resultEl.innerHTML = ''; loadModels(); });
+  modelSel.addEventListener('change', function () { resultEl.innerHTML = ''; refreshEngines(); });
+  engineSel.addEventListener('change', function () { resultEl.innerHTML = ''; });
+
+  checkBtn.addEventListener('click', function () {
+    var year = yearSel.value;
+    var make = makeSel.value;
+    var model = modelSel.value;
+    var engine = engineSel.value;
+    if (!year || !make || !model) {
+      resultEl.innerHTML = '<span class="text-danger"><i class="las la-exclamation-circle"></i> Please select year, make, and model.</span>';
+      return;
+    }
+    checkBtn.disabled = true;
+    checkBtn.textContent = 'Checking...';
+    resultEl.innerHTML = '';
+    var params = new URLSearchParams({ product_id: String(productId), year: year, make: make, model: model });
+    if (engine) params.set('engine', engine);
+    fetchJson(checkUrl + '?' + params.toString()).then(function (data) {
+      if (data.fits === true) {
+        var notes = (data.matches || []).map(function (m) { return m.notes; }).filter(Boolean);
+        resultEl.innerHTML = '<span style="color:#2e7d32;font-weight:600;"><i class="las la-check-circle"></i> ' + (data.message || 'This part fits your vehicle.') + '</span>'
+          + (notes.length ? '<div class="small text-muted mt-1">Note: ' + notes.join('; ') + '</div>' : '');
+      } else if (data.fits === false) {
+        resultEl.innerHTML = '<span style="color:#c62828;font-weight:600;"><i class="las la-times-circle"></i> ' + (data.message || 'This part does not fit your vehicle.') + '</span>';
+      } else {
+        resultEl.innerHTML = '<span class="text-muted"><i class="las la-info-circle"></i> ' + (data.message || 'Fitment information unavailable.') + '</span>';
+      }
+    }).catch(function () {
+      resultEl.innerHTML = '<span class="text-danger"><i class="las la-exclamation-circle"></i> Could not check fitment right now. Please try again.</span>';
+    }).finally(function () {
+      checkBtn.disabled = false;
+      checkBtn.textContent = 'Check Fit';
+    });
+  });
+
+  resetBtn.addEventListener('click', function () {
+    yearSel.value = '';
+    setOptions(makeSel, [], 'Make');
+    setOptions(modelSel, [], 'Model');
+    makeSel.disabled = true;
+    modelSel.disabled = true;
+    refreshEngines();
+    engineSel.value = '';
+    resultEl.innerHTML = '';
+  });
+
+  if (toggleList && listPanel) {
+    toggleList.addEventListener('click', function () {
+      var expanded = toggleList.getAttribute('aria-expanded') === 'true';
+      toggleList.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      listPanel.classList.toggle('d-none', expanded);
+      toggleList.innerHTML = (expanded ? '<i class="las la-list-ul me-1"></i> View all compatible vehicles' : '<i class="las la-eye-slash me-1"></i> Hide compatible vehicles') + ' ({{ count($fitmentSummary) }})';
+    });
+  }
+
+  loadYears().then(refreshEngines);
 });
 </script>
 @endsection

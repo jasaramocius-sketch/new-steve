@@ -181,6 +181,15 @@
           <!-- Categories Widget -->
           @php
             $isCategoryPage = isset($currentCategory) || isset($currentSubcategory) || isset($currentChildcategory);
+            $sidebarCategoryNodes = $categoryTree;
+            $sidebarCategoryLevel = 1;
+            if ($isCategoryPage && isset($currentCategory)) {
+                $currentCategoryId = (int) $currentCategory->id;
+                $currentCategoryNode = collect($categoryTree)->first(fn ($node) => (int) $node->id === $currentCategoryId);
+                if ($currentCategoryNode) {
+                    $sidebarCategoryNodes = [$currentCategoryNode];
+                }
+            }
           @endphp
           <div class="single-product-widget shadow-sm rounded border">
             <h5 class="widget-title">
@@ -200,9 +209,9 @@
                 </li>
                 @endif
                 @include('partials.shop-sidebar-category-items', [
-                  'categoryNodes' => $categoryTree,
+                  'categoryNodes' => $sidebarCategoryNodes,
                   'activeCategoryIds' => $activeCategoryIds ?? [],
-                  'level' => 1,
+                  'level' => $sidebarCategoryLevel,
                 ])
               </ul>
             </div>

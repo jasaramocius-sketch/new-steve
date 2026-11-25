@@ -1219,6 +1219,9 @@ p.text-lg {
     width: 100%;
   }
 }
+.fitmentSelectors .form-select-wrapper .form-select{
+  min-width: 100%;
+}
 .min-width-30{
   min-width: 30px;
 }
@@ -3173,6 +3176,7 @@ body .admin-sidebar .nav-item:focus-visible i:not(.submenu-arrow) {
 body .admin-sidebar .nav-item.active {
   background: linear-gradient(90deg, rgba(42, 171, 146, .24), rgba(42, 171, 146, .1));
   box-shadow: inset 3px 0 #48c6a9;
+  border-left-color: #4bc5e7;
   color: #fff;
   font-weight: 650;
 }
@@ -3463,12 +3467,20 @@ body .admin-sidebar .shipping-settings-submenu > .sidebar-link.active {
 .grid-template-columns-auto{
   grid-template-columns: 1fr 1fr;
 }
+.grid-template-columns-2{
+  grid-template-columns: 1fr 1fr;
+}
 .grid-template-columns-1auto{
   grid-template-columns: auto auto;
 }
 @media (max-width:1199.97px) {
   .single-blog-widget .gs-sm-recent-post-wrapper .post-title {
     font-size: 16px;
+  }
+}
+@media (max-width:767px) {
+  .grid-template-columns-2{
+    grid-template-columns: 1fr;
   }
 }
 
@@ -6513,6 +6525,7 @@ footer .footer-row .footer-col-title {
 @media (max-width:489px) {
   .category-toolbar-top {
     flex-direction: column;
+    align-items:stretch !important;
   }
 
   .category-toolbar-top .toolbar-right {
@@ -6643,6 +6656,9 @@ footer .footer-row .footer-col-title {
 .single-blog-widget.search-widget button.btn-outline-danger, .brand-search-col button.btn-outline-danger, .categories-page-filter-col button.btn-outline-danger {
     border: 1px solid var(--primary);
     padding: 8px 12px;
+}
+.view-reviews-filter form .input-group-sm .btn-primary, .view-reviews-filter form .input-group-sm input {
+    border-radius: 6px;
 }
 
 .wh-40 {
@@ -10907,6 +10923,10 @@ div.dt-container .dt-paging .dt-paging-button.previous {
   width: 100%;
   padding: 8px 20px;
   color: #796866;
+}
+
+.form-control.image-choose-file {
+    padding: .375rem .75rem;
 }
 
 .form-group .form-control:focus {
@@ -17532,6 +17552,12 @@ span.product-badge.product-cat {
   display: inline-block;
 }
 
+.questions-inquiries-link .badge {
+  padding: 4px;
+  min-width: 20px;
+  height: 20px;
+}
+
 .bg-danger {
   background-color: var(--primary) !important;
 }
@@ -19656,3 +19682,4 @@ a.single-blog-navigation-link:focus-visible {
 #new-city-state.form-select {
     min-width: unset !important;
 }
+

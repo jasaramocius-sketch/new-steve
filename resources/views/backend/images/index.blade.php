@@ -187,10 +187,10 @@
                         <option value="asc" {{ request('order')=='asc'?'selected':'' }}>ASC</option>
                     </select>
                 </div>
-                <div class="d-grid flex-column gap-1">
-                    <button type="submit" class="btn btn-primary w-100 steve-btn gap-1"><i class="fas fa-search"></i> Filter</button>
+                <div class="d-flex flex-row flex-wrap gap-1">
+                    <button type="submit" class="btn btn-primary steve-btn gap-1"><i class="fas fa-search"></i> Filter</button>
                     @if(request()->hasAny(['search', 'filter', 'sort', 'order']))
-                        <a href="{{ route('admin.images.index') }}" class="btn btn-outline-secondary w-100 mt-1 steve-btn gap-1"><i class="fas fa-times"></i> Clear Filters</a>
+                        <a href="{{ route('admin.images.index') }}" class="btn btn-outline-secondary steve-btn gap-1"><i class="fas fa-times"></i> Clear Filters</a>
                     @endif
                 </div>
                 <div class="" style="width: ;">

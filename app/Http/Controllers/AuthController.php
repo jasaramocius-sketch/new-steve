@@ -205,13 +205,12 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'phone' => ['required', 'string', 'max:50', 'regex:/^[0-9+\-\s()]*$/', new UniquePhone],
+            'phone' => ['nullable', 'string', 'max:50', 'regex:/^[0-9+\-\s()]*$/', new UniquePhone],
             'password' => 'required|min:6|confirmed',
             'terms' => 'accepted',
         ], [
             'terms.accepted' => 'Please agree to the Privacy Policy and Terms & Conditions to create an account.',
             'email.unique' => 'This email is already registered. Please sign in instead or contact support if you cannot access your account.',
-            'phone.required' => 'Please enter your phone number.',
         ]);
 
         if (Recaptcha::enabled('register') && ! Recaptcha::verify($request, 'register')) {

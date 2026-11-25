@@ -20,8 +20,8 @@
                     <form action="{{ route('admin.settings.file-system-cache.filesystem.update') }}" method="POST" autocomplete="off">
                         @csrf
                         <div class="form-group row align-items-center">
-                            <label class="col-md-4 col-form-label" for="filesystem-driver">Default Filesystem Driver</label>
-                            <div class="col-md-8">
+                            <label class="col-md-4 col-form-label mt-0" for="filesystem-driver">Default Filesystem Driver</label>
+                            <div class="col-md-8 d-flex flex-column gap-1 pb-1">
                                 <select id="filesystem-driver" name="filesystem_driver" class="form-control form-select">
                                     <option value="local" @selected($filesystemDriver === 'local')>Local</option>
                                     <option value="public" @selected($filesystemDriver === 'public')>Public</option>
@@ -33,32 +33,32 @@
 
                         <div id="s3-fields">
                             <div class="form-group row">
-                                <label class="col-md-4 col-form-label" for="aws-access-key-id">AWS_ACCESS_KEY_ID</label>
+                                <label class="col-md-4 col-form-label mt-0" for="aws-access-key-id">AWS_ACCESS_KEY_ID</label>
                                 <div class="col-md-8">
                                     <input id="aws-access-key-id" type="text" name="aws_access_key_id" class="form-control" value="{{ old('aws_access_key_id', $awsAccessKeyId) }}" placeholder="AWS access key ID">
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label class="col-md-4 col-form-label" for="aws-secret-access-key">AWS_SECRET_ACCESS_KEY</label>
-                                <div class="col-md-8">
+                                <label class="col-md-4 col-form-label mt-0" for="aws-secret-access-key">AWS_SECRET_ACCESS_KEY</label>
+                                <div class="col-md-8 d-flex flex-column gap-1 pb-1">
                                     <input id="aws-secret-access-key" type="password" name="aws_secret_access_key" class="form-control" value="" autocomplete="new-password" placeholder="{{ $awsSecretConfigured ? 'Saved securely; leave blank to keep current' : 'AWS secret access key' }}">
                                     @if ($awsSecretConfigured) <small class="text-muted">A secret is saved. Leave blank to keep the current value.</small> @endif
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label class="col-md-4 col-form-label" for="aws-default-region">AWS_DEFAULT_REGION</label>
+                                <label class="col-md-4 col-form-label mt-0" for="aws-default-region">AWS_DEFAULT_REGION</label>
                                 <div class="col-md-8">
                                     <input id="aws-default-region" type="text" name="aws_default_region" class="form-control" value="{{ old('aws_default_region', $awsDefaultRegion) }}" placeholder="e.g. us-east-1">
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label class="col-md-4 col-form-label" for="aws-bucket">AWS_BUCKET</label>
+                                <label class="col-md-4 col-form-label mt-0" for="aws-bucket">AWS_BUCKET</label>
                                 <div class="col-md-8">
                                     <input id="aws-bucket" type="text" name="aws_bucket" class="form-control" value="{{ old('aws_bucket', $awsBucket) }}" placeholder="Bucket name">
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label class="col-md-4 col-form-label" for="aws-url">AWS_URL</label>
+                                <label class="col-md-4 col-form-label mt-0" for="aws-url">AWS_URL</label>
                                 <div class="col-md-8">
                                     <input id="aws-url" type="text" name="aws_url" class="form-control" value="{{ old('aws_url', $awsUrl) }}" placeholder="Optional custom URL / CDN">
                                 </div>
@@ -80,7 +80,7 @@
                     <form action="{{ route('admin.settings.file-system-cache.cache.update') }}" method="POST" autocomplete="off">
                         @csrf
                         <div class="form-group row align-items-center">
-                            <label class="col-md-4 col-form-label" for="cache-driver">CACHE_DRIVER</label>
+                            <label class="col-md-4 col-form-label mt-0" for="cache-driver">CACHE_DRIVER</label>
                             <div class="col-md-8">
                                 <select id="cache-driver" name="cache_driver" class="form-control form-select">
                                     <option value="file" @selected($cacheDriver === 'file')>File</option>
@@ -91,7 +91,7 @@
                             </div>
                         </div>
                         <div class="form-group row align-items-center">
-                            <label class="col-md-4 col-form-label" for="session-driver">SESSION_DRIVER</label>
+                            <label class="col-md-4 col-form-label mt-0" for="session-driver">SESSION_DRIVER</label>
                             <div class="col-md-8">
                                 <select id="session-driver" name="session_driver" class="form-control form-select">
                                     <option value="file" @selected($sessionDriver === 'file')>File</option>
@@ -106,20 +106,20 @@
                         <hr>
                         <h3 class="h6 text-muted mb-3">Redis Configuration <small>(required if Redis is selected)</small></h3>
                         <div class="form-group row">
-                            <label class="col-md-4 col-form-label" for="redis-host">REDIS_HOST</label>
+                            <label class="col-md-4 col-form-label mt-0" for="redis-host">REDIS_HOST</label>
                             <div class="col-md-8">
                                 <input id="redis-host" type="text" name="redis_host" class="form-control" value="{{ old('redis_host', $redisHost) }}" placeholder="127.0.0.1">
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label class="col-md-4 col-form-label" for="redis-password">REDIS_PASSWORD</label>
+                            <label class="col-md-4 col-form-label mt-0" for="redis-password">REDIS_PASSWORD</label>
                             <div class="col-md-8">
                                 <input id="redis-password" type="password" name="redis_password" class="form-control" value="" autocomplete="new-password" placeholder="{{ $redisPasswordConfigured ? 'Saved securely; leave blank to keep current' : 'Redis password (optional)' }}">
-                                @if ($redisPasswordConfigured) <small class="text-muted">A password is saved. Leave blank to keep the current value.</small> @endif
+                                @if ($redisPasswordConfigured) <small class="text-muted my-1">A password is saved. Leave blank to keep the current value.</small> @endif
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label class="col-md-4 col-form-label" for="redis-port">REDIS_PORT</label>
+                            <label class="col-md-4 col-form-label mt-0" for="redis-port">REDIS_PORT</label>
                             <div class="col-md-8">
                                 <input id="redis-port" type="number" min="1" max="65535" name="redis_port" class="form-control" value="{{ old('redis_port', $redisPort) }}" placeholder="6379">
                             </div>

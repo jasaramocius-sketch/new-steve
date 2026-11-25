@@ -32,7 +32,7 @@ class AdminController extends Controller
 {
     public function index()
     {
-        $topProducts = Order::revenueEligible()
+        $topProducts = Order::customerPlaced()->revenueEligible()
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->select('order_items.product_id', DB::raw('SUM(order_items.qty) as total_qty'))
             ->groupBy('order_items.product_id')
@@ -45,9 +45,9 @@ class AdminController extends Controller
             $topProducts = $topProducts->map(fn ($item) => tap($item, fn ($i) => $i->product = $products->get($i->product_id)));
         }
 
-        $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
+        $ordersByStatus = Order::customerPlaced()->selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::customerPlaced()->revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -55,7 +55,7 @@ class AdminController extends Controller
             $monthlyRevenueData->put($key, (float) ($dbRevenue->get($key) ?? 0));
         }
 
-        $weeklyRevenue = Order::revenueEligible()->selectRaw('YEARWEEK(created_at, 1) as week, SUM(total_amount) as total')
+        $weeklyRevenue = Order::customerPlaced()->revenueEligible()->selectRaw('YEARWEEK(created_at, 1) as week, SUM(total_amount) as total')
             ->where('created_at', '>=', now()->subWeeks(12))
             ->groupBy('week')
             ->orderBy('week')
@@ -69,7 +69,7 @@ class AdminController extends Controller
             $weeklyRevenueData->put($key, (float) ($weeklyRevenue->get($weekKey) ?? 0));
         }
 
-        $dailyRevenue = Order::revenueEligible()->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
+        $dailyRevenue = Order::customerPlaced()->revenueEligible()->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
             ->where('created_at', '>=', now()->subDays(30))
             ->groupBy('date')
             ->orderBy('date')
@@ -81,7 +81,7 @@ class AdminController extends Controller
             $dailyRevenueData->put($key, (float) ($dailyRevenue->get($key) ?? 0));
         }
 
-        $hourlyRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
+        $hourlyRevenue = Order::customerPlaced()->revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
             ->whereDate('created_at', today())
             ->groupBy('hour')
             ->orderBy('hour')
@@ -94,7 +94,7 @@ class AdminController extends Controller
             $hourlyRevenueData->put($key, (float) ($hourlyRevenue->get($key) ?? 0));
         }
 
-        $fiveMinRevenue = Order::revenueEligible()->selectRaw('
+        $fiveMinRevenue = Order::customerPlaced()->revenueEligible()->selectRaw('
             FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(created_at) / 300) * 300) as interval_time,
             SUM(total_amount) as total
         ')
@@ -113,12 +113,12 @@ class AdminController extends Controller
         }
 
         return view('backend.dashboard', [
-            'totalOrders' => Order::count(),
-            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
+            'totalOrders' => Order::customerPlaced()->count(),
+            'totalRevenue' => Order::customerPlaced()->revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
-            'pendingOrders' => Order::where('status', 'pending')->count(),
-            'recentOrders' => Order::with('user')->latest()->take(5)->get(),
+            'pendingOrders' => Order::customerPlaced()->where('status', 'pending')->count(),
+            'recentOrders' => Order::customerPlaced()->with('user')->latest()->take(5)->get(),
             'ordersByStatus' => $ordersByStatus,
             'monthlyRevenue' => $monthlyRevenueData,
             'ordersByStatusJson' => $ordersByStatus->pluck('count', 'status'),
@@ -191,7 +191,7 @@ class AdminController extends Controller
         $range = $request->get('range', '5min');
 
         if ($range === 'hourly') {
-            $hourlyRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
+            $hourlyRevenue = Order::customerPlaced()->revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
                 ->whereDate('created_at', today())
                 ->groupBy('hour')
                 ->orderBy('hour')
@@ -207,7 +207,7 @@ class AdminController extends Controller
             return response()->json($data);
         }
 
-        $todayRevenue = Order::revenueEligible()->selectRaw('
+        $todayRevenue = Order::customerPlaced()->revenueEligible()->selectRaw('
             FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(created_at) / 300) * 300) as interval_time,
             SUM(total_amount) as total
         ')

@@ -48,6 +48,10 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="include-internal" onchange="window.location.href=this.checked ? '{{ request()->fullUrlWithQuery(['include_internal' => 1, 'page' => null]) }}' : '{{ request()->fullUrlWithQuery(['include_internal' => null, 'page' => null]) }}'" {{ $includeInternal ? 'checked' : '' }}>
+                    <label class="form-check-label text-muted small" for="include-internal">Include staff/admin orders</label>
+                </div>
             </div>
             <div class="text-muted small">
                 Page {{ $orders->currentPage() }} of {{ $orders->lastPage() }} ({{ $orders->total() }} Total)

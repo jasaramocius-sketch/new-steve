@@ -58,6 +58,11 @@
                             <label class="form-label mt-2">Part Number</label>
                             <input type="text" class="form-control bg-light" value="Generated automatically when saved" readonly disabled>
                             <small class="form-text text-muted">The Part Number is generated automatically and cannot be entered manually.</small>
+
+                            <label class="form-label mt-2" for="product-sku">SKU</label>
+                            <input type="text" id="product-sku" name="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku') }}" maxlength="100" placeholder="Leave empty to auto-generate">
+                            @error('sku') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <small class="form-text text-muted">SKU is separate from Part Number. Leave empty to generate one automatically.</small>
                         </div>
 
                         <div class="col-md-3">

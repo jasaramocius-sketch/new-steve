@@ -14,7 +14,7 @@
                 <div class="card-body">
                     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
                     <div class="form-group">
-                        <label for="carrier-name">Carrier name</label>
+                        <label for="carrier-name" class="mt-0">Carrier name</label>
                         <input id="carrier-name" name="name" class="form-control" value="{{ old('name', $carrier->name) }}" maxlength="150" required>
                     </div>
                     <div class="form-group">

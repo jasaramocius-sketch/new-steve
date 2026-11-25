@@ -36,9 +36,11 @@
                             @else
                                 <p class="text-muted">No invoice logo is currently set.</p>
                             @endif
-                            <input id="invoice-logo" type="file" name="invoice_logo" accept="image/jpeg,image/png" class="form-control @error('invoice_logo') is-invalid @enderror">
+                            <div class="">
+                            <input id="invoice-logo" type="file" name="invoice_logo" accept="image/jpeg,image/png" class="form-control image-choose-file @error('invoice_logo') is-invalid @enderror">
                             @error('invoice_logo') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <small class="form-text text-muted">Upload a JPG or PNG image up to 2 MB. Uploading a new image replaces the current logo.</small>
+                            </div>
                             @if ($invoiceLogoUrl)
                                 <input type="hidden" name="remove_invoice_logo" value="0">
                                 <div class="form-check mt-2">
@@ -66,7 +68,7 @@
                             </div>
                             <div class="col-12 form-group mb-4">
                                 <label for="invoice_business_address">Business address</label>
-                                <textarea id="invoice_business_address" name="invoice_business_address" rows="2" class="form-control">{{ old('invoice_business_address', $invoiceSettings['invoice_business_address']) }}</textarea>
+                                <textarea id="invoice_business_address" name="invoice_business_address" rows="2" class="form-control textarea-control">{{ old('invoice_business_address', $invoiceSettings['invoice_business_address']) }}</textarea>
                             </div>
                         </div>
 

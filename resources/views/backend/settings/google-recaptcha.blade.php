@@ -34,8 +34,8 @@
                 @csrf
 
                 <div class="form-group row">
-                    <label class="col-md-3 col-form-label" for="recaptcha-enabled">Status</label>
-                    <div class="col-md-9">
+                    <label class="col-md-3 col-form-label mt-0" for="recaptcha-enabled">Status</label>
+                    <div class="col-md-9 gap-2 d-flex flex-column">
                         <select id="recaptcha-enabled" name="recaptcha_enabled" class="form-control form-select" required>
                             <option value="1" @selected(old('recaptcha_enabled', $globalEnabled ? '1' : '0') === '1')>Active — enforce reCAPTCHA on selected forms</option>
                             <option value="0" @selected(old('recaptcha_enabled', $globalEnabled ? '1' : '0') === '0')>Inactive — disable reCAPTCHA everywhere</option>
@@ -44,9 +44,9 @@
                     </div>
                 </div>
 
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label" for="recaptcha-version">reCAPTCHA Version</label>
-                    <div class="col">
+                <div class="form-group row mt-2">
+                    <label class="col-md-3 col-form-label mt-0" for="recaptcha-version">reCAPTCHA Version</label>
+                    <div class="col md-9 gap-2 d-flex flex-column">
                         <select id="recaptcha-version" name="recaptcha_version" class="form-control form-select" required>
                             <option value="v2" @selected(old('recaptcha_version', $settings['recaptcha_version'] ?? 'v2') === 'v2')>v2 - Checkbox / challenge</option>
                             <option value="v3" @selected(old('recaptcha_version', $settings['recaptcha_version'] ?? 'v2') === 'v3')>v3 - Invisible score-based</option>
@@ -60,13 +60,13 @@
 
                     <h3 class="h6 mb-3">reCAPTCHA v2 Keys</h3>
                     <div class="form-group row">
-                        <label class="col-md-3 col-form-label" for="recaptcha-site-key">Site Key</label>
+                        <label class="col-md-3 col-form-label mt-0" for="recaptcha-site-key">Site Key</label>
                         <div class="col-md-9">
                             <input id="recaptcha-site-key" type="text" name="recaptcha_site_key" class="form-control" value="{{ old('recaptcha_site_key', $settings['recaptcha_site_key'] ?? '') }}" placeholder="Enter Google reCAPTCHA v2 site key">
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-md-3 col-form-label" for="recaptcha-secret-key">Secret Key</label>
+                        <label class="col-md-3 col-form-label mt-0" for="recaptcha-secret-key">Secret Key</label>
                         <div class="col-md-9">
                             <input id="recaptcha-secret-key" type="password" name="recaptcha_secret_key" class="form-control" value="" autocomplete="new-password" placeholder="{{ ($secretConfigured ?? false) ? 'Saved securely; leave blank to keep current' : 'Enter Google reCAPTCHA v2 secret key' }}">
                             @if($secretConfigured ?? false)
@@ -81,22 +81,22 @@
 
                     <h3 class="h6 mb-3">reCAPTCHA v3 Keys</h3>
                     <div class="form-group row">
-                        <label class="col-md-3 col-form-label" for="recaptcha-v3-site-key">Site Key</label>
+                        <label class="col-md-3 col-form-label mt-0" for="recaptcha-v3-site-key">Site Key</label>
                         <div class="col-md-9">
                             <input id="recaptcha-v3-site-key" type="text" name="recaptcha_v3_site_key" class="form-control" value="{{ old('recaptcha_v3_site_key', $settings['recaptcha_v3_site_key'] ?? '') }}" placeholder="Enter Google reCAPTCHA v3 site key">
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-md-3 col-form-label" for="recaptcha-v3-secret-key">Secret Key</label>
-                        <div class="col-md-9">
+                        <label class="col-md-3 col-form-label mt-0" for="recaptcha-v3-secret-key">Secret Key</label>
+                        <div class="col-md-9 d-flex flex-column gap-2">
                             <input id="recaptcha-v3-secret-key" type="password" name="recaptcha_v3_secret_key" class="form-control" value="" autocomplete="new-password" placeholder="{{ ($v3SecretConfigured ?? false) ? 'Saved securely; leave blank to keep current' : 'Enter Google reCAPTCHA v3 secret key' }}">
                             @if($v3SecretConfigured ?? false)
                                 <small class="text-muted">A v3 secret key is saved. Leave blank to keep it.</small>
                             @endif
                         </div>
                     </div>
-                    <div class="form-group row">
-                        <label class="col-md-3 col-form-label" for="recaptcha-v3-score">Minimum Score</label>
+                    <div class="form-group row my-2">
+                        <label class="col-md-3 col-form-label mt-0" for="recaptcha-v3-score">Minimum Score</label>
                         <div class="col-md-9">
                             <input id="recaptcha-v3-score" type="number" name="recaptcha_v3_score" class="form-control" value="{{ old('recaptcha_v3_score', $settings['recaptcha_v3_score'] ?? '0.5') }}" min="0" max="1" step="0.1">
                             <small class="text-muted">0.0 = likely bot, 1.0 = likely human. Recommended: 0.5.</small>
@@ -110,7 +110,7 @@
                 <hr>
 
                 <div class="form-group row" id="recaptcha-form-options">
-                    <div class="col-md-3 col-form-label">Enable on</div>
+                    <div class="col-md-3 col-form-label mt-0">Enable on</div>
                     <div class="col-md-9 mt-1">
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" name="recaptcha_login" value="1" id="recaptcha-login" @checked(($settings['recaptcha_login'] ?? '0') == '1')>

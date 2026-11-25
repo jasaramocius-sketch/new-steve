@@ -101,7 +101,7 @@
                     <input type="hidden" name="type" value="flat_rate_shipping_cost">
                     <div class="card-body d-flex flex-column align-items-start gap-3">
                         <div class="form-group">
-                            <label for="flat-rate-shipping-cost">Flat rate shipping cost</label>
+                            <label for="flat-rate-shipping-cost" class="mt-0">Flat rate shipping cost</label>
                             <input id="flat-rate-shipping-cost" type="number" min="0" step="0.01" name="flat_rate_shipping_cost"
                                    class="form-control" value="{{ old('flat_rate_shipping_cost', $flatRateShippingCost) }}">
                         </div>
@@ -136,7 +136,7 @@
                     <input type="hidden" name="type" value="shipping_cost_admin">
                     <div class="card-body d-flex flex-column align-items-start gap-3">
                         <div class="form-group">
-                            <label for="shipping-cost-admin">Admin product shipping cost</label>
+                            <label for="shipping-cost-admin" class="mt-0">Admin product shipping cost</label>
                             <input id="shipping-cost-admin" type="number" min="0" step="0.01" name="shipping_cost_admin"
                                    class="form-control" value="{{ old('shipping_cost_admin', $shippingCostAdmin) }}">
                         </div>

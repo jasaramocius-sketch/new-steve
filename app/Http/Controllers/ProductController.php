@@ -99,18 +99,39 @@ class ProductController extends Controller
         ];
     }
 
-    public static function resolveImportedSku(array $data, string $name, ?Product $existing = null): string
+    public static function resolveImportedIdentifiers(array $data, string $name, ?Product $existing = null): array
+    {
+        return [
+            'part_number' => self::resolveImportedPartNumber($data, $name, $existing),
+            'sku' => self::resolveImportedSku($data, $name, $existing),
+        ];
+    }
+
+    public static function resolveImportedPartNumber(array $data, string $name, ?Product $existing = null): string
     {
         $partNumber = trim((string) ($data['part_number'] ?? ''));
-        if ($partNumber === '') {
-            $partNumber = trim((string) ($data['sku'] ?? ''));
-        }
         if ($partNumber !== '') {
             return $partNumber;
         }
 
-        if ($existing?->sku) {
-            return $existing->sku;
+        $existingPartNumber = trim((string) ($existing->part_number ?? ''));
+        if ($existingPartNumber !== '') {
+            return $existingPartNumber;
+        }
+
+        return Product::generatePartNumber($name, $existing ? (int) $existing->id : null);
+    }
+
+    public static function resolveImportedSku(array $data, string $name, ?Product $existing = null): string
+    {
+        $sku = trim((string) ($data['sku'] ?? ''));
+        if ($sku !== '') {
+            return $sku;
+        }
+
+        $existingSku = trim((string) ($existing->sku ?? ''));
+        if ($existingSku !== '') {
+            return $existingSku;
         }
 
         return Product::generateSku($name, $existing ? (int) $existing->id : null);
@@ -178,7 +199,6 @@ class ProductController extends Controller
         $sortDir = $sortDir === 'asc' ? 'asc' : 'desc';
 
         $sortColumn = [
-            'sku' => 'part_number',
             'price' => 'cost',
             'stock' => 'vendor_stock',
         ][$sortBy] ?? $sortBy;
@@ -202,7 +222,8 @@ class ProductController extends Controller
         if ($search = trim((string) $request->query('search'))) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('part_number', 'like', "%{$search}%");
+                    ->orWhere('part_number', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -438,6 +459,66 @@ class ProductController extends Controller
         ));
     }
 
+    public function checkFitment(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
+            'year' => 'required|integer|min:1900|max:'.((int) date('Y') + 1),
+            'make' => 'required|string|max:100',
+            'model' => 'required|string|max:150',
+            'engine' => 'nullable|string|max:150',
+        ]);
+
+        $product = Product::query()
+            ->where('status', true)
+            ->hasUsableImage()
+            ->findOrFail($validated['product_id']);
+
+        $year = (int) $validated['year'];
+        $make = trim((string) $validated['make']);
+        $model = trim((string) $validated['model']);
+        $engine = trim((string) ($validated['engine'] ?? ''));
+
+        $fitments = $product->fitments()->orderBy('sort_order')->get();
+
+        if ($fitments->isEmpty()) {
+            return response()->json([
+                'fits' => null,
+                'message' => 'Fitment information is not available for this product yet.',
+            ]);
+        }
+
+        $matches = $fitments->filter(function ($fitment) use ($year, $make, $model, $engine) {
+            if ($year < (int) $fitment->year_from || $year > (int) $fitment->year_to) {
+                return false;
+            }
+            if (strcasecmp(trim((string) $fitment->make), $make) !== 0) {
+                return false;
+            }
+            if (strcasecmp(trim((string) $fitment->model), $model) !== 0) {
+                return false;
+            }
+            if ($engine !== '' && trim((string) $fitment->engine) !== '') {
+                return strcasecmp(trim((string) $fitment->engine), $engine) === 0;
+            }
+
+            return true;
+        })->values();
+
+        $fits = $matches->isNotEmpty();
+
+        return response()->json([
+            'fits' => $fits,
+            'message' => $fits
+                ? 'This part fits your '.$year.' '.$make.' '.$model.($engine !== '' ? ' '.$engine : '').'.'
+                : 'This part does not fit your '.$year.' '.$make.' '.$model.($engine !== '' ? ' '.$engine : '').'.',
+            'matches' => $matches->map(fn ($fitment) => [
+                'label' => $fitment->label(),
+                'notes' => $fitment->notes,
+            ])->all(),
+        ]);
+    }
+
     public function create()
     {
         $categories = $this->productLookupOptions('category', [old('category_id')]);
@@ -465,6 +546,7 @@ class ProductController extends Controller
         $maxYear = (int) date('Y') + 1;
         $request->validate([
             'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:100|unique:products,sku',
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
@@ -491,6 +573,7 @@ class ProductController extends Controller
             'fitments.*.make' => 'nullable|string|max:100',
             'fitments.*.model' => 'nullable|string|max:150',
             'fitments.*.engine' => 'nullable|string|max:150',
+            'fitments.*.notes' => 'nullable|string|max:500',
             'tab_label_1' => 'nullable|string|max:100',
             'tab_label_2' => 'nullable|string|max:100',
             'tab_label_3' => 'nullable|string|max:100',
@@ -503,7 +586,7 @@ class ProductController extends Controller
 
         $fitmentRows = $this->validatedFitmentRows($request, $maxYear);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text', 'meta_title', 'meta_description', 'condition', 'warranty_months', 'warranty_text', 'weight_kg']);
+        $data = $request->only(['name', 'sku', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text', 'meta_title', 'meta_description', 'condition', 'warranty_months', 'warranty_text', 'weight_kg']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
@@ -520,7 +603,10 @@ class ProductController extends Controller
             'width_cm' => $request->input('dimensions.width_cm'),
             'height_cm' => $request->input('dimensions.height_cm'),
         ];
-        $data['part_number'] = Product::generateSku((string) $request->name);
+        $data['part_number'] = Product::generatePartNumber((string) $request->name);
+        $data['sku'] = trim((string) ($data['sku'] ?? '')) !== ''
+            ? trim((string) $data['sku'])
+            : Product::generateSku((string) $request->name);
         $data['slug'] = $this->resolveProductSlug($request, null, (string) $request->name, $data['part_number']);
 
         if (! FeatureFlags::enabled('vendor_system_activation') || ! FeatureFlags::enabled('product_manage_by_admin')) {
@@ -590,6 +676,7 @@ class ProductController extends Controller
             'make' => $fitment->make,
             'model' => $fitment->model,
             'engine' => $fitment->engine,
+            'notes' => $fitment->notes,
         ])->all());
 
         return view('backend.products.edit', array_merge(
@@ -605,6 +692,7 @@ class ProductController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:100|unique:products,sku,'.$product->id,
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
@@ -631,6 +719,7 @@ class ProductController extends Controller
             'fitments.*.make' => 'nullable|string|max:100',
             'fitments.*.model' => 'nullable|string|max:150',
             'fitments.*.engine' => 'nullable|string|max:150',
+            'fitments.*.notes' => 'nullable|string|max:500',
             'tab_label_1' => 'nullable|string|max:100',
             'tab_label_2' => 'nullable|string|max:100',
             'tab_label_3' => 'nullable|string|max:100',
@@ -643,7 +732,7 @@ class ProductController extends Controller
 
         $fitmentRows = $this->validatedFitmentRows($request, $maxYear);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text', 'meta_title', 'meta_description', 'condition', 'warranty_months', 'warranty_text', 'weight_kg']);
+        $data = $request->only(['name', 'sku', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text', 'meta_title', 'meta_description', 'condition', 'warranty_months', 'warranty_text', 'weight_kg']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
@@ -660,6 +749,9 @@ class ProductController extends Controller
             'width_cm' => $request->input('dimensions.width_cm'),
             'height_cm' => $request->input('dimensions.height_cm'),
         ];
+        $data['sku'] = trim((string) ($data['sku'] ?? '')) !== ''
+            ? trim((string) $data['sku'])
+            : ((string) $product->sku ?: Product::generateSku((string) $request->name, (int) $product->id));
         $data['slug'] = $this->resolveProductSlug($request, $product, (string) $request->name, (string) $product->part_number);
 
         if (! FeatureFlags::enabled('vendor_system_activation') || ! FeatureFlags::enabled('product_manage_by_admin')) {
@@ -1010,13 +1102,212 @@ class ProductController extends Controller
         ]);
     }
 
+    public function downloadFitmentSampleCsv($id)
+    {
+        $product = Product::findOrFail($id);
+
+        $callback = function () {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['year_from', 'year_to', 'make', 'model', 'engine', 'notes']);
+            fputcsv($handle, ['2018', '2022', 'Toyota', 'Camry', '2.5L I4', 'Excluding Hybrid']);
+            fputcsv($handle, ['2019', '2021', 'Honda', 'Accord', '1.5T', '']);
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="sample-fitments-'.$product->id.'.csv"',
+        ]);
+    }
+
+    public function exportFitmentsCsv($id)
+    {
+        $product = Product::with('fitments')->findOrFail($id);
+
+        $callback = function () use ($product) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['year_from', 'year_to', 'make', 'model', 'engine', 'notes']);
+            foreach ($product->fitments as $fitment) {
+                fputcsv($handle, [
+                    $fitment->year_from,
+                    $fitment->year_to,
+                    $fitment->make,
+                    $fitment->model,
+                    $fitment->engine,
+                    $fitment->notes,
+                ]);
+            }
+            fclose($handle);
+        };
+
+        $filename = 'fitments-'.Str::slug($product->part_number ?: $product->name).'.csv';
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    public function importFitmentsCsv(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $request->validate([
+            'fitment_file' => 'required|file|mimes:csv,txt,xml|max:5120',
+        ]);
+
+        $file = $request->file('fitment_file');
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+
+        try {
+            $rows = $extension === 'xml'
+                ? $this->parseFitmentXml($file->getRealPath())
+                : $this->parseFitmentCsv($file->getRealPath());
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fitment_file' => 'Could not parse fitment file: '.$e->getMessage()]);
+        }
+
+        if (empty($rows)) {
+            return back()->withErrors(['fitment_file' => 'No valid fitment rows found in the file.']);
+        }
+
+        $maxYear = (int) date('Y') + 1;
+        $normalized = [];
+        $errors = [];
+
+        foreach ($rows as $index => $row) {
+            $line = $index + 2;
+            $yearFrom = $row['year_from'] ?? null;
+            $yearTo = $row['year_to'] ?? null;
+            $make = trim((string) ($row['make'] ?? ''));
+            $model = trim((string) ($row['model'] ?? ''));
+            $engine = trim((string) ($row['engine'] ?? ''));
+            $notes = trim((string) ($row['notes'] ?? ''));
+
+            if (! $yearFrom && ! $yearTo && $make === '' && $model === '' && $engine === '' && $notes === '') {
+                continue;
+            }
+            if (! $yearFrom || ! $yearTo || $make === '' || $model === '') {
+                $errors[] = "Line {$line}: year_from, year_to, make, and model are required.";
+                continue;
+            }
+            if ($yearFrom < 1900 || $yearTo < 1900 || $yearFrom > $maxYear || $yearTo > $maxYear) {
+                $errors[] = "Line {$line}: years must be between 1900 and {$maxYear}.";
+                continue;
+            }
+            if ($yearFrom > $yearTo) {
+                $errors[] = "Line {$line}: year_from cannot be greater than year_to.";
+                continue;
+            }
+
+            $normalized[] = [
+                'year_from' => $yearFrom,
+                'year_to' => $yearTo,
+                'make' => $make,
+                'model' => $model,
+                'engine' => $engine,
+                'notes' => $notes,
+            ];
+        }
+
+        if ($errors) {
+            return back()->withErrors(['fitment_file' => implode(' ', array_slice($errors, 0, 5)).(count($errors) > 5 ? ' (and more...)' : '')]);
+        }
+
+        if (count($normalized) > 500) {
+            return back()->withErrors(['fitment_file' => 'A maximum of 500 fitment rows can be imported at once.']);
+        }
+
+        $this->syncProductFitments($product, $normalized);
+
+        return back()->with('success', count($normalized).' fitment rows imported successfully.');
+    }
+
+    private function parseFitmentCsv(string $path): array
+    {
+        $handle = fopen($path, 'r');
+        if (! $handle) {
+            throw new \RuntimeException('Unable to read file.');
+        }
+
+        $header = null;
+        $rows = [];
+        while (($data = fgetcsv($handle)) !== false) {
+            if ($header === null) {
+                $header = array_map(fn ($v) => strtolower(trim((string) $v)), $data);
+                continue;
+            }
+            if (count(array_filter($data, fn ($v) => trim((string) $v) !== '')) === 0) {
+                continue;
+            }
+            $row = [];
+            foreach ($header as $i => $key) {
+                $row[$key] = trim((string) ($data[$i] ?? ''));
+            }
+
+            $yearFrom = $row['year_from'] ?? $row['yearfrom'] ?? $row['start_year'] ?? $row['year'] ?? '';
+            $yearTo = $row['year_to'] ?? $row['yearto'] ?? $row['end_year'] ?? $row['year'] ?? $yearFrom;
+            $rows[] = [
+                'year_from' => $yearFrom !== '' ? (int) $yearFrom : null,
+                'year_to' => $yearTo !== '' ? (int) $yearTo : null,
+                'make' => $row['make'] ?? '',
+                'model' => $row['model'] ?? '',
+                'engine' => $row['engine'] ?? $row['engine_size'] ?? '',
+                'notes' => $row['notes'] ?? $row['note'] ?? $row['fitment_notes'] ?? '',
+            ];
+        }
+        fclose($handle);
+
+        return $rows;
+    }
+
+    private function parseFitmentXml(string $path): array
+    {
+        $xml = @simplexml_load_file($path);
+        if ($xml === false) {
+            throw new \RuntimeException('Invalid XML file.');
+        }
+
+        $rows = [];
+        // Best-effort ACES/generic XML parsing: look for App/Vehicle/Application elements.
+        $nodes = $xml->xpath('//*[local-name()="App" or local-name()="Application" or local-name()="Vehicle" or local-name()="Fitment" or local-name()="fitment"]');
+        if (empty($nodes)) {
+            // Also try direct children
+            $nodes = $xml->xpath('//*');
+        }
+
+        foreach ($nodes as $node) {
+            $yearFrom = (string) ($node->YearFrom ?? $node->year_from ?? $node->StartYear ?? $node->start_year ?? $node->Year ?? $node->year ?? '');
+            $yearTo = (string) ($node->YearTo ?? $node->year_to ?? $node->EndYear ?? $node->end_year ?? $node->Year ?? $node->year ?? $yearFrom);
+            $make = (string) ($node->Make ?? $node->make ?? $node->Mfr ?? '');
+            $model = (string) ($node->Model ?? $node->model ?? '');
+            $engine = (string) ($node->Engine ?? $node->engine ?? $node->EngineBase ?? $node->engine_base ?? '');
+            $notes = (string) ($node->Notes ?? $node->notes ?? $node->Note ?? $node->note ?? $node->Qual ?? '');
+
+            if ($make === '' && $model === '' && $yearFrom === '') {
+                continue;
+            }
+
+            $rows[] = [
+                'year_from' => $yearFrom !== '' ? (int) $yearFrom : null,
+                'year_to' => $yearTo !== '' ? (int) $yearTo : null,
+                'make' => $make,
+                'model' => $model,
+                'engine' => $engine,
+                'notes' => $notes,
+            ];
+        }
+
+        return $rows;
+    }
+
     public function downloadSampleCsv()
     {
-        $headers = ['id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $headers = ['id', 'name', 'part_number', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
         $rows = [
-            ['', 'Brake Pads Set', 'bp-1001', '49.99', '69.99', 'Brakes', '100', 'High quality ceramic brake pads', 'New', 'none', '1', '1', 'https://example.com/images/brake-pads.jpg', 'Duralast', 'AutoZone Seller', '2020', 'Toyota', 'Camry', 'https://example.com/images/brake-pads-2.jpg|https://example.com/images/brake-pads-3.jpg', '<p>We offer a 30-day return policy for unused items in original packaging.</p>', "Premium quality\nEasy installation", "Material::Ceramic\nFriction::Low dust", '[{"name":"Ava","rating":5,"text":"Perfect fit and fast delivery.","deleted":false}]', 'Overview', 'Specifications', 'Reviews'],
-            ['', 'Oil Filter', '', '12.99', '', 'Engine', '250', '', 'Sale', 'none', '1', '0', '', 'Apex Gasket', 'AutoZone Seller', '2019', 'Honda', 'Civic', '', '<p>Items can be returned within 14 days if they are not installed or damaged.</p>', '', 'Thread::M20x1.5', '[{"name":"Noah","rating":4,"text":"Works well and shipped quickly.","deleted":false}]', '', '', ''],
-            ['', 'LED Headlight Bulb', '', '29.99', '39.99', 'Lighting', '75', 'Bright 12000LM LED bulbs', '', 'none', '1', '1', '', '', '', '', '', '', '', '<p>All purchases include a 12-month warranty and a simple return process.</p>', "6000K bright\nPlug and play", 'Voltage::12V', '[{"name":"Mila","rating":5,"text":"Great brightness and easy install.","deleted":false}]', '', '', ''],
+            ['', 'Brake Pads Set', 'bp-1001', 'SKU-BP-1001', '49.99', '69.99', 'Brakes', '100', 'High quality ceramic brake pads', 'New', 'none', '1', '1', 'https://example.com/images/brake-pads.jpg', 'Duralast', 'AutoZone Seller', '2020', 'Toyota', 'Camry', 'https://example.com/images/brake-pads-2.jpg|https://example.com/images/brake-pads-3.jpg', '<p>We offer a 30-day return policy for unused items in original packaging.</p>', "Premium quality\nEasy installation", "Material::Ceramic\nFriction::Low dust", '[{"name":"Ava","rating":5,"text":"Perfect fit and fast delivery.","deleted":false}]', 'Overview', 'Specifications', 'Reviews'],
+            ['', 'Oil Filter', '', '', '12.99', '', 'Engine', '250', '', 'Sale', 'none', '1', '0', '', 'Apex Gasket', 'AutoZone Seller', '2019', 'Honda', 'Civic', '', '<p>Items can be returned within 14 days if they are not installed or damaged.</p>', '', 'Thread::M20x1.5', '[{"name":"Noah","rating":4,"text":"Works well and shipped quickly.","deleted":false}]', '', '', ''],
+            ['', 'LED Headlight Bulb', '', '', '29.99', '39.99', 'Lighting', '75', 'Bright 12000LM LED bulbs', '', 'none', '1', '1', '', '', '', '', '', '', '', '<p>All purchases include a 12-month warranty and a simple return process.</p>', "6000K bright\nPlug and play", 'Voltage::12V', '[{"name":"Mila","rating":5,"text":"Great brightness and easy install.","deleted":false}]', '', '', ''],
         ];
 
         $callback = function () use ($headers, $rows) {
@@ -1046,9 +1337,10 @@ class ProductController extends Controller
                 'make' => trim((string) ($item['make'] ?? '')),
                 'model' => trim((string) ($item['model'] ?? '')),
                 'engine' => trim((string) ($item['engine'] ?? '')),
+                'notes' => trim((string) ($item['notes'] ?? '')),
             ];
 
-            if (! $row['year_from'] && ! $row['year_to'] && $row['make'] === '' && $row['model'] === '' && $row['engine'] === '') {
+            if (! $row['year_from'] && ! $row['year_to'] && $row['make'] === '' && $row['model'] === '' && $row['engine'] === '' && $row['notes'] === '') {
                 continue;
             }
 
@@ -1122,12 +1414,13 @@ class ProductController extends Controller
                 'make' => trim((string) ($row['make'] ?? '')),
                 'model' => trim((string) ($row['model'] ?? '')),
                 'engine' => trim((string) ($row['engine'] ?? '')),
+                'notes' => trim((string) ($row['notes'] ?? '')),
             ];
         };
 
         $existing = $product->fitments()
             ->orderBy('sort_order')
-            ->get(['year_from', 'year_to', 'make', 'model', 'engine'])
+            ->get(['year_from', 'year_to', 'make', 'model', 'engine', 'notes'])
             ->map($normalize)
             ->all();
         $incoming = array_values(array_map($normalize, $rows));
@@ -1152,6 +1445,7 @@ class ProductController extends Controller
                     'make' => $row['make'],
                     'model' => $row['model'],
                     'engine' => $row['engine'] ?: null,
+                    'notes' => $row['notes'] ?: null,
                     'sort_order' => $sortOrder,
                 ]);
 
@@ -1227,7 +1521,8 @@ class ProductController extends Controller
         if ($search = trim((string) $request->query('search'))) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('part_number', 'like', "%{$search}%");
+                    ->orWhere('part_number', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 

@@ -48,10 +48,6 @@
             <li><a class="nav-link {{ request()->routeIs('user.followed-sellers') ? 'active' : '' }}" href="{{ route('user.followed-sellers') }}"><i class="fas fa-user-friends me-2"></i>Followed Sellers</a></li>
             @endif
 
-            @if (\App\Support\FeatureFlags::enabled('wallet_system'))
-            <li><a class="nav-link {{ request()->routeIs('user.wallet') ? 'active' : '' }}" href="{{ route('user.wallet') }}"><i class="fas fa-wallet me-2"></i>My Wallet</a></li>
-            @endif
-
             <li><a class="nav-link {{ request()->routeIs('user.vehicles') ? 'active' : '' }}" href="{{ route('user.vehicles') }}"><i class="fas fa-car me-2"></i>My Vehicles</a></li>
 
             <li><a class="nav-link {{ request()->routeIs('user.addresses') ? 'active' : '' }}" href="{{ route('user.addresses') }}"><i class="fas fa-map-marker-alt me-2"></i>My Addresses</a></li>

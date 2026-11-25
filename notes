@@ -272,3 +272,6 @@ Routing	Common URLs 404; no order tracking	/login, /register, /shop, /about, /co
 
 
 .admin-content .nav .nav-item .nav-link:focus, .admin-content .nav .nav-item .nav-link:hover
+
+
+mene products page ke sidebar me categories se "Engine" ki "Service Kits" category open kr rha hu jb ye category open hoti he to breadcrumb me "Home/Shop/Air and Fuel Delivery/Service Kits" show ti he or sidebar me bhi "Air and Fuel Delivery" or iski "Service Kits" subcategory highlight hoti balki highlight "Engine" or "Service Kits" honi sahiye thi asha kiyo nhi ho rha he

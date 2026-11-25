@@ -380,8 +380,14 @@ class HomeController extends Controller
         return redirect()->route('page.show', $slug, 301);
     }
 
-    public function page($slug)
+    public function page($slug = null)
     {
+        // Legacy /new-steve/ installs can resolve the root request through this
+        // catch-all without a slug. Serve the normal home page instead of 500ing.
+        if (blank($slug)) {
+            return $this->index();
+        }
+
         $canonicalRoute = config("page-builder.live_url_map.page.$slug");
         if ($canonicalRoute) {
             return redirect()->route($canonicalRoute, [], 301);

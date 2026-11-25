@@ -103,6 +103,7 @@ Route::get('/ajax/mobile-categories', [HomeController::class, 'mobileCategories'
 Route::get('/ajax/shop-category-children', [ShopController::class, 'sidebarCategoryChildren'])->name('ajax.shop-category-children');
 
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product');
+Route::get('/ajax/product/check-fitment', [ProductController::class, 'checkFitment'])->name('product.check-fitment');
 Route::post('/contact-seller', [ProductController::class, 'contactSeller'])->name('contact.seller');
 
 Route::match(['get', 'post'], '/product/{slug}/review', [ReviewController::class, 'store'])->middleware('auth')->name('product.review');
@@ -395,6 +396,12 @@ Route::prefix('admin')
             ->name('admin.products.edit');
         Route::put('/products/{id}', [ProductController::class, 'update'])
             ->name('admin.products.update');
+        Route::get('/products/{id}/fitments/export-csv', [ProductController::class, 'exportFitmentsCsv'])
+            ->name('admin.products.fitments.export-csv');
+        Route::get('/products/{id}/fitments/sample-csv', [ProductController::class, 'downloadFitmentSampleCsv'])
+            ->name('admin.products.fitments.sample-csv');
+        Route::post('/products/{id}/fitments/import-csv', [ProductController::class, 'importFitmentsCsv'])
+            ->name('admin.products.fitments.import-csv');
         Route::delete('/products/{id}', [ProductController::class, 'destroy'])
             ->name('admin.products.destroy');
         Route::post('/products/{id}/restore', [ProductController::class, 'restore'])
@@ -1020,7 +1027,7 @@ Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(fun
     Route::delete('/followed-seller/{id}', [DashboardController::class, 'destroyFollowedSeller'])->name('followed-sellers.destroy');
     Route::get('/api/seller/{id}', [DashboardController::class, 'getSellerDetails'])->name('api.seller.details');
     Route::get('/api/seller/{id}/products', [DashboardController::class, 'getSellerProducts'])->name('api.seller.products');
-    Route::get('/wallet', [DashboardController::class, 'wallet'])->name('wallet');
+    Route::get('/wallet', fn () => redirect()->route('user.dashboard')->with('info', 'The wallet feature has been removed.'))->name('wallet');
     Route::get('/addresses', [DashboardController::class, 'addresses'])->name('addresses');
     Route::post('/addresses', [DashboardController::class, 'storeAddress'])->name('addresses.store');
     Route::put('/addresses/{id}', [DashboardController::class, 'updateAddress'])->name('addresses.update');

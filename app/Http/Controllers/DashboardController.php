@@ -30,9 +30,9 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
+        $ordersByStatus = Order::customerPlaced()->selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::customerPlaced()->revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -41,12 +41,12 @@ class DashboardController extends Controller
         }
 
         return view('backend.dashboard', [
-            'totalOrders' => Order::count(),
-            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
+            'totalOrders' => Order::customerPlaced()->count(),
+            'totalRevenue' => Order::customerPlaced()->revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
-            'pendingOrders' => Order::where('status', 'pending')->count(),
-            'recentOrders' => Order::with('user')->latest()->take(5)->get(),
+            'pendingOrders' => Order::customerPlaced()->where('status', 'pending')->count(),
+            'recentOrders' => Order::customerPlaced()->with('user')->latest()->take(5)->get(),
             'ordersByStatus' => $ordersByStatus,
             'monthlyRevenue' => $monthlyRevenueData,
             'ordersByStatusJson' => $ordersByStatus->pluck('count', 'status'),
@@ -143,9 +143,10 @@ class DashboardController extends Controller
     // -------------------------------------------------------------
     public function staffDashboard()
     {
-        $topProducts = DB::table('order_items')
-            ->select('product_id', DB::raw('SUM(qty) as total_qty'))
-            ->groupBy('product_id')
+        $topProducts = Order::customerPlaced()
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->select('order_items.product_id', DB::raw('SUM(order_items.qty) as total_qty'))
+            ->groupBy('order_items.product_id')
             ->orderByDesc('total_qty')
             ->take(5)
             ->get();
@@ -155,9 +156,9 @@ class DashboardController extends Controller
             $topProducts = $topProducts->map(fn ($item) => tap($item, fn ($i) => $i->product = $products->get($i->product_id)));
         }
 
-        $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
+        $ordersByStatus = Order::customerPlaced()->selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::customerPlaced()->revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -166,12 +167,12 @@ class DashboardController extends Controller
         }
 
         return view('backend.dashboard', [
-            'totalOrders' => Order::count(),
-            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
+            'totalOrders' => Order::customerPlaced()->count(),
+            'totalRevenue' => Order::customerPlaced()->revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
-            'pendingOrders' => Order::where('status', 'pending')->count(),
-            'recentOrders' => Order::with('user')->latest()->take(5)->get(),
+            'pendingOrders' => Order::customerPlaced()->where('status', 'pending')->count(),
+            'recentOrders' => Order::customerPlaced()->with('user')->latest()->take(5)->get(),
             'ordersByStatus' => $ordersByStatus,
             'monthlyRevenue' => $monthlyRevenueData,
             'ordersByStatusJson' => $ordersByStatus->pluck('count', 'status'),
@@ -235,18 +236,6 @@ class DashboardController extends Controller
         $availableSellers = Seller::where('status', true)->orderBy('name')->get();
 
         return view('frontend.user.followed-sellers', compact('followedSellers', 'availableSellers'));
-    }
-
-    public function wallet()
-    {
-        abort_unless(FeatureFlags::enabled('wallet_system'), 404);
-
-        $user = Auth::user();
-
-        return view('frontend.user.wallet', [
-            'user' => $user,
-            'balance' => (float) ($user->balance ?? 0),
-        ]);
     }
 
     public function storeFollowedSeller(Request $request)

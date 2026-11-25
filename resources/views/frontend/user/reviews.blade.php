@@ -15,10 +15,10 @@
     <h4 class="h4-style mb-0">My Reviews</h4>
     <a href="{{ route('shop') }}" class="btn btn-primary steve-btn">Continue Shopping</a>
 </div>
-<div class="alert alert-info py-2 px-3 mb-3 small">
+<!-- <div class="alert alert-info py-2 px-3 mb-3 small">
     Reviews can only be added for products you purchased. If you checked out as a guest, log in with the email used at checkout and your purchases will appear here.
-</div>
-<div class="view-reviews-filter d-grid grid-template-columns-auto align-items-center justify-content-between mb-3 gap-2 flex-wrap">
+</div> -->
+<div class="view-reviews-filter d-flex grid-template-columns-auto align-items-center justify-content-between mb-3 gap-2 flex-wrap">
     @include('backend.partials.search-form', [
         'route' => route('user.reviews'),
         'placeholder' => 'Search...',

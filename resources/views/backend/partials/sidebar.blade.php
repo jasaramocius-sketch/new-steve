@@ -139,7 +139,7 @@
         <a href="{{ route('admin.faqs.index') }}" class="nav-item {{ request()->routeIs('admin.faqs.*') ? 'active' : '' }}">
             <i class="fas fa-question-circle"></i> FAQs
         </a>
-        <a href="{{ route('admin.contacts.index') }}" class="nav-item {{ request()->routeIs('admin.contacts.*') ? 'active' : '' }}">
+        <a href="{{ route('admin.contacts.index') }}" class="nav-item {{ request()->routeIs('admin.contacts.*') ? 'active' : '' }} questions-inquiries-link">
             <i class="fas fa-envelope-open-text"></i> Questions / Inquiries
             <span class="badge bg-info">{{ $pendingInquiries ?? 0 }}</span>
         </a>
@@ -421,17 +421,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 transition: height .25s ease;
             }
             .admin-sidebar.icon-collapsed .nav-section {
-                height: 37px;
+                height: 31px;
+                border-top:unset;
             }
             .admin-sidebar.icon-collapsed .nav-section::before {
                 content: '';
                 position: absolute;
-                left: 20px; right: 20px; top: 50%;
+                left: 10px; right: 20px; top: 50%;
                 height: 1px;
                 transform: translateY(-50%);
                 background: var(--primary);
                 opacity: 1;
                 transition: opacity .2s ease;
+                width: 20px;
             }
             .admin-sidebar .nav-section::before {
                 content: '';

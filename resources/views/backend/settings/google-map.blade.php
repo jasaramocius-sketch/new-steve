@@ -15,7 +15,7 @@
             <form action="{{ route('admin.settings.google-map.update') }}" method="POST" autocomplete="off">
                 @csrf
                 <div class="form-group row align-items-center">
-                    <label class="col-md-3 col-form-label" for="google-map-enabled">Enable Google Map API</label>
+                    <label class="col-md-3 col-form-label mt-0" for="google-map-enabled">Enable Google Map API</label>
                     <div class="col-md-9">
                         <input type="hidden" name="google_map_enabled" value="0">
                         <div class="form-check form-switch mb-0">
@@ -24,7 +24,7 @@
                     </div>
                 </div>
                 <div class="form-group row">
-                    <label class="col-md-3 col-form-label" for="google-map-api-key">Google Map API Key</label>
+                    <label class="col-md-3 col-form-label mt-0" for="google-map-api-key">Google Map API Key</label>
                     <div class="col-md-9">
                         <input id="google-map-api-key" type="password" name="google_map_api_key" class="form-control" value="" autocomplete="new-password" placeholder="{{ $apiKeyConfigured ? 'Saved securely; leave blank to keep current' : 'Enter API key' }}">
                         @if ($apiKeyConfigured) <small class="text-muted">Leave blank to keep the current API key.</small> @endif

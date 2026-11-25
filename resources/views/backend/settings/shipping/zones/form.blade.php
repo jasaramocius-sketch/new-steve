@@ -20,7 +20,7 @@
                 <div class="card-body">
                     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
                     <div class="form-group">
-                        <label for="zone-name">Zone name</label>
+                        <label for="zone-name" class="mt-0">Zone name</label>
                         <input id="zone-name" name="name" class="form-control" value="{{ old('name', $zone->name) }}" maxlength="150" required>
                     </div>
                     <p class="text-muted">Choose a country, then optionally narrow the zone by state and city. Set the country to <code>*</code> to match all countries; leave state or city blank to match any value.</p>

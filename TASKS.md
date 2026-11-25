@@ -6689,3 +6689,151 @@ Layout:
 - `partials/recently-viewed.blade.php` prefers the passed `$recentlyViewedIds` and falls back to the session for any other caller.
 - Verification: first open with empty session → session `[current]`, current not rendered in the section; second product open → session `[second, first]`, section shows only `first`, current `second` not repeated. `view:cache` rebuilt.
 - Files: `app/Http/Controllers/ProductController.php`, `resources/views/partials/recently-viewed.blade.php`, `TASKS.md`.
+
+
+## 478. (2026-11-25): Wallet system removed
+
+**Status: Implemented**
+
+- User confirmed the wallet is not needed and asked to remove it.
+- Deleted `resources/views/frontend/user/wallet.blade.php`, removed `DashboardController@wallet()`, and removed the **My Wallet** link from the user dashboard sidebar.
+- `GET /user/wallet` (route name `user.wallet` kept for legacy links) now redirects to the user dashboard with the info message “The wallet feature has been removed.”
+- The `wallet_system` feature flag is retained (per the rule that feature toggles are never deleted) but relabelled **Wallet System Activation (Legacy)** and documented as removed; turning it on has no effect.
+- `users.balance` was removed from the `User` model fillable list. The physical DB column is intentionally left untouched for legacy data/schema compatibility.
+- Verification: route cache and view cache rebuilt; `route:list` shows `user/wallet` now points to the redirect; no `My Wallet`, `frontend.user.wallet`, or `DashboardController@wallet` references remain; `php -l` clean on all changed PHP files.
+- Files: `app/Support/FeatureFlags.php`, `app/Http/Controllers/DashboardController.php`, `app/Models/User.php`, `routes/web.php`, `resources/views/frontend/user/layouts/sidebar.blade.php`, `TASKS.md`.
+
+
+## 479. (2026-11-25): Fresh standalone last-fix fix report
+
+**Status: Pending**
+
+- User asked for a new **last-fix fix report** to be created as a fresh, standalone document.
+- Exactly **one Markdown file** only. Do **not** create an Excel workbook and do **not** update or regenerate any scan/bug-management/fix-report file that already exists.
+- Pick a **new distinct filename** at creation time. Do not reuse any existing report filename and do not treat the sample strings in the request as the filename.
+- The report must have its own identity: it is separate from the bug scan report, separate from any bug management report, separate from older fix reports, and separate from this task log.
+- The report body must not reference any earlier report, older fix report, task log, task number/ID, or historical notes. It should read as a fresh report written from current project evidence only.
+- Before writing, inspect the project again: relevant source files, current DB values, HTTP smoke checks, dependency audit, and the current test baseline.
+- Suggested evidence to include: patched dependency versions with clean `composer audit`; legacy `/new-steve/` root 500 fix with canonical/legacy HTTP statuses; User Management counter verification across all roles; restoration of `settings` and shipping tables with feature flags reseeded; current test-suite result and its known environment limitation.
+- Keep all changes uncommitted unless explicitly asked.
+
+
+## 480. (2026-11-25): Staff/admin test orders no longer mix with customer reports (QA A24)
+
+**Status: Implemented**
+
+- Reported issue: most orders were placed while signed in as staff (`jasa.ocius@gmail.com`, user #9), while the real customer account `Jasa Ram` (`jasaram.ocius@gmail.com`, user #30) showed 0 orders. Internal test orders polluted dashboard totals and the order CSV export.
+- Live data check: 55 orders total — 29 by staff #9, 2 by master admin #5, 23 by customers, 1 guest. Staff orders carry the staff billing email, so they are genuinely internal test activity, not misattributed customer purchases.
+- Chosen fix: the safe half of the QA recommendation — exclude staff/admin orders from reports by default. No order data was deleted and no orders were reassigned.
+- `app/Models/Order.php`: added reusable `scopeCustomerPlaced()` using `whereDoesntHave('user', ...)` for roles `master_admin`, `admin`, `staff` (soft-deleted users included via `withTrashed()`), so customer and guest orders stay in reports.
+- `app/Http/Controllers/AdminController.php` and `app/Http/Controllers/DashboardController.php`: applied the scope to dashboard totals, orders-by-status, recent orders, and all monthly/weekly/daily/hourly/5-minute revenue queries (including `todayRevenue()`). The staff dashboard top-products query now uses the same scoped Eloquent builder instead of a raw `order_items` aggregate.
+- `app/Http/Controllers/Admin/OrderController.php`: the admin order list and CSV export now exclude internal orders by default, with `?include_internal=1` to opt back in for cleanup. `resources/views/backend/orders/index.blade.php` gained an “Include staff/admin orders” toggle; the export link inherits all active filters, so list and CSV stay in sync.
+- Verification: `php -l` clean on all changed PHP; scope totals `all=55`, `customerPlaced=24`, `staffPresent=0`; dashboard totals went `55 → 24` orders and revenue `1119.89 → 290.00`; default list/export rows `24`, opt-in `55`; rendered orders page shows the toggle and `24 Total`; `view:clear`/`view:cache` and `route:clear`/`route:cache` clean.
+- Operational follow-up (not performed): delete the 31 internal test orders before launch if they are no longer needed, and use dedicated test customer accounts for future checkout tests.
+- Backup before edits: `/tmp/opencode/a24-staff-orders-backup/`.
+- Files: `app/Models/Order.php`, `app/Http/Controllers/AdminController.php`, `app/Http/Controllers/DashboardController.php`, `app/Http/Controllers/Admin/OrderController.php`, `resources/views/backend/orders/index.blade.php`, `TASKS.md`.
+
+
+## 481. (2026-11-25): Registration phone number made optional
+
+**Status: Implemented**
+
+- User asked whether the phone field is required when creating a new user; confirmed it is not needed for account creation — verification is email-based, 2FA uses authenticator/email (no SMS), and checkout already validates the delivery phone (7–20 chars on the checkout form). Admin-created customers already allow a blank phone.
+- `app/Http/Controllers/AuthController.php`: `register()` phone rule changed from `required` to `nullable`; removed the now-unused `phone.required` custom message. `UniquePhone` still applies when a phone is supplied.
+- `resources/views/frontend/auth/register.blade.php`: removed the `*` and HTML `required` attribute; label now reads `Phone Number (Optional)`.
+- Verification: `php -l` clean; validator checks show blank phone passes, supplied phone still format-checked; rendered register page shows “Optional” and no required phone input; view cache rebuilt.
+- Backup before edits: `/tmp/opencode/register-phone-optional/`.
+- Files: `app/Http/Controllers/AuthController.php`, `resources/views/frontend/auth/register.blade.php`, `TASKS.md`.
+
+
+## 482. (2026-11-25): Gmail API added as a mail driver option
+
+**Status: Implemented**
+
+- User asked to keep Gmail API as an additional option alongside the existing mail drivers (not replace SMTP). Followed the existing `MailgunApiTransport` / `MicrosoftGraphTransport` pattern.
+- New `app/Mail/Transport/GmailApiTransport.php`: exchanges an OAuth refresh token at `oauth2.googleapis.com/token` (access token cached in Laravel cache, `expires_in - 60` seconds, minimum 60), then POSTs the base64url-encoded RFC2822 message to `gmail/v1/users/{userId}/messages/send`. Errors are raised as `RuntimeException` with `Gmail API authentication failed with HTTP ###.` / `Gmail API send failed with HTTP ###.` so the settings test page can explain them.
+- `app/Providers/AppServiceProvider.php`: registered `Mail::extend('gmail_api', ...)`, added `gmail` to the accepted stored drivers, applied stored Gmail settings into `services.gmail_mail`, and auto-selected `gmail` when no driver is stored and Gmail credentials are present in `.env` (Microsoft still takes precedence).
+- `config/mail.php` gained the `gmail` mailer; `config/services.php` and `.env.example` gained `GOOGLE_MAIL_CLIENT_ID`, `GOOGLE_MAIL_CLIENT_SECRET`, `GOOGLE_MAIL_REFRESH_TOKEN`, `GOOGLE_MAIL_USER_ID`.
+- `SmtpSettingsController`: added `gmail` to `DRIVERS`, new form values (`mail_google_client_id`, `mail_google_user_id`, encrypted `mail_google_client_secret` / `mail_google_refresh_token`), validation + required checks for Gmail, and two test-email error explanations. Secrets are encrypted with `Crypt::encryptString()` and never rendered back.
+- `resources/views/backend/settings/smtp.blade.php`: new **Gmail API** option and field group (Client ID, Client Secret, Refresh Token, Sending Account default `me`) plus setup notes (enable Gmail API, OAuth consent screen, `gmail.send` scope, From Address must be the authorized mailbox/verified alias, personal Gmail daily limits). Test card renamed to “Test mail configuration”.
+- `tests/Feature/SmtpSettingsMailTest.php`: added Gmail authentication and send-failure message tests.
+- Verification: `php -l` clean on all changed PHP; `php artisan test --filter=SmtpSettingsMailTest` → 4 passed / 12 assertions; `Http::fake()` send test made exactly two calls (`oauth2.googleapis.com/token`, `gmail.googleapis.com/.../messages/send`) with a non-empty `raw` payload, and two sends reused one cached token; settings page rendered with the Gmail option/fields and no undefined variables; `config:clear`, `view:clear`/`view:cache`, `route:clear`/`route:cache` clean.
+- Existing stored driver (`microsoft`) and all credentials were left unchanged; no live emails were sent.
+- Files: `app/Mail/Transport/GmailApiTransport.php`, `app/Providers/AppServiceProvider.php`, `config/mail.php`, `config/services.php`, `.env.example`, `app/Http/Controllers/Admin/SmtpSettingsController.php`, `resources/views/backend/settings/smtp.blade.php`, `tests/Feature/SmtpSettingsMailTest.php`, `TASKS.md`.
+
+
+## 483. (2026-11-25): Generic SMTP test-email error traced to Gmail App Password
+
+**Status: Implemented (diagnosis + clearer errors)**
+
+- User reported the test email failing with only “Test email could not be sent. Check the selected mail driver and configuration.”
+- Diagnosis: stored `mail_driver` is **smtp** (not Gmail API), host `smtp.gmail.com:587`, username `jasaram.ocius@gmail.com`, encryption `tls`. TCP port 587 is reachable. A read-only SMTP AUTH probe returned `535 5.7.8 Username and Password not accepted` — the stored password is 8 characters, i.e. the normal Google password, not a 16-character Gmail App Password. No email was sent during diagnosis and no password was printed or changed.
+- `SmtpSettingsController::test()` now recognises `TransportException` messages for SMTP auth rejection (`535`, “Authentication failed”, “Username and Password not accepted”, “Bad credentials”) and connection failures (`timed out`, “could not connect”, “connection refused”, “network is unreachable”), returning actionable guidance. The failure log now also includes the exception message (no credentials) for future diagnosis.
+- `resources/views/backend/settings/smtp.blade.php`: added the Gmail SMTP App Password note under the SMTP configuration notes.
+- `tests/Feature/SmtpSettingsMailTest.php`: added SMTP authentication and connection error tests. `php artisan test --filter=SmtpSettingsMailTest` → 6 passed / 18 assertions; view cache rebuilt.
+- User action still required: enable 2-Step Verification on the Google account, generate a 16-character App Password at myaccount.google.com → Security → App passwords, and paste it into SMTP **MAIL PASSWORD**. Alternatively select the new **Gmail API** driver and enter OAuth Client ID / Secret / Refresh Token.
+- Backup before edits: `/tmp/opencode/smtp-error-backup/`.
+- Files: `app/Http/Controllers/Admin/SmtpSettingsController.php`, `resources/views/backend/settings/smtp.blade.php`, `tests/Feature/SmtpSettingsMailTest.php`, `TASKS.md`.
+
+
+## 484. (2026-11-25): Separate real SKU field from Part Number
+
+**Status: Implemented + live backfill completed**
+
+- User clarified that **SKU and Part Number are different fields**, and products currently have no SKU. Previously `sku` was only an alias to `part_number` via `Product` accessors/mutators, and the `products` table had no `sku` column (the older `2026_09_22` migration was marked Ran but the column was absent).
+- New migration `2026_11_25_000001_add_sku_to_products_table.php` adds a nullable, unique `sku` VARCHAR(100) (idempotent guard). It was appended without `after()` so MySQL can use instant ADD COLUMN on the 761k-row catalogue. Ran successfully on live DB (3s). The unique index allows multiple NULLs, so the backfill could run after migration.
+- `Product`: removed the `sku` → `part_number` alias accessors/mutators, added `sku` to `$fillable`, and split generation into `generatePartNumber()` / `generateSku()` with a shared uniqueness check that now uses the correct column and `withTrashed()` (so soft-deleted rows cannot collide).
+- `ProductController`: `resolveImportedSku()` no longer falls back to `part_number`; added `resolveImportedPartNumber()` and `resolveImportedIdentifiers()` so CSV `part_number` and `sku` stay separate, provided values win, existing values are preserved on blank cells, and either field is generated independently when missing. Store/update forms now accept an editable SKU (unique validation), auto-generating when blank; Part Number remains auto-generated/readonly. Admin search now includes `sku`; sorting `sku` now uses the real column instead of `part_number`. Sample CSV includes a `sku` column.
+- `ImportProductsJob` now writes both `part_number` and `sku`; `ExportProductsJob` exports both columns. Admin create/edit/list/show views and import documentation show/edit SKU separately from Part Number.
+- `products:backfill-skus` rewritten for scale: chunked raw SQL, deterministic unique `SKU-<id>` values (no 761k per-row SELECT queries), `--dry-run`, and `--chunk`. Dry run previewed 761,107 products; live run updated all 761,107.
+- Verification on live DB: total `761107`, missing SKU `0`, distinct SKU `761107`, rows where `sku = part_number` `0`; sample id 1 → part `001-10-23148`, sku `SKU-1`. `php -l` clean on all changed PHP; `php artisan test --filter=ProductImportSkuTest` → 5 passed / 9 assertions; view cache rebuilt. `generateSku()`/`generatePartNumber()` smoke-tested without saving.
+- Backup before edits: `/tmp/opencode/sku-part-number-split/`.
+- Files: `database/migrations/2026_11_25_000001_add_sku_to_products_table.php`, `app/Models/Product.php`, `app/Http/Controllers/ProductController.php`, `app/Jobs/ImportProductsJob.php`, `app/Jobs/ExportProductsJob.php`, `app/Console/Commands/BackfillProductSkus.php`, `tests/Feature/ProductImportSkuTest.php`, `resources/views/backend/products/{create,edit,index,show,import}.blade.php`, `TASKS.md`.
+
+
+## 485. (2026-11-25): Gmail API setup removed (user request)
+
+**Status: Implemented**
+
+- User asked to remove the Gmail API setup added in #482. This overrides the earlier “no code changes” instruction for this specific request.
+- Removed end-to-end: `app/Mail/Transport/GmailApiTransport.php`, `Mail::extend('gmail_api', ...)`, the `gmail` mailer in `config/mail.php`, the `services.gmail_mail` block in `config/services.php`, the `GOOGLE_MAIL_*` keys in `.env.example`, the `gmail` driver/form fields/notes in `resources/views/backend/settings/smtp.blade.php`, and all Gmail-specific view variables, validation rules, required-credential checks and test-error branches in `SmtpSettingsController`.
+- Stored `mail_google_client_id` / `mail_google_client_secret` / `mail_google_refresh_token` were empty and `mail_google_user_id` was `me`; the two remaining DB rows were deleted with a raw `DB::table('settings')->whereIn(...)->delete()` (0 remaining). Stored driver was already changed to `microsoft` at 09:20 by the user — not changed here. The Gmail SMTP App Password requirement note was kept.
+- While in `SmtpSettingsController::test()`, extended the SMTP auth pattern to also match Google’s current `534 5.7.9 Application-specific password required` response (previously only `535`/“Username and Password not accepted” matched), so the real failure now shows the App Password guidance instead of the generic fallback.
+- `tests/Feature/SmtpSettingsMailTest.php`: removed the two Gmail API message tests and added a `534` App Password test. `php artisan test --filter=SmtpSettingsMailTest` → 5 passed / 15 assertions; config/view caches rebuilt.
+- Backup before edits: `/tmp/opencode/gmail-api-removal/`.
+- Files: `app/Providers/AppServiceProvider.php`, `config/mail.php`, `config/services.php`, `.env.example`, `app/Http/Controllers/Admin/SmtpSettingsController.php`, `resources/views/backend/settings/smtp.blade.php`, `tests/Feature/SmtpSettingsMailTest.php`, `app/Mail/Transport/GmailApiTransport.php` (deleted), `TASKS.md`.
+
+
+## 486. (2026-11-25): Coupon cleanup — delete test coupon, add min order + expiry
+
+**Status: Implemented**
+
+- User flagged the test coupon `EREWREWR` (fixed $25, inactive, 2 uses) and real coupon `ORDER10` (fixed $10, active, 3 uses) having no min order or expiry. User confirmed values: **min order `$100.00`** and **expiry `31 Dec 2026`**.
+- Soft-deleted `EREWREWR` (id 1) with `Coupon::find(1)->delete()`; `TracksIsDeleted` set `is_deleted=1` and `deleted_at`. Hard delete avoided to stay consistent with the other soft-deleted test coupons.
+- Updated `ORDER10` (id 11): `min_order_amount=100.00`, `expires_at=2026-12-31`. Kept `status=1`, `max_uses=10`, `used_count=3` unchanged.
+- Verified: default `Coupon::query()` returns only `ORDER10`; `ORDER10->isValid()` is `true`; `EREWREWR` is absent from the default query but visible with `withTrashed()` as `is_deleted=1`.
+- Backup before edits: `/tmp/opencode/coupon-cleanup/coupons-before.json`.
+- Data-only change, no code modified. File: `TASKS.md`.
+
+
+## 487. (2026-11-25): Coupon admin — Edit and Delete buttons in Action column
+
+**Status: Implemented**
+
+- User requested Edit/Delete buttons in the Action column of the **All Coupons** admin list.
+- `resources/views/backend/coupons/index.blade.php`: kept the existing View button and added an Edit link (`admin.coupons.edit`, shared `action-btn btn-edit` pencil SVG) plus a Delete form (`admin.coupons.destroy`, shared `action-btn btn-cancel` trash SVG) with a JS confirmation. Markup matches the Categories/Blogs/Products admin tables.
+- Routes `GET /coupons/{id}/edit` and `DELETE /coupons/{id}` and both controller methods already existed, so no route/controller changes were needed. Delete still soft-deletes via `Coupon::delete()`.
+- Verified: `php artisan view:cache` rebuilt successfully; `php artisan route:list --name=admin.coupons` shows all 7 coupon routes including `edit` and `destroy`.
+- Backup before edit: `/tmp/opencode/coupons-action-buttons/`.
+- Files: `resources/views/backend/coupons/index.blade.php`, `TASKS.md`.
+
+
+## 488. (2026-11-25): Coupon detail stat cards — hover style
+
+**Status: Implemented**
+
+- User requested a hover style for the **Type**, **Orders Used**, **Total Discount Given** and **Uses Limit** stat cards on the coupon detail page.
+- `resources/views/backend/coupons/show.blade.php`: added a `coupon-stat-card` class to exactly those four cards and a scoped `<style>` block with a subtle lift (`translateY(-2px)`), stronger shadow and a thin green ring on hover, using `!important` so it overrides Bootstrap's `.shadow-sm`. Added a `prefers-reduced-motion` fallback that disables the transition/transform.
+- Verified: `php artisan view:cache` rebuilt successfully; all four cards carry the new class and no other card on the page does.
+- Backup before edit: `/tmp/opencode/coupons-hover-style/`.
+- Files: `resources/views/backend/coupons/show.blade.php`, `TASKS.md`.

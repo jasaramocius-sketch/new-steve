@@ -20,6 +20,7 @@ class ProductFitment extends Model
         'make',
         'model',
         'engine',
+        'notes',
         'sort_order',
     ];
 

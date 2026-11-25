@@ -20,6 +20,7 @@ class Product extends Model
         'category_id',
         'seller_id',
         'part_number',
+        'sku',
         'slug',
         'name',
         'short_description',
@@ -108,16 +109,6 @@ class Product extends Model
         }
 
         return function_exists('globalCommissionPercent') ? globalCommissionPercent() : 0.0;
-    }
-
-    public function getSkuAttribute()
-    {
-        return $this->attributes['part_number'] ?? null;
-    }
-
-    public function setSkuAttribute($value)
-    {
-        $this->attributes['part_number'] = $value;
     }
 
     public function getImageAttribute()
@@ -426,15 +417,25 @@ class Product extends Model
         return $this->hasMany(ProductFitment::class)->orderBy('sort_order');
     }
 
+    public static function generatePartNumber(string $name, ?int $excludeId = null): string
+    {
+        return self::generateIdentifier($name, 'part_number', $excludeId);
+    }
+
     public static function generateSku(string $name, ?int $excludeId = null): string
     {
-        $base = strtoupper(Str::substr(Str::slug($name), 0, 12));
+        return self::generateIdentifier($name, 'sku', $excludeId);
+    }
+
+    private static function generateIdentifier(string $name, string $column, ?int $excludeId = null): string
+    {
+        $base = strtoupper(Str::substr(Str::slug($name), 0, 12)) ?: 'PRD';
 
         do {
             $candidate = $base.'-'.strtoupper(Str::random(5));
-        } while (self::query()
+        } while (self::withTrashed()
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
-            ->where('part_number', $candidate)
+            ->where($column, $candidate)
             ->exists());
 
         return $candidate;

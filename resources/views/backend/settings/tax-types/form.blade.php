@@ -19,7 +19,7 @@
                 <div class="card-body">
                     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
                     <div class="form-group">
-                        <label for="tax-type-name">Tax Type</label>
+                        <label for="tax-type-name" class="mt-0">Tax Type</label>
                         <input id="tax-type-name" name="name" class="form-control" value="{{ old('name', $taxType->name) }}" maxlength="150" required autofocus>
                     </div>
                     <div class="custom-control custom-checkbox mb-3 mt-1">

@@ -72,9 +72,9 @@ class FeatureFlags
                     ['key' => 'classified_product', 'label' => 'Classified Product', 'default' => true],
                     [
                         'key' => 'wallet_system',
-                        'label' => 'Wallet System Activation',
+                        'label' => 'Wallet System Activation (Legacy)',
                         'default' => false,
-                        'description' => 'Shows the customer wallet page and balance in the user dashboard.',
+                        'description' => 'The wallet page and dashboard link have been removed. This toggle is kept only for legacy settings compatibility.',
                     ],
                     ['key' => 'coupon_system', 'label' => 'Coupon System Activation', 'default' => true],
                     ['key' => 'pickup_point', 'label' => 'Pickup Point Activation', 'default' => true],

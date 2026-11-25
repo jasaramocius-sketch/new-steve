@@ -244,12 +244,14 @@ class ImportProductsJob implements ShouldQueue
                         'tab_label_3' => $data['tab_label_3'] ?? null,
                     ];
 
+                    $identifiers = ProductController::resolveImportedIdentifiers($data, $data['name'], $existingProduct);
+                    $insertData['part_number'] = $identifiers['part_number'];
+                    $insertData['sku'] = $identifiers['sku'];
+
                     if ($existingProduct) {
                         $insertData['slug'] = $existingProduct->slug;
-                        $insertData['part_number'] = ProductController::resolveImportedSku($data, $data['name'], $existingProduct);
                     } else {
                         $insertData['added_by'] = 'admin';
-                        $insertData['part_number'] = ProductController::resolveImportedSku($data, $data['name']);
                         $insertData['slug'] = Str::slug($data['name']).'-'.time().'-'.$imported;
                     }
 

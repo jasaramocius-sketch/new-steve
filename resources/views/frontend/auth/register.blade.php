@@ -40,8 +40,8 @@
               <label for="email">Email Address <span class="text-danger">*</span></label>
               <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email" value="{{ old('email') }}" required>
 
-              <label for="phone">Phone Number <span class="text-danger">*</span></label>
-              <input type="tel" name="phone" class="form-control" id="phone" placeholder="Enter your phone number" value="{{ old('phone') }}" autocomplete="tel" required>
+              <label for="phone">Phone Number <span class="text-muted small">(Optional)</span></label>
+              <input type="tel" name="phone" class="form-control" id="phone" placeholder="Enter your phone number" value="{{ old('phone') }}" autocomplete="tel">
             
               <label for="create-password">Password</label>
               <div class="pass-wrapper" style="position:relative">

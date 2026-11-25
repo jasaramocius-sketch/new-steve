@@ -10,12 +10,12 @@
 @endsection
 @section('content')
 <div class="container-fluid px-15px px-lg-25px">
-    <div class="row mb-3">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div class=""></div>
-            <div class="ap-page-actions mb-4"><a href="{{ route('admin.settings.languages.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add New Language</a></div>
-        </div>
-        <div class="col-lg-6">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class=""></div>
+        <div class="ap-page-actions mb-4"><a href="{{ route('admin.settings.languages.create') }}" class="btn btn-primary d-flex align-items-center gap-1"><i class="fas fa-plus"></i>Add New Language</a></div>
+    </div>
+    <div class="d-grid grid-template-columns-2 gap-3 mb-3">
+        <div class="grid-col h-100">
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Default Language</h2></div>
                 <div class="card-body">
@@ -34,7 +34,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-6 mb-3">
+        <div class="grid-col mb-3 h-100">
             <div class="card h-100">
                 <div class="card-header"><h2 class="h6 mb-0">Import App Translations (Import into language)</h2></div>
                 <div class="card-body">
@@ -47,7 +47,7 @@
                                     <option value="{{ route('admin.settings.languages.import', $language) }}">{{ $language->name }}</option>
                                 @endforeach
                             </select>
-                            <input id="lang-file" type="file" name="lang_file" class="form-control-file mt-2" accept=".arb,application/json" required>
+                            <input id="lang-file" type="file" name="lang_file" class="form-control form-control-file image-choose-file mt-2" accept=".arb,application/json" required>
                         </div>
                         </div>
                         <button type="submit" class="btn btn-primary mb-2 d-flex align-items-center gap-1" @disabled($activeLanguages->isEmpty())><i class="fas fa-file-import"></i>Import</button>

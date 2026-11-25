@@ -157,6 +157,10 @@
                         <td>{{ $product->part_number ?: '—' }}</td>
                     </tr>
                     <tr>
+                        <th class="text-muted">SKU</th>
+                        <td>{{ $product->sku ?: '—' }}</td>
+                    </tr>
+                    <tr>
                         <th class="text-muted">Condition</th>
                         <td>{{ $product->condition ?: '—' }}</td>
                     </tr>
@@ -260,7 +264,7 @@
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0">
                             <thead class="table-light">
-                                <tr><th>Years</th><th>Make</th><th>Model</th><th>Engine</th></tr>
+                                <tr><th>Years</th><th>Make</th><th>Model</th><th>Engine</th><th>Notes</th></tr>
                             </thead>
                             <tbody>
                             @foreach($product->fitments as $fitment)
@@ -269,6 +273,7 @@
                                     <td>{{ $fitment->make }}</td>
                                     <td>{{ $fitment->model }}</td>
                                     <td>{{ $fitment->engine ?: '—' }}</td>
+                                    <td>{{ $fitment->notes ?: '—' }}</td>
                                 </tr>
                             @endforeach
                             </tbody>

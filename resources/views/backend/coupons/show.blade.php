@@ -10,17 +10,31 @@
 @endsection
 @section('content')
 
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
+<style>
+    .coupon-stat-card {
+        transition: transform .16s ease, box-shadow .16s ease;
+    }
+    .coupon-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 0 1px rgba(38, 124, 112, .35), 0 .5rem 1rem rgba(0, 0, 0, .10) !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .coupon-stat-card { transition: none; }
+        .coupon-stat-card:hover { transform: none; }
+    }
+</style>
+
+<!-- <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap flex-md-nowrap">
     <div>
-        <!-- <a href="{{ route('admin.coupons.index') }}" class="text-muted text-decoration-none mb-1 d-inline-block small"><i class="fas fa-arrow-left"></i> Back to Coupons</a>
-        <h4 class="fw-bold mb-0">Coupon: <span class="text-primary">{{ $coupon->code }}</span></h4> -->
+        <a href="{{ route('admin.coupons.index') }}" class="text-muted text-decoration-none mb-1 d-inline-block small"><i class="fas fa-arrow-left"></i> Back to Coupons</a>
+        <h4 class="fw-bold mb-0">Coupon: <span class="text-primary">{{ $coupon->code }}</span></h4>
     </div>
     <a href="{{ route('admin.coupons.edit', $coupon->id) }}" class="btn btn-outline-primary"><i class="fas fa-edit"></i> Edit Coupon</a>
-</div>
+</div> -->
 
 <div class="row g-3 mb-4">
     <div class="col-md-3 col-6">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card border-0 shadow-sm h-100 coupon-stat-card">
             <div class="card-body">
                 <div class="text-muted small text-uppercase">Type</div>
                 <div class="fw-bold fs-5">{{ ucfirst($coupon->type) }}<span class="fs-6 text-muted"> · {{ $coupon->type === 'percentage' ? number_format($coupon->value, 0, '.', ',') . '%' : currency_format($coupon->value) }}</span></div>
@@ -28,7 +42,7 @@
         </div>
     </div>
     <div class="col-md-3 col-6">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card border-0 shadow-sm h-100 coupon-stat-card">
             <div class="card-body">
                 <div class="text-muted small text-uppercase">Orders Used</div>
                 <div class="fw-bold fs-5">{{ $orderCount }}</div>
@@ -36,7 +50,7 @@
         </div>
     </div>
     <div class="col-md-3 col-6">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card border-0 shadow-sm h-100 coupon-stat-card">
             <div class="card-body">
                 <div class="text-muted small text-uppercase">Total Discount Given</div>
                 <div class="fw-bold fs-5 text-danger">{{ currency_format($totalDiscount) }}</div>
@@ -44,7 +58,7 @@
         </div>
     </div>
     <div class="col-md-3 col-6">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card border-0 shadow-sm h-100 coupon-stat-card">
             <div class="card-body">
                 <div class="text-muted small text-uppercase">Uses Limit</div>
                 <div class="fw-bold fs-5">{{ $coupon->used_count }}{{ $coupon->max_uses ? ' / ' . $coupon->max_uses : '' }} <span class="fs-6 text-muted">of {{ $coupon->max_uses ?: '∞' }}</span></div>

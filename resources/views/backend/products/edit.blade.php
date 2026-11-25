@@ -61,6 +61,11 @@
                             <label class="form-label mt-2" for="product-part-number">Part Number</label>
                             <input type="text" id="product-part-number" class="form-control bg-light" value="{{ $product->part_number }}" readonly disabled>
                             <small class="form-text text-muted">Part Number is generated automatically and cannot be changed.</small>
+
+                            <label class="form-label mt-2" for="product-sku">SKU</label>
+                            <input type="text" id="product-sku" name="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku', $product->sku) }}" maxlength="100" placeholder="Leave empty to auto-generate">
+                            @error('sku') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <small class="form-text text-muted">SKU is separate from Part Number. Leave empty to generate one automatically.</small>
                         </div>
 
                         <div class="col-md-3">
@@ -375,6 +380,13 @@
             </div>
             
         </form>
+
+        @if($product->exists)
+            <form id="fitmentImportForm" action="{{ route('admin.products.fitments.import-csv', $product->id) }}" method="POST" enctype="multipart/form-data" class="d-none">
+                @csrf
+                <input type="file" id="fitmentImportFile" name="fitment_file" accept=".csv,.txt,.xml" onchange="if(this.files.length){document.getElementById('fitmentImportForm').submit();}">
+            </form>
+        @endif
     </div>
 </div>
 

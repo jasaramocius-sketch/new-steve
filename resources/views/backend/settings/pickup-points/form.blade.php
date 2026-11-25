@@ -18,7 +18,7 @@
                 <div class="card-body">
                     @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
                     <div class="form-group">
-                        <label for="pickup-name">Name</label>
+                        <label for="pickup-name" class="mt-0">Name</label>
                         <input id="pickup-name" name="name" class="form-control" value="{{ old('name', $pickupPoint->name) }}" maxlength="150" required>
                     </div>
                     <div class="form-group">
