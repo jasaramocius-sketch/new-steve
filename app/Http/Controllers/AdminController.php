@@ -1409,7 +1409,7 @@ class AdminController extends Controller
             return [
                 'id' => $category->id,
                 'label' => (string) $category->name,
-                'url' => route('category', $category->slug, false),
+                'url' => \App\Support\CategoryRef::url($category->id, $category->slug, [], false),
                 'context' => $parentName ? 'in '.$parentName : '',
             ];
         })->values()->all();

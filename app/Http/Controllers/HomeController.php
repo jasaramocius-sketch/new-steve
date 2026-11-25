@@ -74,6 +74,7 @@ class HomeController extends Controller
                 }
 
                 return [
+                    'id' => $category->id,
                     'name' => $category->name,
                     'slug' => $category->slug,
                     'image' => $category->getDisplayImagePath(),
@@ -575,23 +576,23 @@ class HomeController extends Controller
         }
 
         if ($limit > 0) {
-            $pageQuery->select(['slug', 'updated_at'])
+            $pageQuery->select(['id', 'slug', 'updated_at'])
                 ->orderBy('id')
                 ->offset($offset)
                 ->limit($limit)
                 ->get()
                 ->each(function ($record) use (&$entries, $type, $base) {
-                    $path = match ($type) {
-                        'pages' => '/'.$record->slug,
-                        'products' => '/product/'.$record->slug,
-                        'blogs' => '/blog/'.$record->slug,
-                        'brands' => '/brand/'.$record->slug,
-                        'categories' => '/category/'.$record->slug,
-                        'blog-categories' => '/blog/category/'.$record->slug,
-                        'blog-tags' => '/blog/tag/'.$record->slug,
+                    $loc = match ($type) {
+                        'pages' => $base.'/'.$record->slug,
+                        'products' => $base.'/product/'.$record->slug,
+                        'blogs' => $base.'/blog/'.$record->slug,
+                        'brands' => $base.'/brand/'.$record->slug,
+                        'categories' => \App\Support\CategoryRef::url($record->id, $record->slug),
+                        'blog-categories' => $base.'/blog/category/'.$record->slug,
+                        'blog-tags' => $base.'/blog/tag/'.$record->slug,
                     };
                     $entries[] = [
-                        'loc' => $base.$path,
+                        'loc' => $loc,
                         'lastmod' => $record->updated_at?->toAtomString(),
                     ];
                 });

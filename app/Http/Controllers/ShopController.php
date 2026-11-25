@@ -411,7 +411,46 @@ class ShopController extends Controller
 
     public function category(Request $request, $slug)
     {
-        $category = Category::where('slug', $slug)->firstOrFail();
+        $matches = Category::where('slug', $slug)->get();
+        if ($matches->isEmpty()) {
+            abort(404);
+        }
+
+        $category = $matches->first();
+        if ($matches->count() > 1) {
+            $requestedRef = \App\Support\CategoryRef::decode($request->query('c'), $slug);
+            if ($requestedRef) {
+                $resolved = $matches->firstWhere('id', $requestedRef);
+                if ($resolved) {
+                    $category = $resolved;
+                } else {
+                    $requestedRef = null;
+                }
+            }
+
+            if (! $requestedRef) {
+                $candidates = $matches->map(function ($candidate) use ($slug) {
+                    $chain = [];
+                    $node = $candidate;
+                    while ($node) {
+                        array_unshift($chain, $node);
+                        $node = $node->parent_id ? Category::find($node->parent_id) : null;
+                    }
+
+                    return [
+                        'category' => $candidate,
+                        'chain' => $chain,
+                        'url' => \App\Support\CategoryRef::url($candidate->id, $slug),
+                    ];
+                })->values();
+
+                return response()->view('frontend.shop.category-disambiguation', [
+                    'slug' => $slug,
+                    'candidates' => $candidates,
+                ], 200);
+            }
+        }
+
         $currentCategory = $category;
         $currentSubcategory = null;
         $currentChildcategory = null;

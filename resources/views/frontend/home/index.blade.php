@@ -116,7 +116,7 @@
             <div class="swiper-wrapper">
             @foreach($categories as $category)
             <div class="swiper-slide">
-                <a href="{{ route('category', $category['slug']) }}">
+                <a href="{{ \App\Support\CategoryRef::url($category['id'], $category['slug']) }}">
                     <div class="gs-single-cat">
                         <div class="gs-single-cat">
                             <div class="category-image">

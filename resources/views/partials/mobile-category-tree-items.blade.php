@@ -30,7 +30,7 @@
     <li class="main-list gap-1 d-flex flex-column mb-1 {{ $topActive || $hasActiveChild ? 'active' : '' }}">
         <div class="d-flex justify-content-between align-items-center gap-3">
             @if($topCat->descendant_count > 0)
-                <a href="{{ route('category', $topCat->slug) }}" class="text-decoration-none flex-grow-1 {{ $topActive || $hasActiveChild ? 'fw-bold' : '' }}" style="color: {{ $topActive || $hasActiveChild ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $topActive || $hasActiveChild ? '600' : '400' }}; font-size: 15px;">
+                <a href="{{ \App\Support\CategoryRef::url($topCat->id, $topCat->slug) }}" class="text-decoration-none flex-grow-1 {{ $topActive || $hasActiveChild ? 'fw-bold' : '' }}" style="color: {{ $topActive || $hasActiveChild ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $topActive || $hasActiveChild ? '600' : '400' }}; font-size: 15px;">
                     {{ $topCat->name }}
                     <span class="text-muted" style="font-size: 13px; font-weight: 400;">({{ $topCat->descendant_count }})</span>
                 </a>
@@ -68,7 +68,7 @@
                     <li class="mb-2 {{ $subActive || $hasActiveSubChild ? 'active' : '' }}">
                         <div class="d-flex justify-content-between align-items-center gap-3">
                             @if($subCat->descendant_count > 0)
-                                <a href="{{ route('category', ['slug' => $subCat->slug]) }}" class="text-decoration-none flex-grow-1 {{ $subActive || $hasActiveSubChild ? 'fw-bold' : '' }}" style="color: {{ $subActive || $hasActiveSubChild ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $subActive || $hasActiveSubChild ? '600' : '400' }}; font-size: 15px;">
+                                <a href="{{ \App\Support\CategoryRef::url($subCat->id, $subCat->slug) }}" class="text-decoration-none flex-grow-1 {{ $subActive || $hasActiveSubChild ? 'fw-bold' : '' }}" style="color: {{ $subActive || $hasActiveSubChild ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $subActive || $hasActiveSubChild ? '600' : '400' }}; font-size: 15px;">
                                     {{ $subCat->name }}
                                     <span class="text-muted" style="font-size: 12px; font-weight: 400;">({{ $subCat->descendant_count }})</span>
                                 </a>
@@ -96,7 +96,7 @@
                                     @endphp
                                     <li class="my-1 {{ $childActive ? 'active' : '' }}">
                                         @if($childCat->descendant_count > 0)
-                                            <a href="{{ route('category', ['slug' => $childCat->slug]) }}" class="text-decoration-none {{ $childActive ? 'fw-bold' : '' }}" style="color: {{ $childActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $childActive ? '600' : '400' }}; font-size: 14px;">
+                                            <a href="{{ \App\Support\CategoryRef::url($childCat->id, $childCat->slug) }}" class="text-decoration-none {{ $childActive ? 'fw-bold' : '' }}" style="color: {{ $childActive ? 'var(--primary)' : '#1f0300' }}; font-weight: {{ $childActive ? '600' : '400' }}; font-size: 14px;">
                                                 {{ $childCat->name }}
                                                 <span class="text-muted" style="font-size: 12px; font-weight: 400;">({{ $childCat->descendant_count }})</span>
                                             </a>

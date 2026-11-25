@@ -133,13 +133,13 @@
 
         if (isset($currentCategory)) {
             $breadcrumbItems[] = (isset($currentSubcategory) || isset($currentChildcategory))
-                ? ['label' => $currentCategory->name, 'url' => route('category', ['slug' => $currentCategory->slug])]
+                ? ['label' => $currentCategory->name, 'url' => \App\Support\CategoryRef::url($currentCategory->id, $currentCategory->slug)]
                 : ['label' => $currentCategory->name];
         }
 
         if (isset($currentSubcategory)) {
             $breadcrumbItems[] = isset($currentChildcategory)
-                ? ['label' => $currentSubcategory->name, 'url' => route('category', ['slug' => $currentSubcategory->slug])]
+                ? ['label' => $currentSubcategory->name, 'url' => \App\Support\CategoryRef::url($currentSubcategory->id, $currentSubcategory->slug)]
                 : ['label' => $currentSubcategory->name];
         }
 

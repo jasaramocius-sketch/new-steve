@@ -190,7 +190,14 @@
 
               <ul class="details_tags_sku">
                 @if(isset($product['category']) && $product['category'])
-                <li><span>Category:</span><a href="{{ route('category', $product['category']['slug'] ?? $product['category']->slug) }}" class="text-decoration-none">{{ $product['category']['name'] ?? $product['category']->name }}</a></li>
+                @php
+                    $cat = $product['category'];
+                    $catId = is_array($cat) ? ($cat['id'] ?? null) : ($cat->id ?? null);
+                    $catSlug = is_array($cat) ? ($cat['slug'] ?? null) : ($cat->slug ?? null);
+                    $catName = is_array($cat) ? ($cat['name'] ?? '') : ($cat->name ?? '');
+                    $catUrl = ($catId && $catSlug) ? \App\Support\CategoryRef::url($catId, $catSlug) : ($catSlug ? route('category', ['slug' => $catSlug]) : '#');
+                @endphp
+                <li><span>Category:</span><a href="{{ $catUrl }}" class="text-decoration-none">{{ $catName }}</a></li>
                 @endif
                 @if(!empty($product['part_number']))
                 <li><span>Part Number:</span> {{ $product['part_number'] }}</li>

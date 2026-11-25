@@ -80,7 +80,7 @@
         <div class="category-card">
 
             <div class="category-image">
-                <a href="{{ route('category', $category->slug) }}">
+                <a href="{{ \App\Support\CategoryRef::url($category->id, $category->slug) }}">
                     @php $categoryImage = $category->getDisplayImagePath(); @endphp
                     {!! imgTag($categoryImage, $category->name) !!}
                 </a>
@@ -108,7 +108,7 @@
                         <ul class="list-unstyled mb-0" style="font-size:13px;">
                             @foreach($category->children->take(3) as $child)
                                 <li class="mb-1 d-flex align-items-center">
-                                    <a href="{{ route('category', ['slug' => $child->slug]) }}" class="text-decoration-none d-flex align-items-center gap-2 subcategory-link" style="color:#1f0300;">
+                                    <a href="{{ \App\Support\CategoryRef::url($child->id, $child->slug) }}" class="text-decoration-none d-flex align-items-center gap-2 subcategory-link" style="color:#1f0300;">
                                         {!! imgTag($child->getDisplayImagePath(), $child->name, 'subcategory-thumb-img') !!}
                                         <span>{{ $child->name }}</span>
                                     </a>

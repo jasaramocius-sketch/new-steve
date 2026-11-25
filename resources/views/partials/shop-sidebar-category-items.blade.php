@@ -17,7 +17,7 @@
         $isActive = in_array($nodeId, $activeCategoryIds, true);
         $hasChildren = ! empty($node->children);
         $expand = $isActive && $hasChildren;
-        $href = route('category', ['slug' => $node->slug]);
+        $href = \App\Support\CategoryRef::url($node->id, $node->slug);
         $color = $isActive ? 'var(--primary)' : '#1f0300';
         $weight = $isActive ? '600' : '400';
     @endphp
