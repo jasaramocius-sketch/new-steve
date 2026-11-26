@@ -104,6 +104,41 @@
             <span class="rating-title">{{ $displayRating > 0 ? number_format($displayRating, 1) . ' ' : '' }}({{ $displayReviews }})</span>
         </div>
         @endif
+        @php
+            $isEloquentProduct = $p instanceof \Illuminate\Database\Eloquent\Model;
+            $listBrand = null;
+            if ($isEloquentProduct && $p->relationLoaded('brand')) {
+                $listBrand = $p->brand->name ?? null;
+            } elseif (!$isEloquentProduct) {
+                $listBrand = $p->brand_name ?? (is_object($p->brand ?? null) ? ($p->brand->name ?? null) : null);
+            }
+
+            $listCategory = null;
+            if ($isEloquentProduct && $p->relationLoaded('category')) {
+                $listCategory = $p->category->name ?? null;
+            } elseif (!$isEloquentProduct) {
+                $listCategory = $p->category_name ?? (is_object($p->category ?? null) ? ($p->category->name ?? null) : null);
+            }
+
+            $listDescription = trim(strip_tags((string) ($p->short_description ?? '')));
+        @endphp
+        @if($listBrand || $listCategory || $listDescription !== '')
+        <div class="list-view-details">
+            @if($listBrand || $listCategory)
+            <div class="list-view-meta">
+                @if($listCategory)
+                <span class="list-view-meta-item"><span class="list-view-meta-label">Category:</span> {{ $listCategory }}</span>
+                @endif
+                @if($listBrand)
+                <span class="list-view-meta-item"><span class="list-view-meta-label">Brand:</span> {{ $listBrand }}</span>
+                @endif
+            </div>
+            @endif
+            @if($listDescription !== '')
+            <p class="list-view-description">{{ \Illuminate\Support\Str::limit($listDescription, 160) }}</p>
+            @endif
+        </div>
+        @endif
         <div class="add-to-cart">
             <a class="compare_product" href="javascript:;" data-href="{{ route('compare.add', ['product_id' => $p->id]) }}" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="bottom" title="Compare">
                 <div class="compare">

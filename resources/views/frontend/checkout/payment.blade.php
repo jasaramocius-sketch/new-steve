@@ -3,9 +3,9 @@
 @include('partials.page-attributes', ['pageId' => 'checkout-payment', 'pageClass' => 'checkout-page payment-step-body bg-light'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Payment - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => 'Payment | ' . config('app.name', 'StAutoparts'),
-        'metaDescription' => 'Complete your payment at ' . config('app.name', 'StAutoparts') . '.',
+        'pageTitle' => 'Payment - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => 'Payment | ' . config('app.name', 'Steve Autoparts'),
+        'metaDescription' => 'Complete your payment at ' . config('app.name', 'Steve Autoparts') . '.',
     ])
 @endsection
 

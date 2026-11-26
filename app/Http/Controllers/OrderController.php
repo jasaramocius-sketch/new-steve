@@ -163,7 +163,7 @@ class OrderController extends Controller
         }
 
         $invoiceData = app(InvoiceSettingsService::class)->forOrder($order);
-        $pdf = Pdf::loadView('user.orders.invoice', ['order' => $order] + $invoiceData);
+        $pdf = Pdf::loadView('frontend.user.orders.invoice', ['order' => $order] + $invoiceData);
 
         // Set the paper size to A4 (optional but recommended for invoices)
         $pdf->setPaper('a4', 'portrait');

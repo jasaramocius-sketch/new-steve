@@ -3,9 +3,9 @@
 @include('partials.page-attributes', ['pageId' => 'cart-page', 'pageClass' => 'cart-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Cart - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => 'Cart | ' . config('app.name', 'StAutoparts'),
-        'metaDescription' => 'View your shopping cart at ' . config('app.name', 'StAutoparts') . '.',
+        'pageTitle' => 'Cart - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => 'Cart | ' . config('app.name', 'Steve Autoparts'),
+        'metaDescription' => 'View your shopping cart at ' . config('app.name', 'Steve Autoparts') . '.',
     ])
 @endsection
 @section('content')

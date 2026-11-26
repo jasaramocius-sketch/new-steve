@@ -5,7 +5,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'Forgot Password - Steve Autoparts',
         'metaTitle' => 'Forgot Password | Steve Autoparts',
-        'metaDescription' => 'Request a password reset link for your StAutoparts account.',
+        'metaDescription' => 'Request a password reset link for your Steve Autoparts account.',
     ])
 @endsection
 @section('content')

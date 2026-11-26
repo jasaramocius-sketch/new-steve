@@ -5,7 +5,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'My Addresses - Steve Autoparts',
         'metaTitle' => 'My Addresses | Steve Autoparts',
-        'metaDescription' => 'Manage your shipping addresses at StAutoparts.',
+        'metaDescription' => 'Manage your shipping addresses at Steve Autoparts.',
     ])
 @endsection
 @section('dashboard-content')

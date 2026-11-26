@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'not-found-page', 'pageClass' => 'not-found-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => '404 - Page Not Found - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => '404 - Page Not Found | ' . config('app.name', 'StAutoparts'),
+        'pageTitle' => '404 - Page Not Found - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => '404 - Page Not Found | ' . config('app.name', 'Steve Autoparts'),
         'metaDescription' => 'The page you are looking for could not be found.',
     ])
 @endsection

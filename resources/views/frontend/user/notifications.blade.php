@@ -5,7 +5,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'Notifications - Steve Autoparts',
         'metaTitle' => 'Notifications | Steve Autoparts',
-        'metaDescription' => 'View your notifications at StAutoparts.',
+        'metaDescription' => 'View your notifications at Steve Autoparts.',
     ])
 @endsection
 @section('dashboard-content')

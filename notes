@@ -241,7 +241,7 @@ input-group-text btn steve-btn gap-1 admin-search-toggle btn-primary
 alert ke liye toster use kr rhe he to alg se alert ki jarurt he ya nhi
 
 
-StAutoparts_Full_QA_Report_Admin_and_Frontend_2026-11-19(Admin Issues).csv me jo sheet no. 4 "New Features me jo point he ve add kr skte he 
+Steve Autoparts_Full_QA_Report_Admin_and_Frontend_2026-11-19(Admin Issues).csv me jo sheet no. 4 "New Features me jo point he ve add kr skte he 
 
 
 
@@ -275,3 +275,4 @@ Routing	Common URLs 404; no order tracking	/login, /register, /shop, /about, /co
 
 
 mene products page ke sidebar me categories se "Engine" ki "Service Kits" category open kr rha hu jb ye category open hoti he to breadcrumb me "Home/Shop/Air and Fuel Delivery/Service Kits" show ti he or sidebar me bhi "Air and Fuel Delivery" or iski "Service Kits" subcategory highlight hoti balki highlight "Engine" or "Service Kits" honi sahiye thi asha kiyo nhi ho rha he
+

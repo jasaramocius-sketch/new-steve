@@ -4,13 +4,13 @@
 @php $blogTitle = isset($category) ? $category->name : (isset($tag) ? 'Tag: ' . $tag->name : 'Blogs'); @endphp
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $blogTitle . ' - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => $blogTitle . ' | ' . config('app.name', 'StAutoparts'),
+        'pageTitle' => $blogTitle . ' - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => $blogTitle . ' | ' . config('app.name', 'Steve Autoparts'),
         'metaDescription' => isset($category)
             ? ($category->description ?? 'Blogs about ' . $category->name)
             : (isset($tag)
-                ? 'Blogs tagged with "' . $tag->name . '" from ' . config('app.name', 'StAutoparts') . '.'
-                : 'Latest blogs, auto parts guides and tips from ' . config('app.name', 'StAutoparts') . '.'),
+                ? 'Blogs tagged with "' . $tag->name . '" from ' . config('app.name', 'Steve Autoparts') . '.'
+                : 'Latest blogs, auto parts guides and tips from ' . config('app.name', 'Steve Autoparts') . '.'),
         'robots' => 'index, follow',
     ])
 @endsection

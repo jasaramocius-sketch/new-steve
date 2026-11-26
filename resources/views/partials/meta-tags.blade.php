@@ -4,7 +4,7 @@
 @php
     $seo = \App\Models\Setting::getAllAsArray();
 
-    $appName   = trim((string) ($seo['seo_site_title'] ?? '')) ?: config('app.name', 'StAutoparts');
+    $appName   = trim((string) ($seo['seo_site_title'] ?? '')) ?: config('app.name', 'Steve Autoparts');
     $separator = trim((string) ($seo['seo_title_separator'] ?? '')) ?: '|';
 
     $defaultMetaTitle = trim((string) ($seo['seo_default_meta_title'] ?? '')) ?: null;

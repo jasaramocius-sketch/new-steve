@@ -6,7 +6,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'Order Tracking - Steve Autoparts',
         'metaTitle' => 'Order Tracking | Steve Autoparts',
-        'metaDescription' => 'Track your orders and view their status at StAutoparts.',
+        'metaDescription' => 'Track your orders and view their status at Steve Autoparts.',
     ])
 @endsection
 @section($trackingIsGuest ? 'content' : 'dashboard-content')

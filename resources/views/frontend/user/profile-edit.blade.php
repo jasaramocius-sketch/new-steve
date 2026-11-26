@@ -5,7 +5,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'Edit Profile - Steve Autoparts',
         'metaTitle' => 'Edit Profile | Steve Autoparts',
-        'metaDescription' => 'Update your profile information at StAutoparts.',
+        'metaDescription' => 'Update your profile information at Steve Autoparts.',
     ])
 @endsection
 @section('dashboard-content')

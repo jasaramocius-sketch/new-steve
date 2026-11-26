@@ -4,7 +4,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'Change Password - Steve Autoparts',
         'metaTitle' => 'Change Password | Steve Autoparts',
-        'metaDescription' => 'Securely change your account password at StAutoparts.',
+        'metaDescription' => 'Securely change your account password at Steve Autoparts.',
         'robots' => 'noindex, nofollow',
     ])
 @endsection

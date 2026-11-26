@@ -14,7 +14,7 @@ $couponDiscount = (float) $order->coupon_discount;
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;">
           <tr>
             <td style="background:#1d3557;padding:24px 32px;">
-              <span style="font-size:20px;font-weight:bold;color:#fff;">{{ config('app.name', 'StAutoparts') }}</span>
+              <span style="font-size:20px;font-weight:bold;color:#fff;">{{ config('app.name', 'Steve Autoparts') }}</span>
             </td>
           </tr>
           <tr>
@@ -71,7 +71,7 @@ $couponDiscount = (float) $order->coupon_discount;
           </tr>
           <tr>
             <td style="padding:16px 32px;background:#f8f9fa;font-size:12px;color:#999;">
-              &copy; {{ date('Y') }} {{ config('app.name', 'StAutoparts') }}. All rights reserved.
+              &copy; {{ date('Y') }} {{ config('app.name', 'Steve Autoparts') }}. All rights reserved.
             </td>
           </tr>
         </table>

@@ -254,7 +254,7 @@ class ShopController extends Controller
 
     public function index(Request $request)
     {
-        $productsQuery = Product::where('status', true)->hasUsableImage();
+        $productsQuery = Product::where('status', true)->hasUsableImage()->with(['brand:id,name,slug', 'category:id,name,slug']);
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery, true);
 
         $baseQuery = clone $productsQuery;
@@ -394,7 +394,7 @@ class ShopController extends Controller
     {
         abort_unless(FeatureFlags::enabled('classified_product'), 404);
 
-        $productsQuery = Product::where('status', true)->hasUsableImage();
+        $productsQuery = Product::where('status', true)->hasUsableImage()->with(['brand:id,name,slug', 'category:id,name,slug']);
 
         $baseQuery = clone $productsQuery;
         $this->filterProducts($request, $baseQuery, false);
@@ -418,36 +418,12 @@ class ShopController extends Controller
 
         $category = $matches->first();
         if ($matches->count() > 1) {
-            $requestedRef = \App\Support\CategoryRef::decode($request->query('c'), $slug);
-            if ($requestedRef) {
-                $resolved = $matches->firstWhere('id', $requestedRef);
+            $contextId = (int) $request->session()->pull('category_context.' . $slug, 0);
+            if ($contextId > 0) {
+                $resolved = $matches->firstWhere('id', $contextId);
                 if ($resolved) {
                     $category = $resolved;
-                } else {
-                    $requestedRef = null;
                 }
-            }
-
-            if (! $requestedRef) {
-                $candidates = $matches->map(function ($candidate) use ($slug) {
-                    $chain = [];
-                    $node = $candidate;
-                    while ($node) {
-                        array_unshift($chain, $node);
-                        $node = $node->parent_id ? Category::find($node->parent_id) : null;
-                    }
-
-                    return [
-                        'category' => $candidate,
-                        'chain' => $chain,
-                        'url' => \App\Support\CategoryRef::url($candidate->id, $slug),
-                    ];
-                })->values();
-
-                return response()->view('frontend.shop.category-disambiguation', [
-                    'slug' => $slug,
-                    'candidates' => $candidates,
-                ], 200);
             }
         }
 
@@ -478,7 +454,7 @@ class ShopController extends Controller
 
         $categoryIds = $category->getAllDescendantIds();
 
-        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
+        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage()->with(['brand:id,name,slug', 'category:id,name,slug']);
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
 
         $baseQuery = clone $productsQuery;
@@ -495,6 +471,25 @@ class ShopController extends Controller
             array_filter(compact('currentSubcategory', 'currentChildcategory')),
             $this->getSharedData($request, $baseQuery)
         ));
+    }
+
+    public function setCategoryContext(Request $request)
+    {
+        $categoryId = (int) $request->input('category_id', 0);
+        $slug = (string) $request->input('slug', '');
+
+        if ($categoryId <= 0 || $slug === '') {
+            return response()->json(['ok' => false], 422);
+        }
+
+        $category = Category::where('id', $categoryId)->where('slug', $slug)->first();
+        if (! $category) {
+            return response()->json(['ok' => false], 404);
+        }
+
+        $request->session()->put('category_context.' . $slug, $categoryId);
+
+        return response()->json(['ok' => true]);
     }
 
     public function categoryByPath(Request $request, $parent, $child, $subchild = null)
@@ -518,7 +513,7 @@ class ShopController extends Controller
 
         $categoryIds = $category->getAllDescendantIds();
 
-        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
+        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage()->with(['brand:id,name,slug', 'category:id,name,slug']);
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
 
         $baseQuery = clone $productsQuery;

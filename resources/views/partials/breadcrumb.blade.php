@@ -34,7 +34,11 @@
         @foreach ($breadcrumbItems as $item)
           <li>
             @if (!empty($item['url']))
-              <a href="{{ $item['url'] }}">{{ $item['label'] }}</a>
+              <a href="{{ $item['url'] }}"
+                 @if(!empty($item['category_id'])) data-category-id="{{ $item['category_id'] }}" @endif
+                 @if(!empty($item['category_slug'])) data-category-slug="{{ $item['category_slug'] }}" @endif
+                 @if(!empty($item['category_id'])) class="js-category-context-link" @endif
+              >{{ $item['label'] }}</a>
             @else
               {{ $item['label'] }}
             @endif

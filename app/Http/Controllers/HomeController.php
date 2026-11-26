@@ -587,7 +587,7 @@ class HomeController extends Controller
                         'products' => $base.'/product/'.$record->slug,
                         'blogs' => $base.'/blog/'.$record->slug,
                         'brands' => $base.'/brand/'.$record->slug,
-                        'categories' => \App\Support\CategoryRef::url($record->id, $record->slug),
+                        'categories' => $base.'/category/'.$record->slug,
                         'blog-categories' => $base.'/blog/category/'.$record->slug,
                         'blog-tags' => $base.'/blog/tag/'.$record->slug,
                     };

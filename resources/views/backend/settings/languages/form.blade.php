@@ -4,7 +4,7 @@
 @section('page-title', 'Add New Language')
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Add New Language | ' . config('app.name', 'StAutoparts'),
+        'pageTitle' => 'Add New Language | ' . config('app.name', 'Steve Autoparts'),
     ])
 @endsection
 @section('content')

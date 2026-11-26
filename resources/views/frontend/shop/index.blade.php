@@ -12,7 +12,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => $shopMeta ?: ($shopTitle . ' - Steve Autoparts'),
         'metaTitle' => $shopMeta ?: ($shopTitle . ' | Steve Autoparts'),
-        'metaDescription' => $shopDesc ?: ($shopTitle . ' — browse auto spare parts and accessories at StAutoparts.'),
+        'metaDescription' => $shopDesc ?: ($shopTitle . ' — browse auto spare parts and accessories at Steve Autoparts.'),
         'robots' => 'index, follow',
     ])
 @endsection
@@ -133,13 +133,13 @@
 
         if (isset($currentCategory)) {
             $breadcrumbItems[] = (isset($currentSubcategory) || isset($currentChildcategory))
-                ? ['label' => $currentCategory->name, 'url' => \App\Support\CategoryRef::url($currentCategory->id, $currentCategory->slug)]
+                ? ['label' => $currentCategory->name, 'url' => route('category', ['slug' => $currentCategory->slug]), 'category_id' => $currentCategory->id, 'category_slug' => $currentCategory->slug]
                 : ['label' => $currentCategory->name];
         }
 
         if (isset($currentSubcategory)) {
             $breadcrumbItems[] = isset($currentChildcategory)
-                ? ['label' => $currentSubcategory->name, 'url' => \App\Support\CategoryRef::url($currentSubcategory->id, $currentSubcategory->slug)]
+                ? ['label' => $currentSubcategory->name, 'url' => route('category', ['slug' => $currentSubcategory->slug]), 'category_id' => $currentSubcategory->id, 'category_slug' => $currentSubcategory->slug]
                 : ['label' => $currentSubcategory->name];
         }
 

@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-terms-conditions-page', 'pageClass' => 'user-terms-conditions-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $page->meta_title ?? ('Terms & Conditions - ' . config('app.name', 'StAutoparts')),
-        'metaTitle' => $page->meta_title ?? ('Terms & Conditions | ' . config('app.name', 'StAutoparts')),
+        'pageTitle' => $page->meta_title ?? ('Terms & Conditions - ' . config('app.name', 'Steve Autoparts')),
+        'metaTitle' => $page->meta_title ?? ('Terms & Conditions | ' . config('app.name', 'Steve Autoparts')),
         'metaDescription' => $page->meta_description ?? null,
         'robots' => 'index, follow',
     ])

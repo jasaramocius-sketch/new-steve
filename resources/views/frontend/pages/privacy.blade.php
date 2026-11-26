@@ -2,8 +2,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-privacy-policy-page', 'pageClass' => 'user-privacy-policy-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $page->meta_title ?? ('Privacy Policy - ' . config('app.name', 'StAutoparts')),
-        'metaTitle' => $page->meta_title ?? ('Privacy Policy | ' . config('app.name', 'StAutoparts')),
+        'pageTitle' => $page->meta_title ?? ('Privacy Policy - ' . config('app.name', 'Steve Autoparts')),
+        'metaTitle' => $page->meta_title ?? ('Privacy Policy | ' . config('app.name', 'Steve Autoparts')),
         'metaDescription' => $page->meta_description ?? null,
         'robots' => 'index, follow',
     ])

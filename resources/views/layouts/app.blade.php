@@ -515,13 +515,6 @@
                                     if (!is_array($searchCategoryMenu)) {
                                         $searchCategoryMenu = [];
                                     }
-                                    if (empty($searchCategoryMenu)) {
-                                        $searchCategoryMenu = [
-                                            ['label' => 'Engine Parts', 'url' => url('/category/Engine-Parts')],
-                                            ['label' => 'Body & Exterior', 'url' => url('/category/Body-Exterior')],
-                                            ['label' => 'Interior Parts', 'url' => url('/category/Interior-Parts')],
-                                        ];
-                                    }
                                 @endphp
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item dropdown__item" href="{{ route('shop') }}">All Categories</a></li>

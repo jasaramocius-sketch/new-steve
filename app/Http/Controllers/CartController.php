@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Helpers\NotificationHelper;
 use App\Mail\OrderConfirmationMail;
+use App\Mail\TemplatedMail;
+use Illuminate\Support\Facades\Mail;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Coupon;
@@ -23,7 +25,6 @@ use App\Support\PaymentMethods;
 use App\Rules\ZipCodeForCountry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 class CartController extends Controller
@@ -788,6 +789,24 @@ class CartController extends Controller
         if ($paymentMethod === 'cod' || $grandTotal <= 0) {
             $this->notifyOrderPlaced($dbOrder);
 
+            if ($grandTotal <= 0) {
+                $orderEmail = $dbOrder->user?->email ?: ($billing['email'] ?? null);
+                if ($orderEmail) {
+                    try {
+                        Mail::to($orderEmail)->send(new TemplatedMail('payment_received', [
+                            'customer_name' => $billing['name'] ?? ($dbOrder->user->name ?? 'there'),
+                            'order_number' => $dbOrder->order_number ?? $dbOrder->id,
+                            'order_date' => optional($dbOrder->created_at)->format('d M, Y'),
+                            'order_total' => '$' . number_format((float) $dbOrder->total_amount, 2),
+                            'payment_method' => ucwords(str_replace('_', ' ', (string) ($dbOrder->payment_method ?? 'N/A'))),
+                            'order_url' => route('user.orders.show', $dbOrder->id),
+                        ], 'Payment Received - #' . ($dbOrder->order_number ?? $dbOrder->id)));
+                    } catch (\Throwable $e) {
+                        logger()->warning('Payment received email failed: ' . $e->getMessage());
+                    }
+                }
+            }
+
             session()->put('last_order', $this->orderSummary($dbOrder));
             $this->clearCheckoutSession();
 
@@ -1105,6 +1124,23 @@ class CartController extends Controller
             'Payment received through Stripe'.(! empty($details['transaction_id']) ? ' ('.$details['transaction_id'].')' : '')
         );
         $this->notifyOrderPlaced($order);
+
+        $orderEmail = $order->user?->email ?: (json_decode($order->shipping_details, true)['email'] ?? null);
+        if ($orderEmail) {
+            try {
+                $billing = json_decode($order->shipping_details, true) ?? [];
+                Mail::to($orderEmail)->send(new TemplatedMail('payment_received', [
+                    'customer_name' => $billing['name'] ?? ($order->user->name ?? 'there'),
+                    'order_number' => $order->order_number ?? $order->id,
+                    'order_date' => optional($order->created_at)->format('d M, Y'),
+                    'order_total' => '$' . number_format((float) $order->total_amount, 2),
+                    'payment_method' => ucwords(str_replace('_', ' ', (string) ($order->payment_method ?? 'Stripe'))),
+                    'order_url' => route('user.orders.show', $order->id),
+                ], 'Payment Received - #' . ($order->order_number ?? $order->id)));
+            } catch (\Throwable $e) {
+                logger()->warning('Payment received email failed: ' . $e->getMessage());
+            }
+        }
     }
 
     public function stripeCancel(Request $request)

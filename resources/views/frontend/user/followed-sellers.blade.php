@@ -5,7 +5,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'Followed Sellers - Steve Autoparts',
         'metaTitle' => 'Followed Sellers | Steve Autoparts',
-        'metaDescription' => 'Manage the sellers you follow at StAutoparts.',
+        'metaDescription' => 'Manage the sellers you follow at Steve Autoparts.',
     ])
 @endsection
 @section('dashboard-content')

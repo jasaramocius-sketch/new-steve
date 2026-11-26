@@ -127,7 +127,7 @@
             </p>
         </div>
         <div class="footer">
-            <p>&copy; {{ date('Y') }} {{ config('app.name', 'StAutoparts') }}. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} {{ config('app.name', 'Steve Autoparts') }}. All rights reserved.</p>
         </div>
     </div>
 </body>

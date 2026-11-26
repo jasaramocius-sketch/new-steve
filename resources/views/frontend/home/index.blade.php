@@ -6,9 +6,9 @@
 @include('partials.page-attributes', ['pageId' => 'home-page', 'pageClass' => 'home-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $page->meta_title ?? config('app.name', 'StAutoparts'),
-        'metaTitle' => $page->meta_title ?? (config('app.name', 'StAutoparts') . ' | Spare Parts & Accessories'),
-        'metaDescription' => $page->meta_description ?? ('Shop genuine auto spare parts and accessories at ' . config('app.name', 'StAutoparts') . '. Best prices, fast shipping and quality assurance.'),
+        'pageTitle' => $page->meta_title ?? config('app.name', 'Steve Autoparts'),
+        'metaTitle' => $page->meta_title ?? (config('app.name', 'Steve Autoparts') . ' | Spare Parts & Accessories'),
+        'metaDescription' => $page->meta_description ?? ('Shop genuine auto spare parts and accessories at ' . config('app.name', 'Steve Autoparts') . '. Best prices, fast shipping and quality assurance.'),
         'robots' => 'index, follow',
     ])
 @endsection
@@ -116,7 +116,7 @@
             <div class="swiper-wrapper">
             @foreach($categories as $category)
             <div class="swiper-slide">
-                <a href="{{ \App\Support\CategoryRef::url($category['id'], $category['slug']) }}">
+                <a href="{{ route('category', $category['slug']) }}" data-category-id="{{ $category['id'] ?? '' }}" data-category-slug="{{ $category['slug'] }}" class="js-category-context-link">
                     <div class="gs-single-cat">
                         <div class="gs-single-cat">
                             <div class="category-image">

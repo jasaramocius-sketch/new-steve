@@ -2,9 +2,9 @@
 @include('partials.page-attributes', ['pageId' => 'checkout-guest-page', 'pageClass' => 'checkout-guest-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Checkout - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => 'Checkout | ' . config('app.name', 'StAutoparts'),
-        'metaDescription' => 'Complete your order at ' . config('app.name', 'StAutoparts') . '.',
+        'pageTitle' => 'Checkout - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => 'Checkout | ' . config('app.name', 'Steve Autoparts'),
+        'metaDescription' => 'Complete your order at ' . config('app.name', 'Steve Autoparts') . '.',
     ])
 @endsection
 @section('content')

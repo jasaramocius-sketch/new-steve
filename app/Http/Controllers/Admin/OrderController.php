@@ -6,6 +6,7 @@ use App\Helpers\NotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Mail\OrderConfirmationMail;
 use App\Mail\OrderStatusChangedMail;
+use App\Mail\TemplatedMail;
 use App\Models\Order;
 use App\Services\InvoiceSettingsService;
 use App\Services\Couriers\CourierManager;
@@ -272,12 +273,46 @@ class OrderController extends Controller
             }
         }
 
+        $finalPaymentStatus = $update['payment_status'] ?? $order->payment_status;
+        $orderEmail = $order->user?->email;
+        $billing = json_decode($order->shipping_details, true) ?? [];
+
+        if ($orderEmail && $finalPaymentStatus === 'paid' && $oldPaymentStatus !== 'paid') {
+            try {
+                Mail::to($orderEmail)->send(new TemplatedMail('payment_received', [
+                    'customer_name' => $billing['name'] ?? ($order->user->name ?? 'there'),
+                    'order_number' => $order->order_number ?? $order->id,
+                    'order_date' => optional($order->created_at)->format('d M, Y'),
+                    'order_total' => '$' . number_format((float) $order->total_amount, 2),
+                    'payment_method' => ucwords(str_replace('_', ' ', (string) ($order->payment_method ?? 'N/A'))),
+                    'order_url' => route('user.orders.show', $order->id),
+                ], 'Payment Received - #' . ($order->order_number ?? $order->id)));
+            } catch (Throwable $exception) {
+                logger()->warning('Payment received email failed: '.$exception->getMessage());
+            }
+        }
+
+        if ($orderEmail && $finalPaymentStatus === 'refunded' && $oldPaymentStatus !== 'refunded') {
+            $details = is_array($order->payment_details) ? $order->payment_details : (is_string($order->payment_details) ? json_decode($order->payment_details, true) : []);
+            $details = is_array($details) ? $details : [];
+            try {
+                Mail::to($orderEmail)->send(new TemplatedMail('refund_processed', [
+                    'customer_name' => $billing['name'] ?? ($order->user->name ?? 'there'),
+                    'order_number' => $order->order_number ?? $order->id,
+                    'refund_amount' => '$' . number_format((float) ($details['refund_amount'] ?? $order->total_amount ?? 0), 2),
+                    'refund_method' => ucwords(str_replace('_', ' ', (string) ($order->payment_method ?? 'N/A'))),
+                    'refund_reference' => (string) ($details['stripe_refund_id'] ?? $details['transaction_id'] ?? 'N/A'),
+                    'order_url' => route('user.orders.show', $order->id),
+                ], 'Refund Processed - #' . ($order->order_number ?? $order->id)));
+            } catch (Throwable $exception) {
+                logger()->warning('Refund email failed: '.$exception->getMessage());
+            }
+        }
+
         $message = 'Order updated successfully.';
         if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
             $message = 'Order cancelled and stock restored.';
         }
-
-        $finalPaymentStatus = $update['payment_status'] ?? $order->payment_status;
         $finalPaymentMethod = strtolower((string) ($order->payment_method ?? ''));
         $warning = null;
         if (in_array($newStatus, ['shipped', 'delivered'], true)
@@ -328,7 +363,7 @@ class OrderController extends Controller
         $order = Order::with('items.product')->findOrFail($id);
         $invoiceData = app(InvoiceSettingsService::class)->forOrder($order);
 
-        $pdf = Pdf::loadView('user.orders.invoice', ['order' => $order] + $invoiceData)
+        $pdf = Pdf::loadView('frontend.user.orders.invoice', ['order' => $order] + $invoiceData)
             ->setPaper('a4');
 
         return $pdf->download('invoice-'.$order->order_number.'.pdf');

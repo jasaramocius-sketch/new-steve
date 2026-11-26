@@ -3,7 +3,7 @@
 @include('partials.page-attributes', ['pageId' => 'user-contact-page', 'pageClass' => 'user-contact-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $page->meta_title ?? (($page->title ?? 'Contact') . ' - ' . config('app.name', 'StAutoparts')),
+        'pageTitle' => $page->meta_title ?? (($page->title ?? 'Contact') . ' - ' . config('app.name', 'Steve Autoparts')),
         'metaTitle' => $page->meta_title ?? null,
         'metaDescription' => $page->meta_description ?? null,
         'robots' => 'index, follow',

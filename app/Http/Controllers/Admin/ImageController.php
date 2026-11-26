@@ -209,7 +209,7 @@ class ImageController extends Controller
             'http' => [
                 'timeout' => 20,
                 'ignore_errors' => true,
-                'user_agent' => 'Mozilla/5.0 (compatible; StAutopartsImageDownloader/1.0)',
+                'user_agent' => 'Mozilla/5.0 (compatible; Steve AutopartsImageDownloader/1.0)',
             ],
             'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
         ]);

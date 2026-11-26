@@ -18,7 +18,7 @@ class ContactReceivedMail extends Mailable
     public function envelope(): Envelope
     {
         if ($this->toUser) {
-            $subject = 'We received your message - '.config('app.name', 'StAutoparts');
+            $subject = 'We received your message - '.config('app.name', 'Steve Autoparts');
         } else {
             $subject = 'New contact form submission: '.($this->contact->subject ?: 'Inquiry');
         }

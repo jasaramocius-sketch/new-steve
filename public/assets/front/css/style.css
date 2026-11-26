@@ -2223,6 +2223,51 @@ p.text-lg {
   line-height: normal;
 }
 
+.list-view-details {
+  display: none;
+}
+
+.single-product-list-view .list-view-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.single-product-list-view .list-view-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.single-product-list-view .list-view-meta-label {
+  font-weight: 600;
+  color: #1f0300;
+}
+
+.single-product-list-view .list-view-description {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 767.98px) {
+  .single-product-list-view .list-view-meta,
+  .single-product-list-view .list-view-description {
+    font-size: 13px;
+  }
+}
+
 .single-product .add-to-cart {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -2408,6 +2453,7 @@ p.text-lg {
   -webkit-box-flex: 1;
   -ms-flex-positive: 1;
   flex-grow: 1;
+  overflow: hidden;
 }
 
 .single-product-list-view .price-wrapper h4,
@@ -17117,7 +17163,14 @@ section.product-category.py-120 {
     width: 35px;
     height: 35px;
   }
-
+  .gs-go-to-page-widgets button {
+    width: 35px !important;
+    height: 35px !important;
+    min-height: 35px !important;
+  }
+  .gs-go-to-page-widgets input{
+    height: 35px !important;
+  }
   #products-wrapper {
     grid-template-columns: 1fr 1fr;
     padding: 0;
@@ -19165,7 +19218,7 @@ button.filter-chip-clear i.las.la-times{
     font-weight: 500;
 }
 
-.shop_details_shate {
+.shop_details_share {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -19175,14 +19228,14 @@ button.filter-chip-clear i.las.la-times{
     padding-left: 0;
 }
 
-.shop_details_shate li {
+.shop_details_share li {
     color: #333;
     font-weight: 500;
     font-family: 'Jost', sans-serif;
     font-size: 15px;
 }
 
-.shop_details_shate li a {
+.shop_details_share li a {
     text-align: center;
     color: #333;
     font-size: 16px;
@@ -19191,7 +19244,7 @@ button.filter-chip-clear i.las.la-times{
     transition: all linear .3s;
 }
 
-.shop_details_shate li a:hover {
+.shop_details_share li a:hover {
     color: var(--primary);
 }
 

@@ -168,7 +168,7 @@
                             @endif
                             @if ($invoiceSettings['invoice_show_delivery'])
                                 <div class="label" style="margin-top:10px;">Delivery Type</div>
-                                <div class="value">{{ $order->delivery_type ?? 'Home Delivery' }}</div>
+                                <div class="value">{{ $order->delivery_type ? ucwords(str_replace('_', ' ', $order->delivery_type)) : 'Home Delivery' }}</div>
                             @endif
                         </td>
                     @endif

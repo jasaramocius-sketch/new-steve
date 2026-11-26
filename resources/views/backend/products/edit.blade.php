@@ -238,12 +238,7 @@
                         
                         <div class="col-md-12">
                             <label class="form-label">Policy Text</label>
-                            @php
-                                $policyEditorValue = old('policy_text', !empty(trim((string) $product->policy_text))
-                                    ? $product->policy_text
-                                    : trim(view('partials.product-buy-return-policy', ['product' => $product])->render()));
-                            @endphp
-                            <textarea name="policy_text" class="form-control textarea-control texteditor" rows="4">{{ $policyEditorValue }}</textarea>
+                            <textarea name="policy_text" class="form-control textarea-control texteditor" rows="4">{{ old('policy_text', $product->policy_text ?? '') }}</textarea>
                         </div>
                         
                         <div class="col-md-12">

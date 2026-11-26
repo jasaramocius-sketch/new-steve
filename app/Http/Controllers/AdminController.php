@@ -15,6 +15,8 @@ use App\Models\Revision;
 use App\Models\Setting;
 use App\Models\TaxType;
 use App\Models\User;
+use App\Models\EmailTemplate;
+use App\Support\EmailTemplates;
 use App\Support\StockSync;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -266,6 +268,7 @@ class AdminController extends Controller
                     ['name' => 'General Settings', 'description' => 'Header, footer, logos and navigation', 'icon' => 'fas fa-cog', 'route' => 'admin.settings.header'],
                     ['name' => 'Contact Information', 'description' => 'Address, phone, email, working hours and map', 'icon' => 'fas fa-address-book', 'route' => 'admin.settings.contact'],
                     ['name' => 'Invoice Settings', 'description' => 'Manage invoice branding, content and PDF layout', 'icon' => 'fas fa-file-invoice', 'route' => 'admin.settings.invoice'],
+                    ['name' => 'Email Templates', 'description' => 'Edit transactional email subjects and content', 'icon' => 'fas fa-envelope', 'route' => 'admin.settings.email-templates'],
                     ['name' => 'Features activation', 'description' => 'Turn store features on or off', 'icon' => 'fas fa-toggle-on', 'route' => 'admin.settings.features'],
                     ['name' => 'Order Configuration', 'description' => 'Minimum order amount', 'icon' => 'fas fa-shopping-bag', 'route' => 'admin.settings.order'],
                     ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'fas fa-hdd', 'route' => 'admin.settings.file-system-cache'],
@@ -1409,7 +1412,7 @@ class AdminController extends Controller
             return [
                 'id' => $category->id,
                 'label' => (string) $category->name,
-                'url' => \App\Support\CategoryRef::url($category->id, $category->slug, [], false),
+                'url' => route('category', $category->slug, false),
                 'context' => $parentName ? 'in '.$parentName : '',
             ];
         })->values()->all();
@@ -1581,5 +1584,63 @@ class AdminController extends Controller
 
         return redirect()->route('admin.file-revisions.index', ['trashed' => 1])
             ->with('success', "Trash emptied ({$deleted} file revision(s) permanently deleted).");
+    }
+
+    public function emailTemplates()
+    {
+        EmailTemplates::ensureDefaults();
+        $templates = EmailTemplate::query()->orderBy('name')->get();
+
+        return view('backend.settings.email-templates.index', compact('templates'));
+    }
+
+    public function editEmailTemplate(string $key)
+    {
+        $template = EmailTemplates::resolve($key);
+        abort_unless($template, 404);
+        $default = EmailTemplates::default($key);
+
+        return view('backend.settings.email-templates.edit', compact('template', 'default'));
+    }
+
+    public function updateEmailTemplate(Request $request, string $key)
+    {
+        $template = EmailTemplates::resolve($key);
+        abort_unless($template, 404);
+
+        $validated = $request->validate([
+            'subject' => 'required|string|max:255',
+            'body_html' => 'required|string',
+            'is_enabled' => 'nullable|boolean',
+        ]);
+
+        $template->update([
+            'subject' => $validated['subject'],
+            'body_html' => $validated['body_html'],
+            'is_enabled' => $request->boolean('is_enabled'),
+        ]);
+
+        return redirect()->route('admin.settings.email-templates.edit', $template->key)
+            ->with('success', 'Email template updated.');
+    }
+
+    public function resetEmailTemplate(string $key)
+    {
+        $template = EmailTemplates::resolve($key);
+        abort_unless($template, 404);
+        $default = EmailTemplates::default($key);
+        abort_unless($default, 404);
+
+        $template->update([
+            'name' => $default['name'],
+            'subject' => $default['subject'],
+            'body_html' => $default['body_html'],
+            'description' => $default['description'] ?? null,
+            'placeholders' => $default['placeholders'] ?? [],
+            'is_enabled' => true,
+        ]);
+
+        return redirect()->route('admin.settings.email-templates.edit', $template->key)
+            ->with('success', 'Email template reset to default.');
     }
 }

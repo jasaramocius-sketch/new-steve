@@ -223,7 +223,8 @@ class ProductController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('part_number', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
             });
         }
 
@@ -1522,7 +1523,8 @@ class ProductController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('part_number', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
             });
         }
 

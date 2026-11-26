@@ -7,7 +7,7 @@ use App\Models\Product;
 
 class CategoryTree
 {
-    public const CACHE_KEY = 'front_category_tree_v2';
+    public const CACHE_KEY = 'front_category_tree_v3';
 
     /**
      * Build (and cache) the full nested category tree as lightweight objects.
@@ -49,6 +49,7 @@ class CategoryTree
                     'id' => (int) $row->id,
                     'name' => $row->name,
                     'slug' => $row->slug,
+                    'parent_id' => (int) ($row->parent_id ?? 0),
                     'descendant_count' => (int) ($productCounts[$row->id] ?? 0),
                     'children' => [],
                 ];

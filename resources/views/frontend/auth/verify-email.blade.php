@@ -2,8 +2,8 @@
 @include('partials.page-attributes', ['pageId' => 'auth-verify-email-page', 'pageClass' => 'auth-verify-email-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Confirm Your Email - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => 'Confirm Your Email | ' . config('app.name', 'StAutoparts'),
+        'pageTitle' => 'Confirm Your Email - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => 'Confirm Your Email | ' . config('app.name', 'Steve Autoparts'),
         'metaDescription' => 'Confirm your email address to activate your account.',
     ])
 @endsection

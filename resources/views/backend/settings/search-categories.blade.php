@@ -35,14 +35,23 @@
                                     </button>
                                     <input type="text" id="searchCategoriesFilter" class="form-control" placeholder="Search 21,300 categories..." autocomplete="off">
                                 </div>
-                                <div class="border rounded p-3 available-categories-list" style="max-height:520px;overflow-y:auto;background:#f8f9fa;">
+                                <div class="border rounded p-3 available-categories-list" style="max-height:700px;overflow-y:auto;background:#f8f9fa;">
                                     <div id="scCategoryResults" class="mb-0" data-lookup-url="{{ route('admin.settings.search-categories.lookup') }}">
                                         <div class="text-muted p-3 text-center">Loading categories…</div>
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center gap-2 mt-3 small text-muted">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="scPrevPage" disabled>Prev</button>
-                                        <span id="scPageInfo">—</span>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="scNextPage" disabled>Next</button>
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 small text-muted">
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label for="scGoToPage" class="mb-0">Go to page</label>
+                                                <input type="number" id="scGoToPage" class="form-control" min="1" value="1" style="width:60px; padding:0 .5rem; height:28px; font-size:14px;">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="scGoToPageBtn">Go</button>
+                                            </div>
+                                            <span id="scPageInfo">—</span>
+                                            <div class="">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" id="scPrevPage" disabled>Prev</button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" id="scNextPage" disabled>Next</button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-primary steve-btn gap-1 mt-2" id="scAddSelected">
@@ -88,9 +97,11 @@
 <style>
     .sc-checkbox { display: flex; align-items: center; padding: .25rem .5rem; border-radius: .25rem; cursor: pointer; }
     .sc-checkbox:hover { background: #eef1f4; }
-    .sc-category-option { display: flex; align-items: center; gap: .5rem; padding: .125rem .25rem; border-radius: .25rem; }
+    .sc-category-option { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 .5rem; padding: .125rem .25rem; border-radius: .25rem; }
     .sc-category-option:hover { background: #eef1f4; }
-    .sc-category-option .sc-checkbox { flex: 1; min-width: 0; }
+    .sc-category-option .sc-checkbox { flex: 1; min-width: 0; align-items: flex-start; }
+    .sc-category-option .sc-checkbox input { margin-top: .2rem; }
+    .sc-category-context { width: 100%; margin-left: 1.75rem; font-size: 12px; line-height: 1.2; }
     .sc-selected-item { display: flex; align-items: center; gap: 8px; padding: .4rem .6rem; border: 1px solid #e9ecef; border-radius: .375rem; background: #f8f9fa; }
     .sc-handle { cursor: grab; display: inline-flex; align-items: center; color: #999; }
     .sc-handle svg { width: 16px; height: 16px; }
@@ -143,6 +154,8 @@
     var prevBtn = document.getElementById('scPrevPage');
     var nextBtn = document.getElementById('scNextPage');
     var pageInfo = document.getElementById('scPageInfo');
+    var goToPageInput = document.getElementById('scGoToPage');
+    var goToPageBtn = document.getElementById('scGoToPageBtn');
     var lookupUrl = results ? results.getAttribute('data-lookup-url') : '';
     var currentPage = 1;
     var lastPage = 1;
@@ -244,7 +257,7 @@
 
             var cb = document.createElement('input');
             cb.type = 'checkbox';
-            cb.className = 'form-check-input me-2 sc-category-cb';
+            cb.className = 'form-check-input me-2 sc-category-cb mt-0';
             cb.setAttribute('data-label', item.label);
             cb.setAttribute('data-url', item.url);
             cb.checked = labels.indexOf(item.label) !== -1;
@@ -257,7 +270,7 @@
 
             if (item.context) {
                 var context = document.createElement('small');
-                context.className = 'text-muted ms-1';
+                context.className = 'text-muted sc-category-context';
                 context.textContent = item.context;
                 row.appendChild(context);
             }
@@ -272,6 +285,10 @@
         }
         if (prevBtn) prevBtn.disabled = currentPage <= 1;
         if (nextBtn) nextBtn.disabled = currentPage >= lastPage;
+        if (goToPageInput) {
+            goToPageInput.max = String(lastPage);
+            goToPageInput.value = String(currentPage);
+        }
     }
 
     function loadCategories(page) {
@@ -340,6 +357,27 @@
     if (nextBtn) {
         nextBtn.addEventListener('click', function () {
             if (currentPage < lastPage) loadCategories(currentPage + 1);
+        });
+    }
+
+    function goToPage() {
+        if (!goToPageInput) return;
+        var page = parseInt(goToPageInput.value, 10);
+        if (isNaN(page)) page = currentPage;
+        page = Math.max(1, Math.min(lastPage || 1, page));
+        goToPageInput.value = String(page);
+        if (page !== currentPage) loadCategories(page);
+    }
+
+    if (goToPageBtn) {
+        goToPageBtn.addEventListener('click', goToPage);
+    }
+    if (goToPageInput) {
+        goToPageInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                goToPage();
+            }
         });
     }
 

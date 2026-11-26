@@ -3,9 +3,9 @@
 @include('partials.page-attributes', ['pageId' => 'order-confirmed-page', 'pageClass' => 'order-confirmed-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Order Confirmed - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => 'Order Confirmed | ' . config('app.name', 'StAutoparts'),
-        'metaDescription' => 'Your order has been confirmed at ' . config('app.name', 'StAutoparts') . '.',
+        'pageTitle' => 'Order Confirmed - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => 'Order Confirmed | ' . config('app.name', 'Steve Autoparts'),
+        'metaDescription' => 'Your order has been confirmed at ' . config('app.name', 'Steve Autoparts') . '.',
     ])
 @endsection
 @section('content')

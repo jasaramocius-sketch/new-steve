@@ -58,8 +58,13 @@
                             @endif
                         </p>
                         <p class="mb-1"><span class="text-muted">Quantity:</span> <strong>{{ $return->qty }}</strong></p>
-                        <p class="mb-0"><span class="text-muted">Refund amount:</span>
+                        <p class="mb-1"><span class="text-muted">Refund amount:</span>
                             {{ $return->refund_amount !== null ? currency_format($return->refund_amount) : '—' }}
+                        </p>
+                        <p class="mb-1"><span class="text-muted">Payment method:</span> {{ strtoupper((string) ($return->order->payment_method ?? '—')) }}</p>
+                        <p class="mb-0"><span class="text-muted">Payment ref:</span>
+                            @php($paymentDetails = is_array($return->order->payment_details ?? null) ? $return->order->payment_details : (is_string($return->order->payment_details ?? null) ? json_decode($return->order->payment_details, true) : []))
+                            {{ data_get($paymentDetails, 'transaction_id') ?: data_get($paymentDetails, 'stripe_session_id') ?: '—' }}
                         </p>
                     </div>
                 </div>
@@ -94,10 +99,14 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Refund Amount</label>
-                            <input type="number" name="refund_amount" step="0.01" min="0" class="form-control refund-amount-input"
+                            <input type="number" name="refund_amount" step="0.01" min="0" max="{{ $return->order->total_amount ?? 0 }}" class="form-control refund-amount-input"
                                    value="{{ $return->refund_amount ?? ($return->order->total_amount ?? '') }}"
                                    {{ $return->status === 'refunded' || $return->status === 'approved' ? '' : 'disabled' }}
                                    data-decision="{{ $return->status }}">
+                            <div class="form-text">Max refundable: {{ currency_format($return->order->total_amount ?? 0) }}</div>
+                            @error('refund_amount')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold small text-muted text-uppercase">Admin Note (shown to customer)</label>

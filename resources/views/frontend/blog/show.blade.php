@@ -4,8 +4,8 @@
 @php $blogDesc = trim(strip_tags(html_entity_decode($blog->details ?? ''))); $blogDesc = mb_strlen($blogDesc) > 160 ? mb_substr($blogDesc, 0, 157) . '...' : $blogDesc; @endphp
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $blog->title . ' - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => $blog->title . ' | ' . config('app.name', 'StAutoparts'),
+        'pageTitle' => $blog->title . ' - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => $blog->title . ' | ' . config('app.name', 'Steve Autoparts'),
         'metaDescription' => $blogDesc ?: null,
         'ogImage' => $blog->image ?? null,
         'ogImagePrefix' => 'assets/images/blogs',

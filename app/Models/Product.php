@@ -58,6 +58,10 @@ class Product extends Model
         'packs',
         'status',
         'approval_status',
+        'tab_label_1',
+        'tab_label_2',
+        'tab_label_3',
+        'policy_text',
     ];
 
     protected $casts = [

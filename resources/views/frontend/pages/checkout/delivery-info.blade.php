@@ -3,9 +3,9 @@
 @include('partials.page-attributes', ['pageId' => 'checkout-delivery-info', 'pageClass' => 'checkout-page delivery-step-body bg-light'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'Delivery Info - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => 'Delivery Info | ' . config('app.name', 'StAutoparts'),
-        'metaDescription' => 'Enter your delivery information at ' . config('app.name', 'StAutoparts') . '.',
+        'pageTitle' => 'Delivery Info - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => 'Delivery Info | ' . config('app.name', 'Steve Autoparts'),
+        'metaDescription' => 'Enter your delivery information at ' . config('app.name', 'Steve Autoparts') . '.',
     ])
 @endsection
 @section('content')
@@ -42,7 +42,7 @@
 
             <div class="card mb-5 border-0 rounded-0 shadow-none">
               <div class="card-header py-3 px-0 border-bottom-0 bg-white">
-                <h5 class="fs-16 fw-700 text-dark mb-0">SteveAutoPartsInc. Inhouse Products</h5>
+                <h5 class="fs-16 fw-700 text-dark mb-0">Steve Autoparts Inhouse Products</h5>
               </div>
               <div class="card-body p-0">
                 <ul class="list-group list-group-flush border p-3 mb-3">

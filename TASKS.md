@@ -4940,7 +4940,7 @@ Note: `category_id = 1` par direct products **0** hain — saare products descen
 - Missing brand → 404
 - `/search?brand=autolite` old URL abhi bhi kaam karta hai
 
-**Verification:** Brand page 200; 24/24 product cards Autolite brand ke; title `Autolite - StAutoparts`; breadcrumb correct; blade cache successful.
+**Verification:** Brand page 200; 24/24 product cards Autolite brand ke; title `Autolite - Steve Autoparts`; breadcrumb correct; blade cache successful.
 
 ## 349. (2026-11-02): Brand URL Generation — Guard Empty Brand Slugs
 
@@ -5852,7 +5852,7 @@ Layout:
 
 **Status: Completed (code + DB data cleanup + browser verification)**
 
-- Source CSV: `StAutoparts_Full_QA_Report_Admin_and_Frontend_2026-11-19(Admin Issues).csv` → **A1 / Critical / Shipping Configuration**.
+- Source CSV: `Steve Autoparts_Full_QA_Report_Admin_and_Frontend_2026-11-19(Admin Issues).csv` → **A1 / Critical / Shipping Configuration**.
 - Backup taken before changes: `/tmp/opencode/a1-backup-20261119_122941/` (full `database.sql`, `ShippingSettingsController.php`, `configuration.blade.php`).
 - Confirmed report state had drifted: DB already had `shipping_type=flat_rate`, `flat_rate_shipping_cost=10`, `home_delivery_enabled=1`, but the only zone still held junk data: `id=3`, name `USA`, `country=*`, `state=California`, `city=wertg`, `cost=0.00`.
 - DB cleanup: zone `id=3` updated to name `All Destinations`, `country=*`, `state=NULL`, `city=NULL`, `cost=10.00`, `is_active=true`. Shipping settings explicitly re-affirmed as `flat_rate` / `10` / `1`. `ShippingChargeService::quote()` now returns `{"cost":10,"carrier_name":"Flat Rate Shipping","delivery_estimate":null,"zone_name":null}`.
@@ -6837,3 +6837,39 @@ Layout:
 - Verified: `php artisan view:cache` rebuilt successfully; all four cards carry the new class and no other card on the page does.
 - Backup before edit: `/tmp/opencode/coupons-hover-style/`.
 - Files: `resources/views/backend/coupons/show.blade.php`, `TASKS.md`.
+
+
+## 489. (2026-11-26): Duplicate category slug disambiguation (JS + session, clean URL) and scoped shop sidebar
+
+**Status: Implemented**
+
+- Problem: same category slug can exist under different parents (e.g. `service-kits` under `Engine` id `1486` and `Air and Fuel Delivery` id `75`). Clean `/category/{slug}` URLs cannot reliably disambiguate server-side, causing wrong category resolution on duplicate slugs.
+- Chosen approach: **Option 1 - JS + session, clean URL** (autoparts-style). Normal JS clicks resolve correctly; direct URL/bookmark/share/new tab/crawler/JS-disabled ambiguous requests may fall back to first match (accepted limitation).
+- `routes/web.php`: added `POST /ajax/category-context` (`ajax.category-context`) handled by `ShopController::setCategoryContext()`.
+- `app/Http/Controllers/ShopController.php`: `setCategoryContext()` validates `category_id + slug` and stores `session('category_context.{slug}')`; `category()` resolves ambiguous slug matches via session context (`pull()` to clear after use), otherwise falls back to first match. Keeps scoped sidebar data (`currentCategory` branch, `activeCategoryIds`).
+- Frontend category links keep clean `href="/category/{slug}"` and carry `data-category-id`, `data-category-slug`, `js-category-context-link` for JS context setting: `resources/views/partials/shop-sidebar-category-items.blade.php`, `resources/views/partials/mobile-category-tree-items.blade.php`, `resources/views/frontend/shop/index.blade.php` breadcrumbs, `resources/views/partials/breadcrumb.blade.php` (data attr support), `resources/views/frontend/product/show.blade.php`, `resources/views/frontend/home/index.blade.php`, `resources/views/frontend/categories/index.blade.php`.
+- `public/assets/front/js/myscript.js`: delegated click handler intercepts normal left-clicks on `.js-category-context-link`, POSTs category context to `/ajax/category-context` with CSRF/base-url handling, then navigates to clean URL; on failure/timeout still navigates.
+- Scoped shop category sidebar: on category pages show `All Categories` + current opened top-level category branch/children (SteveAutoParts-style); full category tree on non-category shop pages.
+- Verification: `php -l` passed on changed PHP files; `php artisan view:clear` run; tinker smoke test confirmed `category_context.service-kits=1486` resolves `/category/service-kits` to **Engine > Service Kits** (`9,1486`) and context is cleared; without context falls back to first match.
+- Files: `app/Http/Controllers/ShopController.php`, `routes/web.php`, `resources/views/frontend/shop/index.blade.php`, `resources/views/partials/shop-sidebar-category-items.blade.php`, `resources/views/partials/mobile-category-tree-items.blade.php`, `resources/views/partials/breadcrumb.blade.php`, `resources/views/frontend/product/show.blade.php`, `resources/views/frontend/home/index.blade.php`, `resources/views/frontend/categories/index.blade.php`, `public/assets/front/js/myscript.js`, `TASKS.md`.
+
+
+## 490. (2026-11-26): Admin All Products search — include slug
+
+**Status: Implemented**
+
+- User requested that the admin All Products search field should search beyond product name, including Part Number and slug.
+- `app/Http/Controllers/ProductController.php`: added `->orWhere('slug', 'like', "%{$search}%")` to product listing search and stock listing search (2 places). Search now covers `name`, `part_number`, `sku`, `slug`.
+- Verified: `php -l app/Http/Controllers/ProductController.php` passes.
+- Files: `app/Http/Controllers/ProductController.php`, `TASKS.md`.
+
+
+## 491. (2026-11-26): Shop sidebar — active child only
+
+**Status: Implemented**
+
+- User requested shop/category sidebar behavior like reference autoparts flow: when a child category is open, show its parent and only the active child branch; hide sibling child categories. Clarified that the selected child category's own children should still show for deeper drill-down.
+- `resources/views/partials/shop-sidebar-category-items.blade.php`: added active-path filtering when `activeCategoryIds` is present. Keeps nodes in active path, plus children of the selected category; skips filtering for visible non-active expanded nodes so users can browse deeper before navigating.
+- `app/Services/CategoryTree.php`: added `parent_id` to cached tree nodes and bumped cache key to `front_category_tree_v3` for safe structure change.
+- Verified: `php -l app/Services/CategoryTree.php` passes; `php artisan view:clear` run.
+- Files: `resources/views/partials/shop-sidebar-category-items.blade.php`, `app/Services/CategoryTree.php`, `TASKS.md`.

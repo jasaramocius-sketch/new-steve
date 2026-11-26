@@ -101,6 +101,7 @@ Route::get('/api/vehicles/models', [ShopController::class, 'vehicleModels'])->na
 Route::get('/api/search/suggestions', [ShopController::class, 'suggestions'])->name('search.suggestions');
 Route::get('/ajax/mobile-categories', [HomeController::class, 'mobileCategories'])->name('ajax.mobile-categories');
 Route::get('/ajax/shop-category-children', [ShopController::class, 'sidebarCategoryChildren'])->name('ajax.shop-category-children');
+Route::post('/ajax/category-context', [ShopController::class, 'setCategoryContext'])->name('ajax.category-context');
 
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product');
 Route::get('/ajax/product/check-fitment', [ProductController::class, 'checkFitment'])->name('product.check-fitment');
@@ -748,6 +749,14 @@ Route::prefix('admin')
             ->name('admin.settings.invoice');
         Route::post('/settings/invoice', [AdminController::class, 'updateInvoiceSettings'])
             ->name('admin.settings.invoice.update');
+        Route::get('/settings/email-templates', [AdminController::class, 'emailTemplates'])
+            ->name('admin.settings.email-templates');
+        Route::get('/settings/email-templates/{key}/edit', [AdminController::class, 'editEmailTemplate'])
+            ->name('admin.settings.email-templates.edit');
+        Route::post('/settings/email-templates/{key}', [AdminController::class, 'updateEmailTemplate'])
+            ->name('admin.settings.email-templates.update');
+        Route::post('/settings/email-templates/{key}/reset', [AdminController::class, 'resetEmailTemplate'])
+            ->name('admin.settings.email-templates.reset');
         Route::get('/settings/seo', [AdminController::class, 'seoSettings'])
             ->name('admin.settings.seo');
         Route::post('/settings/seo', [AdminController::class, 'updateSeoSettings'])

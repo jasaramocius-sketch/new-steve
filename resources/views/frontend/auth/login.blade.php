@@ -5,7 +5,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'Login - Steve Autoparts',
         'metaTitle' => 'Login | Steve Autoparts',
-        'metaDescription' => 'Sign in to your StAutoparts account.',
+        'metaDescription' => 'Sign in to your Steve Autoparts account.',
     ])
 @endsection
 @section('content')

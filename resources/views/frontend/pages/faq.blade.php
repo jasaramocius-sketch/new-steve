@@ -2,8 +2,8 @@
 @include('partials.page-attributes', ['pageId' => 'user-faq-page', 'pageClass' => 'user-faq-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $page->meta_title ?? ('FAQ - ' . config('app.name', 'StAutoparts')),
-        'metaTitle' => $page->meta_title ?? ('FAQ | ' . config('app.name', 'StAutoparts')),
+        'pageTitle' => $page->meta_title ?? ('FAQ - ' . config('app.name', 'Steve Autoparts')),
+        'metaTitle' => $page->meta_title ?? ('FAQ | ' . config('app.name', 'Steve Autoparts')),
         'metaDescription' => $page->meta_description ?? 'Frequently asked questions about ST Auto Parts — orders, shipping, returns and support.',
         'robots' => 'index, follow',
     ])

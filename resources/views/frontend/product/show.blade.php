@@ -7,9 +7,9 @@
 @php $prodName = $product['name'] ?? 'Product'; $prodDesc = trim(strip_tags(html_entity_decode($product['description'] ?? ''))); $prodDesc = mb_strlen($prodDesc) > 160 ? mb_substr($prodDesc, 0, 157) . '...' : $prodDesc; @endphp
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => $prodName . ' - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => ($product['meta_title'] ?? '') ?: ($prodName . ' | ' . config('app.name', 'StAutoparts')),
-        'metaDescription' => ($product['meta_description'] ?? '') ?: ($prodDesc ?: ('Buy ' . $prodName . ' at ' . config('app.name', 'StAutoparts'))),
+        'pageTitle' => $prodName . ' - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => ($product['meta_title'] ?? '') ?: ($prodName . ' | ' . config('app.name', 'Steve Autoparts')),
+        'metaDescription' => ($product['meta_description'] ?? '') ?: ($prodDesc ?: ('Buy ' . $prodName . ' at ' . config('app.name', 'Steve Autoparts'))),
         'ogImage' => $product['image'] ?? null,
         'ogImagePrefix' => 'assets/images/thumbnails',
         'robots' => 'index, follow',
@@ -191,13 +191,12 @@
               <ul class="details_tags_sku">
                 @if(isset($product['category']) && $product['category'])
                 @php
-                    $cat = $product['category'];
-                    $catId = is_array($cat) ? ($cat['id'] ?? null) : ($cat->id ?? null);
-                    $catSlug = is_array($cat) ? ($cat['slug'] ?? null) : ($cat->slug ?? null);
-                    $catName = is_array($cat) ? ($cat['name'] ?? '') : ($cat->name ?? '');
-                    $catUrl = ($catId && $catSlug) ? \App\Support\CategoryRef::url($catId, $catSlug) : ($catSlug ? route('category', ['slug' => $catSlug]) : '#');
+                    $showCat = $product['category'];
+                    $showCatId = is_array($showCat) ? ($showCat['id'] ?? null) : ($showCat->id ?? null);
+                    $showCatSlug = is_array($showCat) ? ($showCat['slug'] ?? '') : ($showCat->slug ?? '');
+                    $showCatName = is_array($showCat) ? ($showCat['name'] ?? '') : ($showCat->name ?? '');
                 @endphp
-                <li><span>Category:</span><a href="{{ $catUrl }}" class="text-decoration-none">{{ $catName }}</a></li>
+                <li><span>Category:</span><a href="{{ route('category', ['slug' => $showCatSlug]) }}" @if($showCatId) data-category-id="{{ $showCatId }}" data-category-slug="{{ $showCatSlug }}" class="text-decoration-none js-category-context-link" @else class="text-decoration-none" @endif>{{ $showCatName }}</a></li>
                 @endif
                 @if(!empty($product['part_number']))
                 <li><span>Part Number:</span> {{ $product['part_number'] }}</li>
@@ -218,7 +217,7 @@
                 @endif
               </ul>
 
-              <ul class="shop_details_shate">
+              <ul class="shop_details_share">
                 <li>Share:</li>
                 @php $shareUrl = url()->current(); $shareText = ($product['name'] ?? 'Check this product'); @endphp
                 <li><a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($shareUrl) }}" target="_blank" rel="noopener" aria-label="Share on Facebook"><i class="fab fa-facebook-f"></i></a></li>
@@ -248,14 +247,44 @@
               @php
                   $overview = trim((string) ($product['overview'] ?? ''));
                   $description = trim((string) ($product['description'] ?? ''));
-                  $descText = $overview !== '' ? $overview : $description;
+                  $normalizeDesc = function ($value) {
+                      $text = html_entity_decode(strip_tags((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                      $text = preg_replace('/\s+/u', ' ', $text);
+                      return strtolower(trim((string) $text));
+                  };
+                  $overviewNorm = $normalizeDesc($overview);
+                  $descriptionNorm = $normalizeDesc($description);
+                  $showOverview = $overview !== '';
+                  $showDescription = $description !== '';
+
+                  if ($showOverview && $showDescription) {
+                      $sameOrContained = $overviewNorm !== ''
+                          && $descriptionNorm !== ''
+                          && ($overviewNorm === $descriptionNorm
+                              || str_contains($descriptionNorm, $overviewNorm)
+                              || str_contains($overviewNorm, $descriptionNorm));
+                      if ($sameOrContained) {
+                          // Keep the richer/longer content to avoid duplicate rendering.
+                          if (mb_strlen($descriptionNorm) >= mb_strlen($overviewNorm)) {
+                              $showOverview = false;
+                          } else {
+                              $showDescription = false;
+                          }
+                      }
+                  }
+
+                  $descText = trim(($showDescription ? $description : '') . "\n" . ($showOverview ? $overview : ''));
                   $descLower = strtolower(strip_tags($descText));
                   $hasFeaturesInDesc = str_contains($descLower, 'key features') || preg_match('/^\s*[•\-*]\s/m', $descText);
               @endphp
-              @if($overview !== '')
-              <div class="product-description-body">{!! $description !!} {!! $overview !!}</div>
-              @elseif($description !== '')
-              <div class="product-description-body">{!! $description !!}</div>
+              @if($showDescription || $showOverview)
+              <div class="product-description-body">
+@if($showDescription){!! $description !!}@endif
+@if($showDescription && $showOverview)
+
+@endif
+@if($showOverview){!! $overview !!}@endif
+</div>
               @else
               <p class="text-muted mb-0">No description available for this product yet.</p>
               @endif
@@ -267,7 +296,7 @@
                   @endforeach
                 </ul>
               @endif
-              @if(!empty($productSpecs))
+              @if(!empty($product->specifications) && count($product->specifications) && !empty($productSpecs))
                 <h5 class="mt-4 mb-3 fw-bold">Specifications:</h5>
                 <div class="table-responsive">
                   <table class="table table-bordered product-specifications-table">
@@ -425,8 +454,8 @@
               </div>
             </div>
             <div class="d-flex gap-1 mt-2">
-              <button type="button" class="template-btn steve-btn" id="fitmentCheckBtn">Check</button>
-              <button type="button" class="btn btn-outline-secondary" id="fitmentResetBtn">Reset</button>
+              <button type="button" class="template-btn steve-btn" id="fitmentCheckBtn" title="Check Fit" aria-label="Check Fit">Check Fit</button>
+              <button type="button" class="btn btn-outline-secondary" id="fitmentResetBtn" title="Reset" aria-label="Reset"><i class="las la-undo-alt"></i></button>
             </div>
             <div id="fitmentCheckResult" class="mt-2" style="font-size:13px;"></div>
 
@@ -628,8 +657,20 @@ document.addEventListener('DOMContentLoaded', function() {
       var html = el.innerHTML;
       // Already rich HTML (e.g. saved by the WYSIWYG editor) -> render as-is, skip markdown
       if (/<[a-z][^>]*>/i.test(html)) return;
-      var raw = el.textContent;
+      var raw = el.textContent.replace(/\r\n/g, '\n');
       raw = raw.replace(/^[ \t]*\u2022[ \t]+/gm, '- ');
+      var lines = raw.split('\n');
+      var minIndent = null;
+      lines.forEach(function(line) {
+        if (!line.trim()) return;
+        var indent = (line.match(/^[ \t]*/) || [''])[0].length;
+        if (minIndent === null || indent < minIndent) minIndent = indent;
+      });
+      if (minIndent > 0) {
+        raw = lines.map(function(line) { return line.trim() ? line.slice(minIndent) : line.trim(); }).join('\n');
+      }
+      raw = raw.trim();
+      if (!raw) return;
       el.innerHTML = marked.parse(raw);
     });
   }
@@ -1231,7 +1272,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     checkBtn.disabled = true;
-    checkBtn.textContent = 'Checking...';
+    checkBtn.innerHTML = '<i class="las la-spinner la-spin"></i>';
     resultEl.innerHTML = '';
     var params = new URLSearchParams({ product_id: String(productId), year: year, make: make, model: model });
     if (engine) params.set('engine', engine);
@@ -1243,13 +1284,13 @@ document.addEventListener('DOMContentLoaded', function () {
       } else if (data.fits === false) {
         resultEl.innerHTML = '<span style="color:#c62828;font-weight:600;"><i class="las la-times-circle"></i> ' + (data.message || 'This part does not fit your vehicle.') + '</span>';
       } else {
-        resultEl.innerHTML = '<span class="text-muted"><i class="las la-info-circle"></i> ' + (data.message || 'Fitment information unavailable.') + '</span>';
+        resultEl.innerHTML = '<div style="display:inline-flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:8px;background:#fff8e1;border:1px solid #ffe082;color:#7a5b00;font-weight:500;line-height:1.4;"><i class="las la-info-circle" style="font-size:18px;line-height:1.2;"></i><span>' + (data.message || 'Fitment information unavailable.') + '</span></div>';
       }
     }).catch(function () {
       resultEl.innerHTML = '<span class="text-danger"><i class="las la-exclamation-circle"></i> Could not check fitment right now. Please try again.</span>';
     }).finally(function () {
       checkBtn.disabled = false;
-      checkBtn.textContent = 'Check Fit';
+      checkBtn.innerHTML = 'Check Fit';
     });
   });
 

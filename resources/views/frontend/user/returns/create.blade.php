@@ -4,7 +4,7 @@
     @include('partials.meta-tags', [
         'pageTitle' => 'Request Return - Steve Autoparts',
         'metaTitle' => 'Request Return | Steve Autoparts',
-        'metaDescription' => 'Request a return for your order at StAutoparts.',
+        'metaDescription' => 'Request a return for your order at Steve Autoparts.',
     ])
 @endsection
 @section('dashboard-content')

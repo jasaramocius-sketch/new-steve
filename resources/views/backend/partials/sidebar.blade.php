@@ -1,7 +1,7 @@
 <div class="admin-sidebar">
     <div class="brand">
         <a class="d-block py-15px mr-3 ml-0 gap-1" href="{{ route('home') }}">
-            <img src="{{ storedImageUrl(\App\Models\Setting::get('header_logo') ?? 'BwSkuSZ7ZYGWPc4Zk3CfeFzcn49dHpx3143n4WKS.png', 'assets/images') }}" alt="SteveAutoPartsInc." class="mw-100 h-80px h-md-50px" height="40">
+            <img src="{{ storedImageUrl(\App\Models\Setting::get('header_logo') ?? 'BwSkuSZ7ZYGWPc4Zk3CfeFzcn49dHpx3143n4WKS.png', 'assets/images') }}" alt="Steve Autoparts" class="mw-100 h-80px h-md-50px" height="40">
              STEVE Autoparts</a>
         <button class="sidebar-close-btn d-md-none" id="sidebarCloseBtn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Close sidebar">
             <i class="fas fa-times"></i>
@@ -175,6 +175,7 @@
                     <li><a href="{{ route('admin.settings.header') }}" class="{{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}"><i class="fas fa-gear" aria-hidden="true"></i> General Settings</a></li>
                     <li><a href="{{ route('admin.settings.contact') }}" class="{{ request()->routeIs('admin.settings.contact*') ? 'active' : '' }}"><i class="fas fa-address-book" aria-hidden="true"></i> Contact Information</a></li>
                     <li><a href="{{ route('admin.settings.invoice') }}" class="{{ request()->routeIs('admin.settings.invoice*') ? 'active' : '' }}"><i class="fas fa-file-invoice" aria-hidden="true"></i> Invoice Settings</a></li>
+                    <li><a href="{{ route('admin.settings.email-templates') }}" class="{{ request()->routeIs('admin.settings.email-templates*') ? 'active' : '' }}"><i class="fas fa-envelope" aria-hidden="true"></i> Email Templates</a></li>
                     <li><a href="{{ route('admin.settings.seo') }}" class="{{ request()->routeIs('admin.settings.seo*') ? 'active' : '' }}"><i class="fas fa-magnifying-glass" aria-hidden="true"></i> SEO Settings</a></li>
                     <li><a href="{{ route('admin.settings.features') }}" class="{{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}"><i class="fas fa-toggle-on" aria-hidden="true"></i> Features activation</a></li>
                     <li><a href="{{ route('admin.settings.languages.index') }}" class="{{ request()->routeIs('admin.settings.languages.*') ? 'active' : '' }}"><i class="fas fa-language" aria-hidden="true"></i> Languages</a></li>

@@ -3,9 +3,9 @@
 @include('partials.page-attributes', ['pageId' => 'brands-page', 'pageClass' => 'brands-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'All Brands - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => 'All Brands | ' . config('app.name', 'StAutoparts'),
-        'metaDescription' => 'Browse all auto parts brands at ' . config('app.name', 'StAutoparts') . '.',
+        'pageTitle' => 'All Brands - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => 'All Brands | ' . config('app.name', 'Steve Autoparts'),
+        'metaDescription' => 'Browse all auto parts brands at ' . config('app.name', 'Steve Autoparts') . '.',
         'robots' => 'index, follow',
     ])
 @endsection
