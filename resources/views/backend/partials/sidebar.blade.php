@@ -1,0 +1,604 @@
+<div class="admin-sidebar">
+    <div class="brand">
+        <a class="d-block py-15px mr-3 ml-0 gap-1" href="{{ route('home') }}">
+            <img src="{{ storedImageUrl(\App\Models\Setting::get('header_logo') ?? 'BwSkuSZ7ZYGWPc4Zk3CfeFzcn49dHpx3143n4WKS.png', 'assets/images') }}" alt="Steve Autoparts" class="mw-100 h-80px h-md-50px" height="40">
+             STEVE Autoparts</a>
+        <button class="sidebar-close-btn d-md-none" id="sidebarCloseBtn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Close sidebar">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="nav-wrap">
+        <div class="admin-sidebar-scroll-box scroll-box">
+        <div class="nav-section">Main</div>
+        <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        @php
+            // Products parent active
+            $productsActive = request()->routeIs(
+                'admin.products.*',
+                'admin.categories.*',
+                'admin.brands.*',
+                'admin.settings.commission*',
+                'admin.settings.stock-sync*',
+                'admin.reviews.*'
+            );
+
+            // Submenu default expanded if parent or any child is active
+            $productsExpanded = $productsActive;
+
+            // All Products
+            $allProductsActive = request()->routeIs('admin.products.*') && !request()->routeIs(
+                'admin.products.import-form',
+                'admin.products.import',
+                'admin.products.download-sample-csv',
+                'admin.products.export-csv',
+                'admin.products.stock',
+                'admin.products.bulk-stock'
+            );
+
+            // Bulk Import
+            $productImportActive = request()->routeIs(
+                'admin.products.import-form',
+                'admin.products.import',
+                'admin.products.download-sample-csv'
+            );
+
+            // Stock Management
+            $productStockActive = request()->routeIs(
+                'admin.products.stock',
+                'admin.products.bulk-stock',
+                'admin.settings.stock-sync*'
+            );
+
+            // Stock Management toggle (keep it open on Stock Overview / Bulk Stock / Stock Sync)
+            $stockSubmenuExpanded = request()->routeIs(
+                'admin.products.stock',
+                'admin.products.bulk-stock',
+                'admin.settings.stock-sync*'
+            );
+
+            // 500 debug viewer is local-only unless explicitly enabled
+            $debugErrorsEnabled = app()->environment('local') || config('app.debug_errors_enabled');
+        @endphp
+
+        <ul class="admin-sidebar-drop list-unstyled">
+            <li>
+                <a href="#productsSubmenu"
+                class="nav-item sidebar-link {{ $productsActive ? 'active' : '' }} {{ $productsExpanded ? 'expanded' : 'collapsed' }}"
+                data-bs-toggle="collapse"
+                role="button"
+                aria-expanded="{{ $productsExpanded ? 'true' : 'false' }}"
+                aria-controls="productsSubmenu">
+                    <i class="fas fa-box"></i>
+                    Products
+                    <i class="fas fa-chevron-down submenu-arrow"></i>
+                </a>
+
+                <ul class="collapse list-unstyled submenu {{ $productsExpanded ? 'show' : '' }}"
+                    id="productsSubmenu">
+
+                    <li><a href="{{ route('admin.products.index') }}" class="nav-item-sub {{ $allProductsActive ? 'active' : '' }}"><i class="fas fa-boxes-stacked" aria-hidden="true"></i> All Products</a></li>
+                    <li><a href="{{ route('admin.products.import-form') }}" class="nav-item-sub {{ $productImportActive ? 'active' : '' }}"><i class="fas fa-file-import" aria-hidden="true"></i> Bulk Import</a></li>
+                    <li><a href="{{ route('admin.products.export-csv') }}" class="nav-item-sub {{ request()->routeIs('admin.products.export-csv') ? 'active' : '' }}"><i class="fas fa-file-export" aria-hidden="true"></i> Bulk Export</a></li>
+                    <li><a href="{{ route('admin.categories.index') }}" class="nav-item-sub {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}"><i class="fas fa-folder-tree" aria-hidden="true"></i> Categories</a></li>
+                    <li><a href="{{ route('admin.brands.index') }}" class="nav-item-sub {{ request()->routeIs('admin.brands.*') ? 'active' : '' }}"><i class="fas fa-tags" aria-hidden="true"></i> Brands</a></li>
+                    <li class="stock-management-submenu">
+                        <a href="#stockManagementSubmenu"
+                           class="nav-item sidebar-link {{ $stockSubmenuExpanded ? 'active expanded' : 'collapsed' }}"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="{{ $stockSubmenuExpanded ? 'true' : 'false' }}"
+                           aria-controls="stockManagementSubmenu">
+                            <i class="fas fa-warehouse" aria-hidden="true"></i>
+                            <span>Stock Management</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="collapse list-unstyled submenu {{ $stockSubmenuExpanded ? 'show' : '' }}" id="stockManagementSubmenu">
+                            <li><a href="{{ route('admin.products.stock') }}" class="nav-item-sub {{ request()->routeIs('admin.products.stock', 'admin.products.bulk-stock') ? 'active' : '' }}"><i class="fas fa-boxes-stacked" aria-hidden="true"></i> Stock Overview</a></li>
+                            <li><a href="{{ route('admin.settings.stock-sync') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.stock-sync*') ? 'active' : '' }}"><i class="fas fa-rotate" aria-hidden="true"></i> Stock Sync</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="{{ route('admin.settings.commission') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.commission*') ? 'active' : '' }}"><i class="fas fa-percent" aria-hidden="true"></i> Commission</a></li>
+                    <li><a href="{{ route('admin.reviews.index') }}" class="nav-item-sub {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}"><i class="fas fa-star" aria-hidden="true"></i> Product Reviews</a></li>
+
+                </ul>
+            </li>
+        </ul>
+        <a href="{{ route('admin.orders.index') }}" class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+            <i class="fas fa-shopping-cart"></i> Orders
+        </a>
+        <a href="{{ route('admin.returns.index') }}" class="nav-item {{ request()->routeIs('admin.returns.*') ? 'active' : '' }}">
+            <i class="fas fa-undo"></i> Returns
+        </a>
+        <!-- <a href="{{ route('admin.products.import-form') }}" class="nav-item nav-item-sub {{ request()->routeIs('admin.products.import-form') ? 'active' : '' }}">
+            <i class="fas fa-upload"></i> Import Products 
+        </a>-->
+        @if (\App\Support\FeatureFlags::enabled('vendor_system_activation'))
+        <a href="{{ route('admin.sellers.index') }}" class="nav-item {{ request()->routeIs('admin.sellers.*') ? 'active' : '' }}">
+            <i class="fas fa-store"></i> Sellers
+        </a>
+        @endif
+
+        <div class="nav-section">Content</div>
+        <a href="{{ route('page-builder.index') }}" class="nav-item {{ request()->routeIs('page-builder.*') ? 'active' : '' }}">
+            <i class="fas fa-puzzle-piece"></i> Page Builder
+        </a>
+        <a href="{{ route('admin.images.index') }}" class="nav-item {{ request()->routeIs('admin.images.*') ? 'active' : '' }}">
+            <i class="fas fa-cloud-upload-alt"></i> Image Manager
+        </a>
+        <a href="{{ route('admin.blogs.index') }}" class="nav-item {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
+            <i class="fas fa-blog"></i> Blog
+        </a>
+        <a href="{{ route('admin.blog-categories.index') }}" class="nav-item {{ request()->routeIs('admin.blog-categories.*') ? 'active' : '' }}">
+            <i class="fas fa-folder"></i> Blog Categories
+        </a>
+        <a href="{{ route('admin.pages.index') }}" class="nav-item {{ request()->routeIs('admin.pages.*') ? 'active' : '' }}">
+            <i class="fas fa-file"></i> Pages
+        </a>
+        <a href="{{ route('admin.faqs.index') }}" class="nav-item {{ request()->routeIs('admin.faqs.*') ? 'active' : '' }}">
+            <i class="fas fa-question-circle"></i> FAQs
+        </a>
+        <a href="{{ route('admin.contacts.index') }}" class="nav-item {{ request()->routeIs('admin.contacts.*') ? 'active' : '' }} questions-inquiries-link">
+            <i class="fas fa-envelope-open-text"></i> Questions / Inquiries
+            <span class="badge bg-info">{{ $pendingInquiries ?? 0 }}</span>
+        </a>
+        <a href="{{ route('admin.coupons.index') }}" class="nav-item {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}">
+            <i class="fas fa-percent"></i> Coupons
+        </a>
+        <!-- <a href="{{ route('admin.reviews.index') }}" class="nav-item {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
+            <i class="fas fa-star"></i> Reviews
+        </a> -->
+
+        <div class="nav-section">Settings</div>
+        @php
+            $setupConfigExpanded = request()->routeIs('admin.settings.*', 'admin.api-integrations.*')
+                && ! request()->routeIs('admin.settings.commission*')
+                && ! request()->routeIs('admin.settings.file-system-cache*')
+                && ! request()->routeIs('admin.settings.search-categories*');
+        @endphp
+        <ul class="admin-sidebar-drop submenu-sub list-unstyled">
+            <li>
+                <a href="#setupConfigSubmenu"
+                class="nav-item sidebar-link {{ $setupConfigExpanded ? 'active' : 'collapsed' }}"
+                data-bs-toggle="collapse"
+                role="button"
+                aria-expanded="{{ $setupConfigExpanded ? 'true' : 'false' }}"
+                aria-controls="setupConfigSubmenu">
+                    <i class="fas fa-cogs"></i>
+                    Setup &amp; Configurations
+                    <i class="fas fa-chevron-down submenu-arrow"></i>
+                </a>
+
+                <ul class="collapse list-unstyled submenu {{ $setupConfigExpanded ? 'show' : '' }}" id="setupConfigSubmenu">
+                    <li><a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.index') ? 'active' : '' }}"><i class="fas fa-sliders" aria-hidden="true"></i> All Settings</a></li>
+                    <li><a href="{{ route('admin.settings.header') }}" class="{{ request()->routeIs('admin.settings.header*') ? 'active' : '' }}"><i class="fas fa-gear" aria-hidden="true"></i> General Settings</a></li>
+                    <li><a href="{{ route('admin.settings.contact') }}" class="{{ request()->routeIs('admin.settings.contact*') ? 'active' : '' }}"><i class="fas fa-address-book" aria-hidden="true"></i> Contact Information</a></li>
+                    <li><a href="{{ route('admin.settings.invoice') }}" class="{{ request()->routeIs('admin.settings.invoice*') ? 'active' : '' }}"><i class="fas fa-file-invoice" aria-hidden="true"></i> Invoice Settings</a></li>
+                    <li><a href="{{ route('admin.settings.email-templates') }}" class="{{ request()->routeIs('admin.settings.email-templates*') ? 'active' : '' }}"><i class="fas fa-envelope" aria-hidden="true"></i> Email Templates</a></li>
+                    <li><a href="{{ route('admin.settings.seo') }}" class="{{ request()->routeIs('admin.settings.seo*') ? 'active' : '' }}"><i class="fas fa-magnifying-glass" aria-hidden="true"></i> SEO Settings</a></li>
+                    <li><a href="{{ route('admin.settings.features') }}" class="{{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}"><i class="fas fa-toggle-on" aria-hidden="true"></i> Features activation</a></li>
+                    <li><a href="{{ route('admin.settings.languages.index') }}" class="{{ request()->routeIs('admin.settings.languages.*') ? 'active' : '' }}"><i class="fas fa-language" aria-hidden="true"></i> Languages</a></li>
+                    <li><a href="{{ route('admin.settings.currency.index') }}" class="{{ request()->routeIs('admin.settings.currency.*') ? 'active' : '' }}"><i class="fas fa-coins" aria-hidden="true"></i> Currency</a></li>
+                    <li><a href="{{ route('admin.settings.custom') }}" class="{{ request()->routeIs('admin.settings.custom*', 'admin.settings.tax-types*') ? 'active' : '' }}"><i class="fas fa-percent" aria-hidden="true"></i> Vat &amp; TAX</a></li>
+                    <li><a href="{{ route('admin.settings.pickup-points.index') }}" class="{{ request()->routeIs('admin.settings.pickup-points.*') ? 'active' : '' }}"><i class="fas fa-store" aria-hidden="true"></i> Pickup point</a></li>
+                    <li><a href="{{ route('admin.settings.smtp') }}" class="{{ request()->routeIs('admin.settings.smtp*') ? 'active' : '' }}"><i class="fas fa-envelope" aria-hidden="true"></i> SMTP Settings</a></li>
+                    <li><a href="{{ route('admin.settings.two-factor') }}" class="{{ request()->routeIs('admin.settings.two-factor*') ? 'active' : '' }}"><i class="fas fa-lock" aria-hidden="true"></i> Two-Factor Auth</a></li>
+                    <li><a href="{{ route('admin.settings.payment-methods') }}" class="{{ request()->routeIs('admin.settings.payment-methods*') ? 'active' : '' }}"><i class="fas fa-credit-card" aria-hidden="true"></i> Payment Methods</a></li>
+                    <li><a href="{{ route('admin.api-integrations.index') }}" class="{{ request()->routeIs('admin.api-integrations*') ? 'active' : '' }}">
+                        <i class="fas fa-plug" aria-hidden="true"></i> API Integrations
+                    </a></li>
+                    @php($shippingMenuExpanded = request()->routeIs('admin.settings.shipping*', 'admin.settings.shipping-countries.*', 'admin.settings.shipping-states.*', 'admin.settings.shipping-cities.*', 'admin.settings.shipping-zones.*', 'admin.settings.shipping-carriers.*'))
+                    <li class="shipping-settings-submenu">
+                        <a href="#shippingSettingsSubmenu"
+                           class="nav-item sidebar-link {{ $shippingMenuExpanded ? 'active' : 'collapsed' }} {{ $shippingMenuExpanded ? 'expanded' : '' }}"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="{{ $shippingMenuExpanded ? 'true' : 'false' }}"
+                           aria-controls="shippingSettingsSubmenu">
+                            <i class="fas fa-truck-fast"></i>
+                            <span>Shipping</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                         <ul class="collapse list-unstyled submenu {{ $shippingMenuExpanded ? 'show' : '' }}" id="shippingSettingsSubmenu">
+                             <li><a href="{{ route('admin.settings.shipping') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping', 'admin.settings.shipping.update') ? 'active' : '' }}"><i class="fas fa-sliders"></i> Shipping Configuration</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-countries.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-countries.*') ? 'active' : '' }}"><i class="fas fa-globe"></i> Shipping Countries</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-states.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-states.*') ? 'active' : '' }}"><i class="fas fa-map-marked-alt"></i> Shipping States</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-cities.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-cities.*') ? 'active' : '' }}"><i class="fas fa-building"></i> Shipping Cities</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-zones.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-zones.*') ? 'active' : '' }}"><i class="fas fa-map-marker-alt"></i> Shipping Zones</a></li>
+                             <li><a href="{{ route('admin.settings.shipping-carriers.index') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.shipping-carriers.*') ? 'active' : '' }}"><i class="fas fa-ship"></i> Shipping Carriers</a></li>
+                         </ul>
+                     </li>
+                    <li><a href="{{ route('admin.settings.order') }}" class="{{ request()->routeIs('admin.settings.order*') ? 'active' : '' }}"><i class="fas fa-clipboard-list" aria-hidden="true"></i> Order Configuration</a></li>
+                    <li><a href="{{ route('admin.settings.social-logins') }}" class="{{ request()->routeIs('admin.settings.social-logins*') ? 'active' : '' }}"><i class="fas fa-users" aria-hidden="true"></i> Social media Logins</a></li>
+                    @php($facebookSettingsExpanded = request()->routeIs('admin.settings.facebook-chat*', 'admin.settings.facebook-comment*'))
+                    <li class="facebook-settings-submenu">
+                        <a href="#facebookSettingsSubmenu"
+                           class="nav-item sidebar-link {{ $facebookSettingsExpanded ? 'active' : 'collapsed' }} {{ $facebookSettingsExpanded ? 'expanded' : '' }}"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="{{ $facebookSettingsExpanded ? 'true' : 'false' }}"
+                           aria-controls="facebookSettingsSubmenu">
+                            <i class="fab fa-facebook" aria-hidden="true"></i>
+                            <span>Facebook</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="collapse list-unstyled submenu {{ $facebookSettingsExpanded ? 'show' : '' }}" id="facebookSettingsSubmenu">
+                            <li><a href="{{ route('admin.settings.facebook-chat') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.facebook-chat*') ? 'active' : '' }}"><i class="fab fa-facebook-messenger" aria-hidden="true"></i> Facebook Chat</a></li>
+                            <li><a href="{{ route('admin.settings.facebook-comment') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.facebook-comment*') ? 'active' : '' }}"><i class="fas fa-comments" aria-hidden="true"></i> Facebook Comment</a></li>
+                        </ul>
+                    </li>
+                    @php($googleSettingsExpanded = request()->routeIs('admin.settings.google-recaptcha*', 'admin.settings.google-map*', 'admin.settings.google-firebase*'))
+                    <li class="google-settings-submenu">
+                        <a href="#googleSettingsSubmenu"
+                           class="nav-item sidebar-link {{ $googleSettingsExpanded ? 'active' : 'collapsed' }} {{ $googleSettingsExpanded ? 'expanded' : '' }}"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="{{ $googleSettingsExpanded ? 'true' : 'false' }}"
+                           aria-controls="googleSettingsSubmenu">
+                            <i class="fab fa-google" aria-hidden="true"></i>
+                            <span>Google</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="collapse list-unstyled submenu {{ $googleSettingsExpanded ? 'show' : '' }}" id="googleSettingsSubmenu">
+                            <li><a href="{{ route('admin.settings.google-recaptcha') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.google-recaptcha*') ? 'active' : '' }}"><i class="fas fa-shield-alt" aria-hidden="true"></i> Google reCAPTCHA</a></li>
+                            <li><a href="{{ route('admin.settings.google-map') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.google-map*') ? 'active' : '' }}"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Google Map</a></li>
+                            <li><a href="{{ route('admin.settings.google-firebase') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.google-firebase*') ? 'active' : '' }}"><i class="fas fa-fire" aria-hidden="true"></i> Google Firebase</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <a href="{{ route('admin.home-page.index') }}" class="nav-item {{ request()->routeIs('admin.home-page.*') ? 'active' : '' }}">
+            <i class="fas fa-home"></i> Home Page
+        </a>
+        <a href="{{ route('admin.settings.search-categories') }}" class="nav-item {{ request()->routeIs('admin.settings.search-categories*') ? 'active' : '' }}">
+            <i class="fas fa-list-ul"></i> Search Categories
+        </a>
+        <a href="{{ route('admin.subscribers.index') }}" class="nav-item {{ request()->routeIs('admin.subscribers.*') ? 'active' : '' }}">
+            <i class="fas fa-envelope"></i> Subscribers
+        </a>
+        @php($systemExpanded = request()->routeIs('admin.settings.file-system-cache*', 'admin.logs.*', 'admin.revisions.*', 'admin.file-revisions.*', 'admin.system.*'))
+        <ul class="admin-sidebar-drop submenu-sub list-unstyled">
+            <li>
+                <a href="#systemSubmenu"
+                   class="nav-item sidebar-link {{ $systemExpanded ? 'active' : 'collapsed' }}"
+                   data-bs-toggle="collapse"
+                   role="button"
+                   aria-expanded="{{ $systemExpanded ? 'true' : 'false' }}"
+                   aria-controls="systemSubmenu">
+                    <i class="fas fa-server"></i>
+                    System
+                    <i class="fas fa-chevron-down submenu-arrow"></i>
+                </a>
+                <ul class="collapse list-unstyled submenu {{ $systemExpanded ? 'show' : '' }}" id="systemSubmenu">
+                    <li><a href="{{ route('admin.settings.file-system-cache') }}" class="nav-item-sub {{ request()->routeIs('admin.settings.file-system-cache*') ? 'active' : '' }}"><i class="fas fa-hdd"></i> File System &amp; Cache</a></li>
+                    <li><a href="{{ route('admin.system.update') }}" class="nav-item-sub {{ request()->routeIs('admin.system.update*') ? 'active' : '' }}"><i class="fas fa-cloud-arrow-up"></i> Update</a></li>
+                    <li><a href="{{ route('admin.system.server-status') }}" class="nav-item-sub {{ request()->routeIs('admin.system.server-status*') ? 'active' : '' }}"><i class="fas fa-heart-pulse"></i> Server Status</a></li>
+                    @if ($debugErrorsEnabled)
+                        <li><a href="{{ route('admin.system.debug-errors') }}" class="nav-item-sub {{ request()->routeIs('admin.system.debug-errors*') ? 'active' : '' }}"><i class="fas fa-bug"></i> 500 Debug</a></li>
+                    @endif
+                    <li><a href="{{ route('admin.logs.index') }}" class="nav-item-sub {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}"><i class="fas fa-file-alt"></i> Logs</a></li>
+                    <li><a href="{{ route('admin.revisions.index') }}" class="nav-item-sub {{ request()->routeIs('admin.revisions.*') ? 'active' : '' }}"><i class="fas fa-history"></i> Revisions</a></li>
+                    <li><a href="{{ route('admin.file-revisions.index') }}" class="nav-item-sub {{ request()->routeIs('admin.file-revisions.*') ? 'active' : '' }}"><i class="fas fa-file-code"></i> File Revisions</a></li>
+                </ul>
+            </li>
+        </ul>
+        <a href="{{ route('admin.profile') }}" class="nav-item {{ request()->routeIs('admin.profile') ? 'active' : '' }}">
+            <i class="fas fa-user-cog"></i> My Profile
+        </a>
+
+        <div class="nav-section">People</div>
+        <a href="{{ url('/admin/customers') }}" class="nav-item {{ request()->is('admin/customers*') ? 'active' : '' }}">
+            <i class="fas fa-users"></i> Customers
+        </a>
+
+        <!-- @if(Auth::check() && in_array(Auth::user()->role, ['master_admin', 'admin']))
+        <a href="{{ url('/admin/staff') }}" class="nav-item {{ request()->is('admin/staff*') && !request()->is('admin/staffs*') ? 'active' : '' }}">
+            <i class="fas fa-user-tie"></i> Staff Management
+        </a>
+        @endif -->
+
+        @if(Auth::check() && Auth::user()->role === 'master_admin')
+        <a href="{{ route('admin.users.index') }}" class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+            <i class="fas fa-user-cog"></i> All Users
+        </a>
+        @endif
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.innerWidth < 768) {
+        console.log('Mobile viewport — icon-collapse feature disabled');
+        return;
+    }
+
+    if (document.getElementById('sidebarIconToggle')) {
+        console.log('Sidebar toggle already initialized — skipping');
+        return;
+    }
+
+    var sidebar = document.querySelector('.admin-sidebar');
+    if (!sidebar) { console.error('Sidebar not found'); return; }
+
+    // 1. Wrap nav-item label text in a span + set tooltip title from label
+    document.querySelectorAll('.admin-sidebar .nav-item, .admin-sidebar .sidebar-link').forEach(function(item) {
+        var icon = item.querySelector('i');
+        if (!icon) return;
+        var label = document.createElement('span');
+        label.className = 'nav-label';
+        var node = icon.nextSibling;
+        while (node) {
+            var next = node.nextSibling;
+            // Skip the chevron-arrow icon (it's a sibling too)
+            if (node.classList && node.classList.contains('submenu-arrow')) {
+                node = next;
+                continue;
+            }
+            label.appendChild(node);
+            node = next;
+        }
+        item.appendChild(label);
+        // Keep submenu arrow at the far right after the label
+        var arrow = item.querySelector('.submenu-arrow');
+        if (arrow) { item.appendChild(arrow); }
+        // Set tooltip title from visible text (icon + label)
+        var title = Array.from(item.querySelectorAll('.nav-label')).map(function(l){ return l.textContent.trim(); }).join(' ');
+        if (title) item.setAttribute('data-bs-original-title', title);
+    });
+
+    // 2. Wrap brand text in a span (logo stays untouched)
+    var brandLink = document.querySelector('.admin-sidebar .brand a');
+    if (brandLink) {
+        var img = brandLink.querySelector('img');
+        var label = document.createElement('span');
+        label.className = 'nav-label';
+        var node = img ? img.nextSibling : brandLink.firstChild;
+        while (node) {
+            var next = node.nextSibling;
+            label.appendChild(node);
+            node = next;
+        }
+        brandLink.appendChild(label);
+    }
+
+    // 3. Wrap nav-section text (e.g. "Main", "Content") in its own span
+    document.querySelectorAll('.admin-sidebar .nav-section').forEach(function(section) {
+        var text = section.textContent;
+        section.textContent = '';
+        var span = document.createElement('span');
+        span.className = 'nav-section-text';
+        span.textContent = text;
+        section.appendChild(span);
+    });
+
+    // 4. Inject CSS (only once)
+    if (!document.getElementById('sidebarToggleStyles')) {
+        var style = document.createElement('style');
+        style.id = 'sidebarToggleStyles';
+        style.textContent = `
+            .admin-sidebar {
+                position: fixed;
+                transition: width .3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .admin-sidebar.icon-collapsed { width: 72px !important; overflow: visible; }
+
+            .admin-sidebar .nav-item {
+                white-space: nowrap;
+                transition: padding-left .3s ease;
+            }
+            .admin-sidebar.icon-collapsed .nav-item {
+                justify-content: flex-start;
+            }
+            .admin-sidebar .nav-item i {
+                width: 20px;
+                text-align: center;
+                flex-shrink: 0;
+            }
+
+            .admin-sidebar .nav-label {
+                opacity: 1;
+                max-width: 200px;
+                overflow: hidden;
+                display: inline-block;
+                transition: opacity .2s ease, max-width .25s ease;
+            }
+            .admin-sidebar.icon-collapsed .nav-label {
+                opacity: 0;
+                max-width: 0;
+            }
+            .admin-sidebar.icon-collapsed .admin-sidebar-drop .submenu{
+                opacity: 0;
+                max-width: 0;
+                max-height: 0;
+            }
+
+            .admin-sidebar .nav-section {
+                position: relative;
+                height: auto;
+                overflow: hidden;
+                transition: height .25s ease;
+            }
+            .admin-sidebar.icon-collapsed .nav-section {
+                height: 31px;
+                border-top:unset;
+            }
+            .admin-sidebar.icon-collapsed .nav-section::before {
+                content: '';
+                position: absolute;
+                left: 10px; right: 20px; top: 50%;
+                height: 1px;
+                transform: translateY(-50%);
+                background: var(--primary);
+                opacity: 1;
+                transition: opacity .2s ease;
+                width: 20px;
+            }
+            .admin-sidebar .nav-section::before {
+                content: '';
+                position: absolute;
+                left: 20px; right: 20px; top: 50%;
+                height: 1px;
+                transform: translateY(-50%);
+                background: var(--primary);
+                opacity: 0;
+                transition: opacity .2s ease;
+            }
+            .admin-sidebar .nav-section-text {
+                opacity: 1;
+                transition: opacity .15s ease;
+            }
+            .admin-sidebar.icon-collapsed .nav-section-text {
+                opacity: 0;
+            }
+
+            .admin-sidebar .brand {
+                position: relative;
+                justify-content: flex-start;
+            }
+
+            .main-content {
+                transition: margin-left .3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            body.icon-collapsed-body .main-content { margin-left: 72px !important; }
+
+            /* Floating toggle button, half outside the sidebar edge */
+            #sidebarIconToggle {
+                position: absolute;
+                top: 17px;
+                right: -14px;
+                display: inline-flex !important;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                border: 1px solid rgba(0,0,0,.08);
+                background: #FFF;
+                color: #1e1e2d;
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                box-shadow: 0 2px 6px rgba(0,0,0,.15);
+                transition: all .15s;
+                flex-shrink: 0;
+                padding: 0;
+                z-index: 1003;
+            }
+            #sidebarIconToggle:hover { background: var(--primary); color:#fff; box-shadow: 0 2px 10px rgba(0,0,0,.22); }
+
+            .sidebar-toggle-icon {
+                transition: transform 0.25s ease;
+            }
+            .admin-sidebar.icon-collapsed .sidebar-toggle-icon {
+                transform: rotate(180deg);
+            }
+
+            /* Tablet/mobile: sidebar is off-canvas, so ignore desktop collapsed mode. */
+            @media (max-width:1024px) {
+                .admin-sidebar.icon-collapsed {
+                    width: 280px !important;
+                    overflow-y: auto;
+                }
+                .admin-sidebar.icon-collapsed .nav-label {
+                    opacity: 1;
+                    max-width: 200px;
+                }
+                .admin-sidebar.icon-collapsed .admin-sidebar-drop .submenu {
+                    opacity: 1;
+                    max-width: none;
+                    max-height: none;
+                }
+                .admin-sidebar.icon-collapsed .nav-section {
+                    height: auto;
+                }
+                .admin-sidebar.icon-collapsed .nav-section::before {
+                    opacity: 0;
+                }
+                .admin-sidebar.icon-collapsed .nav-section-text {
+                    opacity: 1;
+                }
+                .admin-sidebar.icon-collapsed .sidebar-toggle-icon {
+                    transform: none;
+                }
+                body.icon-collapsed-body .main-content {
+                    margin-left: 0 !important;
+                }
+                /* Navbar hamburger is the only toggle on small screens. */
+                #sidebarIconToggle {
+                    display: none !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 5. Toggle button — single button, chevron icon inside directly (no nested button)
+    var brandDiv = document.querySelector('.admin-sidebar .brand');
+    if (!brandDiv) { console.error('Brand div not found'); return; }
+
+    var toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.id = 'sidebarIconToggle';
+    toggleBtn.setAttribute('aria-label', 'Toggle sidebar');
+    toggleBtn.title = 'Toggle sidebar';
+    toggleBtn.innerHTML = `
+        <svg class="sidebar-toggle-icon" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+        </svg>
+    `;
+    brandDiv.appendChild(toggleBtn);
+
+    toggleBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var collapsed = sidebar.classList.toggle('icon-collapsed');
+        document.body.classList.toggle('icon-collapsed-body', collapsed);
+        localStorage.setItem('sidebarIconCollapsed', collapsed);
+    });
+
+    // 6. Restore saved state
+    if (localStorage.getItem('sidebarIconCollapsed') === 'true') {
+        sidebar.classList.add('icon-collapsed');
+        document.body.classList.add('icon-collapsed-body');
+    }
+});
+
+document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (link) {
+    const target = document.querySelector(link.getAttribute('href'));
+
+    if (!target) return;
+
+    // Server renders `active` when one of this group's pages is open.
+    // Keep that highlight even if the user manually collapses the group.
+    const routeActive = link.classList.contains('active');
+
+    const syncParentState = function () {
+        const isExpanded = target.classList.contains('show');
+        link.classList.toggle('active', isExpanded || routeActive);
+        link.classList.toggle('expanded', isExpanded);
+        link.classList.toggle('collapsed', !isExpanded);
+        link.setAttribute('aria-expanded', String(isExpanded));
+    };
+
+    syncParentState();
+    target.addEventListener('shown.bs.collapse', syncParentState);
+    target.addEventListener('hidden.bs.collapse', syncParentState);
+});
+
+document.addEventListener('show.bs.collapse', function (event) {
+    const opening = event.target;
+    const sidebar = opening instanceof Element ? opening.closest('.admin-sidebar') : null;
+
+    if (!sidebar || !window.bootstrap?.Collapse) return;
+
+    sidebar.querySelectorAll('.collapse.show').forEach(function (expanded) {
+        // Keep the open parent visible when expanding one of its nested menus.
+        if (expanded === opening || expanded.contains(opening)) return;
+
+        window.bootstrap.Collapse.getOrCreateInstance(expanded, { toggle: false }).hide();
+    });
+});
+</script>

@@ -31,7 +31,7 @@ class CurrencySettingsController extends Controller
             'no_of_decimals' => Setting::get('no_of_decimals', '2'),
         ];
 
-        return view('admin.settings.currency.index', compact('currencies', 'activeCurrencies', 'settings', 'search'));
+        return view('backend.settings.currency.index', compact('currencies', 'activeCurrencies', 'settings', 'search'));
     }
 
     public function updateSettings(Request $request)
@@ -58,7 +58,7 @@ class CurrencySettingsController extends Controller
 
     public function create()
     {
-        return view('admin.settings.currency.form', [
+        return view('backend.settings.currency.form', [
             'currency' => new Currency,
             'isEditing' => false,
             'symbolOptions' => $this->currencySymbolOptions(),
@@ -90,7 +90,7 @@ class CurrencySettingsController extends Controller
 
     public function edit(Currency $currency)
     {
-        return view('admin.settings.currency.form', [
+        return view('backend.settings.currency.form', [
             'currency' => $currency,
             'isEditing' => true,
             'symbolOptions' => $this->currencySymbolOptions(),

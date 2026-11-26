@@ -23,7 +23,7 @@ class StaffController extends Controller
         }
         $staffs->appends($request->query())->onEachSide(1);
 
-        return view('admin.staff.index', compact('staffs', 'showTrashed', 'sortBy', 'sortDir'));
+        return view('backend.staff.index', compact('staffs', 'showTrashed', 'sortBy', 'sortDir'));
     }
 
     public function restore($id)

@@ -43,7 +43,7 @@ class CategoryController extends Controller
 
         $categories->appends($request->query())->onEachSide(1);
 
-        return view('admin.categories.index', compact('categories', 'search', 'sortBy', 'sortDir'));
+        return view('backend.categories.index', compact('categories', 'search', 'sortBy', 'sortDir'));
     }
 
     public function restore($id)
@@ -175,7 +175,7 @@ class CategoryController extends Controller
                 ->get(['id', 'category_id', 'slug', 'name', 'main_image', 'cost', 'commission']);
         }
 
-        return view('categories.index', compact('categories', 'page'));
+        return view('frontend.categories.index', compact('categories', 'page'));
     }
 
     // Create Form
@@ -186,7 +186,7 @@ class CategoryController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.categories.create', compact('parents'));
+        return view('backend.categories.create', compact('parents'));
     }
 
     // Store Category
@@ -227,7 +227,7 @@ class CategoryController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.categories.edit', compact('category', 'parents', 'excluded'));
+        return view('backend.categories.edit', compact('category', 'parents', 'excluded'));
     }
 
     // Update Category

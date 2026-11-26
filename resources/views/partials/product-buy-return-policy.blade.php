@@ -18,8 +18,10 @@
         $pModel = $product['model'] ?? null;
         $pPrice = is_numeric($product['price'] ?? null) ? number_format(buyerPrice($product['price'], $product), 2) : null;
 
-        $identifiers = array_filter([$pYear, $pMake, $pModel]);
-        $fitment = implode(' / ', $identifiers);
+        $fitments = $product->fitments ?? collect();
+        $fitment = $fitments->isNotEmpty()
+            ? $fitments->map(fn ($item) => $item->label())->implode(' / ')
+            : implode(' / ', array_filter([$pYear, $pMake, $pModel]));
 
         $badge = strtolower(trim((string) ($product['badge'] ?? '')));
         $isDiscount = (bool) preg_match('/off|sale|deal|discount/i', $badge);

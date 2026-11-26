@@ -31,7 +31,7 @@ class BlogController extends Controller
         $blogs = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
         $blogs->appends($request->query())->onEachSide(1);
 
-        return view('admin.blogs.index', compact('blogs', 'sortBy', 'sortDir'));
+        return view('backend.blogs.index', compact('blogs', 'sortBy', 'sortDir'));
     }
 
     public function restore($id)
@@ -59,7 +59,7 @@ class BlogController extends Controller
         $defaultAuthor = auth()->user()?->name ?? 'Admin';
         $blogAuthors = $this->availableBlogAuthors();
 
-        return view('admin.blogs.create', compact('blogCategories', 'allTagsString', 'blogAuthors', 'defaultAuthor'));
+        return view('backend.blogs.create', compact('blogCategories', 'allTagsString', 'blogAuthors', 'defaultAuthor'));
     }
 
     public function store(Request $request)
@@ -141,7 +141,7 @@ class BlogController extends Controller
         $defaultAuthor = $blog->author ?: 'Admin';
         $blogAuthors = $this->availableBlogAuthors($defaultAuthor, false);
 
-        return view('admin.blogs.edit', compact('blog', 'blogCategories', 'tagsString', 'allTagsString', 'blogAuthors', 'defaultAuthor'));
+        return view('backend.blogs.edit', compact('blog', 'blogCategories', 'tagsString', 'allTagsString', 'blogAuthors', 'defaultAuthor'));
     }
 
     public function update(Request $request, $id)

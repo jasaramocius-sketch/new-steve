@@ -3,9 +3,9 @@
 @include('partials.page-attributes', ['pageId' => 'categories-page', 'pageClass' => 'categories-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => 'All Categories - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => 'All Categories | ' . config('app.name', 'StAutoparts'),
-        'metaDescription' => 'Browse all auto parts categories at ' . config('app.name', 'StAutoparts') . '.',
+        'pageTitle' => 'All Categories - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => 'All Categories | ' . config('app.name', 'Steve Autoparts'),
+        'metaDescription' => 'Browse all auto parts categories at ' . config('app.name', 'Steve Autoparts') . '.',
         'robots' => 'index, follow',
     ])
 @endsection
@@ -45,7 +45,7 @@
     <div class="category-toolbar mb-4 gap-3 d-grid">
         <div class="d-flex justify-content-between flex-md-row gap-2 flex-sm-row category-toolbar-top">
             <div class="w-auto">
-                @include('admin.partials.search-form', [
+                @include('backend.partials.search-form', [
                     'route' => route('categories.index'),
                     'placeholder' => 'Search category...'
                 ])

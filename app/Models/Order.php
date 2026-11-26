@@ -48,6 +48,17 @@ class Order extends Model
             ->where($table.'.status', '!=', 'cancelled');
     }
 
+    /**
+     * Orders placed by real customers (or guests). Staff/admin orders are
+     * internal test activity and must not be mixed into customer reports.
+     */
+    public function scopeCustomerPlaced($query)
+    {
+        return $query->whereDoesntHave('user', function ($q) {
+            $q->withTrashed()->whereIn('users.role', ['master_admin', 'admin', 'staff']);
+        });
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

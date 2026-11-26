@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVehicle;
 use App\Models\Vehicle;
 use App\Services\VehicleCatalog;
+use App\Support\FeatureFlags;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -253,7 +254,7 @@ class ShopController extends Controller
 
     public function index(Request $request)
     {
-        $productsQuery = Product::where('status', true)->hasUsableImage();
+        $productsQuery = Product::where('status', true)->hasUsableImage()->with(['brand:id,name,slug', 'category:id,name,slug']);
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery, true);
 
         $baseQuery = clone $productsQuery;
@@ -264,7 +265,7 @@ class ShopController extends Controller
 
         $currentBrand = $request->attributes->get('currentBrand');
 
-        return view('shop.index', array_merge(
+        return view('frontend.shop.index', array_merge(
             $vehicleData,
             compact('products', 'currentBrand'),
             $this->getSharedData($request, $baseQuery),
@@ -321,6 +322,44 @@ class ShopController extends Controller
         return response()->json($this->vehicleCatalog->models($year, $make));
     }
 
+    /**
+     * One level of sidebar categories, loaded only when a branch is expanded.
+     */
+    public function sidebarCategoryChildren(Request $request)
+    {
+        $parentId = (int) $request->query('parent', 0);
+        $level = max(2, min(6, (int) $request->query('level', 2)));
+        $active = $request->query('active', []);
+        $activeIds = is_array($active)
+            ? array_values(array_filter(array_map('intval', $active), fn ($id) => $id > 0))
+            : [];
+
+        $tree = \App\Services\CategoryTree::tree();
+        $findNode = function (array $nodes, int $id) use (&$findNode) {
+            foreach ($nodes as $node) {
+                if ((int) $node->id === $id) {
+                    return $node;
+                }
+                if (! empty($node->children)) {
+                    $found = $findNode($node->children, $id);
+                    if ($found) {
+                        return $found;
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        $parent = $findNode($tree, $parentId);
+
+        return view('partials.shop-sidebar-category-items', [
+            'categoryNodes' => $parent && ! empty($parent->children) ? $parent->children : [],
+            'activeCategoryIds' => $activeIds,
+            'level' => $level,
+        ]);
+    }
+
     public function clearVehicleFilter(Request $request)
     {
         session(['shop_vehicle_cleared' => true]);
@@ -353,7 +392,9 @@ class ShopController extends Controller
 
     public function customerProducts(Request $request)
     {
-        $productsQuery = Product::where('status', true)->hasUsableImage();
+        abort_unless(FeatureFlags::enabled('classified_product'), 404);
+
+        $productsQuery = Product::where('status', true)->hasUsableImage()->with(['brand:id,name,slug', 'category:id,name,slug']);
 
         $baseQuery = clone $productsQuery;
         $this->filterProducts($request, $baseQuery, false);
@@ -362,7 +403,7 @@ class ShopController extends Controller
         $products = $this->paginateProducts($productsQuery);
         $pageTitle = 'Classified Products';
 
-        return view('shop.index', array_merge(
+        return view('frontend.shop.index', array_merge(
             compact('products', 'pageTitle'),
             $this->getSharedData($request, $baseQuery)
         ));
@@ -370,7 +411,22 @@ class ShopController extends Controller
 
     public function category(Request $request, $slug)
     {
-        $category = Category::where('slug', $slug)->firstOrFail();
+        $matches = Category::where('slug', $slug)->get();
+        if ($matches->isEmpty()) {
+            abort(404);
+        }
+
+        $category = $matches->first();
+        if ($matches->count() > 1) {
+            $contextId = (int) $request->session()->pull('category_context.' . $slug, 0);
+            if ($contextId > 0) {
+                $resolved = $matches->firstWhere('id', $contextId);
+                if ($resolved) {
+                    $category = $resolved;
+                }
+            }
+        }
+
         $currentCategory = $category;
         $currentSubcategory = null;
         $currentChildcategory = null;
@@ -398,7 +454,7 @@ class ShopController extends Controller
 
         $categoryIds = $category->getAllDescendantIds();
 
-        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
+        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage()->with(['brand:id,name,slug', 'category:id,name,slug']);
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
 
         $baseQuery = clone $productsQuery;
@@ -407,12 +463,33 @@ class ShopController extends Controller
         $this->filterProducts($request, $productsQuery, true);
         $products = $this->paginateProducts($productsQuery);
 
-        return view('shop.index', array_merge(
-            compact('products', 'currentCategory'),
+        $activeCategoryIds = \App\Services\CategoryTree::pathTo((int) $category->id);
+
+        return view('frontend.shop.index', array_merge(
+            compact('products', 'currentCategory', 'activeCategoryIds'),
             $vehicleData,
             array_filter(compact('currentSubcategory', 'currentChildcategory')),
             $this->getSharedData($request, $baseQuery)
         ));
+    }
+
+    public function setCategoryContext(Request $request)
+    {
+        $categoryId = (int) $request->input('category_id', 0);
+        $slug = (string) $request->input('slug', '');
+
+        if ($categoryId <= 0 || $slug === '') {
+            return response()->json(['ok' => false], 422);
+        }
+
+        $category = Category::where('id', $categoryId)->where('slug', $slug)->first();
+        if (! $category) {
+            return response()->json(['ok' => false], 404);
+        }
+
+        $request->session()->put('category_context.' . $slug, $categoryId);
+
+        return response()->json(['ok' => true]);
     }
 
     public function categoryByPath(Request $request, $parent, $child, $subchild = null)
@@ -436,7 +513,7 @@ class ShopController extends Controller
 
         $categoryIds = $category->getAllDescendantIds();
 
-        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage();
+        $productsQuery = Product::whereIn('category_id', $categoryIds)->where('status', true)->hasUsableImage()->with(['brand:id,name,slug', 'category:id,name,slug']);
         $vehicleData = $this->applyVehicleFilter($request, $productsQuery);
 
         $baseQuery = clone $productsQuery;
@@ -445,8 +522,10 @@ class ShopController extends Controller
         $this->filterProducts($request, $productsQuery, true);
         $products = $this->paginateProducts($productsQuery);
 
-        return view('shop.index', array_merge(
-            compact('products', 'currentCategory', 'currentSubcategory', 'currentChildcategory'),
+        $activeCategoryIds = \App\Services\CategoryTree::pathTo((int) $category->id);
+
+        return view('frontend.shop.index', array_merge(
+            compact('products', 'currentCategory', 'currentSubcategory', 'currentChildcategory', 'activeCategoryIds'),
             $vehicleData,
             $this->getSharedData($request, $baseQuery)
         ));
@@ -491,14 +570,14 @@ class ShopController extends Controller
             }
         }
 
-        return view('product.show', compact('product', 'productFitments', 'userVehicle', 'vehicleFit'));
+        return view('frontend.product.show', compact('product', 'productFitments', 'userVehicle', 'vehicleFit'));
     }
 
     public function suggestions(Request $request)
     {
-        $query = $request->get('query', '');
+        $query = trim((string) $request->get('query', ''));
 
-        if (strlen($query) < 3) {
+        if (mb_strlen($query) < 3) {
             return response()->json([]);
         }
 
@@ -509,20 +588,37 @@ class ShopController extends Controller
                     ->orWhere('part_number', 'like', "%{$query}%");
             })
             ->with('category:id,name')
-            ->limit(8)
-            ->get(['id', 'name', 'slug', 'cost', 'main_image', 'category_id']);
+            ->limit(20)
+            ->get(['id', 'name', 'slug', 'cost', 'main_image', 'category_id', 'part_number']);
 
+        $seen = [];
         $results = $products->map(function ($product) {
+            $name = cleanProductTitle($product->name);
+
             return [
-                'name' => $product->name,
+                'name' => $name,
                 'slug' => $product->slug,
                 'price' => currency_format(buyerPrice($product->price, $product)),
                 'old_price' => null,
                 'image' => storedImageUrl($product->image, 'assets/images/thumbnails'),
                 'category' => $product->category->name ?? '',
                 'url' => route('product', $product->slug),
+                '_dedupe' => $product->part_number ?: $product->slug,
             ];
-        });
+        })->filter(function ($item) use (&$seen) {
+            $nameKey = preg_replace('/[^\p{L}\p{N}]+/u', '', mb_strtolower((string) $item['name']));
+            $key = $nameKey !== '' ? $nameKey : mb_strtolower((string) ($item['_dedupe'] ?? ''));
+            if ($key === '' || isset($seen[$key])) {
+                return false;
+            }
+            $seen[$key] = true;
+
+            return $item['name'] !== '';
+        })->take(8)->map(function ($item) {
+            unset($item['_dedupe']);
+
+            return $item;
+        })->values();
 
         return response()->json($results);
     }

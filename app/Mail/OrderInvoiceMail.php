@@ -37,7 +37,7 @@ class OrderInvoiceMail extends Mailable
     {
         $order = $this->order->loadMissing('items.product');
         $invoiceData = app(InvoiceSettingsService::class)->forOrder($order);
-        $pdf = Pdf::loadView('user.orders.invoice', ['order' => $order] + $invoiceData)->setPaper('a4', 'portrait');
+        $pdf = Pdf::loadView('frontend.user.orders.invoice', ['order' => $order] + $invoiceData)->setPaper('a4', 'portrait');
 
         return [
             Attachment::fromData(

@@ -500,3 +500,42 @@ if (! function_exists('renderRobotsTxt')) {
         return $content;
     }
 }
+
+if (! function_exists('cleanProductTitle')) {
+    /**
+     * Clean buyer-facing product titles.
+     *
+     * Imported catalogue titles often contain the same name translated on
+     * several lines (e.g. French / English / Spanish). Prefer the first
+     * ASCII-only line so storefront cards and search suggestions show a
+     * readable English title instead of a multilingual run-on string.
+     */
+    function cleanProductTitle(?string $name): string
+    {
+        $raw = str_replace(["\r\n", "\r"], "\n", trim((string) $name));
+
+        if ($raw === '') {
+            return '';
+        }
+
+        $lines = array_values(array_filter(
+            array_map('trim', explode("\n", $raw)),
+            fn ($line) => $line !== ''
+        ));
+
+        if (empty($lines)) {
+            return '';
+        }
+
+        $asciiLines = array_values(array_filter(
+            $lines,
+            fn ($line) => (bool) preg_match('/^[\x20-\x7E]+$/u', $line)
+        ));
+
+        $title = $asciiLines[0] ?? $lines[0];
+        $title = preg_replace('/\s+/u', ' ', $title);
+        $title = preg_replace('/\s*\|\s*/u', ' - ', $title);
+
+        return trim($title, " \t\n\r\0\x0B-");
+    }
+}

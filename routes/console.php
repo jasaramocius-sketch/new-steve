@@ -20,3 +20,14 @@ Schedule::call(fn () => App\Models\Blog::autoPublishDueScheduled())
     ->name('blog:auto-publish-due-scheduled')
     ->everyMinute()
     ->withoutOverlapping();
+
+$stockSync = App\Support\StockSync::settings();
+if ($stockSync['stock_sync_enabled'] && in_array($stockSync['stock_sync_frequency'], ['hourly', 'daily'], true)) {
+    $stockSchedule = Schedule::command('stocks:sync')->withoutOverlapping();
+
+    if ($stockSync['stock_sync_frequency'] === 'hourly') {
+        $stockSchedule->hourly();
+    } else {
+        $stockSchedule->dailyAt('04:00');
+    }
+}

@@ -24,7 +24,7 @@ class LanguageController extends Controller
         $activeLanguages = Language::where('is_active', true)->orderBy('name')->get();
         $defaultLanguage = Setting::get('default_language', config('app.locale', 'en'));
 
-        return view('admin.settings.languages.index', compact('languages', 'activeLanguages', 'defaultLanguage', 'search'));
+        return view('backend.settings.languages.index', compact('languages', 'activeLanguages', 'defaultLanguage', 'search'));
     }
 
     public function updateDefault(Request $request)
@@ -44,7 +44,7 @@ class LanguageController extends Controller
 
     public function create()
     {
-        return view('admin.settings.languages.form', ['language' => new Language, 'isEditing' => false]);
+        return view('backend.settings.languages.form', ['language' => new Language, 'isEditing' => false]);
     }
 
     public function store(Request $request)
@@ -81,7 +81,7 @@ class LanguageController extends Controller
 
     public function edit(Language $language)
     {
-        return view('admin.settings.languages.form', ['language' => $language, 'isEditing' => true]);
+        return view('backend.settings.languages.form', ['language' => $language, 'isEditing' => true]);
     }
 
     public function update(Request $request, Language $language)
@@ -165,7 +165,7 @@ class LanguageController extends Controller
     {
         $translations = $this->readTranslations($language);
 
-        return view('admin.settings.languages.translations', compact('language', 'translations'));
+        return view('backend.settings.languages.translations', compact('language', 'translations'));
     }
 
     public function updateTranslations(Request $request, Language $language)

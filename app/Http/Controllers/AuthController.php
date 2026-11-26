@@ -77,7 +77,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.login');
+        return view('frontend.auth.login');
     }
 
     public function registerForm()
@@ -86,7 +86,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.register');
+        return view('frontend.auth.register');
     }
 
     /**
@@ -205,13 +205,12 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'phone' => ['required', 'string', 'max:50', 'regex:/^[0-9+\-\s()]*$/', new UniquePhone],
+            'phone' => ['nullable', 'string', 'max:50', 'regex:/^[0-9+\-\s()]*$/', new UniquePhone],
             'password' => 'required|min:6|confirmed',
             'terms' => 'accepted',
         ], [
             'terms.accepted' => 'Please agree to the Privacy Policy and Terms & Conditions to create an account.',
             'email.unique' => 'This email is already registered. Please sign in instead or contact support if you cannot access your account.',
-            'phone.required' => 'Please enter your phone number.',
         ]);
 
         if (Recaptcha::enabled('register') && ! Recaptcha::verify($request, 'register')) {
@@ -266,14 +265,14 @@ class AuthController extends Controller
                 return redirect()->to($this->dashboardRoute() ?? route('home'));
             }
 
-            return view('auth.verify-email', [
+            return view('frontend.auth.verify-email', [
                 'email' => $user->email,
             ]);
         }
 
         $email = $request->session()->get('pending_verification_email');
 
-        return view('auth.verify-email', [
+        return view('frontend.auth.verify-email', [
             'email' => $email,
         ]);
     }
@@ -385,7 +384,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.login');
+        return view('frontend.auth.login');
     }
 
     public function showForgot()
@@ -394,7 +393,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.forgot');
+        return view('frontend.auth.forgot');
     }
 
     public function sendResetLink(Request $request)
@@ -426,7 +425,7 @@ class AuthController extends Controller
             return redirect()->to($route);
         }
 
-        return view('auth.reset', [
+        return view('frontend.auth.reset', [
             'token' => $token,
             'email' => $request->query('email'),
         ]);

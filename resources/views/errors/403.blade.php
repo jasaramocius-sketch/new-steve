@@ -3,8 +3,8 @@
 @include('partials.page-attributes', ['pageId' => 'access-denied-page', 'pageClass' => 'access-denied-page'])
 @section('meta_tags')
     @include('partials.meta-tags', [
-        'pageTitle' => '403 - Access Denied - ' . config('app.name', 'StAutoparts'),
-        'metaTitle' => '403 - Access Denied | ' . config('app.name', 'StAutoparts'),
+        'pageTitle' => '403 - Access Denied - ' . config('app.name', 'Steve Autoparts'),
+        'metaTitle' => '403 - Access Denied | ' . config('app.name', 'Steve Autoparts'),
         'metaDescription' => 'You do not have permission to access this resource.',
     ])
 @endsection

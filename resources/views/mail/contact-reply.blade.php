@@ -11,7 +11,7 @@ $isProduct = (bool) $contact->product_id;
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;">
           <tr>
             <td style="background:#1d3557;padding:24px 32px;">
-              <span style="font-size:20px;font-weight:bold;color:#fff;">{{ config('app.name', 'StAutoparts') }}</span>
+              <span style="font-size:20px;font-weight:bold;color:#fff;">{{ config('app.name', 'Steve Autoparts') }}</span>
             </td>
           </tr>
           <tr>
@@ -29,12 +29,12 @@ $isProduct = (bool) $contact->product_id;
               <p style="font-size:14px;line-height:1.6;margin:0 0 20px;">
                 If you need any further assistance, feel free to reply to this email.
               </p>
-              <p style="font-size:14px;line-height:1.6;margin:0;">— {{ config('app.name', 'StAutoparts') }} Team</p>
+              <p style="font-size:14px;line-height:1.6;margin:0;">— {{ config('app.name', 'Steve Autoparts') }} Team</p>
             </td>
           </tr>
           <tr>
             <td style="padding:16px 32px;background:#f8f9fa;font-size:12px;color:#999;">
-              &copy; {{ date('Y') }} {{ config('app.name', 'StAutoparts') }}. All rights reserved.
+              &copy; {{ date('Y') }} {{ config('app.name', 'Steve Autoparts') }}. All rights reserved.
             </td>
           </tr>
         </table>

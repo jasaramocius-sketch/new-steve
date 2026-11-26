@@ -22,12 +22,12 @@ class SellerController extends Controller
             ->paginate($perPage);
         $sellers->appends($request->query())->onEachSide(1);
 
-        return view('admin.sellers.index', compact('sellers', 'sortBy', 'sortDir'));
+        return view('backend.sellers.index', compact('sellers', 'sortBy', 'sortDir'));
     }
 
     public function create()
     {
-        return view('admin.sellers.create');
+        return view('backend.sellers.create');
     }
 
     public function store(Request $request)
@@ -63,7 +63,7 @@ class SellerController extends Controller
     {
         $seller = Seller::findOrFail($id);
 
-        return view('admin.sellers.edit', compact('seller'));
+        return view('backend.sellers.edit', compact('seller'));
     }
 
     public function update(Request $request, $id)
@@ -106,7 +106,7 @@ class SellerController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('admin.sellers.followers', compact('seller', 'followers'));
+        return view('backend.sellers.followers', compact('seller', 'followers'));
     }
 
     public function toggleStatus($id)

@@ -44,14 +44,14 @@ class HomePageController extends Controller
         $sections = HomePageSection::orderBy($sortBy, $sortDir)->paginate($perPage);
         $sections->appends($request->query())->onEachSide(1);
 
-        return view('admin.home-page.index', compact('sections', 'sortBy', 'sortDir'));
+        return view('backend.home-page.index', compact('sections', 'sortBy', 'sortDir'));
     }
 
     public function edit($id)
     {
         $section = HomePageSection::findOrFail($id);
 
-        return view('admin.home-page.edit', compact('section'));
+        return view('backend.home-page.edit', compact('section'));
     }
 
     public function searchProducts(Request $request)
@@ -79,6 +79,14 @@ class HomePageController extends Controller
     public function update(Request $request, $id)
     {
         $section = HomePageSection::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'subtitle' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'button_text' => 'nullable|string|max:255',
+            'button_url' => 'nullable|string|max:1000',
+        ]);
 
         if ($section->section_name === 'services') {
             $request->validate([

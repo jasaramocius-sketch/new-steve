@@ -29,7 +29,7 @@ class OrderController extends Controller
             ->paginate($request->get('per_page', 10))
             ->withQueryString();
 
-        return view('admin.orders.index', compact(
+        return view('backend.orders.index', compact(
             'orders',
             'sortBy',
             'sortDir'
@@ -74,7 +74,7 @@ class OrderController extends Controller
             }
         }
 
-        return view('user.orders.show', compact('order', 'reviewedSlugs'));
+        return view('frontend.user.orders.show', compact('order', 'reviewedSlugs'));
     }
 
     public function destroy($id)
@@ -143,7 +143,7 @@ class OrderController extends Controller
             }
         }
 
-        return view('user.orders.tracking', compact('order'));
+        return view('frontend.user.orders.tracking', compact('order'));
     }
 
     public function invoice($id)
@@ -163,7 +163,7 @@ class OrderController extends Controller
         }
 
         $invoiceData = app(InvoiceSettingsService::class)->forOrder($order);
-        $pdf = Pdf::loadView('user.orders.invoice', ['order' => $order] + $invoiceData);
+        $pdf = Pdf::loadView('frontend.user.orders.invoice', ['order' => $order] + $invoiceData);
 
         // Set the paper size to A4 (optional but recommended for invoices)
         $pdf->setPaper('a4', 'portrait');

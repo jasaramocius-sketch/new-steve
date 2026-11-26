@@ -3,6 +3,7 @@
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\BlogCategoryController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Admin\BulkOperationController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CurrencySettingsController;
@@ -26,8 +27,6 @@ use App\Http\Controllers\Admin\ShippingLocationController;
 use App\Http\Controllers\Admin\ShippingSettingsController;
 use App\Http\Controllers\Admin\TaxTypeController;
 use App\Http\Controllers\Admin\SubscriberController;
-use App\Http\Controllers\Admin\SupportTicketController;
-use App\Http\Controllers\Admin\ProductConversationController;
 use App\Http\Controllers\Admin\ApiIntegrationController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
@@ -44,6 +43,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentGatewayController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\ReviewController;
@@ -89,14 +89,22 @@ foreach ($sitemapTypes as $sitemapSlug => $sitemapType) {
 Route::get('/robots.txt', [HomeController::class, 'robots'])->name('robots');
 
 Route::get('/search', [ShopController::class, 'index'])->name('shop');
+Route::redirect('/shop', '/search', 301);
+Route::redirect('/login', '/users/login', 301);
+Route::redirect('/register', '/users/registration', 301);
+Route::redirect('/about', '/about-us', 301);
 Route::post('/search/clear-vehicle', [ShopController::class, 'clearVehicleFilter'])->middleware('auth')->name('shop.clear-vehicle');
 Route::post('/search/clear-filters', [ShopController::class, 'clearAllFilters'])->name('shop.clear-filters');
 Route::get('/api/vehicles/years', [ShopController::class, 'vehicleYears'])->name('vehicles.years');
 Route::get('/api/vehicles/makes', [ShopController::class, 'vehicleMakes'])->name('vehicles.makes');
 Route::get('/api/vehicles/models', [ShopController::class, 'vehicleModels'])->name('vehicles.models');
 Route::get('/api/search/suggestions', [ShopController::class, 'suggestions'])->name('search.suggestions');
+Route::get('/ajax/mobile-categories', [HomeController::class, 'mobileCategories'])->name('ajax.mobile-categories');
+Route::get('/ajax/shop-category-children', [ShopController::class, 'sidebarCategoryChildren'])->name('ajax.shop-category-children');
+Route::post('/ajax/category-context', [ShopController::class, 'setCategoryContext'])->name('ajax.category-context');
 
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product');
+Route::get('/ajax/product/check-fitment', [ProductController::class, 'checkFitment'])->name('product.check-fitment');
 Route::post('/contact-seller', [ProductController::class, 'contactSeller'])->name('contact.seller');
 
 Route::match(['get', 'post'], '/product/{slug}/review', [ReviewController::class, 'store'])->middleware('auth')->name('product.review');
@@ -114,7 +122,16 @@ Route::get('/blog/tag/{slug}', [BlogController::class, 'tag'])->name('blog.tag')
 
 Route::get('/about-us', [HomeController::class, 'about'])->name('about');
 Route::get('/contact-us', [HomeController::class, 'contact'])->name('contact');
-Route::get('/page/{slug}', [HomeController::class, 'page'])->name('page.show');
+Route::get('/contact', fn () => redirect()->route('contact', [], 301));
+Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
+Route::get('/faqs', fn () => redirect()->route('faq', [], 301));
+Route::get('/privacy-policy', [HomeController::class, 'privacy'])->name('privacy.policy');
+Route::get('/privacy', fn () => redirect()->route('privacy.policy', [], 301));
+Route::get('/terms-and-conditions', [HomeController::class, 'terms'])->name('terms.conditions');
+Route::get('/terms', fn () => redirect()->route('terms.conditions', [], 301));
+Route::get('/return-policy', [HomeController::class, 'returnPolicy'])->name('return.policy');
+Route::get('/support-policy', [HomeController::class, 'supportPolicy'])->name('support.policy');
+Route::get('/page/{slug}', [HomeController::class, 'legacyPage']);
 
 /*
 |--------------------------------------------------------------------------
@@ -153,6 +170,11 @@ Route::get('/checkout/stripe/success', [CartController::class, 'stripeSuccess'])
 Route::get('/checkout/stripe/cancel', [CartController::class, 'stripeCancel'])->middleware(['nocache'])->name('checkout.stripe.cancel');
 
 Route::post('/checkout/stripe/webhook', [CartController::class, 'stripeWebhook'])->name('checkout.stripe.webhook');
+
+Route::match(['get', 'post'], '/checkout/gateway/{provider}/return', [PaymentGatewayController::class, 'return'])->name('checkout.gateway.return');
+Route::match(['get', 'post'], '/checkout/gateway/{provider}/cancel', [PaymentGatewayController::class, 'cancel'])->name('checkout.gateway.cancel');
+Route::post('/checkout/gateway/{provider}/webhook', [PaymentGatewayController::class, 'webhook'])->name('checkout.gateway.webhook');
+Route::post('/checkout/razorpay/verify', [PaymentGatewayController::class, 'verifyRazorpay'])->name('checkout.razorpay.verify');
 
 Route::get('/checkout/order-confirmed', [CartController::class, 'orderConfirmed'])->middleware(['nocache'])->name('checkout.confirmed');
 
@@ -342,6 +364,8 @@ Route::prefix('admin')
 
         Route::get('/products', [ProductController::class, 'index'])
             ->name('admin.products.index');
+        Route::get('/products/lookup', [ProductController::class, 'lookup'])
+            ->name('admin.products.lookup');
         Route::get('/products/create', [ProductController::class, 'create'])
             ->name('admin.products.create');
         Route::post('/products', [ProductController::class, 'store'])
@@ -349,12 +373,18 @@ Route::prefix('admin')
 
         Route::get('/product-bulk-upload', [ProductController::class, 'importForm'])
             ->name('admin.products.import-form');
-        Route::post('/product-bulk-upload', [ProductController::class, 'import'])
+        Route::post('/product-bulk-upload', [BulkOperationController::class, 'import'])
             ->name('admin.products.import');
         Route::get('/product-bulk-upload/index', [ProductController::class, 'downloadSampleCsv'])
             ->name('admin.products.download-sample-csv');
-        Route::get('/product-bulk-export/csv', [ProductController::class, 'exportCsv'])
+        Route::get('/product-bulk-export/csv', [BulkOperationController::class, 'export'])
             ->name('admin.products.export-csv');
+        Route::get('/product-bulk/progress/{id}', [BulkOperationController::class, 'progress'])
+            ->name('admin.products.bulk-progress');
+        Route::get('/product-bulk/progress/{id}/status', [BulkOperationController::class, 'progressJson'])
+            ->name('admin.products.bulk-progress-json');
+        Route::get('/product-bulk/download/{id}', [BulkOperationController::class, 'download'])
+            ->name('admin.products.bulk-download');
 
         Route::get('/products/stock', [ProductController::class, 'stockIndex'])
             ->name('admin.products.stock');
@@ -367,6 +397,12 @@ Route::prefix('admin')
             ->name('admin.products.edit');
         Route::put('/products/{id}', [ProductController::class, 'update'])
             ->name('admin.products.update');
+        Route::get('/products/{id}/fitments/export-csv', [ProductController::class, 'exportFitmentsCsv'])
+            ->name('admin.products.fitments.export-csv');
+        Route::get('/products/{id}/fitments/sample-csv', [ProductController::class, 'downloadFitmentSampleCsv'])
+            ->name('admin.products.fitments.sample-csv');
+        Route::post('/products/{id}/fitments/import-csv', [ProductController::class, 'importFitmentsCsv'])
+            ->name('admin.products.fitments.import-csv');
         Route::delete('/products/{id}', [ProductController::class, 'destroy'])
             ->name('admin.products.destroy');
         Route::post('/products/{id}/restore', [ProductController::class, 'restore'])
@@ -377,6 +413,10 @@ Route::prefix('admin')
             ->name('admin.products.toggle-status');
         Route::post('/products/{id}/toggle-featured', [ProductController::class, 'toggleFeatured'])
             ->name('admin.products.toggle-featured');
+        Route::post('/products/{id}/approve', [ProductController::class, 'approveSellerProduct'])
+            ->name('admin.products.approve');
+        Route::post('/products/{id}/reject', [ProductController::class, 'rejectSellerProduct'])
+            ->name('admin.products.reject');
         Route::post('/products/{id}/commission', [ProductController::class, 'updateCommission'])
             ->name('admin.products.commission');
         Route::post('/products/{id}/duplicate', [ProductController::class, 'duplicate'])
@@ -408,17 +448,6 @@ Route::prefix('admin')
         Route::delete('/subscribers/{id}', [SubscriberController::class, 'destroy'])->name('admin.subscribers.destroy');
         Route::get('/subscribers/export/csv', [SubscriberController::class, 'exportCsv'])->name('admin.subscribers.export-csv');
 
-        Route::get('/support/tickets', [SupportTicketController::class, 'index'])->name('admin.support.tickets.index');
-        Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('admin.support.tickets.show');
-        Route::post('/support/tickets/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('admin.support.tickets.reply');
-        Route::post('/support/tickets/{ticket}/status', [SupportTicketController::class, 'updateStatus'])->name('admin.support.tickets.status');
-        Route::delete('/support/tickets/{ticket}', [SupportTicketController::class, 'destroy'])->name('admin.support.tickets.destroy');
-
-        Route::get('/support/conversations', [ProductConversationController::class, 'index'])->name('admin.support.conversations.index');
-        Route::get('/support/conversations/{conversation}', [ProductConversationController::class, 'show'])->name('admin.support.conversations.show');
-        Route::post('/support/conversations/{conversation}/reply', [ProductConversationController::class, 'reply'])->name('admin.support.conversations.reply');
-        Route::post('/support/conversations/{conversation}/status', [ProductConversationController::class, 'updateStatus'])->name('admin.support.conversations.status');
-        Route::delete('/support/conversations/{conversation}', [ProductConversationController::class, 'destroy'])->name('admin.support.conversations.destroy');
         Route::get('/orders/export/csv', [AdminOrderController::class, 'exportCsv'])->name('admin.orders.export-csv');
         Route::post('/orders/{id}/email-customer', [AdminOrderController::class, 'emailCustomer'])->name('admin.orders.email-customer');
         Route::get('/orders/{id}/invoice', [AdminOrderController::class, 'invoice'])->name('admin.orders.invoice');
@@ -450,22 +479,24 @@ Route::prefix('admin')
         Route::post('/brands/{id}/toggle-status', [BrandController::class, 'toggleStatus'])
             ->name('admin.brands.toggle-status');
 
-        Route::get('/sellers', [SellerController::class, 'index'])
-            ->name('admin.sellers.index');
-        Route::get('/sellers/create', [SellerController::class, 'create'])
-            ->name('admin.sellers.create');
-        Route::post('/sellers', [SellerController::class, 'store'])
-            ->name('admin.sellers.store');
-        Route::get('/sellers/{id}/edit', [SellerController::class, 'edit'])
-            ->name('admin.sellers.edit');
-        Route::put('/sellers/{id}', [SellerController::class, 'update'])
-            ->name('admin.sellers.update');
-        Route::delete('/sellers/{id}', [SellerController::class, 'destroy'])
-            ->name('admin.sellers.destroy');
-        Route::post('/sellers/{id}/toggle-status', [SellerController::class, 'toggleStatus'])
-            ->name('admin.sellers.toggle-status');
-        Route::get('/sellers/{id}/followers', [SellerController::class, 'followers'])
-            ->name('admin.sellers.followers');
+        Route::middleware('feature:vendor_system_activation')->group(function () {
+            Route::get('/sellers', [SellerController::class, 'index'])
+                ->name('admin.sellers.index');
+            Route::get('/sellers/create', [SellerController::class, 'create'])
+                ->name('admin.sellers.create');
+            Route::post('/sellers', [SellerController::class, 'store'])
+                ->name('admin.sellers.store');
+            Route::get('/sellers/{id}/edit', [SellerController::class, 'edit'])
+                ->name('admin.sellers.edit');
+            Route::put('/sellers/{id}', [SellerController::class, 'update'])
+                ->name('admin.sellers.update');
+            Route::delete('/sellers/{id}', [SellerController::class, 'destroy'])
+                ->name('admin.sellers.destroy');
+            Route::post('/sellers/{id}/toggle-status', [SellerController::class, 'toggleStatus'])
+                ->name('admin.sellers.toggle-status');
+            Route::get('/sellers/{id}/followers', [SellerController::class, 'followers'])
+                ->name('admin.sellers.followers');
+        });
 
         Route::get('/blogs', [AdminBlogController::class, 'index'])
             ->name('admin.blogs.index');
@@ -704,6 +735,8 @@ Route::prefix('admin')
         Route::delete('/settings/tax-types/{taxType}', [TaxTypeController::class, 'destroy'])
             ->name('admin.settings.tax-types.destroy');
 
+        Route::get('/settings/header/links', [AdminController::class, 'headerLinkOptions'])
+            ->name('admin.settings.header.links');
         Route::get('/settings/header', [AdminController::class, 'headerSettings'])
             ->name('admin.settings.header');
         Route::post('/settings/header', [AdminController::class, 'updateHeaderSettings'])
@@ -716,6 +749,14 @@ Route::prefix('admin')
             ->name('admin.settings.invoice');
         Route::post('/settings/invoice', [AdminController::class, 'updateInvoiceSettings'])
             ->name('admin.settings.invoice.update');
+        Route::get('/settings/email-templates', [AdminController::class, 'emailTemplates'])
+            ->name('admin.settings.email-templates');
+        Route::get('/settings/email-templates/{key}/edit', [AdminController::class, 'editEmailTemplate'])
+            ->name('admin.settings.email-templates.edit');
+        Route::post('/settings/email-templates/{key}', [AdminController::class, 'updateEmailTemplate'])
+            ->name('admin.settings.email-templates.update');
+        Route::post('/settings/email-templates/{key}/reset', [AdminController::class, 'resetEmailTemplate'])
+            ->name('admin.settings.email-templates.reset');
         Route::get('/settings/seo', [AdminController::class, 'seoSettings'])
             ->name('admin.settings.seo');
         Route::post('/settings/seo', [AdminController::class, 'updateSeoSettings'])
@@ -724,14 +765,24 @@ Route::prefix('admin')
             ->name('admin.settings.commission');
         Route::post('/settings/commission', [AdminController::class, 'updateCommissionSettings'])
             ->name('admin.settings.commission.update');
+        Route::get('/settings/stock-sync', [AdminController::class, 'stockSyncSettings'])
+            ->name('admin.settings.stock-sync');
+        Route::post('/settings/stock-sync', [AdminController::class, 'updateStockSyncSettings'])
+            ->name('admin.settings.stock-sync.update');
+        Route::post('/settings/stock-sync/run', [AdminController::class, 'runStockSync'])
+            ->name('admin.settings.stock-sync.run');
         Route::post('/settings/footer', [AdminController::class, 'updateFooterSettings'])
             ->name('admin.settings.footer.update');
         Route::get('/settings/search-categories', [AdminController::class, 'searchCategorySettings'])
             ->name('admin.settings.search-categories');
+        Route::get('/settings/search-categories/lookup', [AdminController::class, 'searchCategoryOptions'])
+            ->name('admin.settings.search-categories.lookup');
         Route::post('/settings/search-categories', [AdminController::class, 'updateSearchCategorySettings'])
             ->name('admin.settings.search-categories.update');
         Route::get('/system/server-status', [SystemStatusController::class, 'serverStatus'])
             ->name('admin.system.server-status');
+        Route::get('/system/debug-errors', [SystemStatusController::class, 'debugErrors'])
+            ->name('admin.system.debug-errors');
         Route::get('/system/update', [SystemStatusController::class, 'update'])
             ->name('admin.system.update');
         Route::post('/system/update/clear-all', [SystemStatusController::class, 'clearAll'])
@@ -957,15 +1008,11 @@ Route::get('/category', function () {
 });
 Route::get('/customer_products', [ShopController::class, 'customerProducts'])->name('customer.products');
 Route::get('/category/{parent}/{child}/{subchild?}', [ShopController::class, 'categoryByPath'])->name('subcategory');
-Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
-Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
-Route::get('/privacy-policy', [HomeController::class, 'privacy'])->name('privacy.policy');
-Route::get('/terms', [HomeController::class, 'terms'])->name('terms');
-Route::get('/terms-conditions', [HomeController::class, 'terms'])->name('terms.conditions');
-Route::get('/return-policy', [HomeController::class, 'returnPolicy'])->name('return.policy');
-Route::get('/support-policy', [HomeController::class, 'supportPolicy'])->name('support.policy');
 
 Route::match(['get', 'post'], '/order/tracking', [OrderController::class, 'tracking'])->middleware(['nocache'])->name('order.tracking');
+Route::match(['get', 'post'], '/track-order', [OrderController::class, 'tracking'])->middleware(['nocache'])->name('order.tracking.alias.track-order');
+Route::match(['get', 'post'], '/tracking', [OrderController::class, 'tracking'])->middleware(['nocache'])->name('order.tracking.alias.tracking');
+Route::match(['get', 'post'], '/order-tracking', [OrderController::class, 'tracking'])->middleware(['nocache'])->name('order.tracking.alias.order-tracking');
 
 Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'userDashboard'])->name('dashboard');
@@ -989,6 +1036,7 @@ Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(fun
     Route::delete('/followed-seller/{id}', [DashboardController::class, 'destroyFollowedSeller'])->name('followed-sellers.destroy');
     Route::get('/api/seller/{id}', [DashboardController::class, 'getSellerDetails'])->name('api.seller.details');
     Route::get('/api/seller/{id}/products', [DashboardController::class, 'getSellerProducts'])->name('api.seller.products');
+    Route::get('/wallet', fn () => redirect()->route('user.dashboard')->with('info', 'The wallet feature has been removed.'))->name('wallet');
     Route::get('/addresses', [DashboardController::class, 'addresses'])->name('addresses');
     Route::post('/addresses', [DashboardController::class, 'storeAddress'])->name('addresses.store');
     Route::put('/addresses/{id}', [DashboardController::class, 'updateAddress'])->name('addresses.update');
@@ -997,6 +1045,7 @@ Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(fun
     Route::post('/notifications/{id}/read', [DashboardController::class, 'markNotificationRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [DashboardController::class, 'markAllNotificationsRead'])->name('notifications.read-all');
     Route::get('/inquiries', [DashboardController::class, 'inquiries'])->name('inquiries');
+    Route::post('/inquiries', [DashboardController::class, 'storeInquiry'])->name('inquiries.store');
     Route::put('/inquiries/{id}', [DashboardController::class, 'updateInquiry'])->name('inquiries.update');
     Route::delete('/inquiries/{id}', [DashboardController::class, 'destroyInquiry'])->name('inquiries.destroy');
     Route::get('/support', [UserSupportController::class, 'index'])->name('support.index');
@@ -1009,7 +1058,7 @@ Route::middleware(['auth', 'nocache'])->prefix('user')->name('user.')->group(fun
     Route::get('/profile/edit', [UserController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile/update', [UserController::class, 'updateProfile'])->name('profile.update');
     Route::get('/change-password', function () {
-        return view('user.change-password');
+        return view('frontend.user.change-password');
     })->name('change.password');
     Route::post('/change-password', [UserController::class, 'updatePassword'])->name('change.password.update');
 });
@@ -1058,3 +1107,9 @@ Route::post('/contact-us', [ContactController::class, 'store'])
 
 Route::get('/contact/thank-you', [ContactController::class, 'thankYou'])
     ->name('contact.thank-you');
+
+// Custom pages live at the root (/{slug}). Must stay last so it cannot shadow
+// any explicit single-segment route defined above.
+Route::get('/{slug}', [HomeController::class, 'page'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('page.show');

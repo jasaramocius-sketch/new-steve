@@ -27,12 +27,12 @@ class FaqController extends Controller
         $faqs = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
         $faqs->appends($request->query())->onEachSide(1);
 
-        return view('admin.faqs.index', compact('faqs', 'sortBy', 'sortDir'));
+        return view('backend.faqs.index', compact('faqs', 'sortBy', 'sortDir'));
     }
 
     public function create()
     {
-        return view('admin.faqs.create');
+        return view('backend.faqs.create');
     }
 
     public function store(Request $request)
@@ -57,7 +57,7 @@ class FaqController extends Controller
     {
         $faq = Faq::findOrFail($id);
 
-        return view('admin.faqs.edit', compact('faq'));
+        return view('backend.faqs.edit', compact('faq'));
     }
 
     public function update(Request $request, $id)

@@ -39,6 +39,9 @@
         // Address fields have their own searchable widget.
         if (select.closest('.address-suggest')) return false;
         if (select.closest('.nice-select')) return false;
+        // Remote selects start with only a placeholder + current value, so the
+        // normal option-count threshold must not skip them.
+        if (select.getAttribute('data-ajax-url')) return true;
         if (optionCount(select) < minOptions(select)) return false;
         return true;
     }
@@ -117,12 +120,13 @@
         inst.open = true;
         inst.control.setAttribute('aria-expanded', 'true');
         inst.wrapper.classList.add('focused');
-        renderList(inst, '');
-        // Highlight the currently selected option; ArrowDown moves to the next option.
-        var selectedOpt = inst.select.options[inst.select.selectedIndex] || null;
-        if (selectedOpt) {
-            var selIdx = inst.items.indexOf(selectedOpt);
-            if (selIdx >= 0 && selIdx < inst.rendered) setActive(inst, selIdx);
+
+        if (inst.remoteUrl) {
+            loadRemote(inst, '');
+        } else {
+            renderList(inst, '');
+            // Highlight the currently selected option; ArrowDown moves to the next option.
+            highlightSelected(inst);
         }
         positionPanel(inst);
         try { inst.search.focus({ preventScroll: true }); } catch (e) { inst.search.focus(); }
@@ -136,12 +140,122 @@
         inst.control.removeAttribute('aria-activedescendant');
         inst.wrapper.classList.remove('focused');
         inst.active = -1;
+        // Ignore any in-flight remote response for the previous opening.
+        inst.remoteSeq++;
+        inst.loading = false;
+    }
+
+    function showMessage(inst, text) {
+        inst.list.innerHTML = '';
+        var li = document.createElement('li');
+        li.className = 'ss-empty';
+        li.textContent = text;
+        inst.list.appendChild(li);
+        inst.items = [];
+        inst.rendered = 0;
+        inst.active = -1;
+        inst.footer.hidden = true;
+    }
+
+    function markKeepOptions(inst) {
+        var select = inst.select;
+        for (var i = 0; i < select.options.length; i++) {
+            var opt = select.options[i];
+            if (!opt.value || opt.selected) opt.setAttribute('data-ss-keep', '1');
+        }
+    }
+
+    function resetRemoteOptions(inst) {
+        var select = inst.select;
+        for (var i = select.options.length - 1; i >= 0; i--) {
+            if (select.options[i].getAttribute('data-ss-keep') !== '1') {
+                select.remove(i);
+            }
+        }
+    }
+
+    function addRemoteOptions(inst, results) {
+        var select = inst.select;
+        for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            if (!item || item.id === undefined || item.id === null) continue;
+
+            var exists = false;
+            for (var j = 0; j < select.options.length; j++) {
+                if (String(select.options[j].value) === String(item.id)) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (exists) continue;
+
+            var opt = new Option(item.text || '', item.id, false, false);
+            opt.setAttribute('data-ss-remote', '1');
+            select.add(opt);
+        }
+    }
+
+    function highlightSelected(inst) {
+        var selectedOpt = inst.select.options[inst.select.selectedIndex] || null;
+        if (!selectedOpt) return;
+        var selIdx = inst.items.indexOf(selectedOpt);
+        if (selIdx >= 0 && selIdx < inst.rendered) setActive(inst, selIdx);
+    }
+
+    function loadRemote(inst, query) {
+        if (!inst.remoteUrl) return;
+
+        var seq = ++inst.remoteSeq;
+        inst.loading = true;
+        inst.remoteError = false;
+        inst.remoteOptions = [];
+        renderList(inst, query);
+        positionPanel(inst);
+
+        var glue = inst.remoteUrl.indexOf('?') === -1 ? '?' : '&';
+        var url = inst.remoteUrl + glue + 'q=' + encodeURIComponent(query);
+
+        fetch(url, {
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            credentials: 'same-origin'
+        })
+            .then(function (response) {
+                if (!response.ok) throw new Error('lookup failed');
+                return response.json();
+            })
+            .then(function (data) {
+                if (seq !== inst.remoteSeq) return;
+                inst.loading = false;
+                inst.remoteOptions = data.results || [];
+                resetRemoteOptions(inst);
+                addRemoteOptions(inst, inst.remoteOptions);
+                renderList(inst, query);
+                highlightSelected(inst);
+                positionPanel(inst);
+            })
+            .catch(function () {
+                if (seq !== inst.remoteSeq) return;
+                inst.loading = false;
+                inst.remoteError = true;
+                renderList(inst, query);
+                positionPanel(inst);
+            });
     }
 
     function renderList(inst, query) {
         var select = inst.select;
         var q = normalize(query);
         var list = inst.list;
+
+        if (inst.loading) {
+            showMessage(inst, 'Searching…');
+            return;
+        }
+        if (inst.remoteError && inst.remoteUrl) {
+            showMessage(inst, 'Search failed. Type again to retry.');
+            return;
+        }
+
         var frag = document.createDocumentFragment();
 
         list.innerHTML = '';
@@ -243,6 +357,7 @@
         if (!opt || opt.disabled) return;
         var before = inst.select.selectedIndex;
         opt.selected = true;
+        opt.setAttribute('data-ss-keep', '1');
         var after = inst.select.selectedIndex;
         syncValue(inst);
         closePanel(inst);
@@ -262,6 +377,7 @@
                 scheduled = true;
                 window.requestAnimationFrame(function () {
                     scheduled = false;
+                    if (inst.remoteUrl && inst.loading) return;
                     refresh(inst);
                 });
             });
@@ -354,9 +470,16 @@
             items: [],
             rendered: 0,
             active: -1,
-            open: false
+            open: false,
+            remoteUrl: select.getAttribute('data-ajax-url') || null,
+            remoteSeq: 0,
+            remoteTimer: null,
+            remoteOptions: [],
+            loading: false,
+            remoteError: false
         };
         instances.push(inst);
+        if (inst.remoteUrl) markKeepOptions(inst);
 
         control.setAttribute('aria-controls', panel.id);
 
@@ -386,6 +509,13 @@
         });
 
         search.addEventListener('input', function () {
+            if (inst.remoteUrl) {
+                window.clearTimeout(inst.remoteTimer);
+                inst.remoteTimer = window.setTimeout(function () {
+                    loadRemote(inst, search.value);
+                }, 250);
+                return;
+            }
             renderList(inst, search.value);
         });
         search.addEventListener('keydown', function (e) {

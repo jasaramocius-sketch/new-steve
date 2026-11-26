@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncProductStockJob;
 use App\Models\Blog;
 use App\Models\Category;
 use App\Models\CommissionHistory;
@@ -14,6 +15,9 @@ use App\Models\Revision;
 use App\Models\Setting;
 use App\Models\TaxType;
 use App\Models\User;
+use App\Models\EmailTemplate;
+use App\Support\EmailTemplates;
+use App\Support\StockSync;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -24,12 +28,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Rules\ZipCodeForCountry;
+use App\Support\FeatureFlags;
 
 class AdminController extends Controller
 {
     public function index()
     {
-        $topProducts = Order::revenueEligible()
+        $topProducts = Order::customerPlaced()->revenueEligible()
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->select('order_items.product_id', DB::raw('SUM(order_items.qty) as total_qty'))
             ->groupBy('order_items.product_id')
@@ -42,9 +47,9 @@ class AdminController extends Controller
             $topProducts = $topProducts->map(fn ($item) => tap($item, fn ($i) => $i->product = $products->get($i->product_id)));
         }
 
-        $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
+        $ordersByStatus = Order::customerPlaced()->selectRaw('status, COUNT(*) as count')->groupBy('status')->get();
 
-        $dbRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
+        $dbRevenue = Order::customerPlaced()->revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(total_amount) as total")->groupBy('month')->orderBy('month')->take(12)->pluck('total', 'month');
 
         $monthlyRevenueData = collect();
         for ($i = 11; $i >= 0; $i--) {
@@ -52,7 +57,7 @@ class AdminController extends Controller
             $monthlyRevenueData->put($key, (float) ($dbRevenue->get($key) ?? 0));
         }
 
-        $weeklyRevenue = Order::revenueEligible()->selectRaw('YEARWEEK(created_at, 1) as week, SUM(total_amount) as total')
+        $weeklyRevenue = Order::customerPlaced()->revenueEligible()->selectRaw('YEARWEEK(created_at, 1) as week, SUM(total_amount) as total')
             ->where('created_at', '>=', now()->subWeeks(12))
             ->groupBy('week')
             ->orderBy('week')
@@ -66,7 +71,7 @@ class AdminController extends Controller
             $weeklyRevenueData->put($key, (float) ($weeklyRevenue->get($weekKey) ?? 0));
         }
 
-        $dailyRevenue = Order::revenueEligible()->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
+        $dailyRevenue = Order::customerPlaced()->revenueEligible()->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
             ->where('created_at', '>=', now()->subDays(30))
             ->groupBy('date')
             ->orderBy('date')
@@ -78,7 +83,7 @@ class AdminController extends Controller
             $dailyRevenueData->put($key, (float) ($dailyRevenue->get($key) ?? 0));
         }
 
-        $hourlyRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
+        $hourlyRevenue = Order::customerPlaced()->revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
             ->whereDate('created_at', today())
             ->groupBy('hour')
             ->orderBy('hour')
@@ -91,7 +96,7 @@ class AdminController extends Controller
             $hourlyRevenueData->put($key, (float) ($hourlyRevenue->get($key) ?? 0));
         }
 
-        $fiveMinRevenue = Order::revenueEligible()->selectRaw('
+        $fiveMinRevenue = Order::customerPlaced()->revenueEligible()->selectRaw('
             FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(created_at) / 300) * 300) as interval_time,
             SUM(total_amount) as total
         ')
@@ -109,13 +114,13 @@ class AdminController extends Controller
             $current->addMinutes(5);
         }
 
-        return view('admin.dashboard', [
-            'totalOrders' => Order::count(),
-            'totalRevenue' => Order::revenueEligible()->sum('total_amount'),
+        return view('backend.dashboard', [
+            'totalOrders' => Order::customerPlaced()->count(),
+            'totalRevenue' => Order::customerPlaced()->revenueEligible()->sum('total_amount'),
             'totalProducts' => Product::count(),
             'totalCustomers' => User::where('role', 'customer')->count(),
-            'pendingOrders' => Order::where('status', 'pending')->count(),
-            'recentOrders' => Order::with('user')->latest()->take(5)->get(),
+            'pendingOrders' => Order::customerPlaced()->where('status', 'pending')->count(),
+            'recentOrders' => Order::customerPlaced()->with('user')->latest()->take(5)->get(),
             'ordersByStatus' => $ordersByStatus,
             'monthlyRevenue' => $monthlyRevenueData,
             'ordersByStatusJson' => $ordersByStatus->pluck('count', 'status'),
@@ -132,7 +137,7 @@ class AdminController extends Controller
     {
         $user = Auth::user();
 
-        return view('admin.profile', compact('user'));
+        return view('backend.profile', compact('user'));
     }
 
     public function updateProfile(Request $request)
@@ -188,7 +193,7 @@ class AdminController extends Controller
         $range = $request->get('range', '5min');
 
         if ($range === 'hourly') {
-            $hourlyRevenue = Order::revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
+            $hourlyRevenue = Order::customerPlaced()->revenueEligible()->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour, SUM(total_amount) as total")
                 ->whereDate('created_at', today())
                 ->groupBy('hour')
                 ->orderBy('hour')
@@ -204,7 +209,7 @@ class AdminController extends Controller
             return response()->json($data);
         }
 
-        $todayRevenue = Order::revenueEligible()->selectRaw('
+        $todayRevenue = Order::customerPlaced()->revenueEligible()->selectRaw('
             FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(created_at) / 300) * 300) as interval_time,
             SUM(total_amount) as total
         ')
@@ -230,14 +235,14 @@ class AdminController extends Controller
         $settings = Setting::getAllAsArray();
         $taxTypes = TaxType::orderBy('name')->get();
 
-        return view('admin.settings.custom', compact('settings', 'taxTypes'));
+        return view('backend.settings.custom', compact('settings', 'taxTypes'));
     }
 
     public function orderSettings()
     {
         $settings = Setting::getAllAsArray();
 
-        return view('admin.settings.order', compact('settings'));
+        return view('backend.settings.order', compact('settings'));
     }
 
     public function updateOrderSettings(Request $request)
@@ -263,6 +268,7 @@ class AdminController extends Controller
                     ['name' => 'General Settings', 'description' => 'Header, footer, logos and navigation', 'icon' => 'fas fa-cog', 'route' => 'admin.settings.header'],
                     ['name' => 'Contact Information', 'description' => 'Address, phone, email, working hours and map', 'icon' => 'fas fa-address-book', 'route' => 'admin.settings.contact'],
                     ['name' => 'Invoice Settings', 'description' => 'Manage invoice branding, content and PDF layout', 'icon' => 'fas fa-file-invoice', 'route' => 'admin.settings.invoice'],
+                    ['name' => 'Email Templates', 'description' => 'Edit transactional email subjects and content', 'icon' => 'fas fa-envelope', 'route' => 'admin.settings.email-templates'],
                     ['name' => 'Features activation', 'description' => 'Turn store features on or off', 'icon' => 'fas fa-toggle-on', 'route' => 'admin.settings.features'],
                     ['name' => 'Order Configuration', 'description' => 'Minimum order amount', 'icon' => 'fas fa-shopping-bag', 'route' => 'admin.settings.order'],
                     ['name' => 'File System & Cache', 'description' => 'Storage driver and caching', 'icon' => 'fas fa-hdd', 'route' => 'admin.settings.file-system-cache'],
@@ -327,24 +333,22 @@ class AdminController extends Controller
             ],
         ];
 
-        return view('admin.settings.index', compact('settingsGroups'));
+        return view('backend.settings.index', compact('settingsGroups'));
     }
 
     public function featureSettings()
     {
-        $settingsGroups = $this->featureActivationGroups();
-        $storedSettings = Setting::getAllAsArray();
+        $settingsGroups = FeatureFlags::definitions();
 
         foreach ($settingsGroups as &$group) {
             foreach ($group['items'] as &$item) {
-                $storedValue = $storedSettings[$item['key']] ?? ($item['default'] ? '1' : '0');
-                $item['enabled'] = filter_var($storedValue, FILTER_VALIDATE_BOOLEAN);
+                $item['enabled'] = FeatureFlags::enabled($item['key']);
             }
             unset($item);
         }
         unset($group);
 
-        return view('admin.settings.features', compact('settingsGroups'));
+        return view('backend.settings.features', compact('settingsGroups'));
     }
 
     public function updateFeatureSetting(Request $request)
@@ -354,12 +358,7 @@ class AdminController extends Controller
             'enabled' => 'required|boolean',
         ]);
 
-        $allowedKeys = [];
-        foreach ($this->featureActivationGroups() as $group) {
-            $allowedKeys = array_merge($allowedKeys, array_column($group['items'], 'key'));
-        }
-
-        if (! in_array($validated['key'], $allowedKeys, true)) {
+        if (! in_array($validated['key'], FeatureFlags::keys(), true)) {
             return response()->json(['message' => 'Unknown feature setting.'], 422);
         }
 
@@ -370,72 +369,13 @@ class AdminController extends Controller
             Setting::set('webp_frontend', $enabled ? '0' : '1');
         }
 
+        FeatureFlags::flush();
+
         return response()->json([
             'success' => true,
             'enabled' => $enabled,
             'message' => 'Feature setting saved successfully.',
         ]);
-    }
-
-    private function featureActivationGroups(): array
-    {
-        return [
-            [
-                'title' => 'System',
-                'items' => [
-                    ['key' => 'FORCE_HTTPS', 'label' => 'HTTPS Activation', 'default' => false],
-                    ['key' => 'maintenance_mode', 'label' => 'Maintenance Mode Activation', 'default' => false],
-                    ['key' => 'disable_image_optimization', 'label' => 'Disable image encoding?', 'default' => false],
-                ],
-            ],
-            [
-                'title' => 'Business Related',
-                'items' => [
-                    ['key' => 'vendor_system_activation', 'label' => 'Vendor System Activation', 'default' => false],
-                    ['key' => 'classified_product', 'label' => 'Classified Product', 'default' => true],
-                    ['key' => 'wallet_system', 'label' => 'Wallet System Activation', 'default' => false],
-                    ['key' => 'coupon_system', 'label' => 'Coupon System Activation', 'default' => true],
-                    ['key' => 'pickup_point', 'label' => 'Pickup Point Activation', 'default' => true],
-                    ['key' => 'conversation_system', 'label' => 'Conversation Activation', 'default' => true],
-                    ['key' => 'product_manage_by_admin', 'label' => 'Seller Product Manage By Admin', 'default' => false, 'description' => 'When enabled, COD for seller products is managed by the admin.'],
-                    ['key' => 'product_approve_by_admin', 'label' => 'Admin Approval On Seller Product', 'default' => false, 'description' => 'Seller products require admin approval.'],
-                    ['key' => 'email_verification', 'label' => 'Email Verification', 'default' => false, 'configure' => 'admin.settings.smtp', 'configureLabel' => 'Configure SMTP'],
-                    ['key' => 'product_query_activation', 'label' => 'Product Query Activation', 'default' => false],
-                ],
-            ],
-            [
-                'title' => 'Payment Related',
-                'items' => [
-                    ['key' => 'paypal_payment', 'label' => 'PayPal Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'stripe_payment', 'label' => 'Stripe Payment Activation', 'default' => true, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'mercadopago_payment', 'label' => 'MercadoPago Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'sslcommerz_payment', 'label' => 'SSlCommerz Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'instamojo_payment', 'label' => 'Instamojo Payment Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'razorpay', 'label' => 'Razor Pay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'paystack', 'label' => 'PayStack Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'voguepay', 'label' => 'VoguePay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'payhere', 'label' => 'Payhere Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'ngenius', 'label' => 'Ngenius Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'iyzico', 'label' => 'Iyzico Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'bkash', 'label' => 'Bkash Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'nagad', 'label' => 'Nagad Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'proxypay', 'label' => 'Proxy Pay Activation', 'default' => true, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'aamarpay', 'label' => 'Amarpay Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'authorizenet', 'label' => 'Authorize Net Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'payku', 'label' => 'Payku Activation', 'default' => false, 'configure' => 'admin.api-integrations.index'],
-                    ['key' => 'cash_payment', 'label' => 'Cash Payment Activation', 'default' => true],
-                ],
-            ],
-            [
-                'title' => 'Social Media Login',
-                'items' => [
-                    ['key' => 'facebook_login', 'label' => 'Facebook login', 'default' => false],
-                    ['key' => 'google_login', 'label' => 'Google login', 'default' => false],
-                    ['key' => 'twitter_login', 'label' => 'Twitter login', 'default' => false],
-                    ['key' => 'apple_login', 'label' => 'Apple login', 'default' => false],
-                ],
-            ],
-        ];
     }
 
     public function updateCustomSettings(Request $request)
@@ -453,22 +393,164 @@ class AdminController extends Controller
     public function headerSettings()
     {
         $settings = Setting::getAllAsArray();
-        $categories = Category::with('children')->orderBy('name')->get();
-        $pages = Page::where('status', true)
-            ->select('id', 'title', 'slug')
-            ->orderBy('title')->get();
-        $posts = Blog::where('status', 'published')
-            ->select('id', 'title', 'slug')
-            ->orderBy('title')->get();
+        $navMenu = json_decode((string) ($settings['nav_menu'] ?? '[]'), true);
+        $availableMenuUrls = $this->availableMenuUrls(is_array($navMenu) ? $navMenu : []);
 
-        return view('admin.settings.header', compact('settings', 'categories', 'pages', 'posts'));
+        return view('backend.settings.header', compact('settings', 'availableMenuUrls'));
+    }
+
+    /**
+     * Paginated link options for the General Settings nav-menu builder.
+     * Replaces rendering every page/post/category into the page HTML.
+     */
+    public function headerLinkOptions(Request $request)
+    {
+        $type = (string) $request->query('type', '');
+        $mode = (string) $request->query('mode', 'all');
+        $q = trim((string) $request->query('q', ''));
+        $page = max(1, (int) $request->query('page', 1));
+
+        $types = [
+            'pages' => ['model' => Page::class, 'label' => 'title', 'prefix' => '/', 'value' => 'page'],
+            'posts' => ['model' => Blog::class, 'label' => 'title', 'prefix' => '/blog/', 'value' => 'post'],
+            'categories' => ['model' => Category::class, 'label' => 'name', 'prefix' => '/category/', 'value' => 'category'],
+        ];
+
+        if (! isset($types[$type])) {
+            return response()->json($this->emptyLinkOptions());
+        }
+
+        $config = $types[$type];
+        $query = $config['model']::query();
+
+        if ($type === 'pages') {
+            $query->where('status', true);
+        } elseif ($type === 'posts') {
+            $query->where('status', 'published');
+        }
+
+        if ($mode === 'search' && $q !== '') {
+            $query->where($config['label'], 'like', '%'.$q.'%');
+            $query->orderBy($config['label']);
+        } elseif ($mode === 'recent') {
+            $query->orderByDesc('created_at');
+        } else {
+            $query->orderBy($config['label']);
+        }
+
+        $perPage = $mode === 'recent' ? 10 : 20;
+        $paginator = $query->paginate($perPage, ['id', $config['label'], 'slug'], 'page', $page);
+
+        if ($paginator->lastPage() > 0 && $paginator->currentPage() > $paginator->lastPage()) {
+            $paginator = $query->paginate($perPage, ['*'], 'page', $paginator->lastPage());
+        }
+
+        $items = $paginator->getCollection()->map(function ($model) use ($config) {
+            return [
+                'label' => (string) $model->{$config['label']},
+                'url' => $config['prefix'].$model->slug,
+                'type' => $config['value'],
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'data' => $items,
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+        ]);
+    }
+
+    private function emptyLinkOptions(): array
+    {
+        return [
+            'data' => [],
+            'current_page' => 1,
+            'last_page' => 1,
+            'per_page' => 20,
+            'total' => 0,
+        ];
+    }
+
+    /**
+     * Validate only the links already saved in the menu instead of embedding
+     * every page/post/category URL in the HTML.
+     */
+    private function availableMenuUrls(array $items): array
+    {
+        $linked = [];
+
+        $walk = function (array $nodes) use (&$walk, &$linked) {
+            foreach ($nodes as $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $type = (string) ($item['type'] ?? '');
+                $url = (string) ($item['url'] ?? '');
+
+                if ($url !== '' && in_array($type, ['page', 'post', 'category'], true)) {
+                    $linked[$type.':'.strtolower($url)] = true;
+                }
+
+                if (! empty($item['children']) && is_array($item['children'])) {
+                    $walk($item['children']);
+                }
+            }
+        };
+        $walk($items);
+
+        if ($linked === []) {
+            return [];
+        }
+
+        $slugs = ['page' => [], 'post' => [], 'category' => []];
+        foreach (array_keys($linked) as $key) {
+            [$type, $url] = array_pad(explode(':', $key, 2), 2, '');
+            $path = parse_url($url, PHP_URL_PATH) ?: $url;
+            $slug = basename((string) $path);
+            if ($slug !== '') {
+                $slugs[$type][strtolower($slug)] = true;
+            }
+        }
+
+        $available = [];
+
+        if ($slugs['page'] !== []) {
+            Page::whereIn('slug', array_keys($slugs['page']))
+                ->where('status', true)
+                ->pluck('slug')
+                ->each(function ($slug) use (&$available) {
+                    $available['page:/'.strtolower($slug)] = true;
+                });
+        }
+
+        if ($slugs['post'] !== []) {
+            Blog::whereIn('slug', array_keys($slugs['post']))
+                ->where('status', 'published')
+                ->pluck('slug')
+                ->each(function ($slug) use (&$available) {
+                    $available['post:/blog/'.strtolower($slug)] = true;
+                });
+        }
+
+        if ($slugs['category'] !== []) {
+            Category::whereIn('slug', array_keys($slugs['category']))
+                ->pluck('slug')
+                ->each(function ($slug) use (&$available) {
+                    $available['category:/category/'.strtolower($slug)] = true;
+                });
+        }
+
+        return $available;
     }
 
     public function contactSettings()
     {
         $settings = Setting::getAllAsArray();
 
-        return view('admin.settings.contact', compact('settings'));
+        return view('backend.settings.contact', compact('settings'));
     }
 
     public function updateContactSettings(Request $request)
@@ -541,7 +623,7 @@ class AdminController extends Controller
             $invoiceSettings[$key] = ($settings[$key] ?? '1') === '1';
         }
 
-        return view('admin.settings.invoice', compact('invoiceLogoUrl', 'invoiceSettings'));
+        return view('backend.settings.invoice', compact('invoiceLogoUrl', 'invoiceSettings'));
     }
 
     public function updateInvoiceSettings(Request $request)
@@ -630,7 +712,7 @@ class AdminController extends Controller
             $settings['seo_robots_txt'] = renderRobotsTxt($settings['seo_robots_txt']);
         }
 
-        return view('admin.settings.seo', compact('settings', 'defaultRobots'));
+        return view('backend.settings.seo', compact('settings', 'defaultRobots'));
     }
 
     public function updateSeoSettings(Request $request)
@@ -799,7 +881,7 @@ class AdminController extends Controller
             ]
         );
 
-        return view('admin.logs.index', compact('files', 'selectedFile', 'entries', 'search', 'typeParam', 'typeFilter', 'types'));
+        return view('backend.logs.index', compact('files', 'selectedFile', 'entries', 'search', 'typeParam', 'typeFilter', 'types'));
     }
 
     public function logClear(string $file)
@@ -859,7 +941,7 @@ class AdminController extends Controller
             rsort($trashedFiles);
         }
 
-        return view('admin.logs.trash', compact('trashedFiles'));
+        return view('backend.logs.trash', compact('trashedFiles'));
     }
 
     public function logRestore(string $file)
@@ -948,14 +1030,14 @@ class AdminController extends Controller
             ->appends($request->query())
             ->onEachSide(1);
 
-        return view('admin.revisions.index', compact('revisions', 'sortBy', 'sortDir', 'filterModelType', 'filterModelId', 'trashed'));
+        return view('backend.revisions.index', compact('revisions', 'sortBy', 'sortDir', 'filterModelType', 'filterModelId', 'trashed'));
     }
 
     public function revisionDetail($id)
     {
         $rev = Revision::with('user')->findOrFail($id);
 
-        return view('admin.revisions.detail', compact('rev'));
+        return view('backend.revisions.detail', compact('rev'));
     }
 
     public function revisionDestroy($id)
@@ -1056,7 +1138,7 @@ class AdminController extends Controller
             ->appends($request->query())
             ->onEachSide(1);
 
-        return view('admin.file-revisions.index', compact('fileRevisions', 'sortBy', 'sortDir', 'trashed'));
+        return view('backend.file-revisions.index', compact('fileRevisions', 'sortBy', 'sortDir', 'trashed'));
     }
 
     public function fileRevisionDownload($id)
@@ -1077,7 +1159,7 @@ class AdminController extends Controller
     {
         $rev = FileRevision::with('user')->findOrFail($id);
 
-        return view('admin.file-revisions.diff', compact('rev'));
+        return view('backend.file-revisions.diff', compact('rev'));
     }
 
     public function updateHeaderSettings(Request $request)
@@ -1118,7 +1200,7 @@ class AdminController extends Controller
     {
         $commissionPercent = Setting::get('global_commission_percent', 0);
 
-        return view('admin.settings.commission', compact('commissionPercent'));
+        return view('backend.settings.commission', compact('commissionPercent'));
     }
 
     public function updateCommissionSettings(Request $request)
@@ -1142,6 +1224,72 @@ class AdminController extends Controller
 
         return redirect()->route('admin.settings.commission')
             ->with('success', 'Global buyer commission updated successfully.');
+    }
+
+    public function stockSyncSettings()
+    {
+        $settings = StockSync::settings();
+
+        return view('backend.settings.stock-sync', [
+            'settings' => $settings,
+            'configured' => StockSync::configured($settings),
+        ]);
+    }
+
+    public function updateStockSyncSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'stock_feed_url' => 'nullable|url|max:2048',
+            'stock_feed_token' => 'nullable|string|max:2048',
+            'stock_feed_format' => 'required|in:json,csv',
+            'stock_feed_items_path' => 'nullable|string|max:255',
+            'stock_feed_key_field' => 'required|in:part_number,id,slug',
+            'stock_feed_stock_field' => 'required|string|max:100',
+            'stock_sync_frequency' => 'required|in:manual,hourly,daily',
+            'stock_sync_enabled' => 'nullable|boolean',
+            'low_stock_threshold' => 'required|integer|min:0|max:100000',
+        ]);
+
+        $url = trim((string) ($validated['stock_feed_url'] ?? ''));
+        if ($request->boolean('stock_sync_enabled') && $url === '') {
+            return back()
+                ->withErrors(['stock_feed_url' => 'A feed URL is required when supplier sync is enabled.'])
+                ->withInput();
+        }
+
+        $token = trim((string) ($validated['stock_feed_token'] ?? ''));
+        if ($token === '') {
+            $token = (string) Setting::get('stock_feed_token', '');
+        }
+
+        $enabled = $request->boolean('stock_sync_enabled');
+
+        DB::transaction(function () use ($validated, $url, $token, $enabled) {
+            Setting::set('stock_feed_url', $url);
+            Setting::set('stock_feed_token', $token);
+            Setting::set('stock_feed_format', $validated['stock_feed_format']);
+            Setting::set('stock_feed_items_path', trim((string) ($validated['stock_feed_items_path'] ?? '')));
+            Setting::set('stock_feed_key_field', $validated['stock_feed_key_field']);
+            Setting::set('stock_feed_stock_field', trim((string) $validated['stock_feed_stock_field']));
+            Setting::set('stock_sync_frequency', $validated['stock_sync_frequency']);
+            Setting::set('stock_sync_enabled', $enabled ? '1' : '0');
+            Setting::set('low_stock_threshold', (string) (int) $validated['low_stock_threshold']);
+        });
+
+        return redirect()->route('admin.settings.stock-sync')
+            ->with('success', 'Stock sync settings updated successfully.');
+    }
+
+    public function runStockSync()
+    {
+        $settings = StockSync::settings();
+        if (! StockSync::configured($settings)) {
+            return back()->with('error', 'Stock sync is not configured. Add a feed URL and enable it first.');
+        }
+
+        SyncProductStockJob::dispatch();
+
+        return back()->with('success', 'Stock sync has been queued. Check the last sync result shortly.');
     }
 
     public function updateFooterSettings(Request $request)
@@ -1206,16 +1354,6 @@ class AdminController extends Controller
     public function searchCategorySettings()
     {
         $settings = Setting::getAllAsArray();
-        $categories = Category::searchCategoryTree();
-        $orphanCategories = Category::with('childrenRecursive')
-            ->whereNotNull('parent_id')
-            ->whereNotIn('parent_id', function ($query) {
-                $query->select('id')->from('categories')->whereNull('deleted_at');
-            })
-            ->orderBy('name')
-            ->get()
-            ->unique('id')
-            ->values();
 
         $selected = json_decode((string) ($settings['search_category_menu'] ?? '[]'), true);
         if (! is_array($selected)) {
@@ -1239,7 +1377,53 @@ class AdminController extends Controller
         $selected = $normalizedSelected;
         $selectedLabels = collect($normalizedSelected)->pluck('label');
 
-        return view('admin.settings.search-categories', compact('settings', 'categories', 'selected', 'selectedLabels', 'orphanCategories'));
+        return view('backend.settings.search-categories', compact('settings', 'selected', 'selectedLabels'));
+    }
+
+    /**
+     * Paginated category picker for the Search Categories settings page.
+     * Replaces rendering all 21,300 categories into the page HTML.
+     */
+    public function searchCategoryOptions(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = 20;
+
+        $query = Category::query();
+        if ($q !== '') {
+            $query->where('name', 'like', '%'.$q.'%');
+        }
+        $query->orderBy('name')->orderBy('id');
+
+        $paginator = $query->paginate($perPage, ['id', 'name', 'slug', 'parent_id'], 'page', $page);
+        if ($paginator->lastPage() > 0 && $paginator->currentPage() > $paginator->lastPage()) {
+            $paginator = $query->paginate($perPage, ['id', 'name', 'slug', 'parent_id'], 'page', $paginator->lastPage());
+        }
+
+        $parentIds = $paginator->getCollection()->pluck('parent_id')->filter()->unique()->all();
+        $parents = $parentIds
+            ? Category::whereIn('id', $parentIds)->pluck('name', 'id')
+            : collect();
+
+        $items = $paginator->getCollection()->map(function ($category) use ($parents) {
+            $parentName = $parents->get($category->parent_id);
+
+            return [
+                'id' => $category->id,
+                'label' => (string) $category->name,
+                'url' => route('category', $category->slug, false),
+                'context' => $parentName ? 'in '.$parentName : '',
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'data' => $items,
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+        ]);
     }
 
     public function updateSearchCategorySettings(Request $request)
@@ -1400,5 +1584,63 @@ class AdminController extends Controller
 
         return redirect()->route('admin.file-revisions.index', ['trashed' => 1])
             ->with('success', "Trash emptied ({$deleted} file revision(s) permanently deleted).");
+    }
+
+    public function emailTemplates()
+    {
+        EmailTemplates::ensureDefaults();
+        $templates = EmailTemplate::query()->orderBy('name')->get();
+
+        return view('backend.settings.email-templates.index', compact('templates'));
+    }
+
+    public function editEmailTemplate(string $key)
+    {
+        $template = EmailTemplates::resolve($key);
+        abort_unless($template, 404);
+        $default = EmailTemplates::default($key);
+
+        return view('backend.settings.email-templates.edit', compact('template', 'default'));
+    }
+
+    public function updateEmailTemplate(Request $request, string $key)
+    {
+        $template = EmailTemplates::resolve($key);
+        abort_unless($template, 404);
+
+        $validated = $request->validate([
+            'subject' => 'required|string|max:255',
+            'body_html' => 'required|string',
+            'is_enabled' => 'nullable|boolean',
+        ]);
+
+        $template->update([
+            'subject' => $validated['subject'],
+            'body_html' => $validated['body_html'],
+            'is_enabled' => $request->boolean('is_enabled'),
+        ]);
+
+        return redirect()->route('admin.settings.email-templates.edit', $template->key)
+            ->with('success', 'Email template updated.');
+    }
+
+    public function resetEmailTemplate(string $key)
+    {
+        $template = EmailTemplates::resolve($key);
+        abort_unless($template, 404);
+        $default = EmailTemplates::default($key);
+        abort_unless($default, 404);
+
+        $template->update([
+            'name' => $default['name'],
+            'subject' => $default['subject'],
+            'body_html' => $default['body_html'],
+            'description' => $default['description'] ?? null,
+            'placeholders' => $default['placeholders'] ?? [],
+            'is_enabled' => true,
+        ]);
+
+        return redirect()->route('admin.settings.email-templates.edit', $template->key)
+            ->with('success', 'Email template reset to default.');
     }
 }

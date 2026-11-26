@@ -19,7 +19,7 @@ class TwoFactorController extends Controller
             return redirect()->route('login');
         }
 
-        return view('auth.two-factor-challenge');
+        return view('frontend.auth.two-factor-challenge');
     }
 
     public function verify(Request $request)
@@ -92,7 +92,7 @@ class TwoFactorController extends Controller
         $recoveryCodes = $request->session()->pull('recovery_codes', []);
         $otpauthUri = TwoFactor::otpauthUri($user, config('app.name'));
 
-        return view('admin.settings.two-factor', compact('user', 'otpauthUri', 'recoveryCodes'));
+        return view('backend.settings.two-factor', compact('user', 'otpauthUri', 'recoveryCodes'));
     }
 
     public function confirm(Request $request)

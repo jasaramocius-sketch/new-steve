@@ -25,7 +25,7 @@ class ShippingLocationController extends Controller
             ->paginate(50)
             ->appends($request->query());
 
-        return view('admin.settings.shipping.countries.index', compact('countries', 'search', 'status'));
+        return view('backend.settings.shipping.countries.index', compact('countries', 'search', 'status'));
     }
 
     public function updateCountryStatus(Request $request, Country $country)
@@ -73,7 +73,7 @@ class ShippingLocationController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'status']);
 
-        return view('admin.settings.shipping.states.index', compact(
+        return view('backend.settings.shipping.states.index', compact(
             'states',
             'countries',
             'search',
@@ -126,7 +126,7 @@ class ShippingLocationController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'status']);
 
-        return view('admin.settings.shipping.states.edit', compact('state', 'countries'));
+        return view('backend.settings.shipping.states.edit', compact('state', 'countries'));
     }
 
     public function updateState(Request $request, State $state)
@@ -227,7 +227,7 @@ class ShippingLocationController extends Controller
             ->orderBy('name')
             ->get(['id', 'country_id', 'name']);
 
-        return view('admin.settings.shipping.cities.index', compact(
+        return view('backend.settings.shipping.cities.index', compact(
             'cities',
             'countries',
             'states',
@@ -274,7 +274,7 @@ class ShippingLocationController extends Controller
             ->orderBy('name')
             ->get(['id', 'country_id', 'name']);
 
-        return view('admin.settings.shipping.cities.edit', compact('city', 'countries', 'states'));
+        return view('backend.settings.shipping.cities.edit', compact('city', 'countries', 'states'));
     }
 
     public function updateCity(Request $request, City $city)

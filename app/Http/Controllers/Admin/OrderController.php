@@ -6,6 +6,7 @@ use App\Helpers\NotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Mail\OrderConfirmationMail;
 use App\Mail\OrderStatusChangedMail;
+use App\Mail\TemplatedMail;
 use App\Models\Order;
 use App\Services\InvoiceSettingsService;
 use App\Services\Couriers\CourierManager;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class OrderController extends Controller
 {
@@ -23,8 +25,11 @@ class OrderController extends Controller
         $sortBy = in_array($request->sort_by, ['id', 'order_number', 'total_amount', 'total', 'status', 'payment_status', 'created_at']) ? $request->sort_by : 'created_at';
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
         $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 10;
+        $includeInternal = $request->boolean('include_internal');
 
-        $query = Order::with('user');
+        // Staff/admin orders are internal test activity: keep them out of the
+        // normal list and export, but allow admins to opt in for cleanup.
+        $query = $includeInternal ? Order::with('user') : Order::customerPlaced()->with('user');
 
         $statusFilter = $request->status;
         if (in_array($statusFilter, ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], true)) {
@@ -39,14 +44,14 @@ class OrderController extends Controller
         $orders = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
         $orders->appends($request->query())->onEachSide(1);
 
-        return view('admin.orders.index', compact('orders', 'sortBy', 'sortDir', 'statusFilter', 'paymentStatusFilter'));
+        return view('backend.orders.index', compact('orders', 'sortBy', 'sortDir', 'statusFilter', 'paymentStatusFilter', 'includeInternal'));
     }
 
     public function show($id)
     {
         $order = Order::with(['user', 'items.product'])->findOrFail($id);
 
-        return view('admin.orders.show', compact('order'));
+        return view('backend.orders.show', compact('order'));
     }
 
     public function updateStatus(Request $request, $id)
@@ -92,13 +97,26 @@ class OrderController extends Controller
         $statusRanks = ['pending' => 0, 'processing' => 1, 'shipped' => 2, 'delivered' => 3];
 
         if ($requestedStatus !== null && $requestedStatus !== $oldStatus) {
-            $isReopeningCancelledOrder = $oldStatus === 'cancelled';
+            if ($oldStatus === 'cancelled') {
+                return back()
+                    ->withErrors(['status' => 'Cancelled orders cannot be changed. Use a return/refund workflow if needed.'])
+                    ->withInput();
+            }
+
+            if ($requestedStatus === 'cancelled' && in_array($oldStatus, ['shipped', 'delivered'], true)) {
+                return back()
+                    ->withErrors(['status' => $oldStatus === 'delivered'
+                        ? 'Delivered orders cannot be cancelled. Use Return/Refund instead.'
+                        : 'Shipped orders cannot be cancelled. Use Return/Refund instead.'])
+                    ->withInput();
+            }
+
             $isMovingStatusBackward = isset($statusRanks[$oldStatus], $statusRanks[$requestedStatus])
                 && $statusRanks[$requestedStatus] < $statusRanks[$oldStatus];
 
-            if ($isReopeningCancelledOrder || $isMovingStatusBackward) {
+            if ($isMovingStatusBackward) {
                 return back()
-                    ->withErrors(['status' => 'Order status cannot be moved backward or changed after cancellation.'])
+                    ->withErrors(['status' => 'Order status cannot be moved backward.'])
                     ->withInput();
             }
         }
@@ -169,6 +187,38 @@ class OrderController extends Controller
             }
         }
 
+        // Refunds for Stripe/card payments must go through Stripe API, not just a label.
+        if ($requestedPaymentStatus === 'refunded' && $oldPaymentStatus !== 'refunded') {
+            $paymentMethod = strtolower((string) ($order->payment_method ?? ''));
+            $isStripePayment = in_array($paymentMethod, ['card', 'stripe'], true)
+                || ! empty($details['stripe_session_id'])
+                || str_starts_with((string) ($details['transaction_id'] ?? ''), 'pi_')
+                || str_starts_with((string) ($details['transaction_id'] ?? ''), 'cs_')
+                || str_starts_with((string) ($details['transaction_id'] ?? ''), 'ch_');
+
+            if ($isStripePayment) {
+                $paymentReference = (string) ($details['transaction_id'] ?? $details['stripe_session_id'] ?? '');
+                try {
+                    $refund = app(\App\Services\StripeCheckoutService::class)->createRefund($paymentReference, null, [
+                        'order_id' => (string) $order->id,
+                        'order_number' => (string) $order->order_number,
+                    ]);
+                    $details['stripe_refund_id'] = $refund->id ?? null;
+                    $details['stripe_refund_status'] = $refund->status ?? null;
+                    $details['refunded_at'] = now()->toIso8601String();
+                    $update['payment_details'] = json_encode($details);
+                } catch (\Throwable $e) {
+                    return back()
+                        ->withErrors(['payment_status' => 'Stripe refund failed: '.$e->getMessage()])
+                        ->withInput();
+                }
+            } else {
+                $details['refunded_at'] = $details['refunded_at'] ?? now()->toIso8601String();
+                $details['refund_note'] = $details['refund_note'] ?? 'Manual refund recorded by admin.';
+                $update['payment_details'] = json_encode($details);
+            }
+        }
+
         // A paid order should not stay Pending. COD is different: payment is
         // collected on delivery, so marking it Paid means it is Delivered.
         // Never reopen a cancelled order or override an explicit cancellation.
@@ -216,15 +266,67 @@ class OrderController extends Controller
         NotificationHelper::orderStatusChanged($order, $oldStatus);
 
         if ($order->user_id && $order->user?->email && $newStatus !== $oldStatus) {
-            Mail::to($order->user->email)->queue(new OrderStatusChangedMail($order, $oldStatus));
+            try {
+                Mail::to($order->user->email)->send(new OrderStatusChangedMail($order, $oldStatus));
+            } catch (Throwable $exception) {
+                logger()->warning('Order status email failed: '.$exception->getMessage());
+            }
+        }
+
+        $finalPaymentStatus = $update['payment_status'] ?? $order->payment_status;
+        $orderEmail = $order->user?->email;
+        $billing = json_decode($order->shipping_details, true) ?? [];
+
+        if ($orderEmail && $finalPaymentStatus === 'paid' && $oldPaymentStatus !== 'paid') {
+            try {
+                Mail::to($orderEmail)->send(new TemplatedMail('payment_received', [
+                    'customer_name' => $billing['name'] ?? ($order->user->name ?? 'there'),
+                    'order_number' => $order->order_number ?? $order->id,
+                    'order_date' => optional($order->created_at)->format('d M, Y'),
+                    'order_total' => '$' . number_format((float) $order->total_amount, 2),
+                    'payment_method' => ucwords(str_replace('_', ' ', (string) ($order->payment_method ?? 'N/A'))),
+                    'order_url' => route('user.orders.show', $order->id),
+                ], 'Payment Received - #' . ($order->order_number ?? $order->id)));
+            } catch (Throwable $exception) {
+                logger()->warning('Payment received email failed: '.$exception->getMessage());
+            }
+        }
+
+        if ($orderEmail && $finalPaymentStatus === 'refunded' && $oldPaymentStatus !== 'refunded') {
+            $details = is_array($order->payment_details) ? $order->payment_details : (is_string($order->payment_details) ? json_decode($order->payment_details, true) : []);
+            $details = is_array($details) ? $details : [];
+            try {
+                Mail::to($orderEmail)->send(new TemplatedMail('refund_processed', [
+                    'customer_name' => $billing['name'] ?? ($order->user->name ?? 'there'),
+                    'order_number' => $order->order_number ?? $order->id,
+                    'refund_amount' => '$' . number_format((float) ($details['refund_amount'] ?? $order->total_amount ?? 0), 2),
+                    'refund_method' => ucwords(str_replace('_', ' ', (string) ($order->payment_method ?? 'N/A'))),
+                    'refund_reference' => (string) ($details['stripe_refund_id'] ?? $details['transaction_id'] ?? 'N/A'),
+                    'order_url' => route('user.orders.show', $order->id),
+                ], 'Refund Processed - #' . ($order->order_number ?? $order->id)));
+            } catch (Throwable $exception) {
+                logger()->warning('Refund email failed: '.$exception->getMessage());
+            }
         }
 
         $message = 'Order updated successfully.';
         if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
             $message = 'Order cancelled and stock restored.';
         }
+        $finalPaymentMethod = strtolower((string) ($order->payment_method ?? ''));
+        $warning = null;
+        if (in_array($newStatus, ['shipped', 'delivered'], true)
+            && $finalPaymentStatus !== 'paid'
+            && $finalPaymentMethod !== 'cod') {
+            $warning = 'Warning: this non-COD order is '.$newStatus.' but payment is still '.$finalPaymentStatus.'. Please verify payment before fulfilment.';
+        }
 
-        return redirect()->route('admin.orders.show', $id)->with('success', $message);
+        $redirect = redirect()->route('admin.orders.show', $id)->with('success', $message);
+        if ($warning) {
+            $redirect->with('warning', $warning);
+        }
+
+        return $redirect;
     }
 
     public function shipViaApi($id)
@@ -261,7 +363,7 @@ class OrderController extends Controller
         $order = Order::with('items.product')->findOrFail($id);
         $invoiceData = app(InvoiceSettingsService::class)->forOrder($order);
 
-        $pdf = Pdf::loadView('user.orders.invoice', ['order' => $order] + $invoiceData)
+        $pdf = Pdf::loadView('frontend.user.orders.invoice', ['order' => $order] + $invoiceData)
             ->setPaper('a4');
 
         return $pdf->download('invoice-'.$order->order_number.'.pdf');
@@ -282,14 +384,22 @@ class OrderController extends Controller
             return back()->with('error', 'No customer email is available for this order.');
         }
 
-        Mail::to($toEmail)->queue(new OrderConfirmationMail($order->load('items.product')));
+        try {
+            Mail::to($toEmail)->send(new OrderConfirmationMail($order->load('items.product')));
+        } catch (Throwable $exception) {
+            logger()->warning('Order confirmation email failed: '.$exception->getMessage());
+
+            return back()->with('error', 'Mail delivery failed. Check the SMTP settings and try again.');
+        }
 
         return back()->with('success', "Order details emailed to {$toEmail}.");
     }
 
     public function exportCsv(Request $request): StreamedResponse
     {
-        $query = Order::with(['user', 'items.product']);
+        $query = $request->boolean('include_internal')
+            ? Order::with(['user', 'items.product'])
+            : Order::customerPlaced()->with(['user', 'items.product']);
 
         $statusFilter = $request->status;
         if (in_array($statusFilter, ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], true)) {

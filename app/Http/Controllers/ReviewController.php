@@ -17,7 +17,8 @@ class ReviewController extends Controller
             return redirect()->route('product', $slug);
         }
 
-        $product = Product::where('slug', $slug)->firstOrFail();
+        try {
+            $product = Product::where('slug', $slug)->firstOrFail();
 
         $validated = $request->validate([
             'rating' => 'required|integer|min:1|max:5',
@@ -31,7 +32,10 @@ class ReviewController extends Controller
         $purchasedOrders = $eligibility->purchasedOrders($userId, $product->id);
 
         if ($purchasedOrders->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'You must purchase this product to write a review.'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Only customers who purchased this product can write a review. Sign in with the account used for your order, or check My Orders if you already bought it.',
+            ], 403);
         }
 
         $reviews = $product->reviews_data ?? [];
@@ -45,11 +49,11 @@ class ReviewController extends Controller
             );
 
             if (! $order) {
-                return response()->json(['success' => false, 'message' => 'This order is not eligible for a review.'], 403);
+                return response()->json(['success' => false, 'message' => 'This purchase is not eligible for a review.'], 403);
             }
 
             if (in_array($requestedOrderId, $reviewedOrderIds, true)) {
-                return response()->json(['success' => false, 'message' => 'You have already reviewed this product for this order.'], 403);
+                return response()->json(['success' => false, 'message' => 'You have already reviewed this purchase. You can edit your existing review in My Reviews.'], 403);
             }
         } else {
             $order = $purchasedOrders->first(
@@ -57,7 +61,7 @@ class ReviewController extends Controller
             );
 
             if (! $order) {
-                return response()->json(['success' => false, 'message' => 'You have already reviewed this product for all your purchases. You can edit your existing review.'], 403);
+                return response()->json(['success' => false, 'message' => 'You have already reviewed all your purchases of this product. You can edit an existing review in My Reviews.'], 403);
             }
         }
 
@@ -93,6 +97,16 @@ class ReviewController extends Controller
             'rating' => $product->rating,
             'count' => $product->reviews,
         ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to submit review right now. Please try again.',
+            ], 500);
+        }
     }
 
     public function destroy(Request $request, $slug, $reviewId)

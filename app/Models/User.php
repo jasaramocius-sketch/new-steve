@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Mail;
     'status', 'banned', 'is_deleted',
     'referred_by', 'provider', 'provider_id',
     'avatar', 'avatar_original',
-    'balance', 'referral_code', 'customer_package_id', 'remaining_uploads',
+    'referral_code', 'customer_package_id', 'remaining_uploads',
 ])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements MustVerifyEmail

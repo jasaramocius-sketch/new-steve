@@ -56,13 +56,13 @@ class ApiIntegrationController extends Controller
     public function index()
     {
         $integrations = ApiIntegration::orderBy('type')->orderBy('priority', 'desc')->orderBy('id', 'desc')->get();
-        return view('admin.api-integrations.index', compact('integrations'));
+        return view('backend.api-integrations.index', compact('integrations'));
     }
 
     public function create()
     {
         $providers = $this->providers;
-        return view('admin.api-integrations.create', compact('providers'));
+        return view('backend.api-integrations.create', compact('providers'));
     }
 
     public function store(Request $request)
@@ -118,7 +118,7 @@ class ApiIntegrationController extends Controller
     public function edit(ApiIntegration $apiIntegration)
     {
         $providers = $this->providers;
-        return view('admin.api-integrations.edit', compact('apiIntegration', 'providers'));
+        return view('backend.api-integrations.edit', compact('apiIntegration', 'providers'));
     }
 
     public function update(Request $request, ApiIntegration $apiIntegration)

@@ -209,7 +209,7 @@ class ImageController extends Controller
             'http' => [
                 'timeout' => 20,
                 'ignore_errors' => true,
-                'user_agent' => 'Mozilla/5.0 (compatible; StAutopartsImageDownloader/1.0)',
+                'user_agent' => 'Mozilla/5.0 (compatible; Steve AutopartsImageDownloader/1.0)',
             ],
             'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
         ]);
@@ -360,7 +360,7 @@ class ImageController extends Controller
 
         if ($request->ajax()) {
             return response()->json([
-                'html' => view('admin.images._cards', ['images' => $paths])->render(),
+                'html' => view('backend.images._cards', ['images' => $paths])->render(),
                 'current_page' => $paths->currentPage(),
                 'last_page' => $paths->lastPage(),
                 'total' => $paths->total(),
@@ -381,7 +381,7 @@ class ImageController extends Controller
         ];
         $stats['unused'] = max(0, $stats['total'] - $stats['attached']);
 
-        return view('admin.images.index', [
+        return view('backend.images.index', [
             'images' => $paths,
             'stats' => $stats,
         ]);
@@ -416,7 +416,7 @@ class ImageController extends Controller
         $image = Image::with('attachable', 'products')->findOrFail($id);
         $usageLocations = $image->usageLocations();
 
-        return view('admin.images.edit', compact('image', 'usageLocations'));
+        return view('backend.images.edit', compact('image', 'usageLocations'));
     }
 
     public function update(Request $request, $id)

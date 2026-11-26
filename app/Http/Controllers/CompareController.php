@@ -32,7 +32,7 @@ class CompareController extends Controller
             }
         }
 
-        return view('compare.index', compact('compareItems', 'page'));
+        return view('frontend.compare.index', compact('compareItems', 'page'));
     }
 
     public function add(Request $request)
@@ -44,6 +44,14 @@ class CompareController extends Controller
                 'error' => 'Invalid product selected for compare.',
                 'count' => 0,
             ], 400);
+        }
+
+        $product = Product::where('status', true)->find($productId);
+        if (! $product) {
+            return response()->json([
+                'error' => 'Product not found.',
+                'count' => $this->currentCompareCount(),
+            ], 404);
         }
 
         // Logged-in user
@@ -175,5 +183,14 @@ class CompareController extends Controller
         }
 
         return back()->with('success', 'Compare list cleared successfully.');
+    }
+
+    private function currentCompareCount(): int
+    {
+        if (session('user_logged_in') && session('user_profile.id')) {
+            return Compare::where('user_id', session('user_profile.id'))->count();
+        }
+
+        return count(session()->get('guest_compare', []));
     }
 }

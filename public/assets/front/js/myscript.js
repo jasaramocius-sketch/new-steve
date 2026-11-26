@@ -470,3 +470,57 @@
       prices;
   });
 })(jQuery);
+
+// Category context: keep clean /category/{slug} URLs but disambiguate same-slug
+// categories by storing selected category ID in session before navigation.
+(function () {
+  var endpoint = '/ajax/category-context';
+  try {
+    var basePath = (window.AppBasePath || (document.querySelector('meta[name="base-url"]') || {}).content || '').replace(/\/$/, '');
+    endpoint = basePath + '/ajax/category-context';
+  } catch (e) {}
+
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented) return;
+    if (e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+    var link = e.target && e.target.closest ? e.target.closest('a.js-category-context-link[data-category-id][data-category-slug]') : null;
+    if (!link) return;
+    if (link.target && link.target !== '_self') return;
+
+    var href = link.getAttribute('href');
+    var categoryId = link.getAttribute('data-category-id');
+    var slug = link.getAttribute('data-category-slug');
+    if (!href || !categoryId || !slug) return;
+
+    // Allow normal navigation for modified/non-http links.
+    if (href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+
+    e.preventDefault();
+    var navigated = false;
+    var go = function () {
+      if (navigated) return;
+      navigated = true;
+      window.location.href = href;
+    };
+
+    var timer = setTimeout(go, 800);
+    try {
+      fetch(endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ category_id: parseInt(categoryId, 10), slug: slug })
+      }).then(go).catch(go).finally(function () { clearTimeout(timer); });
+    } catch (err) {
+      clearTimeout(timer);
+      go();
+    }
+  }, true);
+})();

@@ -66,7 +66,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>{{ config('app.name', 'StAutoparts') }}</h1>
+            <h1>{{ config('app.name', 'Steve Autoparts') }}</h1>
         </div>
         <div class="content">
             <p>Hi {{ $contact->name }},</p>
@@ -74,10 +74,10 @@
             <p><strong>Subject:</strong> {{ $contact->subject }}</p>
             <div class="message-box">{{ $contact->message }}</div>
             <p>If you have any urgent questions, please reply to this email.</p>
-            <p>Best regards,<br>{{ config('app.name', 'StAutoparts') }} Team</p>
+            <p>Best regards,<br>{{ config('app.name', 'Steve Autoparts') }} Team</p>
         </div>
         <div class="footer">
-            <p>&copy; {{ date('Y') }} {{ config('app.name', 'StAutoparts') }}. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} {{ config('app.name', 'Steve Autoparts') }}. All rights reserved.</p>
         </div>
     </div>
 </body>

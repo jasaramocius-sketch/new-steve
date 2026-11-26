@@ -73,7 +73,7 @@ class WishlistController extends Controller
                 ->latest()
                 ->get();
 
-            return view('user.wishlist', compact('wishlist'));
+            return view('frontend.user.wishlist', compact('wishlist'));
         }
 
         // Guest Wishlist
@@ -98,7 +98,7 @@ class WishlistController extends Controller
             }
         }
 
-        return view('user.wishlist', compact('wishlist'));
+        return view('frontend.user.wishlist', compact('wishlist'));
     }
 
     /**

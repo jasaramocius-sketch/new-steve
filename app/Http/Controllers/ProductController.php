@@ -9,17 +9,20 @@ use App\Models\CommissionHistory;
 use App\Models\Contact;
 use App\Models\Image;
 use App\Models\Product;
-use App\Models\ProductConversation;
+use App\Models\ProductFitment;
 use App\Models\Seller;
-use App\Models\SupportTicket;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Wishlist;
+use App\Services\ProductReviewEligibility;
+use App\Services\VehicleCatalog;
 use App\Support\DescriptionMarkdown;
+use App\Support\FeatureFlags;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -96,21 +99,93 @@ class ProductController extends Controller
         ];
     }
 
-    public static function resolveImportedSku(array $data, string $name, ?Product $existing = null): string
+    public static function resolveImportedIdentifiers(array $data, string $name, ?Product $existing = null): array
+    {
+        return [
+            'part_number' => self::resolveImportedPartNumber($data, $name, $existing),
+            'sku' => self::resolveImportedSku($data, $name, $existing),
+        ];
+    }
+
+    public static function resolveImportedPartNumber(array $data, string $name, ?Product $existing = null): string
     {
         $partNumber = trim((string) ($data['part_number'] ?? ''));
-        if ($partNumber === '') {
-            $partNumber = trim((string) ($data['sku'] ?? ''));
-        }
         if ($partNumber !== '') {
             return $partNumber;
         }
 
-        if ($existing?->sku) {
-            return $existing->sku;
+        $existingPartNumber = trim((string) ($existing->part_number ?? ''));
+        if ($existingPartNumber !== '') {
+            return $existingPartNumber;
+        }
+
+        return Product::generatePartNumber($name, $existing ? (int) $existing->id : null);
+    }
+
+    public static function resolveImportedSku(array $data, string $name, ?Product $existing = null): string
+    {
+        $sku = trim((string) ($data['sku'] ?? ''));
+        if ($sku !== '') {
+            return $sku;
+        }
+
+        $existingSku = trim((string) ($existing->sku ?? ''));
+        if ($existingSku !== '') {
+            return $existingSku;
         }
 
         return Product::generateSku($name, $existing ? (int) $existing->id : null);
+    }
+
+    public function lookup(Request $request)
+    {
+        $type = (string) $request->query('type', '');
+        $q = trim((string) $request->query('q', ''));
+
+        $query = match ($type) {
+            'category' => Category::query(),
+            'brand' => Brand::where('status', true),
+            'seller' => Seller::query(),
+            default => null,
+        };
+
+        if (! $query) {
+            return response()->json(['results' => []]);
+        }
+
+        if ($q !== '') {
+            $query->where('name', 'like', '%'.$q.'%');
+        }
+
+        $models = $query->orderBy('name')->limit(50)->get(['id', 'name']);
+
+        return response()->json([
+            'results' => $models->map(fn ($model) => [
+                'id' => $model->id,
+                'text' => $model->name,
+            ])->values()->all(),
+        ]);
+    }
+
+    private function productLookupOptions(string $type, array $ids)
+    {
+        $ids = collect($ids)
+            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        return match ($type) {
+            'category' => Category::whereIn('id', $ids)->get(['id', 'name']),
+            'brand' => Brand::whereIn('id', $ids)->get(['id', 'name']),
+            'seller' => Seller::whereIn('id', $ids)->get(['id', 'name']),
+            default => collect(),
+        };
     }
 
     public function index(Request $request)
@@ -124,7 +199,6 @@ class ProductController extends Controller
         $sortDir = $sortDir === 'asc' ? 'asc' : 'desc';
 
         $sortColumn = [
-            'sku' => 'part_number',
             'price' => 'cost',
             'stock' => 'vendor_stock',
         ][$sortBy] ?? $sortBy;
@@ -148,7 +222,9 @@ class ProductController extends Controller
         if ($search = trim((string) $request->query('search'))) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('part_number', 'like', "%{$search}%");
+                    ->orWhere('part_number', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
             });
         }
 
@@ -188,11 +264,13 @@ class ProductController extends Controller
 
         $products->appends($request->query())->onEachSide(1);
 
-        $categories = Category::orderBy('name')->get();
-        $brands = Brand::orderBy('name')->get();
-        $sellers = Seller::orderBy('name')->get();
+        // Only the currently selected options are printed. The rest are loaded
+        // on demand by the AJAX searchable select.
+        $categories = $this->productLookupOptions('category', [$request->query('category_id')]);
+        $brands = $this->productLookupOptions('brand', [$request->query('brand_id')]);
+        $sellers = $this->productLookupOptions('seller', [$request->query('seller_id')]);
 
-        return view('admin.products.index', compact('products', 'sortBy', 'sortDir', 'categories', 'brands', 'sellers'));
+        return view('backend.products.index', compact('products', 'sortBy', 'sortDir', 'categories', 'brands', 'sellers'));
     }
 
     public function restore($id)
@@ -212,7 +290,7 @@ class ProductController extends Controller
 
     public function show($slug)
     {
-        $product = Product::with(['galleryImages', 'category.parent', 'brand', 'seller' => fn ($q) => $q->withCount('products')])
+        $product = Product::with(['galleryImages', 'category.parent', 'brand', 'fitments', 'seller' => fn ($q) => $q->withCount('products')])
             ->where('slug', $slug)
             ->where('status', true)
             ->hasUsableImage()
@@ -224,9 +302,43 @@ class ProductController extends Controller
             abort(404);
         }
 
+        $fitmentSummary = $product->fitments->map(fn ($fitment) => $fitment->label())->values()->all();
+
+        $productSpecs = [];
+        $addSpec = function (string $label, $value) use (&$productSpecs) {
+            $value = trim((string) $value);
+            if ($value === '') {
+                return;
+            }
+            foreach ($productSpecs as $spec) {
+                if (strcasecmp($spec['label'], $label) === 0) {
+                    return;
+                }
+            }
+            $productSpecs[] = ['label' => $label, 'value' => $value];
+        };
+
+        $addSpec('Condition', $product->condition);
+        $addSpec('Warranty', $product->warranty_label);
+        $addSpec('Weight', $product->weight_kg ? $product->weight_kg.' kg' : null);
+
+        $dimensionParts = [];
+        foreach (['length_cm' => 'L', 'width_cm' => 'W', 'height_cm' => 'H'] as $key => $prefix) {
+            if (! empty($product->dimensions[$key])) {
+                $dimensionParts[] = $prefix.' '.$product->dimensions[$key];
+            }
+        }
+        $addSpec('Dimensions', $dimensionParts ? implode(' × ', $dimensionParts).' cm' : null);
+        $addSpec('OEM Numbers', implode(', ', $product->oem_numbers));
+        $addSpec('Interchange Numbers', implode(', ', $product->interchange_numbers));
+
+        foreach ($product->specifications as $spec) {
+            $addSpec((string) ($spec['label'] ?? $spec['title'] ?? ''), (string) ($spec['value'] ?? ''));
+        }
+
         $related = Product::with('category')->where('status', true)->hasUsableImage()->where('id', '!=', $product->id)->take(4)->get();
 
-        // "Similar Products To Compare" — same part, other brands (Moglix-style).
+        // "Similar Products To Compare" — same fitment/category, other brands.
         $similar = collect();
         $similarLimit = 2;
         $similarBase = Product::with('brand', 'category')
@@ -234,12 +346,16 @@ class ProductController extends Controller
             ->hasUsableImage()
             ->where('id', '!=', $product->id);
 
-        if (! empty($product->category_id) && ! empty($product->year) && ! empty($product->make) && ! empty($product->model)) {
+        $primaryFitment = $product->fitments->first();
+        if (! empty($product->category_id) && $primaryFitment) {
             $fitmentMatches = (clone $similarBase)
                 ->where('category_id', $product->category_id)
-                ->where('year', $product->year)
-                ->where('make', $product->make)
-                ->where('model', $product->model)
+                ->whereHas('fitments', function ($q) use ($primaryFitment) {
+                    $q->where('make', $primaryFitment->make)
+                        ->where('model', $primaryFitment->model)
+                        ->where('year_from', '<=', $primaryFitment->year_from)
+                        ->where('year_to', '>=', $primaryFitment->year_from);
+                })
                 ->orderByRaw('IF(brand_id = '.(int) $product->brand_id.', 1, 0) ASC, id ASC')
                 ->limit($similarLimit)
                 ->get();
@@ -276,7 +392,18 @@ class ProductController extends Controller
         }
         $inWishlist = in_array($product->id, $wishedProductIds);
 
-        $hasPurchased = ReviewController::hasPurchased(auth()->id(), $product->id);
+        $purchasedOrders = auth()->check()
+            ? app(ProductReviewEligibility::class)->purchasedOrders((int) auth()->id(), (int) $product->id)
+            : collect();
+        $reviewedOrderIds = app(ProductReviewEligibility::class)->reviewedOrderIds(
+            $product->reviews_data ?? [],
+            (int) auth()->id(),
+            $purchasedOrders
+        );
+        $hasPurchased = $purchasedOrders->isNotEmpty();
+        $canReview = $purchasedOrders->contains(
+            fn ($order) => ! in_array((int) $order->id, $reviewedOrderIds, true)
+        );
 
         // Fitment badge against the user's selected/default saved vehicle
         $userVehicle = null;
@@ -289,42 +416,138 @@ class ProductController extends Controller
             if (! $userVehicle) {
                 $userVehicle = Vehicle::where('user_id', auth()->id())->first();
             }
-            if ($userVehicle && $product->year && $product->make && $product->model) {
-                $vehicleFit = (
-                    strtolower(trim((string) $userVehicle->year)) === strtolower(trim((string) $product->year)) &&
-                    strtolower(trim((string) $userVehicle->make)) === strtolower(trim((string) $product->make)) &&
-                    strtolower(trim((string) $userVehicle->model)) === strtolower(trim((string) $product->model))
-                );
+            if ($userVehicle && $product->fitments->isNotEmpty()) {
+                $vehicleFit = $product->fitments->contains(function ($fitment) use ($userVehicle) {
+                    $year = (int) $userVehicle->year;
+
+                    return $year >= (int) $fitment->year_from
+                        && $year <= (int) $fitment->year_to
+                        && strcasecmp(trim((string) $userVehicle->make), trim((string) $fitment->make)) === 0
+                        && strcasecmp(trim((string) $userVehicle->model), trim((string) $fitment->model)) === 0;
+                });
             }
         }
 
-        // Recently viewed (session-based, most recent first, max 4)
-        $recentlyViewed = collect(session('recently_viewed', []))
+        // Recently viewed (session-based, most recent first, max 4).
+        // Show only products viewed before this one; store the current product
+        // so it appears as "recently viewed" on the next product page.
+        $recentlyViewedIds = collect(session('recently_viewed', []))
             ->filter(fn ($id) => (int) $id !== (int) $product->id)
             ->values()
-            ->prepend($product->id)
+            ->take(4)
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $recentlyViewed = collect($recentlyViewedIds)->prepend($product->id)
             ->unique()
             ->take(4)
             ->values()
             ->all();
         session(['recently_viewed' => $recentlyViewed]);
 
-        return view('product.show', compact('product', 'related', 'inWishlist', 'wishedProductIds', 'hasPurchased', 'similar', 'userVehicle', 'vehicleFit'));
+        return view('frontend.product.show', compact(
+            'product',
+            'related',
+            'inWishlist',
+            'wishedProductIds',
+            'hasPurchased',
+            'canReview',
+            'recentlyViewedIds',
+            'similar',
+            'userVehicle',
+            'vehicleFit',
+            'fitmentSummary',
+            'productSpecs'
+        ));
+    }
+
+    public function checkFitment(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
+            'year' => 'required|integer|min:1900|max:'.((int) date('Y') + 1),
+            'make' => 'required|string|max:100',
+            'model' => 'required|string|max:150',
+            'engine' => 'nullable|string|max:150',
+        ]);
+
+        $product = Product::query()
+            ->where('status', true)
+            ->hasUsableImage()
+            ->findOrFail($validated['product_id']);
+
+        $year = (int) $validated['year'];
+        $make = trim((string) $validated['make']);
+        $model = trim((string) $validated['model']);
+        $engine = trim((string) ($validated['engine'] ?? ''));
+
+        $fitments = $product->fitments()->orderBy('sort_order')->get();
+
+        if ($fitments->isEmpty()) {
+            return response()->json([
+                'fits' => null,
+                'message' => 'Fitment information is not available for this product yet.',
+            ]);
+        }
+
+        $matches = $fitments->filter(function ($fitment) use ($year, $make, $model, $engine) {
+            if ($year < (int) $fitment->year_from || $year > (int) $fitment->year_to) {
+                return false;
+            }
+            if (strcasecmp(trim((string) $fitment->make), $make) !== 0) {
+                return false;
+            }
+            if (strcasecmp(trim((string) $fitment->model), $model) !== 0) {
+                return false;
+            }
+            if ($engine !== '' && trim((string) $fitment->engine) !== '') {
+                return strcasecmp(trim((string) $fitment->engine), $engine) === 0;
+            }
+
+            return true;
+        })->values();
+
+        $fits = $matches->isNotEmpty();
+
+        return response()->json([
+            'fits' => $fits,
+            'message' => $fits
+                ? 'This part fits your '.$year.' '.$make.' '.$model.($engine !== '' ? ' '.$engine : '').'.'
+                : 'This part does not fit your '.$year.' '.$make.' '.$model.($engine !== '' ? ' '.$engine : '').'.',
+            'matches' => $matches->map(fn ($fitment) => [
+                'label' => $fitment->label(),
+                'notes' => $fitment->notes,
+            ])->all(),
+        ]);
     }
 
     public function create()
     {
-        $categories = Category::orderBy('name')->get();
-        $brands = Brand::where('status', true)->orderBy('name')->get();
-        $sellers = Seller::orderBy('name')->get();
+        $categories = $this->productLookupOptions('category', [old('category_id')]);
+        $brands = $this->productLookupOptions('brand', [old('brand_id')]);
+        $sellers = $this->productLookupOptions('seller', [old('seller_id')]);
 
-        return view('admin.products.create', compact('categories', 'brands', 'sellers'));
+        return view('backend.products.create', array_merge(
+            compact('categories', 'brands', 'sellers'),
+            $this->vehicleFormData()
+        ));
+    }
+
+    private function vehicleFormData(): array
+    {
+        $catalog = app(VehicleCatalog::class);
+
+        return [
+            'vehicleYears' => $catalog->years()->all(),
+            'vehicleMakes' => $catalog->makes()->all(),
+        ];
     }
 
     public function store(Request $request)
     {
+        $maxYear = (int) date('Y') + 1;
         $request->validate([
             'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:100|unique:products,sku',
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
@@ -333,9 +556,25 @@ class ProductController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'seller_id' => 'nullable|exists:sellers,id',
-            'year' => 'nullable|integer|min:1900|max:2026',
-            'make' => 'nullable|string|max:100',
-            'model' => 'nullable|string|max:100',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'slug' => 'nullable|string|max:255',
+            'condition' => 'nullable|string|max:40',
+            'warranty_months' => 'nullable|integer|min:0|max:600',
+            'warranty_text' => 'nullable|string|max:255',
+            'weight_kg' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.length_cm' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.width_cm' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.height_cm' => 'nullable|numeric|min:0|max:100000',
+            'oem_numbers' => 'nullable|string|max:5000',
+            'interchange_numbers' => 'nullable|string|max:5000',
+            'fitments' => 'nullable|array|max:100',
+            'fitments.*.year_from' => 'nullable|integer|min:1900|max:'.$maxYear,
+            'fitments.*.year_to' => 'nullable|integer|min:1900|max:'.$maxYear,
+            'fitments.*.make' => 'nullable|string|max:100',
+            'fitments.*.model' => 'nullable|string|max:150',
+            'fitments.*.engine' => 'nullable|string|max:150',
+            'fitments.*.notes' => 'nullable|string|max:500',
             'tab_label_1' => 'nullable|string|max:100',
             'tab_label_2' => 'nullable|string|max:100',
             'tab_label_3' => 'nullable|string|max:100',
@@ -346,7 +585,9 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
+        $fitmentRows = $this->validatedFitmentRows($request, $maxYear);
+
+        $data = $request->only(['name', 'sku', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text', 'meta_title', 'meta_description', 'condition', 'warranty_months', 'warranty_text', 'weight_kg']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
@@ -354,10 +595,32 @@ class ProductController extends Controller
             (string) ($data['policy_text'] ?? '')
         );
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
-        $data['specifications'] = $this->parseSpecifications($request->specifications);
+        $data['specifications'] = self::parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
-        $data['part_number'] = Product::generateSku((string) $request->name);
-        $data['slug'] = Str::slug($request->name.'-'.$data['part_number']);
+        $data['oem_numbers'] = $request->oem_numbers;
+        $data['interchange_numbers'] = $request->interchange_numbers;
+        $data['dimensions'] = [
+            'length_cm' => $request->input('dimensions.length_cm'),
+            'width_cm' => $request->input('dimensions.width_cm'),
+            'height_cm' => $request->input('dimensions.height_cm'),
+        ];
+        $data['part_number'] = Product::generatePartNumber((string) $request->name);
+        $data['sku'] = trim((string) ($data['sku'] ?? '')) !== ''
+            ? trim((string) $data['sku'])
+            : Product::generateSku((string) $request->name);
+        $data['slug'] = $this->resolveProductSlug($request, null, (string) $request->name, $data['part_number']);
+
+        if (! FeatureFlags::enabled('vendor_system_activation') || ! FeatureFlags::enabled('product_manage_by_admin')) {
+            unset($data['seller_id']);
+        }
+
+        $data['approval_status'] = FeatureFlags::enabled('product_approve_by_admin') && ! empty($data['seller_id'])
+            ? 'pending'
+            : 'approved';
+
+        if ($data['approval_status'] === 'pending') {
+            $data['status'] = false;
+        }
 
         if ($request->hasFile('image')) {
             $data['main_image'] = saveImageWithWebp($request->file('image'));
@@ -374,6 +637,8 @@ class ProductController extends Controller
         $this->attachGalleryImagesFromManager($product, $request->gallery_images_from_manager);
 
         $this->attachGalleryUploads($product, $request->file('gallery_images'));
+
+        $this->syncProductFitments($product, $fitmentRows);
 
         if ($product->category_id) {
             $userIds = Wishlist::whereHas('product', fn ($q) => $q->where('category_id', $product->category_id))
@@ -395,27 +660,40 @@ class ProductController extends Controller
 
     public function details($id)
     {
-        $product = Product::with(['category', 'brand', 'galleryImages'])->findOrFail($id);
+        $product = Product::with(['category', 'brand', 'fitments', 'galleryImages'])->findOrFail($id);
 
-        return view('admin.products.show', compact('product'));
+        return view('backend.products.show', compact('product'));
     }
 
     public function edit($id)
     {
-        $product = Product::findOrFail($id);
-        $categories = Category::orderBy('name')->get();
-        $brands = Brand::where('status', true)->orderBy('name')->get();
-        $sellers = Seller::orderBy('name')->get();
+        $product = Product::with('fitments')->findOrFail($id);
+        $categories = $this->productLookupOptions('category', [old('category_id', $product->category_id)]);
+        $brands = $this->productLookupOptions('brand', [old('brand_id', $product->brand_id)]);
+        $sellers = $this->productLookupOptions('seller', [old('seller_id', $product->seller_id)]);
+        $fitments = old('fitments', $product->fitments->map(fn ($fitment) => [
+            'year_from' => $fitment->year_from,
+            'year_to' => $fitment->year_to,
+            'make' => $fitment->make,
+            'model' => $fitment->model,
+            'engine' => $fitment->engine,
+            'notes' => $fitment->notes,
+        ])->all());
 
-        return view('admin.products.edit', compact('product', 'categories', 'brands', 'sellers'));
+        return view('backend.products.edit', array_merge(
+            compact('product', 'categories', 'brands', 'sellers', 'fitments'),
+            $this->vehicleFormData()
+        ));
     }
 
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
+        $maxYear = (int) date('Y') + 1;
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:100|unique:products,sku,'.$product->id,
             'price' => 'required|numeric|min:0',
             'commission' => 'nullable|numeric|min:0|max:100',
             'old_price' => 'nullable|numeric|min:0',
@@ -424,9 +702,25 @@ class ProductController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'seller_id' => 'nullable|exists:sellers,id',
-            'year' => 'nullable|integer|min:1900|max:2026',
-            'make' => 'nullable|string|max:100',
-            'model' => 'nullable|string|max:100',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'slug' => 'nullable|string|max:255',
+            'condition' => 'nullable|string|max:40',
+            'warranty_months' => 'nullable|integer|min:0|max:600',
+            'warranty_text' => 'nullable|string|max:255',
+            'weight_kg' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.length_cm' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.width_cm' => 'nullable|numeric|min:0|max:100000',
+            'dimensions.height_cm' => 'nullable|numeric|min:0|max:100000',
+            'oem_numbers' => 'nullable|string|max:5000',
+            'interchange_numbers' => 'nullable|string|max:5000',
+            'fitments' => 'nullable|array|max:100',
+            'fitments.*.year_from' => 'nullable|integer|min:1900|max:'.$maxYear,
+            'fitments.*.year_to' => 'nullable|integer|min:1900|max:'.$maxYear,
+            'fitments.*.make' => 'nullable|string|max:100',
+            'fitments.*.model' => 'nullable|string|max:150',
+            'fitments.*.engine' => 'nullable|string|max:150',
+            'fitments.*.notes' => 'nullable|string|max:500',
             'tab_label_1' => 'nullable|string|max:100',
             'tab_label_2' => 'nullable|string|max:100',
             'tab_label_3' => 'nullable|string|max:100',
@@ -437,7 +731,9 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ]);
 
-        $data = $request->only(['name', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'year', 'make', 'model', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text']);
+        $fitmentRows = $this->validatedFitmentRows($request, $maxYear);
+
+        $data = $request->only(['name', 'sku', 'description', 'price', 'old_price', 'shipping_cost', 'category_id', 'brand_id', 'seller_id', 'badge', 'product_type', 'stock', 'status', 'tab_label_1', 'tab_label_2', 'tab_label_3', 'policy_text', 'meta_title', 'meta_description', 'condition', 'warranty_months', 'warranty_text', 'weight_kg']);
         $data['featured'] = $request->boolean('featured');
         $data['commission'] = $request->filled('commission') ? (float) $request->commission : null;
         [$data['description'], $data['policy_text']] = $this->normalizeEditorContent(
@@ -445,8 +741,33 @@ class ProductController extends Controller
             (string) ($data['policy_text'] ?? '')
         );
         $data['features'] = $request->filled('features') ? array_filter(explode("\n", str_replace("\r", '', $request->features))) : null;
-        $data['specifications'] = $this->parseSpecifications($request->specifications);
+        $data['specifications'] = self::parseSpecifications($request->specifications);
         $data['reviews_data'] = $request->filled('reviews_data') ? json_decode($request->reviews_data, true) : null;
+        $data['oem_numbers'] = $request->oem_numbers;
+        $data['interchange_numbers'] = $request->interchange_numbers;
+        $data['dimensions'] = [
+            'length_cm' => $request->input('dimensions.length_cm'),
+            'width_cm' => $request->input('dimensions.width_cm'),
+            'height_cm' => $request->input('dimensions.height_cm'),
+        ];
+        $data['sku'] = trim((string) ($data['sku'] ?? '')) !== ''
+            ? trim((string) $data['sku'])
+            : ((string) $product->sku ?: Product::generateSku((string) $request->name, (int) $product->id));
+        $data['slug'] = $this->resolveProductSlug($request, $product, (string) $request->name, (string) $product->part_number);
+
+        if (! FeatureFlags::enabled('vendor_system_activation') || ! FeatureFlags::enabled('product_manage_by_admin')) {
+            unset($data['seller_id']);
+        }
+
+        $effectiveSellerId = $data['seller_id'] ?? $product->seller_id;
+        if (
+            FeatureFlags::enabled('product_approve_by_admin')
+            && $effectiveSellerId
+            && (int) $effectiveSellerId !== (int) $product->seller_id
+        ) {
+            $data['approval_status'] = 'pending';
+            $data['status'] = false;
+        }
 
         if ($request->hasFile('image')) {
             $data['main_image'] = saveImageWithWebp($request->file('image'));
@@ -468,7 +789,33 @@ class ProductController extends Controller
 
         $this->attachGalleryImagesFromManager($product, $request->gallery_images_from_manager);
 
+        $this->syncProductFitments($product, $fitmentRows);
+
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully!');
+    }
+
+    public function approveSellerProduct($id)
+    {
+        abort_unless(FeatureFlags::enabled('product_approve_by_admin'), 404);
+
+        $product = Product::findOrFail($id);
+        $product->approval_status = 'approved';
+        $product->status = true;
+        $product->save();
+
+        return back()->with('success', 'Seller product approved and published.');
+    }
+
+    public function rejectSellerProduct($id)
+    {
+        abort_unless(FeatureFlags::enabled('product_approve_by_admin'), 404);
+
+        $product = Product::findOrFail($id);
+        $product->approval_status = 'rejected';
+        $product->status = false;
+        $product->save();
+
+        return back()->with('success', 'Seller product rejected and hidden.');
     }
 
     private function attachGalleryUploads(Product $product, $files): void
@@ -549,6 +896,16 @@ class ProductController extends Controller
     public function toggleStatus($id)
     {
         $product = Product::findOrFail($id);
+
+        if (
+            ! $product->status
+            && FeatureFlags::enabled('product_approve_by_admin')
+            && $product->seller_id
+            && ($product->approval_status ?? 'approved') !== 'approved'
+        ) {
+            return back()->with('warning', 'Approve this seller product before publishing it.');
+        }
+
         $product->status = ! $product->status;
         $product->save();
 
@@ -663,7 +1020,20 @@ class ProductController extends Controller
         }
 
         $status = $request->integer('status') === 1 ? 1 : 0;
-        Product::whereIn('id', $ids)->update(['status' => $status]);
+        $query = Product::whereIn('id', $ids);
+
+        if ($status === 1 && FeatureFlags::enabled('product_approve_by_admin')) {
+            $query->where(function ($q) {
+                $q->whereNull('seller_id')
+                    ->orWhere('approval_status', 'approved');
+            });
+        }
+
+        $updated = $query->update(['status' => $status]);
+
+        if ($updated < count($ids)) {
+            return back()->with('warning', 'Some seller products were skipped because they are not approved yet.');
+        }
 
         return back()->with('success', count($ids).' product(s) '.($status ? 'activated' : 'deactivated').'.');
     }
@@ -695,6 +1065,8 @@ class ProductController extends Controller
 
     public function contactSeller(Request $request)
     {
+        abort_unless(FeatureFlags::enabled('product_query_activation'), 404);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -713,9 +1085,9 @@ class ProductController extends Controller
             'message' => "Product: {$product->name}\nProduct URL: ".route('product', $product->slug)."\n\n{$request->message}",
             'user_id' => auth()->id(),
             'product_id' => $product->id,
+            'category' => 'Product',
+            'priority' => 'medium',
         ]);
-
-        $this->createProductConversation($request, $product);
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Your message has been sent to the seller.']);
@@ -724,329 +1096,219 @@ class ProductController extends Controller
         return back()->with('success', 'Your message has been sent to the seller.');
     }
 
-    private function createProductConversation(Request $request, Product $product): void
-    {
-        try {
-            if (auth()->check()) {
-                $conversation = ProductConversation::query()
-                    ->where('product_id', $product->id)
-                    ->where('user_id', auth()->id())
-                    ->where('status', 'open')
-                    ->latest()
-                    ->first();
-
-                if (! $conversation) {
-                    $conversation = ProductConversation::create([
-                        'product_id' => $product->id,
-                        'user_id' => auth()->id(),
-                        'seller_id' => $product->seller_id,
-                        'subject' => 'Product inquiry: '.$product->name,
-                        'status' => 'open',
-                        'last_message_at' => now(),
-                    ]);
-                }
-
-                $conversation->messages()->create([
-                    'sender_id' => auth()->id(),
-                    'sender_type' => 'customer',
-                    'message' => $request->input('message'),
-                ]);
-
-                $conversation->update([
-                    'status' => 'open',
-                    'last_message_at' => now(),
-                ]);
-
-                return;
-            }
-
-            SupportTicket::create([
-                'user_id' => null,
-                'name' => $request->input('name'),
-                'email' => $request->input('email'),
-                'subject' => 'Product inquiry: '.($product->name ?? 'Product'),
-                'category' => 'Product',
-                'priority' => 'medium',
-                'status' => 'open',
-                'message' => "Product: {$product->name}\nProduct URL: ".route('product', $product->slug)."\n\n{$request->input('message')}",
-            ]);
-        } catch (\Throwable $e) {
-            // Never block a product inquiry if the support module is unavailable.
-            logger()->warning('Support conversation could not be created from product inquiry: '.$e->getMessage());
-        }
-    }
-
     public function importForm()
     {
-        return view('admin.products.import');
+        return view('backend.products.import', [
+            'maxUploadLabel' => '64MB',
+        ]);
     }
 
-    public function import(Request $request)
+    public function downloadFitmentSampleCsv($id)
     {
+        $product = Product::findOrFail($id);
+
+        $callback = function () {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['year_from', 'year_to', 'make', 'model', 'engine', 'notes']);
+            fputcsv($handle, ['2018', '2022', 'Toyota', 'Camry', '2.5L I4', 'Excluding Hybrid']);
+            fputcsv($handle, ['2019', '2021', 'Honda', 'Accord', '1.5T', '']);
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="sample-fitments-'.$product->id.'.csv"',
+        ]);
+    }
+
+    public function exportFitmentsCsv($id)
+    {
+        $product = Product::with('fitments')->findOrFail($id);
+
+        $callback = function () use ($product) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['year_from', 'year_to', 'make', 'model', 'engine', 'notes']);
+            foreach ($product->fitments as $fitment) {
+                fputcsv($handle, [
+                    $fitment->year_from,
+                    $fitment->year_to,
+                    $fitment->make,
+                    $fitment->model,
+                    $fitment->engine,
+                    $fitment->notes,
+                ]);
+            }
+            fclose($handle);
+        };
+
+        $filename = 'fitments-'.Str::slug($product->part_number ?: $product->name).'.csv';
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    public function importFitmentsCsv(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+            'fitment_file' => 'required|file|mimes:csv,txt,xml|max:5120',
         ]);
 
-        $file = $request->file('csv_file');
-        $handle = fopen($file->getRealPath(), 'r');
-        $header = fgetcsv($handle, 0, ',');
+        $file = $request->file('fitment_file');
+        $extension = strtolower((string) $file->getClientOriginalExtension());
 
-        $header = array_map('trim', $header);
-        $expected = ['id', 'name', 'part_number', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'buy_return_policy', 'return_policy', 'features', 'feature_list', 'reviews', 'reviews_data', 'specifications', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
-
-        $colMap = [];
-        foreach ($header as $i => $col) {
-            $colLower = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', $col));
-            if (in_array($colLower, $expected)) {
-                $colMap[$i] = $colLower;
-            }
+        try {
+            $rows = $extension === 'xml'
+                ? $this->parseFitmentXml($file->getRealPath())
+                : $this->parseFitmentCsv($file->getRealPath());
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fitment_file' => 'Could not parse fitment file: '.$e->getMessage()]);
         }
 
-        if (! isset($colMap[array_search('name', $colMap)]) || ! isset($colMap[array_search('price', $colMap)])) {
-            fclose($handle);
-
-            return back()->with('error', 'CSV must contain at least "name" and "price" columns.');
+        if (empty($rows)) {
+            return back()->withErrors(['fitment_file' => 'No valid fitment rows found in the file.']);
         }
 
-        $categories = Category::all()->keyBy(function ($cat) {
-            return strtolower(trim($cat->name));
-        });
-
-        $brands = Brand::all()->keyBy(function ($brand) {
-            return strtolower(trim($brand->name));
-        });
-
-        $sellers = Seller::all()->keyBy(function ($seller) {
-            return strtolower(trim($seller->name));
-        });
-
-        $imported = 0;
-        $categoriesCreated = 0;
-        $brandsCreated = 0;
-        $sellersCreated = 0;
-        $galleryImported = 0;
+        $maxYear = (int) date('Y') + 1;
+        $normalized = [];
         $errors = [];
-        $rowNum = 1;
 
-        while (($row = fgetcsv($handle, 0, ',')) !== false) {
-            $rowNum++;
-            $row = array_map('trim', $row);
-            $data = [];
+        foreach ($rows as $index => $row) {
+            $line = $index + 2;
+            $yearFrom = $row['year_from'] ?? null;
+            $yearTo = $row['year_to'] ?? null;
+            $make = trim((string) ($row['make'] ?? ''));
+            $model = trim((string) ($row['model'] ?? ''));
+            $engine = trim((string) ($row['engine'] ?? ''));
+            $notes = trim((string) ($row['notes'] ?? ''));
 
-            foreach ($colMap as $colIdx => $colName) {
-                $data[$colName] = $row[$colIdx] ?? '';
-            }
-
-            if (empty($data['name'])) {
-                $errors[] = "Row {$rowNum}: name is required.";
-
+            if (! $yearFrom && ! $yearTo && $make === '' && $model === '' && $engine === '' && $notes === '') {
                 continue;
             }
-            if (! is_numeric($data['price']) || $data['price'] < 0) {
-                $errors[] = "Row {$rowNum}: price must be a positive number.";
-
+            if (! $yearFrom || ! $yearTo || $make === '' || $model === '') {
+                $errors[] = "Line {$line}: year_from, year_to, make, and model are required.";
+                continue;
+            }
+            if ($yearFrom < 1900 || $yearTo < 1900 || $yearFrom > $maxYear || $yearTo > $maxYear) {
+                $errors[] = "Line {$line}: years must be between 1900 and {$maxYear}.";
+                continue;
+            }
+            if ($yearFrom > $yearTo) {
+                $errors[] = "Line {$line}: year_from cannot be greater than year_to.";
                 continue;
             }
 
-            $existingProduct = null;
-            if (! empty($data['id']) && is_numeric($data['id'])) {
-                $existingProduct = Product::find((int) $data['id']);
-            }
-
-            $categoryId = null;
-            if (! empty($data['category'])) {
-                $catKey = strtolower(trim($data['category']));
-                if (isset($categories[$catKey])) {
-                    $categoryId = $categories[$catKey]->id;
-                } else {
-                    $newCat = Category::create([
-                        'name' => trim($data['category']),
-                        'slug' => Str::slug(trim($data['category'])),
-                        'status' => true,
-                    ]);
-                    $categories[$catKey] = $newCat;
-                    $categoryId = $newCat->id;
-                    $categoriesCreated++;
-                }
-            }
-
-            $brandId = null;
-            if (! empty($data['brand'])) {
-                $brandKey = strtolower(trim($data['brand']));
-                if (isset($brands[$brandKey])) {
-                    $brandId = $brands[$brandKey]->id;
-                } else {
-                    $newBrand = Brand::create([
-                        'name' => trim($data['brand']),
-                        'slug' => Str::slug(trim($data['brand'])),
-                        'status' => true,
-                    ]);
-                    $brands[$brandKey] = $newBrand;
-                    $brandId = $newBrand->id;
-                    $brandsCreated++;
-                }
-            }
-
-            $sellerId = null;
-            if (! empty($data['seller'])) {
-                $sellerKey = strtolower(trim($data['seller']));
-                if (isset($sellers[$sellerKey])) {
-                    $sellerId = $sellers[$sellerKey]->id;
-                } else {
-                    $newSeller = Seller::create([
-                        'name' => trim($data['seller']),
-                        'slug' => Str::slug(trim($data['seller'])).'-'.uniqid(),
-                        'status' => true,
-                    ]);
-                    $sellers[$sellerKey] = $newSeller;
-                    $sellerId = $newSeller->id;
-                    $sellersCreated++;
-                }
-            }
-
-            $normalized = self::normalizeImportedProductData($data);
-
-            $insertData = [
-                'name' => $data['name'],
-                'price' => $data['price'],
-                'old_price' => (! empty($data['old_price']) && is_numeric($data['old_price'])) ? $data['old_price'] : null,
-                'category_id' => $categoryId,
-                'brand_id' => $brandId,
-                'seller_id' => $sellerId,
-                'year' => (! empty($data['year']) && is_numeric($data['year'])) ? (int) $data['year'] : null,
-                'make' => $data['make'] ?? null,
-                'model' => $data['model'] ?? null,
-                'stock' => (! empty($data['stock']) && is_numeric($data['stock'])) ? (int) $data['stock'] : 0,
-                'description' => $normalized['description'] ?: ($data['description'] ?? ''),
-                'badge' => $data['badge'] ?? null,
-                'product_type' => in_array($data['product_type'] ?? '', ['none', 'new_arrival', 'trending', 'best_selling', 'popular']) ? $data['product_type'] : 'none',
-                'status' => in_array(($data['status'] ?? ''), ['1', 'yes', 'active', 'true'], true) ? true : false,
-                'featured' => in_array(($data['featured'] ?? ''), ['1', 'yes', 'active', 'true'], true) ? true : false,
-                'policy_text' => $normalized['policy_text'],
-                'features' => $normalized['features'],
-                'reviews_data' => $normalized['reviews_data'],
-                'specifications' => $this->parseSpecifications($data['specifications'] ?? null),
-                'tab_label_1' => $data['tab_label_1'] ?? null,
-                'tab_label_2' => $data['tab_label_2'] ?? null,
-                'tab_label_3' => $data['tab_label_3'] ?? null,
+            $normalized[] = [
+                'year_from' => $yearFrom,
+                'year_to' => $yearTo,
+                'make' => $make,
+                'model' => $model,
+                'engine' => $engine,
+                'notes' => $notes,
             ];
-
-            if ($existingProduct) {
-                $insertData['slug'] = $existingProduct->slug;
-                $insertData['part_number'] = self::resolveImportedSku($data, $data['name'], $existingProduct);
-            } else {
-                $insertData['added_by'] = 'admin';
-                $insertData['part_number'] = self::resolveImportedSku($data, $data['name']);
-                $insertData['slug'] = Str::slug($data['name']).'-'.time().'-'.$imported;
-            }
-
-            if (! empty($data['image']) && filter_var($data['image'], FILTER_VALIDATE_URL)) {
-                $saved = saveImageFromUrlWithWebp($data['image']);
-                if ($saved) {
-                    $insertData['image'] = $saved;
-                } else {
-                    $errors[] = "Row {$rowNum}: image URL could not be downloaded or was not a valid image.";
-                }
-            }
-
-            try {
-                if ($existingProduct) {
-                    $existingProduct->update($insertData);
-                    $product = $existingProduct;
-                    $action = 'updated';
-                } else {
-                    $product = Product::create($insertData);
-                    $action = 'created';
-                }
-                $imported++;
-
-                if (! empty($data['gallery_images'])) {
-                    $galleryUrls = array_filter(array_map('trim', explode('|', $data['gallery_images'])));
-                    $subdir = 'uploads/'.now()->format('Y/m');
-                    $destDir = storage_path('app/public/'.$subdir);
-                    if (! is_dir($destDir)) {
-                        mkdir($destDir, 0775, true);
-                    }
-                    foreach ($galleryUrls as $imgUrl) {
-                        if (! filter_var($imgUrl, FILTER_VALIDATE_URL)) {
-                            continue;
-                        }
-                        $response = Http::get($imgUrl);
-                        if ($response->failed()) {
-                            continue;
-                        }
-                        $contentType = $response->header('Content-Type');
-                        if (! str_contains($contentType, 'image/')) {
-                            continue;
-                        }
-                        $ext = 'jpg';
-                        if (str_contains($contentType, 'png')) {
-                            $ext = 'png';
-                        } elseif (str_contains($contentType, 'webp')) {
-                            $ext = 'webp';
-                        } elseif (str_contains($contentType, 'gif')) {
-                            $ext = 'gif';
-                        }
-                        $filename = time().'_'.uniqid().'.'.$ext;
-                        file_put_contents($destDir.'/'.$filename, $response->body());
-                        $info = @getimagesize($destDir.'/'.$filename);
-                        Image::create([
-                            'original_name' => $filename,
-                            'filename' => $filename,
-                            'path' => $subdir.'/'.$filename,
-                            'url' => 'storage/'.$subdir.'/'.$filename,
-                            'mime_type' => $contentType,
-                            'size' => filesize($destDir.'/'.$filename),
-                            'width' => $info[0] ?? null,
-                            'height' => $info[1] ?? null,
-                            'is_unused' => false,
-                            'attachable_type' => Product::class,
-                            'attachable_id' => $product->id,
-                        ]);
-                        $galleryImported++;
-                    }
-                }
-            } catch (\Exception $e) {
-                $errors[] = "Row {$rowNum}: ".$e->getMessage();
-            }
         }
 
+        if ($errors) {
+            return back()->withErrors(['fitment_file' => implode(' ', array_slice($errors, 0, 5)).(count($errors) > 5 ? ' (and more...)' : '')]);
+        }
+
+        if (count($normalized) > 500) {
+            return back()->withErrors(['fitment_file' => 'A maximum of 500 fitment rows can be imported at once.']);
+        }
+
+        $this->syncProductFitments($product, $normalized);
+
+        return back()->with('success', count($normalized).' fitment rows imported successfully.');
+    }
+
+    private function parseFitmentCsv(string $path): array
+    {
+        $handle = fopen($path, 'r');
+        if (! $handle) {
+            throw new \RuntimeException('Unable to read file.');
+        }
+
+        $header = null;
+        $rows = [];
+        while (($data = fgetcsv($handle)) !== false) {
+            if ($header === null) {
+                $header = array_map(fn ($v) => strtolower(trim((string) $v)), $data);
+                continue;
+            }
+            if (count(array_filter($data, fn ($v) => trim((string) $v) !== '')) === 0) {
+                continue;
+            }
+            $row = [];
+            foreach ($header as $i => $key) {
+                $row[$key] = trim((string) ($data[$i] ?? ''));
+            }
+
+            $yearFrom = $row['year_from'] ?? $row['yearfrom'] ?? $row['start_year'] ?? $row['year'] ?? '';
+            $yearTo = $row['year_to'] ?? $row['yearto'] ?? $row['end_year'] ?? $row['year'] ?? $yearFrom;
+            $rows[] = [
+                'year_from' => $yearFrom !== '' ? (int) $yearFrom : null,
+                'year_to' => $yearTo !== '' ? (int) $yearTo : null,
+                'make' => $row['make'] ?? '',
+                'model' => $row['model'] ?? '',
+                'engine' => $row['engine'] ?? $row['engine_size'] ?? '',
+                'notes' => $row['notes'] ?? $row['note'] ?? $row['fitment_notes'] ?? '',
+            ];
+        }
         fclose($handle);
 
-        $message = "Imported {$imported} product(s) successfully.";
-        $extras = [];
-        if ($categoriesCreated > 0) {
-            $extras[] = "{$categoriesCreated} new category(ies) created";
-        }
-        if ($brandsCreated > 0) {
-            $extras[] = "{$brandsCreated} new brand(s) created";
-        }
-        if ($sellersCreated > 0) {
-            $extras[] = "{$sellersCreated} new seller(s) created";
-        }
-        if ($galleryImported > 0) {
-            $extras[] = "{$galleryImported} gallery image(s) imported";
-        }
-        if (! empty($extras)) {
-            $message .= ' ('.implode(', ', $extras).')';
-        }
-        if (! empty($errors)) {
-            $message .= ' '.count($errors).' error(s): '.implode('; ', array_slice($errors, 0, 10));
-            if (count($errors) > 10) {
-                $message .= ' (and '.(count($errors) - 10).' more)';
-            }
+        return $rows;
+    }
+
+    private function parseFitmentXml(string $path): array
+    {
+        $xml = @simplexml_load_file($path);
+        if ($xml === false) {
+            throw new \RuntimeException('Invalid XML file.');
         }
 
-        return redirect()->route('admin.products.index')->with('success', $message);
+        $rows = [];
+        // Best-effort ACES/generic XML parsing: look for App/Vehicle/Application elements.
+        $nodes = $xml->xpath('//*[local-name()="App" or local-name()="Application" or local-name()="Vehicle" or local-name()="Fitment" or local-name()="fitment"]');
+        if (empty($nodes)) {
+            // Also try direct children
+            $nodes = $xml->xpath('//*');
+        }
+
+        foreach ($nodes as $node) {
+            $yearFrom = (string) ($node->YearFrom ?? $node->year_from ?? $node->StartYear ?? $node->start_year ?? $node->Year ?? $node->year ?? '');
+            $yearTo = (string) ($node->YearTo ?? $node->year_to ?? $node->EndYear ?? $node->end_year ?? $node->Year ?? $node->year ?? $yearFrom);
+            $make = (string) ($node->Make ?? $node->make ?? $node->Mfr ?? '');
+            $model = (string) ($node->Model ?? $node->model ?? '');
+            $engine = (string) ($node->Engine ?? $node->engine ?? $node->EngineBase ?? $node->engine_base ?? '');
+            $notes = (string) ($node->Notes ?? $node->notes ?? $node->Note ?? $node->note ?? $node->Qual ?? '');
+
+            if ($make === '' && $model === '' && $yearFrom === '') {
+                continue;
+            }
+
+            $rows[] = [
+                'year_from' => $yearFrom !== '' ? (int) $yearFrom : null,
+                'year_to' => $yearTo !== '' ? (int) $yearTo : null,
+                'make' => $make,
+                'model' => $model,
+                'engine' => $engine,
+                'notes' => $notes,
+            ];
+        }
+
+        return $rows;
     }
 
     public function downloadSampleCsv()
     {
-        $headers = ['id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $headers = ['id', 'name', 'part_number', 'sku', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
         $rows = [
-            ['', 'Brake Pads Set', 'bp-1001', '49.99', '69.99', 'Brakes', '100', 'High quality ceramic brake pads', 'New', 'none', '1', '1', 'https://example.com/images/brake-pads.jpg', 'Duralast', 'AutoZone Seller', '2020', 'Toyota', 'Camry', 'https://example.com/images/brake-pads-2.jpg|https://example.com/images/brake-pads-3.jpg', '<p>We offer a 30-day return policy for unused items in original packaging.</p>', "Premium quality\nEasy installation", "Material::Ceramic\nFriction::Low dust", '[{"name":"Ava","rating":5,"text":"Perfect fit and fast delivery.","deleted":false}]', 'Overview', 'Specifications', 'Reviews'],
-            ['', 'Oil Filter', '', '12.99', '', 'Engine', '250', '', 'Sale', 'none', '1', '0', '', 'Apex Gasket', 'AutoZone Seller', '2019', 'Honda', 'Civic', '', '<p>Items can be returned within 14 days if they are not installed or damaged.</p>', '', 'Thread::M20x1.5', '[{"name":"Noah","rating":4,"text":"Works well and shipped quickly.","deleted":false}]', '', '', ''],
-            ['', 'LED Headlight Bulb', '', '29.99', '39.99', 'Lighting', '75', 'Bright 12000LM LED bulbs', '', 'none', '1', '1', '', '', '', '', '', '', '', '<p>All purchases include a 12-month warranty and a simple return process.</p>', "6000K bright\nPlug and play", 'Voltage::12V', '[{"name":"Mila","rating":5,"text":"Great brightness and easy install.","deleted":false}]', '', '', ''],
+            ['', 'Brake Pads Set', 'bp-1001', 'SKU-BP-1001', '49.99', '69.99', 'Brakes', '100', 'High quality ceramic brake pads', 'New', 'none', '1', '1', 'https://example.com/images/brake-pads.jpg', 'Duralast', 'AutoZone Seller', '2020', 'Toyota', 'Camry', 'https://example.com/images/brake-pads-2.jpg|https://example.com/images/brake-pads-3.jpg', '<p>We offer a 30-day return policy for unused items in original packaging.</p>', "Premium quality\nEasy installation", "Material::Ceramic\nFriction::Low dust", '[{"name":"Ava","rating":5,"text":"Perfect fit and fast delivery.","deleted":false}]', 'Overview', 'Specifications', 'Reviews'],
+            ['', 'Oil Filter', '', '', '12.99', '', 'Engine', '250', '', 'Sale', 'none', '1', '0', '', 'Apex Gasket', 'AutoZone Seller', '2019', 'Honda', 'Civic', '', '<p>Items can be returned within 14 days if they are not installed or damaged.</p>', '', 'Thread::M20x1.5', '[{"name":"Noah","rating":4,"text":"Works well and shipped quickly.","deleted":false}]', '', '', ''],
+            ['', 'LED Headlight Bulb', '', '', '29.99', '39.99', 'Lighting', '75', 'Bright 12000LM LED bulbs', '', 'none', '1', '1', '', '', '', '', '', '', '', '<p>All purchases include a 12-month warranty and a simple return process.</p>', "6000K bright\nPlug and play", 'Voltage::12V', '[{"name":"Mila","rating":5,"text":"Great brightness and easy install.","deleted":false}]', '', '', ''],
         ];
 
         $callback = function () use ($headers, $rows) {
@@ -1064,76 +1326,148 @@ class ProductController extends Controller
         ]);
     }
 
-    public function exportCsv()
+    private function validatedFitmentRows(Request $request, int $maxYear): array
     {
-        $headers = ['id', 'name', 'part_number', 'price', 'old_price', 'category', 'stock', 'description', 'badge', 'product_type', 'status', 'featured', 'image', 'brand', 'seller', 'year', 'make', 'model', 'gallery_images', 'policy_text', 'features', 'specifications', 'reviews_data', 'tab_label_1', 'tab_label_2', 'tab_label_3'];
+        $rows = [];
 
-        $callback = function () use ($headers) {
-            set_time_limit(0);
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $headers);
+        foreach ((array) $request->input('fitments', []) as $index => $item) {
+            $item = is_array($item) ? $item : [];
+            $row = [
+                'year_from' => ($item['year_from'] ?? '') === '' ? null : (int) $item['year_from'],
+                'year_to' => ($item['year_to'] ?? '') === '' ? null : (int) $item['year_to'],
+                'make' => trim((string) ($item['make'] ?? '')),
+                'model' => trim((string) ($item['model'] ?? '')),
+                'engine' => trim((string) ($item['engine'] ?? '')),
+                'notes' => trim((string) ($item['notes'] ?? '')),
+            ];
 
-            Product::with('category', 'brand', 'seller', 'galleryImages')
-                ->chunkById(500, function ($products) use ($handle) {
-                    foreach ($products as $p) {
-                        $galleryUrls = $p->galleryImages->map(function ($img) {
-                            return $img->url ? url($img->url) : '';
-                        })->filter()->values()->implode('|');
+            if (! $row['year_from'] && ! $row['year_to'] && $row['make'] === '' && $row['model'] === '' && $row['engine'] === '' && $row['notes'] === '') {
+                continue;
+            }
 
-                        $features = is_array($p->features) ? implode("\n", array_filter($p->features)) : '';
+            $messages = [];
+            if (! $row['year_from']) {
+                $messages['fitments.'.$index.'.year_from'] = 'A start year is required for each fitment row.';
+            }
+            if (! $row['year_to']) {
+                $messages['fitments.'.$index.'.year_to'] = 'An end year is required for each fitment row.';
+            }
+            if ($row['year_from'] && $row['year_to'] && $row['year_from'] > $row['year_to']) {
+                $messages['fitments.'.$index.'.year_to'] = 'The end year must be greater than or equal to the start year.';
+            }
+            if ($row['make'] === '') {
+                $messages['fitments.'.$index.'.make'] = 'Make is required for each fitment row.';
+            }
+            if ($row['model'] === '') {
+                $messages['fitments.'.$index.'.model'] = 'Model is required for each fitment row.';
+            }
+            if ($row['year_to'] && $row['year_to'] > $maxYear) {
+                $messages['fitments.'.$index.'.year_to'] = 'The end year cannot be in the future.';
+            }
 
-                        $specsLines = [];
-                        foreach ((array) $p->specifications as $spec) {
-                            $label = trim($spec['label'] ?? '');
-                            $value = trim($spec['value'] ?? '');
-                            $specsLines[] = ($label !== '' && $value !== '') ? $label.'::'.$value : ($label ?: $value);
-                        }
-                        $specs = implode("\n", array_filter($specsLines));
+            if ($messages) {
+                throw ValidationException::withMessages($messages);
+            }
 
-                        $reviewsData = is_array($p->reviews_data) && $p->reviews_data ? json_encode($p->reviews_data) : '';
+            $rows[] = $row;
+        }
 
-                        fputcsv($handle, [
-                            $p->id,
-                            $p->name,
-                            $p->part_number ?? '',
-                            $p->price,
-                            $p->old_price ?? '',
-                            $p->category->name ?? '',
-                            $p->stock ?? 0,
-                            $p->description ?? '',
-                            $p->badge ?? '',
-                            $p->product_type ?? 'none',
-                            $p->status ? '1' : '0',
-                            $p->featured ? '1' : '0',
-                            $p->image ? url(storedPath($p->image, 'assets/images/thumbnails')) : '',
-                            $p->brand->name ?? '',
-                            $p->seller->name ?? '',
-                            $p->year ?? '',
-                            $p->make ?? '',
-                            $p->model ?? '',
-                            $galleryUrls,
-                            $p->policy_text ?? '',
-                            $features,
-                            $specs,
-                            $reviewsData,
-                            $p->tab_label_1 ?? '',
-                            $p->tab_label_2 ?? '',
-                            $p->tab_label_3 ?? '',
-                        ]);
-                    }
+        return $rows;
+    }
 
-                    if (ob_get_level() > 0) {
-                        ob_flush();
-                    }
-                    flush();
-                });
+    private function resolveProductSlug(Request $request, ?Product $product, string $name, string $partNumber): string
+    {
+        $raw = trim((string) $request->input('slug', ''));
+        if ($raw === '' && $product) {
+            $raw = (string) $product->slug;
+        }
+        if ($raw === '') {
+            $raw = $name.'-'.$partNumber;
+        }
 
-            fclose($handle);
+        $base = Str::slug($raw);
+        if ($base === '') {
+            $base = Str::slug($name).'-'.Str::lower($partNumber);
+        }
+        if ($base === '') {
+            $base = 'product-'.Str::lower($partNumber);
+        }
+
+        $candidate = $base;
+        $suffix = Str::lower($partNumber);
+        $attempt = 1;
+        while (Product::query()->where('slug', $candidate)
+            ->when($product, fn ($q) => $q->where('id', '!=', $product->id))
+            ->exists()) {
+            $candidate = $base.'-'.$suffix.($attempt > 1 ? '-'.$attempt : '');
+            $attempt++;
+        }
+
+        return $candidate;
+    }
+
+    private function syncProductFitments(Product $product, array $rows): void
+    {
+        $normalize = function ($row) {
+            return [
+                'year_from' => (int) ($row['year_from'] ?? 0),
+                'year_to' => (int) ($row['year_to'] ?? 0),
+                'make' => trim((string) ($row['make'] ?? '')),
+                'model' => trim((string) ($row['model'] ?? '')),
+                'engine' => trim((string) ($row['engine'] ?? '')),
+                'notes' => trim((string) ($row['notes'] ?? '')),
+            ];
         };
 
-        return response()->streamDownload($callback, 'products-export-'.date('Y-m-d').'.csv', [
-            'Content-Type' => 'text/csv',
-        ]);
+        $existing = $product->fitments()
+            ->orderBy('sort_order')
+            ->get(['year_from', 'year_to', 'make', 'model', 'engine', 'notes'])
+            ->map($normalize)
+            ->all();
+        $incoming = array_values(array_map($normalize, $rows));
+
+        if ($existing === $incoming) {
+            return;
+        }
+
+        DB::transaction(function () use ($product, $rows) {
+            DB::table('product_fitments')->where('product_id', $product->id)->delete();
+            DB::table('product_vehicle')
+                ->where('product_id', $product->id)
+                ->where('note', 'like', ProductFitment::PIVOT_NOTE_PREFIX.'%')
+                ->delete();
+
+            $mirrorRows = [];
+
+            foreach ($rows as $sortOrder => $row) {
+                $fitment = $product->fitments()->create([
+                    'year_from' => $row['year_from'],
+                    'year_to' => $row['year_to'],
+                    'make' => $row['make'],
+                    'model' => $row['model'],
+                    'engine' => $row['engine'] ?: null,
+                    'notes' => $row['notes'] ?: null,
+                    'sort_order' => $sortOrder,
+                ]);
+
+                for ($year = $fitment->year_from; $year <= $fitment->year_to; $year++) {
+                    $mirrorRows[] = [
+                        'product_id' => $product->id,
+                        'year' => $year,
+                        'make' => $fitment->make,
+                        'model' => $fitment->model,
+                        'engine' => $fitment->engine,
+                        'note' => ProductFitment::PIVOT_NOTE_PREFIX.$fitment->id,
+                    ];
+                }
+            }
+
+            foreach (array_chunk($mirrorRows, 500) as $chunk) {
+                DB::table('product_vehicle')->insert($chunk);
+            }
+        });
+
+        app(VehicleCatalog::class)->flush();
     }
 
     private function normalizeEditorContent(string $description, string $policyText): array
@@ -1148,7 +1482,7 @@ class ProductController extends Controller
         return [$description, $policyText];
     }
 
-    private function parseSpecifications(?string $raw): ?array
+    public static function parseSpecifications(?string $raw): ?array
     {
         if ($raw === null || trim($raw) === '') {
             return null;
@@ -1178,7 +1512,9 @@ class ProductController extends Controller
 
     public function stockIndex(Request $request)
     {
-        $threshold = max(0, (int) $request->query('threshold', 5));
+        $threshold = $request->has('threshold')
+            ? max(0, (int) $request->query('threshold'))
+            : max(0, (int) Setting::get('low_stock_threshold', 5));
         $perPage = in_array((int) $request->query('per_page'), [10, 20, 50, 100], true) ? (int) $request->query('per_page') : 20;
 
         $query = Product::with(['category', 'seller'])->where('vendor_stock', '<=', $threshold);
@@ -1186,7 +1522,9 @@ class ProductController extends Controller
         if ($search = trim((string) $request->query('search'))) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('part_number', 'like', "%{$search}%");
+                    ->orWhere('part_number', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
             });
         }
 
@@ -1201,7 +1539,7 @@ class ProductController extends Controller
         $products = $query->orderBy('vendor_stock', 'asc')->paginate($perPage);
         $products->appends($request->query())->onEachSide(1);
 
-        return view('admin.products.stock', compact('products', 'threshold'));
+        return view('backend.products.stock', compact('products', 'threshold'));
     }
 
     public function bulkStockUpdate(Request $request)

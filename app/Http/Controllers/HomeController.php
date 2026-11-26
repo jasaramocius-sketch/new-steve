@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Tag;
 use App\Services\VehicleCatalog;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
@@ -73,6 +74,7 @@ class HomeController extends Controller
                 }
 
                 return [
+                    'id' => $category->id,
                     'name' => $category->name,
                     'slug' => $category->slug,
                     'image' => $category->getDisplayImagePath(),
@@ -268,7 +270,7 @@ class HomeController extends Controller
         $makes = collect();
         $models = collect();
 
-        return view('home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'hasMoreLatestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
+        return view('frontend.home.index', compact('categories', 'featuredProducts', 'exploreTabs', 'heroSection', 'banners', 'bestSelling', 'sections', 'latestPosts', 'hasMoreLatestPosts', 'brands', 'services', 'years', 'makes', 'models') + ['page' => Page::where('slug', 'home')->where('status', true)->first()]);
     }
 
     private function buildExploreTabs($section): array
@@ -353,21 +355,40 @@ class HomeController extends Controller
     {
         $page = $this->pageOrAbort('about');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.about');
+        return view('frontend.pages.about');
     }
 
     public function contact()
     {
         $page = $this->pageOrAbort('contact');
 
-        return view('pages.contact', compact('page'));
+        return view('frontend.pages.contact', compact('page'));
     }
 
-    public function page($slug)
+    /**
+     * Old /page/{slug} URL: keep it alive as a 301 to the canonical page URL.
+     */
+    public function legacyPage($slug)
     {
+        $canonicalRoute = config("page-builder.live_url_map.page.$slug");
+        if ($canonicalRoute) {
+            return redirect()->route($canonicalRoute, [], 301);
+        }
+
+        return redirect()->route('page.show', $slug, 301);
+    }
+
+    public function page($slug = null)
+    {
+        // Legacy /new-steve/ installs can resolve the root request through this
+        // catch-all without a slug. Serve the normal home page instead of 500ing.
+        if (blank($slug)) {
+            return $this->index();
+        }
+
         $canonicalRoute = config("page-builder.live_url_map.page.$slug");
         if ($canonicalRoute) {
             return redirect()->route($canonicalRoute, [], 301);
@@ -375,7 +396,7 @@ class HomeController extends Controller
 
         $page = Page::where('slug', $slug)->where('status', true)->firstOrFail();
 
-        return view('pages.show', compact('page'));
+        return view('frontend.pages.show', compact('page'));
     }
 
     public function faq()
@@ -383,47 +404,47 @@ class HomeController extends Controller
         $faqs = Faq::where('status', true)->orderBy('order')->get();
         $page = $this->pageOrAbort('faq');
 
-        return view('pages.faq', compact('faqs') + ['page' => $page]);
+        return view('frontend.pages.faq', compact('faqs') + ['page' => $page]);
     }
 
     public function privacy()
     {
         $page = $this->pageOrAbort('privacy-policy');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.privacy');
+        return view('frontend.pages.privacy');
     }
 
     public function terms()
     {
         $page = $this->pageOrAbort('terms-conditions');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.terms');
+        return view('frontend.pages.terms');
     }
 
     public function returnPolicy()
     {
         $page = $this->pageOrAbort('return-policy');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.return-policy');
+        return view('frontend.pages.return-policy');
     }
 
     public function supportPolicy()
     {
         $page = $this->pageOrAbort('support-policy');
         if ($page) {
-            return view('pages.show', compact('page'));
+            return view('frontend.pages.show', compact('page'));
         }
 
-        return view('pages.support-policy');
+        return view('frontend.pages.support-policy');
     }
 
     public function robots()
@@ -555,29 +576,49 @@ class HomeController extends Controller
         }
 
         if ($limit > 0) {
-            $pageQuery->select(['slug', 'updated_at'])
+            $pageQuery->select(['id', 'slug', 'updated_at'])
                 ->orderBy('id')
                 ->offset($offset)
                 ->limit($limit)
                 ->get()
                 ->each(function ($record) use (&$entries, $type, $base) {
-                    $path = match ($type) {
-                        'pages' => '/page/'.$record->slug,
-                        'products' => '/product/'.$record->slug,
-                        'blogs' => '/blog/'.$record->slug,
-                        'brands' => '/brand/'.$record->slug,
-                        'categories' => '/category/'.$record->slug,
-                        'blog-categories' => '/blog/category/'.$record->slug,
-                        'blog-tags' => '/blog/tag/'.$record->slug,
+                    $loc = match ($type) {
+                        'pages' => $base.'/'.$record->slug,
+                        'products' => $base.'/product/'.$record->slug,
+                        'blogs' => $base.'/blog/'.$record->slug,
+                        'brands' => $base.'/brand/'.$record->slug,
+                        'categories' => $base.'/category/'.$record->slug,
+                        'blog-categories' => $base.'/blog/category/'.$record->slug,
+                        'blog-tags' => $base.'/blog/tag/'.$record->slug,
                     };
                     $entries[] = [
-                        'loc' => $base.$path,
+                        'loc' => $loc,
                         'lastmod' => $record->updated_at?->toAtomString(),
                     ];
                 });
         }
 
         return $entries;
+    }
+
+    public function mobileCategories(Request $request)
+    {
+        $current = (string) $request->query('current', url()->previous());
+        $mobileCurrentUrl = $current !== '' ? $current : url()->current();
+        $mobileBasePath = rtrim(parse_url(url('/'), PHP_URL_PATH) ?? '', '/');
+        $mobileCurrentPath = parse_url($mobileCurrentUrl, PHP_URL_PATH) ?? '/';
+
+        $activeCategoryUrls = [];
+        $active = $request->query('active');
+        if (is_array($active)) {
+            $activeCategoryUrls = array_values(array_filter($active, fn ($u) => is_string($u) && $u !== ''));
+        }
+
+        return view('partials.mobile-category-tree-items', [
+            'mobileCategoryTree' => \App\Services\CategoryTree::tree(),
+            'mobileCurrentUrl' => $mobileCurrentUrl,
+            'activeCategoryUrls' => $activeCategoryUrls,
+        ]);
     }
 
     private function staticSitemapUrls(): array

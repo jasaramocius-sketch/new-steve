@@ -29,12 +29,12 @@ class BrandController extends Controller
             ->paginate($perPage);
         $brands->appends($request->query())->onEachSide(1);
 
-        return view('admin.brands.index', compact('brands', 'sortBy', 'sortDir'));
+        return view('backend.brands.index', compact('brands', 'sortBy', 'sortDir'));
     }
 
     public function create()
     {
-        return view('admin.brands.create');
+        return view('backend.brands.create');
     }
 
     public function store(Request $request)
@@ -71,7 +71,7 @@ class BrandController extends Controller
     {
         $brand = Brand::findOrFail($id);
 
-        return view('admin.brands.edit', compact('brand'));
+        return view('backend.brands.edit', compact('brand'));
     }
 
     public function update(Request $request, $id)

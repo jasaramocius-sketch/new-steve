@@ -90,10 +90,11 @@ return [
     | Live URL Map
     |--------------------------------------------------------------------------
     |
-    | Maps a model type + slug to the canonical frontend route name. This keeps
-    | the "View Live Page" link pointing to the real page URL instead of the
-    | generic /page/{slug} fallback (which would create duplicate content for
-    | SEO). Keys are route names. Omit entries to keep the default fallback.
+    | Maps a model type + slug to the canonical frontend route name. Custom
+    | pages normally live at /{slug}; reserved slugs (faq, about, ...) are
+    | handled by their own root routes, so this map keeps legacy /page/{slug}
+    | redirects and "View Live Page" links pointing at the canonical URL and
+    | avoids duplicate content. Keys are route names.
     |
     */
     'live_url_map' => [

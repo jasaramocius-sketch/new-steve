@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Compare;
 use App\Models\Currency;
 use App\Models\Notification;
+use App\Models\Page;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Wishlist;
@@ -146,13 +147,6 @@ class AppServiceProvider extends ServiceProvider
             $cartCount = count($cart);
             $cartTotal = array_sum(array_map(fn ($item) => ($item['price'] ?? 0) * ($item['qty'] ?? ($item['quantity'] ?? 0)), $cart));
 
-            // The mobile category tree is only rendered by the storefront layout.
-            // Skip the (cache-backed) tree lookup for admin pages so the panel
-            // stays light even when the tree cache is being rebuilt.
-            $isAdminArea = str_contains('/'.ltrim(request()->path(), '/').'/', '/admin/');
-            $isCategoryIndex = request()->routeIs('categories.index');
-            $mobileCategoryTree = ($isAdminArea || $isCategoryIndex) ? [] : \App\Services\CategoryTree::tree();
-
             $sharedData = [
                 'wishlistCount' => $wishlistCount,
                 'wishedProductIds' => $wishedProductIds,
@@ -160,7 +154,6 @@ class AppServiceProvider extends ServiceProvider
                 'cartCount' => $cartCount,
                 'cartTotal' => $cartTotal,
                 'unreadNotificationCount' => $unreadNotificationCount,
-                'mobileCategoryTree' => $mobileCategoryTree,
             ];
 
             $view->with($sharedData);
@@ -169,13 +162,11 @@ class AppServiceProvider extends ServiceProvider
         View::composer('admin.partials.sidebar', function ($view) {
             try {
                 $view->with([
-                    'supportOpenTickets' => \App\Models\SupportTicket::whereIn('status', ['open', 'pending'])->count(),
-                    'supportOpenConversations' => \App\Models\ProductConversation::where('status', 'open')->count(),
+                    'pendingInquiries' => \App\Models\Contact::whereNull('replied_at')->count(),
                 ]);
             } catch (\Throwable) {
                 $view->with([
-                    'supportOpenTickets' => 0,
-                    'supportOpenConversations' => 0,
+                    'pendingInquiries' => 0,
                 ]);
             }
         });
@@ -186,6 +177,25 @@ class AppServiceProvider extends ServiceProvider
 
         Category::saved(fn () => \App\Services\CategoryTree::flush());
         Category::deleted(fn () => \App\Services\CategoryTree::flush());
+
+        // Saving blocks in Page Builder switches a classic-only page to
+        // builder mode so the two editors never render on top of each other.
+        // Classic content is kept intact, so the switch is reversible.
+        Page::saved(function (Page $page) {
+            // The in-memory attribute can still be null right after create(),
+            // so read the stored/default value instead of the data fallback.
+            $storedMode = \Illuminate\Support\Facades\DB::table('pages')
+                ->where('id', $page->id)
+                ->value('design_mode') ?: 'classic';
+
+            if (
+                $page->wasChanged('content_blocks')
+                && $storedMode === 'classic'
+                && $page->getBlocks() !== []
+            ) {
+                $page->updateQuietly(['design_mode' => 'builder']);
+            }
+        });
     }
 
     private function applyMailSettings(): void

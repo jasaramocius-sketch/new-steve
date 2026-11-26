@@ -20,7 +20,7 @@ class AdminController extends Controller
             $showTrashed = false;
         }
 
-        return view('admin.users.index', compact('admins', 'showTrashed'));
+        return view('backend.users.index', compact('admins', 'showTrashed'));
     }
 
     public function restore($id)

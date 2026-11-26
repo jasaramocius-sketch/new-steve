@@ -7,7 +7,9 @@
     border: 1px solid #e2e5e9;
     border-radius: 8px;
     margin-bottom: 20px;
-    overflow: hidden;
+    /* The Add Block picker is absolutely positioned and must be allowed to
+       extend past the editor shell; hidden clips its lower rows. */
+    overflow: visible;
 }
 
 /* Toolbar */
@@ -250,17 +252,19 @@
 }
 
 .pb-block-picker {
-    /* position: absolute; */
+    position: absolute;
     top: 100%;
     left: 0;
     background: #fff;
     border: 1px solid #e2e5e9;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-    min-width: 280px;
-    max-height: 400px;
+    min-width: 300px;
+    max-width: calc(100vw - 32px);
+    max-height: min(70vh, 560px);
     overflow-y: auto;
-    z-index: 1000;
+    overscroll-behavior: contain;
+    z-index: 1080;
     margin-top: 8px;
     padding: 8px;
 }
@@ -306,7 +310,7 @@
 /* Empty State */
 .pb-empty-state {
     text-align: center;
-    padding: 40px 20px;
+    padding: 120px 20px;
     color: #aaa;
 }
 

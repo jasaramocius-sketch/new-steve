@@ -21,11 +21,42 @@ class Contact extends Model
         'replied_at',
         'user_id',
         'product_id',
+        'category',
+        'priority',
+        'legacy_ticket_id',
+        'legacy_conversation_id',
     ];
 
     protected $casts = [
         'replied_at' => 'datetime',
     ];
+
+    public static function categories(): array
+    {
+        return [
+            'General' => 'General',
+            'Order' => 'Order',
+            'Product' => 'Product',
+            'Payment' => 'Payment',
+            'Shipping' => 'Shipping',
+            'Return' => 'Return / Refund',
+            'Technical' => 'Technical',
+        ];
+    }
+
+    public static function priorities(): array
+    {
+        return [
+            'low' => 'Low',
+            'medium' => 'Medium',
+            'high' => 'High',
+        ];
+    }
+
+    public function categoryLabel(): string
+    {
+        return static::categories()[$this->category] ?? ($this->category ?: 'General');
+    }
 
     public function user()
     {

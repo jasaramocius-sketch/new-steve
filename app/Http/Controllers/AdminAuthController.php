@@ -13,7 +13,7 @@ class AdminAuthController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        return view('admin.login');
+        return view('backend.login');
     }
 
     public function login(Request $request)

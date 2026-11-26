@@ -3,7 +3,7 @@
 return [
     'logo' => 'assets/images/BwSkuSZ7ZYGWPc4Zk3CfeFzcn49dHpx3143n4WKS.png',
     'settings' => [
-        'invoice_business_name' => env('APP_NAME', 'StAutoparts'),
+        'invoice_business_name' => env('APP_NAME', 'Steve Autoparts'),
         'invoice_business_address' => '',
         'invoice_business_phone' => '',
         'invoice_business_email' => '',

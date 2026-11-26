@@ -43,6 +43,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin 500 Debug Viewer
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, admins can open /admin/system/debug-errors to inspect the
+    | sanitized records written by App\Support\ErrorDebugger. Local always
+    | allows it; production requires DEBUG_ERRORS_ENABLED=true.
+    |
+    */
+
+    'debug_errors_enabled' => (bool) env('DEBUG_ERRORS_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |

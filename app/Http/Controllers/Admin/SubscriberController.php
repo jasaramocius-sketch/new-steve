@@ -21,7 +21,7 @@ class SubscriberController extends Controller
 
         $subscribers = $query->latest()->paginate($request->integer('per_page', 20))->withQueryString();
 
-        return view('admin.subscribers.index', compact('subscribers'));
+        return view('backend.subscribers.index', compact('subscribers'));
     }
 
     public function destroy($id)

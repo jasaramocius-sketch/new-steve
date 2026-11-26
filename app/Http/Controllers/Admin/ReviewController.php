@@ -68,7 +68,7 @@ class ReviewController extends Controller
             ['path' => route('admin.reviews.index', array_filter(['status' => $status, 'search' => $search]))]
         );
 
-        return view('admin.reviews.index', [
+        return view('backend.reviews.index', [
             'reviews' => $paginated,
             'status' => $status,
             'search' => $search,
