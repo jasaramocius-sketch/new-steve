@@ -167,9 +167,9 @@
 
                             <hr>
                             <div class="form-group mb-3">
-                                <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex flex-wrap flex-md-row-reverse align-items-center justify-content-between border rounded p-3 bg-light">
                                     <div>
-                                        <label class="form-label fw-bold mb-0">Serve WebP Images on Frontend</label>
+                                        <label class="form-label fw-bold m-0">Serve WebP Images on Frontend</label>
                                         <small class="text-muted d-block">When enabled, browsers that support WebP will automatically receive optimized WebP images instead of JPG/PNG. Uses &lt;picture&gt; tag with fallback for older browsers.</small>
                                     </div>
                                     <div class="form-check form-switch">
@@ -292,6 +292,7 @@
             border-radius: var(--fmm-radius-sm);
             transition: color 0.2s, background 0.2s;
         }
+        .fmm-drag-handle svg { width: 16px; height: 16px; display: block; }
         .fmm-drag-handle:hover { color: var(--fmm-accent); background: var(--fmm-handle-bg); }
         .fmm-drag-handle:active { cursor: grabbing; }
 
@@ -759,6 +760,14 @@
             .fmm-wrapper { flex-direction: column-reverse; }
             .fmm-panel { width: 100%; position: static; }
         }
+        @media (max-width: 1399.98px) {
+            .fmm-item-card { flex-wrap: wrap; }
+            .fmm-item-actions {
+                flex: 1 1 100%;
+                justify-content: flex-end;
+                flex-wrap: wrap;
+            }
+        }
         @media (max-width: 767.98px) {
             .admin-settings-header,
             .admin-settings-header .tab-content,
@@ -1173,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', function() {
             : '';
 
         var html = '<div class="fmm-item-row" data-id="' + id + '" data-type="' + type + '">';
-        html += '<div class="fmm-item-card' + disabledCls + unavailCls + '">';
+        html += '<div class="fmm-item-card flex-wrap' + disabledCls + unavailCls + '">';
         html += '<span class="fmm-drag-handle" title="Drag to reorder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>';
         html += '<div class="fmm-item-body">';
         html += '<div class="fmm-item-title-row"><span class="fmm-item-title">' + esc(label) + '</span>';
@@ -1182,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', function() {
         html += '<span class="fmm-item-url fmm-item-url-display" title="' + esc(url) + '">' + esc(url) + '</span>';
         html += warningHtml;
         html += '</div>';
-        html += '<div class="fmm-item-actions">';
+        html += '<div class="fmm-item-actions flex-wrap">';
         html += '<button type="button" class="fmm-action-btn btn-move-up" title="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>';
         html += '<button type="button" class="fmm-action-btn btn-move-down" title="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
         html += '<button type="button" class="fmm-action-btn btn-nest-right" title="Make sub-item of above"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg></button>';

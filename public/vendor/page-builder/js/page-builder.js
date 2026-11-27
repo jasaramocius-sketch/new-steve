@@ -206,7 +206,7 @@
                     const at = name.indexOf(marker);
                     if (at === -1) return;
 
-                    const path = name.slice(at + marker.length).replace(/\]$/, '').split('][');
+                    const path = name.slice(at + marker.length).replace(/^\[|\]$/g, '').split('][');
                     if (!path.length || !path[0]) return;
 
                     let value;

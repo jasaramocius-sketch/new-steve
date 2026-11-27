@@ -39,18 +39,18 @@
                                     <div id="scCategoryResults" class="mb-0" data-lookup-url="{{ route('admin.settings.search-categories.lookup') }}">
                                         <div class="text-muted p-3 text-center">Loading categories…</div>
                                     </div>
-                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 small text-muted">
-                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <label for="scGoToPage" class="mb-0">Go to page</label>
-                                                <input type="number" id="scGoToPage" class="form-control" min="1" value="1" style="width:60px; padding:0 .5rem; height:28px; font-size:14px;">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" id="scGoToPageBtn">Go</button>
-                                            </div>
-                                            <span id="scPageInfo">—</span>
-                                            <div class="">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary" id="scPrevPage" disabled>Prev</button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary" id="scNextPage" disabled>Next</button>
-                                            </div>
+                                </div>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2 pt-2 border-top small text-muted">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label for="scGoToPage" class="mb-0">Go to page</label>
+                                            <input type="number" id="scGoToPage" class="form-control" min="1" value="1" style="width:60px; padding:0 .5rem; height:28px; font-size:14px;">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="scGoToPageBtn">Go</button>
+                                        </div>
+                                        <span id="scPageInfo">—</span>
+                                        <div class="">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="scPrevPage" disabled>Prev</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="scNextPage" disabled>Next</button>
                                         </div>
                                     </div>
                                 </div>
@@ -140,6 +140,15 @@
         color: #fff;
     }
     .sc-selected-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    @media (max-width: 1399.98px) {
+        .sc-selected-item { flex-wrap: wrap; }
+        .sc-selected-actions {
+            flex: 1 1 100%;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+    }
 </style>
 
 <script>

@@ -1284,7 +1284,7 @@ document.addEventListener('DOMContentLoaded', function () {
       } else if (data.fits === false) {
         resultEl.innerHTML = '<span style="color:#c62828;font-weight:600;"><i class="las la-times-circle"></i> ' + (data.message || 'This part does not fit your vehicle.') + '</span>';
       } else {
-        resultEl.innerHTML = '<div style="display:inline-flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:8px;background:#fff8e1;border:1px solid #ffe082;color:#7a5b00;font-weight:500;line-height:1.4;"><i class="las la-info-circle" style="font-size:18px;line-height:1.2;"></i><span>' + (data.message || 'Fitment information unavailable.') + '</span></div>';
+        resultEl.innerHTML = '<div style="display:inline-flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:8px;background:var(--primary);border:1px solid var(--primary);color:#fff;font-weight:500;line-height:1.4;"><i class="las la-info-circle" style="font-size:18px;line-height:1.2;"></i><span>' + (data.message || 'Fitment information unavailable.') + '</span></div>';
       }
     }).catch(function () {
       resultEl.innerHTML = '<span class="text-danger"><i class="las la-exclamation-circle"></i> Could not check fitment right now. Please try again.</span>';

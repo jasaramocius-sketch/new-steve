@@ -84,6 +84,13 @@ class PageController extends Controller
 
         $reserved = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => in_array('GET', $route->methods(), true))
+            ->filter(function ($route) {
+                $action = $route->getActionName();
+
+                // Redirect aliases (e.g. /about -> /about-us) should not block
+                // CMS pages that intentionally own the destination slug.
+                return ! str_starts_with($action, 'Illuminate\\Routing\\RedirectController');
+            })
             ->map(fn ($route) => trim($route->uri(), '/'))
             ->filter(fn ($uri) => $uri !== '' && ! str_contains($uri, '/') && ! str_contains($uri, '{'))
             ->values();
